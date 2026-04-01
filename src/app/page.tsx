@@ -12,6 +12,11 @@ const projects = [
     description: "Utforsk median inntekt etter skatt per husholdning i alle norske kommuner.",
     href: "/lonn",
   },
+  {
+    title: "Ladestasjoner",
+    description: "Se alle elbilladestasjoner i Norge på kart. Klikk en stasjon for å se kontakttyper og kapasitet.",
+    href: "/lading",
+  },
 ];
 
 export default function Home() {
@@ -28,7 +33,7 @@ export default function Home() {
       {/* Content */}
       <div className="relative z-10 container mx-auto px-6 md:px-16 py-20 max-w-2xl">
         <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight text-white">
-          Kartverket
+          MapGram
         </h1>
         <p className="mt-4 text-white/70 text-lg md:text-xl max-w-md">
           Prosjekter hvor jeg ser hva som er mulig med åpne geodata.
