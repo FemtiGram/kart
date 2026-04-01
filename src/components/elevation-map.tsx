@@ -115,6 +115,7 @@ export function ElevationMap() {
   const [showDropdown, setShowDropdown] = useState(false);
   const [tileLayer, setTileLayer] = useState<TileLayerKey>("kart");
   const [locating, setLocating] = useState(false);
+  const [asked, setAsked] = useState(false);
   const [devLog, setDevLog] = useState<DevLogEntry[]>([]);
   const logIdRef = useRef(0);
   const [devOpen, setDevOpen] = useState(true);
@@ -193,6 +194,26 @@ export function ElevationMap() {
         handleMapClick(pos.coords.latitude, pos.coords.longitude);
       },
       () => setLocating(false)
+    );
+  };
+
+  const handleLocationChoice = (useLocation: boolean) => {
+    setAsked(true);
+    if (!useLocation || !navigator.geolocation) {
+      handleMapClick(59.91, 10.75);
+      return;
+    }
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setLocating(false);
+        handleMapClick(pos.coords.latitude, pos.coords.longitude);
+      },
+      () => {
+        setLocating(false);
+        handleMapClick(59.91, 10.75);
+      },
+      { timeout: 6000 }
     );
   };
 
@@ -406,6 +427,33 @@ export function ElevationMap() {
 
       {/* Map */}
       <div className="relative grow [&_.leaflet-grab]:cursor-pointer [&_.leaflet-dragging_.leaflet-grab]:cursor-grabbing">
+        {!asked && (
+          <div className="absolute inset-0 flex items-center justify-center bg-background/80 z-[1000]">
+            <div className="bg-background rounded-2xl shadow-xl border px-6 py-6 max-w-sm w-full mx-4 flex flex-col items-center gap-4 text-center">
+              <LocateFixed className="h-8 w-8 text-muted-foreground" />
+              <div>
+                <p className="font-semibold text-base">Bruk din posisjon?</p>
+                <p className="text-sm text-muted-foreground mt-1">Vi kan vise høyde og værdata for der du er, eller du kan søke manuelt.</p>
+              </div>
+              <div className="flex gap-3 w-full">
+                <Button onClick={() => handleLocationChoice(true)} className="flex-1" size="lg">
+                  <LocateFixed className="h-4 w-4" /> Ja, bruk posisjon
+                </Button>
+                <Button onClick={() => handleLocationChoice(false)} variant="secondary" className="flex-1" size="lg">
+                  Nei takk
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+        {asked && locating && (
+          <div className="absolute inset-0 flex items-center justify-center bg-background/80 z-[1000]">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Finner posisjon...
+            </div>
+          </div>
+        )}
         <MapContainer
           center={[65, 14]}
           zoom={5}
