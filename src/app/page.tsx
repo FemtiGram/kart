@@ -13,7 +13,7 @@ export default function Home() {
   return (
     <div className="container mx-auto px-6 md:px-16 py-20 max-w-2xl">
       <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight" style={{ color: "var(--kv-blue)" }}>
-        Kartverket Explorer
+        Kartverket — Prosjekter
       </h1>
       <p className="mt-3 text-muted-foreground text-lg">
         Prosjekter bygd på Kartverkets åpne geodata.
