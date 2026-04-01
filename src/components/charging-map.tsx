@@ -248,9 +248,20 @@ export function ChargingMap() {
             </ul>
           )}
         </div>
-        <p className="text-xs text-muted-foreground text-center mt-2">
-          {!asked ? "Velg om du vil bruke din posisjon" : locating ? "Finner posisjon..." : loading ? "Henter ladestasjoner..." : `${stations.length} ladestasjoner i nærheten — Kilde: OpenStreetMap`}
-        </p>
+        <div className="flex items-center justify-between mt-2">
+          <p className="text-xs text-muted-foreground">
+            {!asked ? "Velg om du vil bruke din posisjon" : locating ? "Finner posisjon..." : loading ? "Henter ladestasjoner..." : `${stations.length} ladestasjoner i nærheten — Kilde: OpenStreetMap`}
+          </p>
+          <button
+            disabled
+            title="Krever sanntidsdata — kommer snart"
+            className="relative inline-flex items-center gap-1.5 text-xs px-3 py-1 rounded-full border bg-muted text-muted-foreground opacity-50 cursor-not-allowed shrink-0"
+          >
+            <Zap className="h-3 w-3" />
+            Kun ledige
+            <span className="absolute -top-1.5 -right-1.5 text-[9px] px-1 rounded-full bg-foreground text-background font-bold leading-4">Snart</span>
+          </button>
+        </div>
       </div>
 
       {/* Map */}
@@ -358,14 +369,20 @@ export function ChargingMap() {
                 </div>
 
                 <div className="mt-3 pt-3 border-t">
-                  {selected.capacity != null && (
-                    <div className="flex items-baseline gap-1.5 mb-2">
-                      <span className="text-2xl font-extrabold" style={{ color: "var(--kv-blue)" }}>
-                        {selected.capacity}
-                      </span>
-                      <span className="text-sm text-muted-foreground font-medium">ladepunkter</span>
+                  {/* Availability — placeholder until NOBIL real-time data */}
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-1.5">
+                      <div className="h-2 w-2 rounded-full bg-muted-foreground/30" />
+                      {selected.capacity != null ? (
+                        <span className="text-xs text-muted-foreground">
+                          <span className="font-semibold text-foreground">{selected.capacity}</span> ladepunkter
+                        </span>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">Tilgjengelighet</span>
+                      )}
                     </div>
-                  )}
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground/70 font-medium">Sanntidsdata snart</span>
+                  </div>
 
                   {selected.connectors.length > 0 && (
                     <>
