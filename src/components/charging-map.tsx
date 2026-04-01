@@ -41,6 +41,15 @@ function FlyTo({ lat, lon }: { lat: number; lon: number }) {
   return null;
 }
 
+function PanToSelected({ station }: { station: Station | null }) {
+  const map = useMap();
+  useEffect(() => {
+    if (!station) return;
+    map.panTo([station.lat, station.lon], { animate: true, duration: 0.4 });
+  }, [station, map]);
+  return null;
+}
+
 async function fetchStations(lat: number, lon: number): Promise<Station[]> {
   const res = await fetch(`/api/charging?lat=${lat}&lon=${lon}`);
   const data = await res.json();
@@ -285,6 +294,7 @@ export function ChargingMap() {
           style={{ height: "100%", width: "100%" }}
         >
           {center && <FlyTo lat={center.lat} lon={center.lon} />}
+          <PanToSelected station={selected} />
           <TileLayer
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
