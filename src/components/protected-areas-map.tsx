@@ -1,12 +1,12 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { MapContainer, GeoJSON, useMap } from "react-leaflet";
+import { MapContainer, GeoJSON, TileLayer, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import type { GeoJsonObject, Feature } from "geojson";
 import type { Layer } from "leaflet";
-import { Search, MapPin, Loader2, X, LocateFixed } from "lucide-react";
+import { Search, MapPin, Loader2, X, LocateFixed, Map as MapIcon, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface VerneData {
@@ -95,6 +95,8 @@ export function ProtectedAreasMap() {
   const [flyTarget, setFlyTarget] = useState<{ lat: number; lon: number } | null>(null);
   const [asked, setAsked] = useState(false);
   const [locating, setLocating] = useState(false);
+  const [showBase, setShowBase] = useState(false);
+  const [cardExpanded, setCardExpanded] = useState(false);
 
   const verneRef = useRef<Record<string, VerneData>>({});
   const geoFeaturesRef = useRef<Array<{ kommunenummer: string; kommunenavn: string }>>([]);
@@ -154,8 +156,15 @@ export function ProtectedAreasMap() {
     setQuery("");
   }, []);
 
+  useEffect(() => {
+    const pref = localStorage.getItem("mapgram-use-location");
+    if (pref !== null) handleLocationChoice(pref === "yes");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const handleLocationChoice = (useLocation: boolean) => {
     setAsked(true);
+    try { localStorage.setItem("mapgram-use-location", useLocation ? "yes" : "no"); } catch {}
     if (!useLocation || !navigator.geolocation) {
       setFlyTarget({ lat: 65, lon: 14 });
       return;
@@ -358,8 +367,16 @@ export function ProtectedAreasMap() {
       {/* Map */}
       <div className="relative grow">
         {loading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-background/80 z-[1000]">
-            <p className="text-sm text-muted-foreground">Laster kartdata...</p>
+          <div className="absolute inset-0 z-[1000] bg-background p-4 flex flex-col gap-3">
+            <div className="flex gap-3">
+              <div className="h-8 w-32 rounded-lg bg-muted animate-pulse" />
+              <div className="h-8 w-24 rounded-lg bg-muted animate-pulse" />
+            </div>
+            <div className="flex-1 rounded-xl bg-muted animate-pulse" />
+            <div className="flex gap-3 justify-center">
+              <div className="h-6 w-20 rounded-md bg-muted animate-pulse" />
+              <div className="h-6 w-28 rounded-md bg-muted animate-pulse" />
+            </div>
           </div>
         )}
         {!loading && !asked && (
@@ -397,6 +414,12 @@ export function ProtectedAreasMap() {
 
         {!loading && !error && geoData && (
           <MapContainer center={[65, 14]} zoom={5} style={{ height: "100%", width: "100%" }}>
+            {showBase && (
+              <TileLayer
+                url="https://cache.kartverket.no/v1/wmts/1.0.0/topograatone/default/webmercator/{z}/{y}/{x}.png"
+                attribution='&copy; <a href="https://www.kartverket.no/">Kartverket</a>'
+              />
+            )}
             {flyTarget && <FlyTo lat={flyTarget.lat} lon={flyTarget.lon} />}
             <GeoJSON
               key={Object.keys(verneData).length}
@@ -407,16 +430,26 @@ export function ProtectedAreasMap() {
           </MapContainer>
         )}
 
-        {/* Legend */}
-        <div className="absolute top-3 right-3 z-[999] bg-white/90 rounded-xl border px-3 py-2 shadow text-xs">
-          <p className="font-semibold text-muted-foreground mb-1.5">Vernet areal (km²)</p>
-          <div className="flex items-center gap-1.5">
-            <div className="h-2.5 w-24 rounded-full" style={{ background: "linear-gradient(to right, #ecfdf5, #145327)" }} />
+        {/* Legend + base layer toggle */}
+        <div className="absolute top-3 right-3 z-[999] flex flex-col gap-2 items-end">
+          <div className="bg-white/90 rounded-xl border px-3 py-2 shadow text-xs">
+            <p className="font-semibold text-muted-foreground mb-1.5">Vernet areal (km²)</p>
+            <div className="flex items-center gap-1.5">
+              <div className="h-2.5 w-24 rounded-full" style={{ background: "linear-gradient(to right, #ecfdf5, #145327)" }} />
+            </div>
+            <div className="flex justify-between mt-0.5 text-muted-foreground/70">
+              <span>0</span>
+              <span>{Math.round(max)}</span>
+            </div>
           </div>
-          <div className="flex justify-between mt-0.5 text-muted-foreground/70">
-            <span>0</span>
-            <span>{Math.round(max)}</span>
-          </div>
+          <button
+            onClick={() => setShowBase((b) => !b)}
+            className={`flex items-center gap-1.5 rounded-lg border bg-white shadow-md px-3 py-1.5 text-xs font-semibold transition-colors ${showBase ? "text-white" : "text-muted-foreground hover:bg-muted"}`}
+            style={showBase ? { background: "var(--kv-blue)" } : {}}
+          >
+            <MapIcon className="h-3.5 w-3.5" />
+            Bakgrunnskart
+          </button>
         </div>
 
         {/* Info card */}
@@ -425,79 +458,92 @@ export function ProtectedAreasMap() {
             className="absolute bottom-4 left-3 right-3 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 sm:w-96 z-[999] bg-white rounded-2xl shadow-xl px-4 py-4"
             style={{ border: "1.5px solid #86efac" }}
           >
-            <div className="flex items-start justify-between gap-2 mb-3">
-              <p className="font-bold text-base">{selected.kommunenavn}</p>
-              <button
-                onClick={clearSelection}
-                className="shrink-0 p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                aria-label="Lukk"
-              >
-                <X className="h-4 w-4" />
-              </button>
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <p className="font-bold text-base">{selected.kommunenavn}</p>
+                {selected.vern?.total ? (
+                  <p className="text-sm text-muted-foreground mt-0.5">
+                    <span className="font-semibold" style={{ color: "#145327" }}>
+                      {selected.vern.total.toFixed(2).replace(".", ",")} km²
+                    </span>{" "}vernet
+                  </p>
+                ) : null}
+              </div>
+              <div className="flex items-center gap-1 shrink-0">
+                <button
+                  onClick={() => setCardExpanded((e) => !e)}
+                  className="sm:hidden p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                  aria-label={cardExpanded ? "Skjul detaljer" : "Vis detaljer"}
+                >
+                  {cardExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
+                </button>
+                <button
+                  onClick={clearSelection}
+                  className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                  aria-label="Lukk"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
             </div>
 
-            {selected.vern?.total ? (() => {
-              const { rank, total, vsMedian } = computeVerneStats(verneData, selected.kommunenummer);
-              const pct = Math.max(0, Math.min(100, (selected.vern.total! / max) * 100));
-              const above = vsMedian >= 0;
-              return (
-                <>
-                  <div className="border-t pt-3 mb-3">
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-3xl font-extrabold" style={{ color: "#145327" }}>
-                        {selected.vern.total!.toFixed(2).replace(".", ",")}
-                      </span>
-                      <span className="text-sm font-medium text-muted-foreground">km² vernet</span>
+            <div className={`${cardExpanded ? "block" : "hidden"} sm:block`}>
+              {selected.vern?.total ? (() => {
+                const { rank, total, vsMedian } = computeVerneStats(verneData, selected.kommunenummer);
+                const pct = Math.max(0, Math.min(100, (selected.vern.total! / max) * 100));
+                const above = vsMedian >= 0;
+                return (
+                  <>
+                    <div className="border-t mt-3 pt-3 mb-3">
+                      {/* Progress bar */}
+                      <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+                        <div
+                          className="h-full rounded-full"
+                          style={{
+                            width: `${pct}%`,
+                            background: "linear-gradient(to right, #ecfdf5, #145327)",
+                          }}
+                        />
+                      </div>
+                      <div className="flex justify-between mt-0.5">
+                        <span className="text-[10px] text-muted-foreground">0 km²</span>
+                        <span className="text-[10px] text-muted-foreground">{fmt(max)}</span>
+                      </div>
+
+                      {/* Rank + vs median */}
+                      <div className="mt-3 flex items-center justify-between gap-2">
+                        <span className="text-xs text-muted-foreground">
+                          #{rank} av {total} kommuner
+                        </span>
+                        <span
+                          className="text-xs font-semibold"
+                          style={{ color: above ? "#145327" : "#ef4444" }}
+                        >
+                          {above ? "+" : ""}{vsMedian.toFixed(1)}% vs. medianen
+                        </span>
+                      </div>
                     </div>
 
-                    {/* Progress bar */}
-                    <div className="mt-3 h-1.5 w-full rounded-full bg-muted overflow-hidden">
-                      <div
-                        className="h-full rounded-full"
-                        style={{
-                          width: `${pct}%`,
-                          background: "linear-gradient(to right, #ecfdf5, #145327)",
-                        }}
-                      />
+                    <div className="border-t pt-3 flex flex-col gap-1.5">
+                      {(["np", "nr", "lv", "nm"] as const).map((key) => {
+                        const val = selected.vern![key];
+                        if (!val) return null;
+                        return (
+                          <div key={key} className="flex items-center justify-between text-sm">
+                            <span className="text-muted-foreground">{VERNE_LABELS[key]}</span>
+                            <span className="font-medium tabular-nums">{fmt(val)}</span>
+                          </div>
+                        );
+                      })}
                     </div>
-                    <div className="flex justify-between mt-0.5">
-                      <span className="text-[10px] text-muted-foreground">0 km²</span>
-                      <span className="text-[10px] text-muted-foreground">{fmt(max)}</span>
-                    </div>
+                  </>
+                );
+              })() : (
+                <p className="text-sm text-muted-foreground border-t mt-3 pt-3">Ingen registrerte verneområder.</p>
+              )}
 
-                    {/* Rank + vs median */}
-                    <div className="mt-3 flex items-center justify-between gap-2">
-                      <span className="text-xs text-muted-foreground">
-                        #{rank} av {total} kommuner
-                      </span>
-                      <span
-                        className="text-xs font-semibold"
-                        style={{ color: above ? "#145327" : "#ef4444" }}
-                      >
-                        {above ? "+" : ""}{vsMedian.toFixed(1)}% vs. medianen
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="border-t pt-3 flex flex-col gap-1.5">
-                    {(["np", "nr", "lv", "nm"] as const).map((key) => {
-                      const val = selected.vern![key];
-                      if (!val) return null;
-                      return (
-                        <div key={key} className="flex items-center justify-between text-sm">
-                          <span className="text-muted-foreground">{VERNE_LABELS[key]}</span>
-                          <span className="font-medium tabular-nums">{fmt(val)}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </>
-              );
-            })() : (
-              <p className="text-sm text-muted-foreground border-t pt-3">Ingen registrerte verneområder.</p>
-            )}
-
-            <p className="text-xs text-muted-foreground/50 mt-3 italic">Kilde: SSB tabell 08936, 2024</p>
+              <p className="text-xs text-muted-foreground/50 mt-3 italic">Kilde: SSB tabell 08936, 2024</p>
+            </div>
           </div>
         )}
       </div>

@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { Search, MapPin, Mountain, Loader2, X, ChevronDown, ChevronUp, LocateFixed, Wind, Droplets, Sun, Cloud, CloudSun, CloudRain, CloudSnow, CloudLightning, CloudFog, CloudHail, CloudDrizzle, Moon, ExternalLink, Map } from "lucide-react";
+import { Search, MapPin, Mountain, Loader2, X, ChevronDown, ChevronUp, LocateFixed, Wind, Droplets, Sun, Cloud, CloudSun, CloudRain, CloudSnow, CloudLightning, CloudFog, CloudHail, CloudDrizzle, Moon, ExternalLink, Map as MapIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { LucideIcon } from "lucide-react";
 
@@ -37,8 +37,8 @@ const DEV = process.env.NEXT_PUBLIC_DEV === "true";
 const TILE_LAYERS = {
   kart: {
     label: "Kart",
-    url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    url: "https://cache.kartverket.no/v1/wmts/1.0.0/topo/default/webmercator/{z}/{y}/{x}.png",
+    attribution: '&copy; <a href="https://www.kartverket.no/">Kartverket</a>',
   },
   terreng: {
     label: "Terreng",
@@ -197,8 +197,15 @@ export function ElevationMap() {
     );
   };
 
+  useEffect(() => {
+    const pref = localStorage.getItem("mapgram-use-location");
+    if (pref !== null) handleLocationChoice(pref === "yes");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const handleLocationChoice = (useLocation: boolean) => {
     setAsked(true);
+    try { localStorage.setItem("mapgram-use-location", useLocation ? "yes" : "no"); } catch {}
     if (!useLocation || !navigator.geolocation) {
       handleMapClick(59.91, 10.75);
       return;
@@ -493,7 +500,7 @@ export function ElevationMap() {
               className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold transition-colors ${i > 0 ? "border-l" : ""} ${tileLayer === key ? "text-white" : "text-muted-foreground hover:bg-muted"}`}
               style={tileLayer === key ? { background: "var(--kv-blue)" } : {}}
             >
-              {key === "kart" ? <Map className="h-3.5 w-3.5" /> : <Mountain className="h-3.5 w-3.5" />}
+              {key === "kart" ? <MapIcon className="h-3.5 w-3.5" /> : <Mountain className="h-3.5 w-3.5" />}
               {TILE_LAYERS[key].label}
             </button>
           ))}

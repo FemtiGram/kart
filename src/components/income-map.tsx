@@ -1,12 +1,12 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { MapContainer, GeoJSON, useMap } from "react-leaflet";
+import { MapContainer, GeoJSON, TileLayer, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import type { GeoJsonObject, Feature } from "geojson";
 import type { Layer } from "leaflet";
-import { Search, MapPin, Loader2, X, Info, LocateFixed } from "lucide-react";
+import { Search, MapPin, Loader2, X, Info, LocateFixed, Map as MapIcon, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface IncomeAddress {
@@ -86,6 +86,8 @@ export function IncomeMap() {
   const [showInfo, setShowInfo] = useState(false);
   const [asked, setAsked] = useState(false);
   const [locating, setLocating] = useState(false);
+  const [showBase, setShowBase] = useState(false);
+  const [cardExpanded, setCardExpanded] = useState(false);
 
   const incomeRef = useRef<Record<string, number>>({});
   const geoFeaturesRef = useRef<Array<{ kommunenummer: string; kommunenavn: string }>>([]);
@@ -152,8 +154,15 @@ export function IncomeMap() {
     setQuery("");
   }, []);
 
+  useEffect(() => {
+    const pref = localStorage.getItem("mapgram-use-location");
+    if (pref !== null) handleLocationChoice(pref === "yes");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const handleLocationChoice = (useLocation: boolean) => {
     setAsked(true);
+    try { localStorage.setItem("mapgram-use-location", useLocation ? "yes" : "no"); } catch {}
     if (!useLocation || !navigator.geolocation) {
       setFlyTarget({ lat: 59.91, lon: 10.75 });
       return;
@@ -408,8 +417,16 @@ export function IncomeMap() {
       {/* Map */}
       <div className="relative grow">
         {loading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-background/80 z-[1000]">
-            <p className="text-sm text-muted-foreground">Laster kartdata...</p>
+          <div className="absolute inset-0 z-[1000] bg-background p-4 flex flex-col gap-3">
+            <div className="flex gap-3">
+              <div className="h-8 w-32 rounded-lg bg-muted animate-pulse" />
+              <div className="h-8 w-24 rounded-lg bg-muted animate-pulse" />
+            </div>
+            <div className="flex-1 rounded-xl bg-muted animate-pulse" />
+            <div className="flex gap-3 justify-center">
+              <div className="h-6 w-20 rounded-md bg-muted animate-pulse" />
+              <div className="h-6 w-28 rounded-md bg-muted animate-pulse" />
+            </div>
           </div>
         )}
         {!loading && !asked && (
@@ -452,6 +469,12 @@ export function IncomeMap() {
             style={{ height: "100%", width: "100%" }}
             zoomControl={true}
           >
+            {showBase && (
+              <TileLayer
+                url="https://cache.kartverket.no/v1/wmts/1.0.0/topograatone/default/webmercator/{z}/{y}/{x}.png"
+                attribution='&copy; <a href="https://www.kartverket.no/">Kartverket</a>'
+              />
+            )}
             {flyTarget && <FlyTo lat={flyTarget.lat} lon={flyTarget.lon} />}
             <GeoJSON
               key={Object.keys(incomeData).length}
@@ -474,80 +497,101 @@ export function IncomeMap() {
                 {selected.address && (
                   <p className="text-xs text-muted-foreground truncate mt-0.5">{selected.address}</p>
                 )}
-                <div className="mt-2">
-                  {selected.income != null ? (() => {
-                    const { rank, total, vsMedian } = computeStats(incomeData, selected.kommunenummer);
-                    const pct = Math.max(0, Math.min(100, ((selected.income - min) / (max - min)) * 100));
-                    const above = vsMedian >= 0;
-                    return (
-                      <>
-                        <div className="flex items-baseline gap-1.5">
-                          <span className="text-2xl font-extrabold" style={{ color: "var(--kv-blue)" }}>
-                            {formatKr(selected.income)}
-                          </span>
-                        </div>
-                        <p className="text-xs text-muted-foreground mt-0.5">median inntekt etter skatt per husholdning (2024)</p>
-
-                        {/* Progress bar */}
-                        <div className="mt-3 h-1.5 w-full rounded-full bg-muted overflow-hidden">
-                          <div
-                            className="h-full rounded-full"
-                            style={{
-                              width: `${pct}%`,
-                              background: "linear-gradient(to right, rgb(232,245,232), rgb(0,177,64))",
-                            }}
-                          />
-                        </div>
-                        <div className="flex justify-between mt-0.5">
-                          <span className="text-[10px] text-muted-foreground">{formatKr(min)}</span>
-                          <span className="text-[10px] text-muted-foreground">{formatKr(max)}</span>
-                        </div>
-
-                        {/* Rank + vs median */}
-                        <div className="mt-3 flex items-center justify-between gap-2">
-                          <span className="text-xs text-muted-foreground">
-                            #{rank} av {total} kommuner
-                          </span>
-                          <span
-                            className="text-xs font-semibold"
-                            style={{ color: above ? "var(--kv-green)" : "#ef4444" }}
-                          >
-                            {above ? "+" : ""}{vsMedian.toFixed(1)}% vs. medianen
-                          </span>
-                        </div>
-                      </>
-                    );
-                  })() : (
-                    <p className="text-sm text-muted-foreground">Ingen inntektsdata</p>
-                  )}
-                </div>
+                {selected.income != null && (
+                  <p className="text-sm mt-1">
+                    <span className="font-semibold" style={{ color: "var(--kv-blue)" }}>{formatKr(selected.income)}</span>
+                    <span className="text-muted-foreground text-xs ml-1">median inntekt</span>
+                  </p>
+                )}
               </div>
-              <button
-                onClick={clearSelection}
-                className="shrink-0 p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                aria-label="Lukk"
-              >
-                <X className="h-4 w-4" />
-              </button>
+              <div className="flex items-center gap-1 shrink-0">
+                <button
+                  onClick={() => setCardExpanded((e) => !e)}
+                  className="sm:hidden p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                  aria-label={cardExpanded ? "Skjul detaljer" : "Vis detaljer"}
+                >
+                  {cardExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
+                </button>
+                <button
+                  onClick={clearSelection}
+                  className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                  aria-label="Lukk"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+
+            <div className={`${cardExpanded ? "block" : "hidden"} sm:block`}>
+              {selected.income != null ? (() => {
+                const { rank, total, vsMedian } = computeStats(incomeData, selected.kommunenummer);
+                const pct = Math.max(0, Math.min(100, ((selected.income - min) / (max - min)) * 100));
+                const above = vsMedian >= 0;
+                return (
+                  <>
+                    <p className="text-xs text-muted-foreground mt-2">median inntekt etter skatt per husholdning (2024)</p>
+
+                    {/* Progress bar */}
+                    <div className="mt-3 h-1.5 w-full rounded-full bg-muted overflow-hidden">
+                      <div
+                        className="h-full rounded-full"
+                        style={{
+                          width: `${pct}%`,
+                          background: "linear-gradient(to right, rgb(232,245,232), rgb(0,177,64))",
+                        }}
+                      />
+                    </div>
+                    <div className="flex justify-between mt-0.5">
+                      <span className="text-[10px] text-muted-foreground">{formatKr(min)}</span>
+                      <span className="text-[10px] text-muted-foreground">{formatKr(max)}</span>
+                    </div>
+
+                    {/* Rank + vs median */}
+                    <div className="mt-3 flex items-center justify-between gap-2">
+                      <span className="text-xs text-muted-foreground">
+                        #{rank} av {total} kommuner
+                      </span>
+                      <span
+                        className="text-xs font-semibold"
+                        style={{ color: above ? "var(--kv-green)" : "#ef4444" }}
+                      >
+                        {above ? "+" : ""}{vsMedian.toFixed(1)}% vs. medianen
+                      </span>
+                    </div>
+                  </>
+                );
+              })() : (
+                <p className="text-sm text-muted-foreground mt-2">Ingen inntektsdata</p>
+              )}
             </div>
           </div>
         )}
 
-        {/* Legend */}
+        {/* Legend + base layer toggle */}
         {!loading && values.length > 0 && (
-          <div
-            className="absolute top-3 right-3 z-[999] bg-white rounded-xl shadow-md px-3 py-2.5"
-            style={{ border: "1px solid #e5e7eb" }}
-          >
-            <p className="text-xs font-semibold text-muted-foreground mb-1.5">Inntekt etter skatt</p>
+          <div className="absolute top-3 right-3 z-[999] flex flex-col gap-2 items-end">
             <div
-              className="h-3 w-24 rounded-sm"
-              style={{ background: "linear-gradient(to right, rgb(232,245,232), rgb(0,177,64))" }}
-            />
-            <div className="flex justify-between mt-0.5">
-              <span className="text-[10px] text-muted-foreground">{formatKr(min)}</span>
-              <span className="text-[10px] text-muted-foreground">{formatKr(max)}</span>
+              className="bg-white rounded-xl shadow-md px-3 py-2.5"
+              style={{ border: "1px solid #e5e7eb" }}
+            >
+              <p className="text-xs font-semibold text-muted-foreground mb-1.5">Inntekt etter skatt</p>
+              <div
+                className="h-3 w-24 rounded-sm"
+                style={{ background: "linear-gradient(to right, rgb(232,245,232), rgb(0,177,64))" }}
+              />
+              <div className="flex justify-between mt-0.5">
+                <span className="text-[10px] text-muted-foreground">{formatKr(min)}</span>
+                <span className="text-[10px] text-muted-foreground">{formatKr(max)}</span>
+              </div>
             </div>
+            <button
+              onClick={() => setShowBase((b) => !b)}
+              className={`flex items-center gap-1.5 rounded-lg border bg-white shadow-md px-3 py-1.5 text-xs font-semibold transition-colors ${showBase ? "text-white" : "text-muted-foreground hover:bg-muted"}`}
+              style={showBase ? { background: "var(--kv-blue)" } : {}}
+            >
+              <MapIcon className="h-3.5 w-3.5" />
+              Bakgrunnskart
+            </button>
           </div>
         )}
       </div>

@@ -270,8 +270,8 @@ export function ChargingMap() {
           {center && <FlyTo lat={center.lat} lon={center.lon} />}
           <PanToSelected station={selected} />
           <TileLayer
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+            url="https://cache.kartverket.no/v1/wmts/1.0.0/topo/default/webmercator/{z}/{y}/{x}.png"
+            attribution='&copy; <a href="https://www.kartverket.no/">Kartverket</a>'
           />
           {stations.map((s) => (
             <CircleMarker
