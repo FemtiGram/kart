@@ -120,6 +120,8 @@ export function ElevationMap() {
   const [devOpen, setDevOpen] = useState(true);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const [apiDown, setApiDown] = useState(false);
+  const [apiBannerDismissed, setApiBannerDismissed] = useState(false);
 
   const devFetch = useCallback(async (url: string, summary: (data: unknown) => string) => {
     const t0 = performance.now();
@@ -141,6 +143,18 @@ export function ElevationMap() {
     }
     return data;
   }, []);
+
+  useEffect(() => {
+    const checkApis = async () => {
+      const results = await Promise.allSettled([
+        devFetch("https://ws.geonorge.no/adresser/v1/sok?sok=Oslo&treffPerSide=1", () => "Helsesjekk: Adresser API"),
+        devFetch("/api/weather?lat=59.9&lon=10.7", () => "Helsesjekk: Vær-proxy"),
+      ]);
+      const anyFailed = results.some((r) => r.status === "rejected");
+      if (anyFailed) setApiDown(true);
+    };
+    checkApis();
+  }, [devFetch]);
 
   const searchAddresses = useCallback(
     async (q: string) => {
@@ -186,7 +200,42 @@ export function ElevationMap() {
     lat >= 57.0 && lat <= 81.0 && lon >= 4.0 && lon <= 32.0;
 
   const fetchNearestName = useCallback(async (lat: number, lon: number): Promise<{ name: string; roadCoords?: { lat: number; lon: number } }> => {
-    // Try stedsnavn first (covers mountains, lakes, peaks etc.)
+    type AdresseHit = { adressetekst: string; poststed: string; kommunenavn: string; representasjonspunkt?: { lat: number; lon: number } };
+    type AdresseResponse = { adresser?: AdresseHit[] };
+
+    const fetchAddr = async (radius: number) => {
+      const data = await devFetch(
+        `https://ws.geonorge.no/adresser/v1/punktsok?lat=${lat}&lon=${lon}&radius=${radius}&utkoordsys=4326&treffPerSide=1`,
+        (d: unknown) => {
+          const a = (d as AdresseResponse).adresser?.[0];
+          return a ? `${a.adressetekst}, ${a.poststed}` : "Ingen adresse";
+        }
+      );
+      return (data as AdresseResponse).adresser?.[0] ?? null;
+    };
+
+    // 1. Building — close address hit (≤ 50m)
+    try {
+      const hit = await fetchAddr(50);
+      if (hit) return {
+        name: `${hit.adressetekst}, ${hit.poststed}`,
+        roadCoords: hit.representasjonspunkt,
+      };
+    } catch { /* fall through */ }
+
+    // 2. Road — medium radius (≤ 400m), strip house number to get street name
+    try {
+      const hit = await fetchAddr(400);
+      if (hit) {
+        const street = hit.adressetekst.replace(/\s+\d+\w*$/, "").trim();
+        return {
+          name: `${street}, ${hit.poststed}`,
+          roadCoords: hit.representasjonspunkt,
+        };
+      }
+    } catch { /* fall through */ }
+
+    // 3. Place name — stedsnavn within 5km (mountains, lakes, forests)
     try {
       const data = await devFetch(
         `https://ws.geonorge.no/stedsnavn/v1/punkt?nord=${lat}&ost=${lon}&koordsys=4326&radius=5000&treffPerSide=1`,
@@ -196,38 +245,11 @@ export function ElevationMap() {
         }
       );
       const name = (data as { navn?: Array<{ stedsnavn?: Array<{ skrivemåte: string }> }> }).navn?.[0]?.stedsnavn?.[0]?.skrivemåte;
-      if (name) {
-        // Still fetch nearest road for Maps navigation
-        try {
-          const roadData = await devFetch(
-            `https://ws.geonorge.no/adresser/v1/punktsok?lat=${lat}&lon=${lon}&radius=5000&utkoordsys=4326&treffPerSide=1`,
-            (d: unknown) => {
-              const r = d as { adresser?: Array<{ adressetekst: string; representasjonspunkt?: { lat: number; lon: number } }> };
-              return r.adresser?.[0]?.adressetekst ?? "Ingen vei";
-            }
-          );
-          const road = (roadData as { adresser?: Array<{ representasjonspunkt?: { lat: number; lon: number } }> }).adresser?.[0];
-          return { name, roadCoords: road?.representasjonspunkt };
-        } catch { /* ignore */ }
-        return { name };
-      }
+      if (name) return { name };
     } catch { /* fall through */ }
 
-    // Fall back to nearest address
-    try {
-      const data = await devFetch(
-        `https://ws.geonorge.no/adresser/v1/punktsok?lat=${lat}&lon=${lon}&radius=2000&utkoordsys=4326&treffPerSide=1`,
-        (d: unknown) => {
-          const result = d as { adresser?: Array<{ adressetekst: string; poststed: string }> };
-          const a = result.adresser?.[0];
-          return a ? `${a.adressetekst}, ${a.poststed}` : "Ingen adresse";
-        }
-      );
-      const addr = (data as { adresser?: Array<{ adressetekst: string; poststed: string; representasjonspunkt?: { lat: number; lon: number } }> }).adresser?.[0];
-      if (addr) return { name: `${addr.adressetekst}, ${addr.poststed}`, roadCoords: addr.representasjonspunkt };
-    } catch { /* fall through */ }
-
-    return { name: `${lat.toFixed(4)}, ${lon.toFixed(4)}` };
+    // 4. Fallback to raw coordinates
+    return { name: `${lat.toFixed(5)}, ${lon.toFixed(5)}` };
   }, [devFetch]);
 
   const fetchLocationData = useCallback(async (address: Address) => {
@@ -293,7 +315,13 @@ export function ElevationMap() {
       fetchNearestName(lat, lon),
       fetchLocationData(address),
     ]);
-    setSelected((prev) => prev && { ...prev, yrSearchName: nearest.name, mapsCoords: nearest.roadCoords ?? { lat, lon } });
+    setQuery(nearest.name);
+    setSelected((prev) => prev && {
+      ...prev,
+      address: { ...prev.address, adressetekst: nearest.name },
+      yrSearchName: nearest.name,
+      mapsCoords: nearest.roadCoords ?? { lat, lon },
+    });
   };
 
   const handleSelect = async (address: Address) => {
@@ -309,6 +337,19 @@ export function ElevationMap() {
 
   return (
     <div className="flex flex-col" style={{ height: "calc(100svh - 57px)" }}>
+      {/* API health banner */}
+      {apiDown && !apiBannerDismissed && (
+        <div className="shrink-0 flex items-center justify-between gap-3 px-4 py-2.5 bg-yellow-50 border-b border-yellow-200 text-yellow-800 text-sm">
+          <p>Eksterne APIer svarer ikke — søk og høydedata kan være utilgjengelig. Prøv igjen senere.</p>
+          <button
+            onClick={() => setApiBannerDismissed(true)}
+            className="shrink-0 p-1 rounded hover:bg-yellow-100 transition-colors"
+            aria-label="Lukk"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
       {/* Search bar */}
       <div className="relative z-[1000] px-4 py-4 md:px-8 shrink-0 bg-background border-b">
         <div className="max-w-xl mx-auto relative flex flex-col sm:flex-row sm:items-center gap-2">
@@ -426,6 +467,9 @@ export function ElevationMap() {
                         {selected.address.poststed}, {selected.address.kommunenavn}
                       </p>
                     )}
+                    <p className="text-xs text-muted-foreground/60 font-mono mt-0.5">
+                      {selected.address.representasjonspunkt.lat.toFixed(5)}, {selected.address.representasjonspunkt.lon.toFixed(5)}
+                    </p>
                     <a
                       href={`https://www.google.com/maps/dir/?api=1&destination=${selected.mapsCoords?.lat ?? selected.address.representasjonspunkt.lat},${selected.mapsCoords?.lon ?? selected.address.representasjonspunkt.lon}`}
                       target="_blank"

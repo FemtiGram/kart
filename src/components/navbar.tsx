@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/sheet";
 
 const navLinks = [
-  { href: "/map", label: "Kart" },
+  { href: "/map", label: "Høydekart" },
 ];
 
 export function Navbar() {
