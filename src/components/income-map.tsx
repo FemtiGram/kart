@@ -200,18 +200,12 @@ export function IncomeMap() {
           l.setStyle({ weight: 1.5, color: "#003da5", fillOpacity: 1 });
           l.bringToFront();
         }
-        setSelected((prev) =>
-          prev?.kommunenummer === nr
-            ? prev
-            : { kommunenummer: nr, kommunenavn: navn, income: incomeRef.current[nr] ?? null, coords: { lat: 0, lon: 0 } }
-        );
       },
       mouseout(e) {
         const l = e.target as L.Path;
         if (nr !== selectedKommuneRef.current) {
           l.setStyle({ weight: 0.5, color: "white", fillOpacity: incomeRef.current[nr] ? 0.85 : 0.3 });
         }
-        setSelected((prev) => (prev?.kommunenummer === nr && !selectedKommuneRef.current ? null : prev));
       },
       click() {
         highlightKommune(nr);
