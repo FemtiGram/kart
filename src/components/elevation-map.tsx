@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { Search, MapPin, Mountain, Loader2, Layers, X, ChevronDown, ChevronUp } from "lucide-react";
+import { Search, MapPin, Mountain, Loader2, Layers, X, ChevronDown, ChevronUp, LocateFixed } from "lucide-react";
 
 // Fix Leaflet default marker icons in Next.js
 delete (L.Icon.Default.prototype as unknown as Record<string, unknown>)._getIconUrl;
@@ -86,6 +86,7 @@ export function ElevationMap() {
   const [loadingElevation, setLoadingElevation] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const [tileLayer, setTileLayer] = useState<TileLayerKey>("kart");
+  const [locating, setLocating] = useState(false);
   const [devLog, setDevLog] = useState<DevLogEntry[]>([]);
   const [devOpen, setDevOpen] = useState(true);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -138,6 +139,18 @@ export function ElevationMap() {
     setQuery(val);
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => searchAddresses(val), 300);
+  };
+
+  const handleLocate = () => {
+    if (!navigator.geolocation) return;
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setLocating(false);
+        handleMapClick(pos.coords.latitude, pos.coords.longitude);
+      },
+      () => setLocating(false)
+    );
   };
 
   const isWithinNorway = (lat: number, lon: number) =>
@@ -230,8 +243,8 @@ export function ElevationMap() {
     <div className="flex flex-col" style={{ height: "calc(100svh - 57px)" }}>
       {/* Search bar */}
       <div className="relative z-[1000] px-4 py-4 md:px-8 shrink-0" style={{ background: "var(--kv-blue)" }}>
-        <div className="max-w-xl mx-auto relative">
-          <div className="flex items-center gap-2 bg-white rounded-xl px-4 py-3 shadow-lg">
+        <div className="max-w-xl mx-auto relative flex gap-2">
+          <div className="flex flex-1 items-center gap-2 bg-white rounded-xl px-4 py-3 shadow-lg">
             {loadingSuggestions ? (
               <Loader2 className="h-4 w-4 shrink-0 animate-spin text-muted-foreground" />
             ) : (
@@ -248,6 +261,19 @@ export function ElevationMap() {
               className="flex-1 bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground"
             />
           </div>
+          <button
+            onClick={handleLocate}
+            disabled={locating}
+            title="Bruk min posisjon"
+            className="flex items-center gap-2 px-4 rounded-xl shadow-lg text-sm font-semibold transition-opacity disabled:opacity-50"
+            style={{ background: "var(--kv-green)", color: "#fff" }}
+          >
+            {locating
+              ? <Loader2 className="h-4 w-4 animate-spin" />
+              : <LocateFixed className="h-4 w-4" />
+            }
+            <span className="hidden sm:inline">Min posisjon</span>
+          </button>
 
           {showDropdown && suggestions.length > 0 && (
             <ul className="absolute top-full mt-1 left-0 right-0 bg-white rounded-xl shadow-xl border overflow-hidden">
