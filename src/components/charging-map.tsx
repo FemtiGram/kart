@@ -299,78 +299,66 @@ export function ChargingMap() {
             className="absolute bottom-4 left-3 right-3 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 sm:w-96 z-[999] bg-white rounded-2xl shadow-xl px-4 py-4"
             style={{ border: "1.5px solid var(--kv-green-light, #b3e6c8)" }}
           >
-            <div className="flex items-start">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <p className="font-bold text-sm truncate">{selected.name}</p>
-                    {selected.operator && selected.operator !== selected.name && (
-                      <p className="text-xs text-muted-foreground truncate">{selected.operator}</p>
-                    )}
-                    {selected.address && (
-                      <p className="text-xs text-muted-foreground truncate">{selected.address}</p>
-                    )}
-                    <p className="text-xs text-muted-foreground/60 font-mono mt-0.5">
-                      {selected.lat.toFixed(5)}, {selected.lon.toFixed(5)}
-                    </p>
-                    <a
-                      href={`https://www.google.com/maps/dir/?api=1&destination=${selected.lat},${selected.lon}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors mt-1 w-fit"
-                    >
-                      Veibeskrivelse <ExternalLink className="h-3 w-3" />
-                    </a>
-                  </div>
-                  <button
-                    onClick={() => setSelected(null)}
-                    className="shrink-0 p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                    aria-label="Lukk"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
+            {/* Where is this */}
+            <div className="flex items-start justify-between gap-2 mb-3">
+              <div className="min-w-0">
+                <p className="font-bold text-base truncate leading-snug">{selected.name}</p>
+                {selected.operator && selected.operator !== selected.name && (
+                  <p className="text-xs text-muted-foreground truncate">{selected.operator}</p>
+                )}
+                {selected.address && (
+                  <p className="text-sm text-muted-foreground truncate mt-0.5">{selected.address}</p>
+                )}
+                <a
+                  href={`https://www.google.com/maps/dir/?api=1&destination=${selected.lat},${selected.lon}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border mt-2 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors w-fit"
+                >
+                  <ExternalLink className="h-3 w-3" /> Veibeskrivelse
+                </a>
+              </div>
+              <button
+                onClick={() => setSelected(null)}
+                className="shrink-0 p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                aria-label="Lukk"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* How many points */}
+            <div className="border-t pt-3 mb-3">
+              {selected.capacity != null ? (
+                <div className="flex items-baseline gap-2">
+                  <span className="text-3xl font-extrabold" style={{ color: "var(--kv-blue)" }}>
+                    {selected.capacity}
+                  </span>
+                  <span className="text-sm font-medium text-muted-foreground">ladepunkter</span>
                 </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">Kapasitet ukjent</p>
+              )}
+              <p className="text-xs text-muted-foreground/50 mt-0.5 italic">Sanntidsdata tilgjengelig snart</p>
+            </div>
 
-                <div className="mt-3 pt-3 border-t">
-                  {/* Availability — placeholder until NOBIL real-time data */}
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-1.5">
-                      <div className="h-2 w-2 rounded-full bg-muted-foreground/30" />
-                      {selected.capacity != null ? (
-                        <span className="text-xs text-muted-foreground">
-                          <span className="font-semibold text-foreground">{selected.capacity}</span> ladepunkter
-                        </span>
-                      ) : (
-                        <span className="text-xs text-muted-foreground">Tilgjengelighet</span>
-                      )}
-                    </div>
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground/70 font-medium">Sanntidsdata snart</span>
-                  </div>
-
-                  {selected.connectors.length > 0 && (
-                    <>
-                      <div className="flex items-center gap-1 mb-1.5">
-                        <span className="text-xs text-muted-foreground font-medium">Kontakttyper</span>
-                        <button
-                          onClick={() => setShowConnectorInfo(true)}
-                          className="p-0.5 rounded text-muted-foreground/60 hover:text-muted-foreground transition-colors"
-                          aria-label="Forklaring av kontakttyper"
-                        >
-                          <Info className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
-                      <div className="flex flex-wrap gap-1.5">
-                        {selected.connectors.map((c) => (
-                          <span key={c} className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground font-medium">
-                            {c}
-                          </span>
-                        ))}
-                      </div>
-                    </>
-                  )}
+            {/* What type */}
+            {selected.connectors.length > 0 && (
+              <div className="border-t pt-3">
+                <p className="text-xs text-muted-foreground font-medium mb-1.5">Kontakttyper</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {selected.connectors.map((c) => (
+                    <button
+                      key={c}
+                      onClick={() => setShowConnectorInfo(true)}
+                      className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground font-medium hover:bg-muted-foreground/20 transition-colors"
+                    >
+                      {c}
+                    </button>
+                  ))}
                 </div>
               </div>
-            </div>
+            )}
           </div>
         )}
       </div>
