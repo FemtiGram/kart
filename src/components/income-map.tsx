@@ -305,7 +305,7 @@ export function IncomeMap() {
               <p>
                 <strong className="text-foreground">Datagrunnlag:</strong> Tall for 2024 fra SSB, tabell{" "}
                 <a
-                  href="https://www.ssb.no/statbank/table/InntektStruk13"
+                  href="https://www.ssb.no/inntekt-og-forbruk/inntekt-og-formue/statistikk/inntekts-og-formuesstatistikk-for-husholdninger"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="underline hover:text-foreground transition-colors"
