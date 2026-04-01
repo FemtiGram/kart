@@ -4,7 +4,24 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { Search, MapPin, Mountain, Loader2, Layers, X, ChevronDown, ChevronUp, LocateFixed } from "lucide-react";
+import { Search, MapPin, Mountain, Loader2, Layers, X, ChevronDown, ChevronUp, LocateFixed, Wind, Droplets, Sun, Cloud, CloudSun, CloudRain, CloudSnow, CloudLightning, CloudFog, CloudHail, CloudDrizzle, Moon, ExternalLink } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+
+function weatherIcon(symbolCode: string): LucideIcon {
+  const c = symbolCode.toLowerCase();
+  if (c.includes("thunder")) return CloudLightning;
+  if (c.includes("snow") && c.includes("rain")) return CloudHail;
+  if (c.includes("sleet")) return CloudHail;
+  if (c.includes("snow")) return CloudSnow;
+  if (c.includes("heavyrain") || c.includes("rain")) return CloudRain;
+  if (c.includes("drizzle") || c.includes("lightrain")) return CloudDrizzle;
+  if (c.includes("fog")) return CloudFog;
+  if (c.includes("cloudy") && c.includes("partly")) return CloudSun;
+  if (c.includes("cloudy")) return Cloud;
+  if (c.includes("fair")) return CloudSun;
+  if (c.includes("night")) return Moon;
+  return Sun;
+}
 
 // Fix Leaflet default marker icons in Next.js
 delete (L.Icon.Default.prototype as unknown as Record<string, unknown>)._getIconUrl;
@@ -45,9 +62,18 @@ interface ElevationResult {
   terrengtype?: string;
 }
 
+interface WeatherResult {
+  temperature: number;
+  windSpeed: number;
+  precipitation: number;
+  symbolCode: string;
+}
+
 interface SelectedLocation {
   address: Address;
   elevation: ElevationResult | null;
+  weather: WeatherResult | null;
+  yrSearchName: string;
 }
 
 interface DevLogEntry {
@@ -73,7 +99,7 @@ function MapClickHandler({ onMapClick }: { onMapClick: (lat: number, lon: number
 function FlyTo({ lat, lon }: { lat: number; lon: number }) {
   const map = useMap();
   useEffect(() => {
-    map.flyTo([lat, lon], 13, { duration: 1.2 });
+    map.flyTo([lat, lon], 16, { duration: 1.2 });
   }, [lat, lon, map]);
   return null;
 }
@@ -84,6 +110,7 @@ export function ElevationMap() {
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const [selected, setSelected] = useState<SelectedLocation | null>(null);
   const [loadingElevation, setLoadingElevation] = useState(false);
+  const [loadingWeather, setLoadingWeather] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const [tileLayer, setTileLayer] = useState<TileLayerKey>("kart");
   const [locating, setLocating] = useState(false);
@@ -156,84 +183,108 @@ export function ElevationMap() {
   const isWithinNorway = (lat: number, lon: number) =>
     lat >= 57.0 && lat <= 81.0 && lon >= 4.0 && lon <= 32.0;
 
-  const handleMapClick = async (lat: number, lon: number) => {
-    if (!isWithinNorway(lat, lon)) {
-      setQuery(`${lat.toFixed(5)}, ${lon.toFixed(5)}`);
-      setSelected({
-        address: {
-          adressetekst: "Utenfor Norge",
-          poststed: "",
-          kommunenavn: "",
-          representasjonspunkt: { lat, lon },
-        },
-        elevation: null,
-      });
-      return;
-    }
-    setShowDropdown(false);
-    setQuery(`${lat.toFixed(5)}, ${lon.toFixed(5)}`);
-    setSuggestions([]);
-    setLoadingElevation(true);
-    setSelected({
-      address: {
-        adressetekst: `${lat.toFixed(5)}, ${lon.toFixed(5)}`,
-        poststed: "",
-        kommunenavn: "",
-        representasjonspunkt: { lat, lon },
-      },
-      elevation: null,
-    });
-
+  const fetchNearestName = useCallback(async (lat: number, lon: number): Promise<string> => {
+    // Try stedsnavn first (covers mountains, lakes, peaks etc.)
     try {
-      const url = `https://ws.geonorge.no/hoydedata/v1/punkt?koordsys=4326&nord=${lat}&ost=${lon}`;
-      const data = await devFetch(url, (d: unknown) => {
-        const result = d as { punkter?: Array<{ z: number | null; datakilde: string }> };
-        const p = result.punkter?.[0];
-        return p?.z != null ? `${p.z.toFixed(1)} moh. (${p.datakilde})` : "Ingen data";
-      });
-      const høyde = (data as { punkter?: Array<{ z: number | null; datakilde: string; terrengtype?: string }> }).punkter?.[0];
-      setSelected((prev) =>
-        prev && {
-          ...prev,
-          elevation: høyde
-            ? { datakilde: høyde.datakilde, høyde: høyde.z, terrengtype: høyde.terrengtype }
-            : null,
+      const data = await devFetch(
+        `https://ws.geonorge.no/stedsnavn/v1/punkt?nord=${lat}&ost=${lon}&koordsys=4326&radius=5000&treffPerSide=1`,
+        (d: unknown) => {
+          const result = d as { navn?: Array<{ stedsnavn?: Array<{ skrivemåte: string }> }> };
+          return result.navn?.[0]?.stedsnavn?.[0]?.skrivemåte ?? "Ingen stedsnavn";
         }
       );
-    } catch {
-      setSelected((prev) => prev && { ...prev, elevation: null });
-    } finally {
-      setLoadingElevation(false);
+      const name = (data as { navn?: Array<{ stedsnavn?: Array<{ skrivemåte: string }> }> }).navn?.[0]?.stedsnavn?.[0]?.skrivemåte;
+      if (name) return name;
+    } catch { /* fall through */ }
+
+    // Fall back to nearest address
+    try {
+      const data = await devFetch(
+        `https://ws.geonorge.no/adresser/v1/punktsok?lat=${lat}&lon=${lon}&radius=2000&utkoordsys=4326&treffPerSide=1`,
+        (d: unknown) => {
+          const result = d as { adresser?: Array<{ adressetekst: string; poststed: string }> };
+          const a = result.adresser?.[0];
+          return a ? `${a.adressetekst}, ${a.poststed}` : "Ingen adresse";
+        }
+      );
+      const addr = (data as { adresser?: Array<{ adressetekst: string; poststed: string }> }).adresser?.[0];
+      if (addr) return `${addr.adressetekst}, ${addr.poststed}`;
+    } catch { /* fall through */ }
+
+    return `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+  }, [devFetch]);
+
+  const fetchLocationData = useCallback(async (address: Address) => {
+    const { lat, lon } = address.representasjonspunkt;
+    setLoadingElevation(true);
+    setLoadingWeather(true);
+
+    // Fetch elevation and weather in parallel
+    const [elevationData, weatherData] = await Promise.allSettled([
+      devFetch(
+        `https://ws.geonorge.no/hoydedata/v1/punkt?koordsys=4326&nord=${lat}&ost=${lon}`,
+        (d: unknown) => {
+          const result = d as { punkter?: Array<{ z: number | null; datakilde: string }> };
+          const p = result.punkter?.[0];
+          return p?.z != null ? `${p.z.toFixed(1)} moh. (${p.datakilde})` : "Ingen data";
+        }
+      ),
+      devFetch(
+        `/api/weather?lat=${lat}&lon=${lon}`,
+        (d: unknown) => {
+          const w = d as WeatherResult;
+          return `${w.temperature}°C, ${w.symbolCode}`;
+        }
+      ),
+    ]);
+
+    const høyde = elevationData.status === "fulfilled"
+      ? (elevationData.value as { punkter?: Array<{ z: number | null; datakilde: string; terrengtype?: string }> }).punkter?.[0]
+      : null;
+
+    setSelected((prev) => ({
+      yrSearchName: prev?.yrSearchName ?? "",
+      address,
+      elevation: høyde ? { datakilde: høyde.datakilde, høyde: høyde.z, terrengtype: høyde.terrengtype } : null,
+      weather: weatherData.status === "fulfilled" ? (weatherData.value as WeatherResult) : null,
+    }));
+
+    setLoadingElevation(false);
+    setLoadingWeather(false);
+  }, [devFetch]);
+
+  const handleMapClick = async (lat: number, lon: number) => {
+    setShowDropdown(false);
+    setSuggestions([]);
+
+    if (!isWithinNorway(lat, lon)) {
+      setQuery(`${lat.toFixed(5)}, ${lon.toFixed(5)}`);
+      setSelected({ address: { adressetekst: "Utenfor Norge", poststed: "", kommunenavn: "", representasjonspunkt: { lat, lon } }, elevation: null, weather: null, yrSearchName: "" });
+      return;
     }
+
+    const address: Address = {
+      adressetekst: `${lat.toFixed(5)}, ${lon.toFixed(5)}`,
+      poststed: "",
+      kommunenavn: "",
+      representasjonspunkt: { lat, lon },
+    };
+    setQuery(address.adressetekst);
+    setSelected({ address, elevation: null, weather: null, yrSearchName: "" });
+
+    const [yrSearchName] = await Promise.all([
+      fetchNearestName(lat, lon),
+      fetchLocationData(address),
+    ]);
+    setSelected((prev) => prev && { ...prev, yrSearchName });
   };
 
   const handleSelect = async (address: Address) => {
     setShowDropdown(false);
     setQuery(`${address.adressetekst}, ${address.poststed}`);
     setSuggestions([]);
-    setLoadingElevation(true);
-    setSelected({ address, elevation: null });
-
-    try {
-      const { lat, lon } = address.representasjonspunkt;
-      const url = `https://ws.geonorge.no/hoydedata/v1/punkt?koordsys=4326&nord=${lat}&ost=${lon}`;
-      const data = await devFetch(url, (d: unknown) => {
-        const result = d as { punkter?: Array<{ z: number | null; datakilde: string }> };
-        const p = result.punkter?.[0];
-        return p?.z != null ? `${p.z.toFixed(1)} moh. (${p.datakilde})` : "Ingen data";
-      });
-      const høyde = (data as { punkter?: Array<{ z: number | null; datakilde: string; terrengtype?: string }> }).punkter?.[0];
-      setSelected({
-        address,
-        elevation: høyde
-          ? { datakilde: høyde.datakilde, høyde: høyde.z, terrengtype: høyde.terrengtype }
-          : null,
-      });
-    } catch {
-      setSelected((prev) => prev && { ...prev, elevation: null });
-    } finally {
-      setLoadingElevation(false);
-    }
+    setSelected({ address, elevation: null, weather: null, yrSearchName: `${address.adressetekst}, ${address.poststed}` });
+    fetchLocationData(address);
   };
 
   const lat = selected?.address.representasjonspunkt.lat ?? 65;
@@ -392,6 +443,50 @@ export function ElevationMap() {
                 </div>
               </div>
             </div>
+
+            {/* Weather row */}
+            {(loadingWeather || selected.weather) && (
+              <div className="mt-3 pt-3 border-t">
+                {loadingWeather ? (
+                  <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" /> Henter vær...
+                  </div>
+                ) : selected.weather && (() => {
+                  const WeatherIcon = weatherIcon(selected.weather.symbolCode);
+                  const yrUrl = `https://www.yr.no/nb/søk?q=${encodeURIComponent(selected.yrSearchName || selected.address.adressetekst)}`;
+                  return (
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <WeatherIcon className="h-9 w-9 shrink-0" style={{ color: "var(--kv-blue)" }} />
+                        <div className="flex flex-wrap gap-x-4 gap-y-0.5">
+                          <span className="text-xl font-extrabold" style={{ color: "var(--kv-blue)" }}>
+                            {selected.weather.temperature.toFixed(1)}°C
+                          </span>
+                          <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                            <span className="flex items-center gap-1">
+                              <Wind className="h-3.5 w-3.5" />
+                              {selected.weather.windSpeed.toFixed(1)} m/s
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Droplets className="h-3.5 w-3.5" />
+                              {selected.weather.precipitation.toFixed(1)} mm
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      <a
+                        href={yrUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors shrink-0"
+                      >
+                        yr.no <ExternalLink className="h-3 w-3" />
+                      </a>
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
           </div>
         )}
 
