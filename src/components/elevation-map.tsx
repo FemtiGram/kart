@@ -178,6 +178,7 @@ export function ElevationMap() {
               ref={inputRef}
               value={query}
               onChange={handleInput}
+              autoFocus
               onFocus={() => suggestions.length > 0 && setShowDropdown(true)}
               onBlur={() => setTimeout(() => setShowDropdown(false), 150)}
               placeholder="Søk etter en adresse i Norge..."

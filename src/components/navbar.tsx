@@ -12,11 +12,7 @@ import {
 } from "@/components/ui/sheet";
 
 const navLinks = [
-  { href: "/", label: "Hjem" },
   { href: "/map", label: "Kart" },
-  { href: "/data", label: "Data" },
-  { href: "/stedsnavn", label: "Stedsnavn" },
-  { href: "/about", label: "Om" },
 ];
 
 export function Navbar() {
