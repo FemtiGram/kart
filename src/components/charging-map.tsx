@@ -52,6 +52,7 @@ function PanToSelected({ station }: { station: Station | null }) {
 
 async function fetchStations(lat: number, lon: number): Promise<Station[]> {
   const res = await fetch(`/api/charging?lat=${lat}&lon=${lon}`);
+  if (!res.ok) throw new Error("fetch failed");
   const data = await res.json();
   return Array.isArray(data) ? data : [];
 }

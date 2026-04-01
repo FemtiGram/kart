@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
   const bbox = `${lat - dlat},${lon - dlon},${lat + dlat},${lon + dlon}`;
 
   const query = `
-    [out:json][timeout:30];
+    [out:json][timeout:8];
     node["amenity"="charging_station"](${bbox});
     out body;
   `;
@@ -19,6 +19,7 @@ export async function GET(request: NextRequest) {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: `data=${encodeURIComponent(query)}`,
+    signal: AbortSignal.timeout(9000),
     next: { revalidate: 21600 }, // 6h cache
   });
 
