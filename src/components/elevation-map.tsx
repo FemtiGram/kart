@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { Search, MapPin, Mountain, Loader2, Layers, X, ChevronDown, ChevronUp } from "lucide-react";
@@ -41,7 +41,7 @@ interface Address {
 
 interface ElevationResult {
   datakilde: string;
-  høyde: number;
+  høyde: number | null;
   terrengtype?: string;
 }
 
@@ -60,6 +60,15 @@ interface DevLogEntry {
 }
 
 let logId = 0;
+
+function MapClickHandler({ onMapClick }: { onMapClick: (lat: number, lon: number) => void }) {
+  useMapEvents({
+    click(e) {
+      onMapClick(e.latlng.lat, e.latlng.lng);
+    },
+  });
+  return null;
+}
 
 function FlyTo({ lat, lon }: { lat: number; lon: number }) {
   const map = useMap();
@@ -131,6 +140,60 @@ export function ElevationMap() {
     debounceRef.current = setTimeout(() => searchAddresses(val), 300);
   };
 
+  const isWithinNorway = (lat: number, lon: number) =>
+    lat >= 57.0 && lat <= 81.0 && lon >= 4.0 && lon <= 32.0;
+
+  const handleMapClick = async (lat: number, lon: number) => {
+    if (!isWithinNorway(lat, lon)) {
+      setQuery(`${lat.toFixed(5)}, ${lon.toFixed(5)}`);
+      setSelected({
+        address: {
+          adressetekst: "Utenfor Norge",
+          poststed: "",
+          kommunenavn: "",
+          representasjonspunkt: { lat, lon },
+        },
+        elevation: null,
+      });
+      return;
+    }
+    setShowDropdown(false);
+    setQuery(`${lat.toFixed(5)}, ${lon.toFixed(5)}`);
+    setSuggestions([]);
+    setLoadingElevation(true);
+    setSelected({
+      address: {
+        adressetekst: `${lat.toFixed(5)}, ${lon.toFixed(5)}`,
+        poststed: "",
+        kommunenavn: "",
+        representasjonspunkt: { lat, lon },
+      },
+      elevation: null,
+    });
+
+    try {
+      const url = `https://ws.geonorge.no/hoydedata/v1/punkt?koordsys=4326&nord=${lat}&ost=${lon}`;
+      const data = await devFetch(url, (d: unknown) => {
+        const result = d as { punkter?: Array<{ z: number | null; datakilde: string }> };
+        const p = result.punkter?.[0];
+        return p?.z != null ? `${p.z.toFixed(1)} moh. (${p.datakilde})` : "Ingen data";
+      });
+      const høyde = (data as { punkter?: Array<{ z: number | null; datakilde: string; terrengtype?: string }> }).punkter?.[0];
+      setSelected((prev) =>
+        prev && {
+          ...prev,
+          elevation: høyde
+            ? { datakilde: høyde.datakilde, høyde: høyde.z, terrengtype: høyde.terrengtype }
+            : null,
+        }
+      );
+    } catch {
+      setSelected((prev) => prev && { ...prev, elevation: null });
+    } finally {
+      setLoadingElevation(false);
+    }
+  };
+
   const handleSelect = async (address: Address) => {
     setShowDropdown(false);
     setQuery(`${address.adressetekst}, ${address.poststed}`);
@@ -142,11 +205,11 @@ export function ElevationMap() {
       const { lat, lon } = address.representasjonspunkt;
       const url = `https://ws.geonorge.no/hoydedata/v1/punkt?koordsys=4326&nord=${lat}&ost=${lon}`;
       const data = await devFetch(url, (d: unknown) => {
-        const result = d as { punkter?: Array<{ z: number; datakilde: string }> };
+        const result = d as { punkter?: Array<{ z: number | null; datakilde: string }> };
         const p = result.punkter?.[0];
-        return p ? `${p.z.toFixed(1)} moh. (${p.datakilde})` : "Ingen data";
+        return p?.z != null ? `${p.z.toFixed(1)} moh. (${p.datakilde})` : "Ingen data";
       });
-      const høyde = (data as { punkter?: Array<{ z: number; datakilde: string; terrengtype?: string }> }).punkter?.[0];
+      const høyde = (data as { punkter?: Array<{ z: number | null; datakilde: string; terrengtype?: string }> }).punkter?.[0];
       setSelected({
         address,
         elevation: høyde
@@ -210,13 +273,14 @@ export function ElevationMap() {
       </div>
 
       {/* Map */}
-      <div className="relative grow">
+      <div className="relative grow [&_.leaflet-grab]:cursor-pointer [&_.leaflet-dragging_.leaflet-grab]:cursor-grabbing">
         <MapContainer
           center={[65, 14]}
           zoom={5}
           style={{ height: "100%", width: "100%" }}
           zoomControl={true}
         >
+          <MapClickHandler onMapClick={handleMapClick} />
           <TileLayer
             key={tileLayer}
             url={TILE_LAYERS[tileLayer].url}
@@ -231,7 +295,7 @@ export function ElevationMap() {
                   <strong>{selected.address.adressetekst}</strong>
                   <br />
                   {selected.address.poststed}, {selected.address.kommunenavn}
-                  {selected.elevation && (
+                  {selected.elevation?.høyde != null && (
                     <><br /><span className="font-semibold">{selected.elevation.høyde.toFixed(1)} moh.</span></>
                   )}
                 </Popup>
@@ -274,15 +338,17 @@ export function ElevationMap() {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-bold text-sm truncate">{selected.address.adressetekst}</p>
-                <p className="text-xs text-muted-foreground truncate">
-                  {selected.address.poststed}, {selected.address.kommunenavn}
-                </p>
+                {selected.address.poststed && (
+                  <p className="text-xs text-muted-foreground truncate">
+                    {selected.address.poststed}, {selected.address.kommunenavn}
+                  </p>
+                )}
                 <div className="mt-2">
                   {loadingElevation ? (
                     <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
                       <Loader2 className="h-3.5 w-3.5 animate-spin" /> Henter høyde...
                     </div>
-                  ) : selected.elevation ? (
+                  ) : selected.elevation?.høyde != null ? (
                     <div className="flex items-baseline gap-1.5">
                       <span className="text-2xl font-extrabold" style={{ color: "var(--kv-blue)" }}>
                         {selected.elevation.høyde.toFixed(1)}
