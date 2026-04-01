@@ -157,10 +157,11 @@ export function ProtectedAreasMap() {
   }, []);
 
   useEffect(() => {
+    if (loading) return;
     const pref = localStorage.getItem("mapgram-use-location");
     if (pref !== null) handleLocationChoice(pref === "yes");
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [loading]);
 
   const handleLocationChoice = (useLocation: boolean) => {
     setAsked(true);
