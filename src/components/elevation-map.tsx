@@ -87,7 +87,6 @@ interface DevLogEntry {
   ok: boolean;
 }
 
-let logId = 0;
 
 function MapClickHandler({ onMapClick }: { onMapClick: (lat: number, lon: number) => void }) {
   useMapEvents({
@@ -117,6 +116,7 @@ export function ElevationMap() {
   const [tileLayer, setTileLayer] = useState<TileLayerKey>("kart");
   const [locating, setLocating] = useState(false);
   const [devLog, setDevLog] = useState<DevLogEntry[]>([]);
+  const logIdRef = useRef(0);
   const [devOpen, setDevOpen] = useState(true);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -129,7 +129,7 @@ export function ElevationMap() {
     if (DEV) {
       setDevLog((prev) => [
         {
-          id: ++logId,
+          id: ++logIdRef.current,
           time: new Date().toLocaleTimeString("no-NO"),
           url,
           duration,
@@ -326,7 +326,7 @@ export function ElevationMap() {
               onFocus={() => suggestions.length > 0 && setShowDropdown(true)}
               onBlur={() => setTimeout(() => setShowDropdown(false), 150)}
               placeholder="Søk etter en adresse i Norge..."
-              className="flex-1 bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground"
+              className="flex-1 bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground text-[16px] sm:text-sm"
             />
           </div>
           <Button
@@ -413,33 +413,36 @@ export function ElevationMap() {
         {/* Elevation card */}
         {selected && (
           <div
-            className="absolute bottom-4 left-3 right-3 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 sm:w-96 z-[999] bg-white rounded-2xl shadow-xl px-4 py-4 border"
-            style={{ borderTop: "3px solid var(--kv-green)" }}
+            className="absolute bottom-4 left-3 right-3 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 sm:w-96 z-[999] bg-white rounded-2xl shadow-xl px-4 py-4"
+            style={{ border: "1.5px solid var(--kv-green-light, #b3e6c8)" }}
           >
-            <div className="flex items-start gap-3">
-              <div
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg"
-                style={{ background: "var(--kv-blue-light, #e8edf8)" }}
-              >
-                <Mountain className="h-5 w-5" style={{ color: "var(--kv-blue)" }} />
-              </div>
+            <div className="flex items-start">
               <div className="flex-1 min-w-0">
                 <div className="flex items-start justify-between gap-2">
-                  <p className="font-bold text-sm truncate">{selected.address.adressetekst}</p>
-                  <a
-                    href={`https://www.google.com/maps/dir/?api=1&destination=${selected.mapsCoords?.lat ?? selected.address.representasjonspunkt.lat},${selected.mapsCoords?.lon ?? selected.address.representasjonspunkt.lon}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors shrink-0 mt-0.5"
+                  <div className="min-w-0">
+                    <p className="font-bold text-sm truncate">{selected.address.adressetekst}</p>
+                    {selected.address.poststed && (
+                      <p className="text-xs text-muted-foreground truncate">
+                        {selected.address.poststed}, {selected.address.kommunenavn}
+                      </p>
+                    )}
+                    <a
+                      href={`https://www.google.com/maps/dir/?api=1&destination=${selected.mapsCoords?.lat ?? selected.address.representasjonspunkt.lat},${selected.mapsCoords?.lon ?? selected.address.representasjonspunkt.lon}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors mt-1 w-fit"
+                    >
+                      Veibeskrivelse <ExternalLink className="h-3 w-3" />
+                    </a>
+                  </div>
+                  <button
+                    onClick={() => setSelected(null)}
+                    className="shrink-0 p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                    aria-label="Lukk"
                   >
-                    Veibeskrivelse <ExternalLink className="h-3 w-3" />
-                  </a>
+                    <X className="h-4 w-4" />
+                  </button>
                 </div>
-                {selected.address.poststed && (
-                  <p className="text-xs text-muted-foreground truncate">
-                    {selected.address.poststed}, {selected.address.kommunenavn}
-                  </p>
-                )}
                 <div className="mt-2">
                   {loadingElevation ? (
                     <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
@@ -456,7 +459,7 @@ export function ElevationMap() {
                     <p className="text-sm text-muted-foreground">Ingen høydedata</p>
                   )}
                   {selected.elevation?.datakilde && (
-                    <p className="text-[10px] text-muted-foreground mt-1">
+                    <p className="text-xs text-muted-foreground mt-1">
                       Kilde: {selected.elevation.datakilde}
                     </p>
                   )}
