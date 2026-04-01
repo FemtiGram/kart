@@ -27,24 +27,15 @@ export function Footer() {
               className="flex items-center gap-2 font-extrabold text-base w-fit"
               style={{ color: "var(--kv-blue)" }}
             >
-              <svg
-                width="22"
-                height="22"
-                viewBox="0 0 28 28"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-                aria-hidden="true"
-              >
-                <rect width="28" height="28" rx="4" fill="#00B140" />
-                <path
-                  d="M6 20L10 12L14 17L18 10L22 20"
-                  stroke="white"
-                  strokeWidth="2.2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="22" height="22" aria-hidden="true">
+                <rect width="32" height="32" rx="7" fill="#003da5"/>
+                <g transform="translate(5, 5) scale(0.9375)" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none">
+                  <polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/>
+                  <line x1="9" x2="9" y1="3" y2="18"/>
+                  <line x1="15" x2="15" y1="6" y2="21"/>
+                </g>
               </svg>
-              Kartverket
+              MapGram
             </Link>
             <p className="text-sm text-muted-foreground max-w-xs leading-relaxed">
               Et åpent utforskningsverktøy for Norges geografi, kart og
@@ -88,7 +79,7 @@ export function Footer() {
         <Separator className="my-8" />
 
         <div className="flex flex-col md:flex-row items-center justify-between gap-3 text-xs text-muted-foreground">
-          <p>© {new Date().getFullYear()} Kartverket Explorer</p>
+          <p>© {new Date().getFullYear()} MapGram</p>
           <p>
             Bygd med{" "}
             <span style={{ color: "var(--kv-green)" }}>♥</span>

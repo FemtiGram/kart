@@ -11,7 +11,7 @@ const nunitoSans = Nunito_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Kartverket Explorer",
+  title: "MapGram",
   description: "Explore Norwegian geography, maps, and open geodata",
 };
 

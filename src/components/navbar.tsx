@@ -27,7 +27,15 @@ export function Navbar() {
       <div className="container mx-auto flex h-14 items-center justify-between px-6 md:px-16">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2.5">
-          <img src="/logo.svg" alt="Kartverket" className="h-10 w-auto" />
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" className="h-8 w-8 shrink-0">
+            <rect width="32" height="32" rx="7" fill="#003da5"/>
+            <g transform="translate(5, 5) scale(0.9375)" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none">
+              <polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/>
+              <line x1="9" x2="9" y1="3" y2="18"/>
+              <line x1="15" x2="15" y1="6" y2="21"/>
+            </g>
+          </svg>
+          <span className="font-extrabold text-base tracking-tight">MapGram</span>
         </Link>
 
         {/* Desktop nav */}
@@ -58,7 +66,7 @@ export function Navbar() {
           <SheetContent side="right" className="w-72">
             <SheetHeader>
               <SheetTitle className="text-left font-extrabold text-base">
-                Kartverket
+                MapGram
               </SheetTitle>
             </SheetHeader>
             <nav className="mt-6 flex flex-col">
