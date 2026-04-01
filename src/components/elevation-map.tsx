@@ -4,7 +4,8 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { Search, MapPin, Mountain, Loader2, Layers, X, ChevronDown, ChevronUp, LocateFixed, Wind, Droplets, Sun, Cloud, CloudSun, CloudRain, CloudSnow, CloudLightning, CloudFog, CloudHail, CloudDrizzle, Moon, ExternalLink } from "lucide-react";
+import { Search, MapPin, Mountain, Loader2, X, ChevronDown, ChevronUp, LocateFixed, Wind, Droplets, Sun, Cloud, CloudSun, CloudRain, CloudSnow, CloudLightning, CloudFog, CloudHail, CloudDrizzle, Moon, ExternalLink, Map } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import type { LucideIcon } from "lucide-react";
 
 function weatherIcon(symbolCode: string): LucideIcon {
@@ -74,6 +75,7 @@ interface SelectedLocation {
   elevation: ElevationResult | null;
   weather: WeatherResult | null;
   yrSearchName: string;
+  mapsCoords?: { lat: number; lon: number };
 }
 
 interface DevLogEntry {
@@ -183,7 +185,7 @@ export function ElevationMap() {
   const isWithinNorway = (lat: number, lon: number) =>
     lat >= 57.0 && lat <= 81.0 && lon >= 4.0 && lon <= 32.0;
 
-  const fetchNearestName = useCallback(async (lat: number, lon: number): Promise<string> => {
+  const fetchNearestName = useCallback(async (lat: number, lon: number): Promise<{ name: string; roadCoords?: { lat: number; lon: number } }> => {
     // Try stedsnavn first (covers mountains, lakes, peaks etc.)
     try {
       const data = await devFetch(
@@ -194,7 +196,21 @@ export function ElevationMap() {
         }
       );
       const name = (data as { navn?: Array<{ stedsnavn?: Array<{ skrivemåte: string }> }> }).navn?.[0]?.stedsnavn?.[0]?.skrivemåte;
-      if (name) return name;
+      if (name) {
+        // Still fetch nearest road for Maps navigation
+        try {
+          const roadData = await devFetch(
+            `https://ws.geonorge.no/adresser/v1/punktsok?lat=${lat}&lon=${lon}&radius=5000&utkoordsys=4326&treffPerSide=1`,
+            (d: unknown) => {
+              const r = d as { adresser?: Array<{ adressetekst: string; representasjonspunkt?: { lat: number; lon: number } }> };
+              return r.adresser?.[0]?.adressetekst ?? "Ingen vei";
+            }
+          );
+          const road = (roadData as { adresser?: Array<{ representasjonspunkt?: { lat: number; lon: number } }> }).adresser?.[0];
+          return { name, roadCoords: road?.representasjonspunkt };
+        } catch { /* ignore */ }
+        return { name };
+      }
     } catch { /* fall through */ }
 
     // Fall back to nearest address
@@ -207,11 +223,11 @@ export function ElevationMap() {
           return a ? `${a.adressetekst}, ${a.poststed}` : "Ingen adresse";
         }
       );
-      const addr = (data as { adresser?: Array<{ adressetekst: string; poststed: string }> }).adresser?.[0];
-      if (addr) return `${addr.adressetekst}, ${addr.poststed}`;
+      const addr = (data as { adresser?: Array<{ adressetekst: string; poststed: string; representasjonspunkt?: { lat: number; lon: number } }> }).adresser?.[0];
+      if (addr) return { name: `${addr.adressetekst}, ${addr.poststed}`, roadCoords: addr.representasjonspunkt };
     } catch { /* fall through */ }
 
-    return `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+    return { name: `${lat.toFixed(4)}, ${lon.toFixed(4)}` };
   }, [devFetch]);
 
   const fetchLocationData = useCallback(async (address: Address) => {
@@ -244,6 +260,7 @@ export function ElevationMap() {
 
     setSelected((prev) => ({
       yrSearchName: prev?.yrSearchName ?? "",
+      mapsCoords: prev?.mapsCoords ?? address.representasjonspunkt,
       address,
       elevation: høyde ? { datakilde: høyde.datakilde, høyde: høyde.z, terrengtype: høyde.terrengtype } : null,
       weather: weatherData.status === "fulfilled" ? (weatherData.value as WeatherResult) : null,
@@ -259,7 +276,7 @@ export function ElevationMap() {
 
     if (!isWithinNorway(lat, lon)) {
       setQuery(`${lat.toFixed(5)}, ${lon.toFixed(5)}`);
-      setSelected({ address: { adressetekst: "Utenfor Norge", poststed: "", kommunenavn: "", representasjonspunkt: { lat, lon } }, elevation: null, weather: null, yrSearchName: "" });
+      setSelected({ address: { adressetekst: "Utenfor Norge", poststed: "", kommunenavn: "", representasjonspunkt: { lat, lon } }, elevation: null, weather: null, yrSearchName: "", mapsCoords: { lat, lon } });
       return;
     }
 
@@ -270,20 +287,20 @@ export function ElevationMap() {
       representasjonspunkt: { lat, lon },
     };
     setQuery(address.adressetekst);
-    setSelected({ address, elevation: null, weather: null, yrSearchName: "" });
+    setSelected({ address, elevation: null, weather: null, yrSearchName: "", mapsCoords: { lat, lon } });
 
-    const [yrSearchName] = await Promise.all([
+    const [nearest] = await Promise.all([
       fetchNearestName(lat, lon),
       fetchLocationData(address),
     ]);
-    setSelected((prev) => prev && { ...prev, yrSearchName });
+    setSelected((prev) => prev && { ...prev, yrSearchName: nearest.name, mapsCoords: nearest.roadCoords ?? { lat, lon } });
   };
 
   const handleSelect = async (address: Address) => {
     setShowDropdown(false);
     setQuery(`${address.adressetekst}, ${address.poststed}`);
     setSuggestions([]);
-    setSelected({ address, elevation: null, weather: null, yrSearchName: `${address.adressetekst}, ${address.poststed}` });
+    setSelected({ address, elevation: null, weather: null, yrSearchName: `${address.adressetekst}, ${address.poststed}`, mapsCoords: address.representasjonspunkt });
     fetchLocationData(address);
   };
 
@@ -293,9 +310,9 @@ export function ElevationMap() {
   return (
     <div className="flex flex-col" style={{ height: "calc(100svh - 57px)" }}>
       {/* Search bar */}
-      <div className="relative z-[1000] px-4 py-4 md:px-8 shrink-0" style={{ background: "var(--kv-blue)" }}>
-        <div className="max-w-xl mx-auto relative flex gap-2">
-          <div className="flex flex-1 items-center gap-2 bg-white rounded-xl px-4 py-3 shadow-lg">
+      <div className="relative z-[1000] px-4 py-4 md:px-8 shrink-0 bg-background border-b">
+        <div className="max-w-xl mx-auto relative flex flex-col sm:flex-row sm:items-center gap-2">
+          <div className="flex flex-1 items-center gap-2 bg-background border rounded-xl px-4 py-3">
             {loadingSuggestions ? (
               <Loader2 className="h-4 w-4 shrink-0 animate-spin text-muted-foreground" />
             ) : (
@@ -312,22 +329,19 @@ export function ElevationMap() {
               className="flex-1 bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground"
             />
           </div>
-          <button
+          <Button
             onClick={handleLocate}
             disabled={locating}
-            title="Bruk min posisjon"
-            className="flex items-center gap-2 px-4 rounded-xl shadow-lg text-sm font-semibold transition-opacity disabled:opacity-50"
-            style={{ background: "var(--kv-green)", color: "#fff" }}
+            variant="secondary"
+            size="lg"
+            className="w-full sm:w-auto shadow-lg"
           >
-            {locating
-              ? <Loader2 className="h-4 w-4 animate-spin" />
-              : <LocateFixed className="h-4 w-4" />
-            }
-            <span className="hidden sm:inline">Min posisjon</span>
-          </button>
+            {locating ? <Loader2 className="animate-spin" /> : <LocateFixed />}
+            Min posisjon
+          </Button>
 
           {showDropdown && suggestions.length > 0 && (
-            <ul className="absolute top-full mt-1 left-0 right-0 bg-white rounded-xl shadow-xl border overflow-hidden">
+            <ul className="absolute top-full mt-1 left-0 right-0 bg-background rounded-xl shadow-xl border overflow-hidden">
               {suggestions.map((addr, i) => (
                 <li key={i}>
                   <button
@@ -382,19 +396,15 @@ export function ElevationMap() {
         </MapContainer>
 
         {/* Tile layer toggle */}
-        <div className="absolute top-3 right-3 z-[999] flex rounded-lg overflow-hidden shadow border bg-white">
-          {(Object.keys(TILE_LAYERS) as TileLayerKey[]).map((key) => (
+        <div className="absolute top-3 right-3 z-[999] flex rounded-lg border bg-white shadow-md overflow-hidden">
+          {(["kart", "terreng"] as TileLayerKey[]).map((key, i) => (
             <button
               key={key}
               onClick={() => setTileLayer(key)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold transition-colors ${
-                tileLayer === key
-                  ? "text-white"
-                  : "text-muted-foreground hover:bg-muted"
-              }`}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold transition-colors ${i > 0 ? "border-l" : ""} ${tileLayer === key ? "text-white" : "text-muted-foreground hover:bg-muted"}`}
               style={tileLayer === key ? { background: "var(--kv-blue)" } : {}}
             >
-              <Layers className="h-3 w-3" />
+              {key === "kart" ? <Map className="h-3.5 w-3.5" /> : <Mountain className="h-3.5 w-3.5" />}
               {TILE_LAYERS[key].label}
             </button>
           ))}
@@ -403,7 +413,7 @@ export function ElevationMap() {
         {/* Elevation card */}
         {selected && (
           <div
-            className="absolute bottom-6 left-1/2 -translate-x-1/2 z-[999] bg-white rounded-2xl shadow-xl px-6 py-4 min-w-[260px] max-w-sm w-full border"
+            className="absolute bottom-4 left-3 right-3 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 sm:w-96 z-[999] bg-white rounded-2xl shadow-xl px-4 py-4 border"
             style={{ borderTop: "3px solid var(--kv-green)" }}
           >
             <div className="flex items-start gap-3">
@@ -414,7 +424,17 @@ export function ElevationMap() {
                 <Mountain className="h-5 w-5" style={{ color: "var(--kv-blue)" }} />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-bold text-sm truncate">{selected.address.adressetekst}</p>
+                <div className="flex items-start justify-between gap-2">
+                  <p className="font-bold text-sm truncate">{selected.address.adressetekst}</p>
+                  <a
+                    href={`https://www.google.com/maps/dir/?api=1&destination=${selected.mapsCoords?.lat ?? selected.address.representasjonspunkt.lat},${selected.mapsCoords?.lon ?? selected.address.representasjonspunkt.lon}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors shrink-0 mt-0.5"
+                  >
+                    Veibeskrivelse <ExternalLink className="h-3 w-3" />
+                  </a>
+                </div>
                 {selected.address.poststed && (
                   <p className="text-xs text-muted-foreground truncate">
                     {selected.address.poststed}, {selected.address.kommunenavn}
