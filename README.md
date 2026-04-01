@@ -1,6 +1,8 @@
-# Kartverket Explorer
+# MapGram
 
-An interactive web application built on top of Kartverket's, Geonorge's, and SSB's open public APIs. Search for any Norwegian address or click anywhere on the map to get elevation data, current weather, and directions. Explore income statistics across all Norwegian municipalities — all powered by free, open data.
+An interactive web application exploring what's possible with Norway's open geodata. Built on top of Kartverket, Geonorge, SSB, MET, and Nobil APIs — all free, all open.
+
+**Live:** Deployed on Vercel, auto-deploys on push to master.
 
 ---
 
@@ -10,20 +12,32 @@ An interactive web application built on top of Kartverket's, Geonorge's, and SSB
 - Search any Norwegian address with autocomplete
 - Click anywhere on the map to explore
 - Smart location resolving: clicks near a building show the address, near a road show the street name, further out show the place name (mountains, lakes, peaks)
-- Use your current location via the browser's geolocation API
-- Displays elevation in meters above sea level
+- Browser geolocation with persisted preference across pages
+- Elevation in meters above sea level
 - Current weather conditions (temperature, wind, precipitation)
-- Links to yr.no weather forecast and Google Maps directions
-- Toggle between street map and terrain view
+- Links to yr.no forecast and Google Maps directions
+- Toggle between Kartverket topo map and OpenTopoMap terrain view
 - API health check banner if external services are unavailable
 
 ### Inntektskart (`/lonn`)
-- Choropleth map of Norway showing median after-tax household income per municipality (2024)
-- Search any address to find and highlight its municipality
-- Click or hover any municipality to see its data
-- Card shows: income, national rank, % vs. national median, and position on the full scale
-- Data sourced from SSB (Statistics Norway), cached server-side for 24 hours
-- Municipality boundaries from Kartverket via GeoNorge, cached for 30 days
+- Choropleth map showing median after-tax household income per municipality (2024)
+- Search any address or municipality to highlight it
+- Info card with income, national rank, % vs. median, and progress bar
+- Collapsible card on mobile
+- Optional grayscale base layer (Kartverket topograatone) for geographic context
+- Data from SSB, cached server-side for 24 hours
+
+### Verneområder (`/vern`)
+- Choropleth map showing protected nature areas per municipality
+- Breakdown by category: nasjonalpark, naturreservat, landskapsvernområde, andre
+- Info card with total area, rank, % vs. median, and progress bar
+- Optional grayscale base layer
+- Data from SSB table 08936 (2024)
+
+### Ladestasjoner (`/lading`)
+- All EV charging stations in Norway on a map
+- Click a station to see connector types, capacity, and operator
+- Data from Nobil API via ENOVA
 
 ---
 
@@ -36,11 +50,14 @@ All APIs are free and require no authentication.
 | [Adresser v1](https://ws.geonorge.no/adresser/v1/) | Geonorge | Address autocomplete and reverse geocoding |
 | [Høydedata v1](https://ws.geonorge.no/hoydedata/v1/) | Geonorge | Elevation in meters above sea level |
 | [Stedsnavn v1](https://ws.geonorge.no/stedsnavn/v1/) | Geonorge | Nearest place names (mountains, lakes, etc.) |
+| [Kommuneinfo v1](https://ws.geonorge.no/kommuneinfo/v1/) | Geonorge | Reverse geocode coordinates to municipality |
 | [Locationforecast 2.0](https://api.met.no/weatherapi/locationforecast/2.0/) | MET Norway / Yr | Current weather conditions |
 | [InntektStruk13](https://data.ssb.no/api/v0/no/table/InntektStruk13) | SSB | Median household income per municipality |
+| [Table 08936](https://data.ssb.no/api/pxwebapi/v2/tables/08936/) | SSB | Protected areas per municipality |
 | [Kommuner GeoJSON](https://github.com/robhop/fylker-og-kommuner) | Kartverket / robhop | Municipality boundary polygons |
+| [Nobil API](https://nobil.no/api) | ENOVA | EV charging station data |
 
-Map tiles provided by [OpenStreetMap](https://www.openstreetmap.org) and [OpenTopoMap](https://opentopomap.org).
+Map tiles from [Kartverket](https://cache.kartverket.no) (topo, topograatone) and [OpenTopoMap](https://opentopomap.org) (terrain view).
 
 ---
 
@@ -50,9 +67,10 @@ Map tiles provided by [OpenStreetMap](https://www.openstreetmap.org) and [OpenTo
 - [React 19](https://react.dev)
 - [TypeScript](https://www.typescriptlang.org)
 - [Tailwind CSS v4](https://tailwindcss.com)
-- [Base UI](https://base-ui.com) — headless component primitives
+- [shadcn/ui](https://ui.shadcn.com) + [Base UI](https://base-ui.com) — component primitives
 - [react-leaflet](https://react-leaflet.js.org) — interactive maps and choropleth
 - [Lucide React](https://lucide.dev) — icons
+- [Vercel](https://vercel.com) — hosting and deployment
 
 ---
 
@@ -81,18 +99,23 @@ NEXT_PUBLIC_DEV=true
 src/
 ├── app/
 │   ├── api/
-│   │   ├── weather/      # Server-side proxy for MET Norway API (30 min cache)
-│   │   ├── income/       # Server-side proxy for SSB income data (24h cache)
-│   │   └── kommuner/     # Server-side proxy for municipality GeoJSON (30 day cache)
-│   ├── map/              # Elevation & weather map page
-│   ├── lonn/             # Municipality income choropleth page
-│   └── page.tsx          # Homepage
+│   │   ├── weather/          # Proxy for MET Norway API (30 min cache)
+│   │   ├── income/           # Proxy for SSB income data (24h cache)
+│   │   ├── kommuner/         # Proxy for municipality GeoJSON (30 day cache)
+│   │   ├── protected-areas/  # Proxy for SSB protected areas data (24h cache)
+│   │   └── charging/         # Proxy for Nobil charging station data
+│   ├── map/                  # Elevation & weather map page
+│   ├── lonn/                 # Municipality income choropleth page
+│   ├── vern/                 # Protected areas choropleth page
+│   ├── lading/               # EV charging station map page
+│   └── page.tsx              # Landing page
 └── components/
-    ├── elevation-map.tsx          # Main elevation map component
-    ├── elevation-map-loader.tsx   # Dynamic import wrapper (ssr: false)
-    ├── income-map.tsx             # Municipality income choropleth component
-    ├── income-map-loader.tsx      # Dynamic import wrapper (ssr: false)
-    ├── navbar.tsx
+    ├── elevation-map.tsx              # Elevation map component
+    ├── income-map.tsx                 # Income choropleth component
+    ├── protected-areas-map.tsx        # Protected areas choropleth component
+    ├── charging-map.tsx               # Charging station map component
+    ├── *-map-loader.tsx               # Dynamic import wrappers (ssr: false)
+    ├── navbar.tsx                     # Navigation with Sheet for mobile
     ├── footer.tsx
-    └── ui/                        # Base UI / shadcn components
+    └── ui/                            # shadcn/ui components
 ```
