@@ -423,7 +423,7 @@ export function IncomeMap() {
         {/* Legend */}
         {!loading && values.length > 0 && (
           <div
-            className="absolute top-3 left-3 z-[999] bg-white rounded-xl shadow-md px-3 py-2.5"
+            className="absolute top-3 right-3 z-[999] bg-white rounded-xl shadow-md px-3 py-2.5"
             style={{ border: "1px solid #e5e7eb" }}
           >
             <p className="text-xs font-semibold text-muted-foreground mb-1.5">Inntekt etter skatt</p>
