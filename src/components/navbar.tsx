@@ -14,6 +14,7 @@ import {
 const navLinks = [
   { href: "/map", label: "Høydekart" },
   { href: "/lonn", label: "Inntektskart" },
+  { href: "/vern", label: "Verneområder" },
   { href: "/lading", label: "Ladestasjoner" },
 ];
 
