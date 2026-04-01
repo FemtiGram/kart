@@ -13,6 +13,7 @@ import {
 
 const navLinks = [
   { href: "/map", label: "Høydekart" },
+  { href: "/lonn", label: "Inntektskart" },
 ];
 
 export function Navbar() {

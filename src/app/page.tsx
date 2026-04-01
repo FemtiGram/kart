@@ -7,6 +7,11 @@ const projects = [
     description: "Søk etter adresse eller klikk i kartet. Få høyde over havet, værdata og veibeskrivelse.",
     href: "/map",
   },
+  {
+    title: "Inntektskart",
+    description: "Utforsk median inntekt etter skatt per husholdning i alle norske kommuner.",
+    href: "/lonn",
+  },
 ];
 
 export default function Home() {
