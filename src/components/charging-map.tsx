@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { MapContainer, TileLayer, CircleMarker, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
-import { Loader2, X, Zap, LocateFixed, ExternalLink, Search, MapPin } from "lucide-react";
+import { Loader2, X, Zap, LocateFixed, ExternalLink, Search, MapPin, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface Address {
@@ -62,6 +62,7 @@ export function ChargingMap() {
   const [locating, setLocating] = useState(false);
   const [asked, setAsked] = useState(false);
   const [error, setError] = useState(false);
+  const [showConnectorInfo, setShowConnectorInfo] = useState(false);
   const [selected, setSelected] = useState<Station | null>(null);
   const [center, setCenter] = useState<{ lat: number; lon: number } | null>(null);
 
@@ -386,6 +387,16 @@ export function ChargingMap() {
 
                   {selected.connectors.length > 0 && (
                     <>
+                      <div className="flex items-center gap-1 mb-1.5">
+                        <span className="text-xs text-muted-foreground font-medium">Kontakttyper</span>
+                        <button
+                          onClick={() => setShowConnectorInfo(true)}
+                          className="p-0.5 rounded text-muted-foreground/60 hover:text-muted-foreground transition-colors"
+                          aria-label="Forklaring av kontakttyper"
+                        >
+                          <Info className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
                       <div className="flex flex-wrap gap-1.5">
                         {selected.connectors.map((c) => (
                           <span key={c} className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground font-medium">
@@ -393,11 +404,6 @@ export function ChargingMap() {
                           </span>
                         ))}
                       </div>
-                      <p className="text-xs text-muted-foreground mt-1.5">
-                        {["CCS", "CHAdeMO"].some((f) => selected.connectors.includes(f)) && "CCS og CHAdeMO er hurtiglading (DC). "}
-                        {selected.connectors.includes("Type 2") && "Type 2 er normallading (AC). "}
-                        {selected.connectors.includes("Schuko") && "Schuko er vanlig stikkontakt."}
-                      </p>
                     </>
                   )}
                 </div>
@@ -406,6 +412,71 @@ export function ChargingMap() {
           </div>
         )}
       </div>
+
+      {/* Connector info modal */}
+      {showConnectorInfo && (
+        <div
+          className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/40 px-4"
+          onClick={() => setShowConnectorInfo(false)}
+        >
+          <div
+            className="bg-background rounded-2xl shadow-xl border w-full max-w-sm p-5"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-bold text-base">Kontakttyper forklart</h2>
+              <button
+                onClick={() => setShowConnectorInfo(false)}
+                className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                aria-label="Lukk"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="flex flex-col gap-4">
+              {[
+                {
+                  name: "CCS",
+                  tag: "Hurtiglading · DC",
+                  desc: "Standard for de fleste nye elbiler (VW, BMW, Hyundai, Ford, Tesla med adapter). Finner du på de fleste hurtigladere langs veien.",
+                  speed: "50–350 kW",
+                  time: "Ca. 20–45 min (10–80%)",
+                },
+                {
+                  name: "CHAdeMO",
+                  tag: "Hurtiglading · DC",
+                  desc: "Japansk standard brukt av eldre Nissan Leaf og Mitsubishi. Er på vei ut og erstattes av CCS.",
+                  speed: "50–100 kW",
+                  time: "Ca. 20–40 min (10–80%)",
+                },
+                {
+                  name: "Type 2",
+                  tag: "Normallading · AC",
+                  desc: "Vanligste kontakt i Europa. Brukes både hjemme, på jobb og på offentlige ladere. Støttes av nesten alle elbiler.",
+                  speed: "3,6–22 kW",
+                  time: "Ca. 3–8 timer (full lading)",
+                },
+                {
+                  name: "Schuko",
+                  tag: "Langsomlading · AC",
+                  desc: "Vanlig stikkontakt. Kan brukes i nødstilfeller, men er ikke anbefalt til daglig lading – tar svært lang tid.",
+                  speed: "Ca. 2,3 kW",
+                  time: "Ca. 12–20 timer (full lading)",
+                },
+              ].map((c) => (
+                <div key={c.name} className="flex gap-3">
+                  <span className="mt-0.5 text-xs font-bold px-2 py-0.5 rounded-full bg-muted text-muted-foreground h-fit shrink-0">{c.name}</span>
+                  <div>
+                    <p className="text-xs font-semibold text-muted-foreground">{c.tag}</p>
+                    <p className="text-sm mt-0.5">{c.desc}</p>
+                    <p className="text-xs text-muted-foreground mt-1">{c.speed} · {c.time}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
