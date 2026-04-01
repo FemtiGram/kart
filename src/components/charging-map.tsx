@@ -61,7 +61,6 @@ export function ChargingMap() {
   const [stations, setStations] = useState<Station[]>([]);
   const [loading, setLoading] = useState(false);
   const [locating, setLocating] = useState(false);
-  const [asked, setAsked] = useState(false);
   const [error, setError] = useState(false);
   const [showConnectorInfo, setShowConnectorInfo] = useState(false);
   const [selected, setSelected] = useState<Station | null>(null);
@@ -150,28 +149,9 @@ export function ChargingMap() {
     }
   };
 
-  const handleLocationChoice = (useLocation: boolean) => {
-    setAsked(true);
-    if (!useLocation || !navigator.geolocation) {
-      loadArea(59.91, 10.75);
-      return;
-    }
-    setLocating(true);
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setLocating(false);
-        loadArea(pos.coords.latitude, pos.coords.longitude);
-      },
-      () => {
-        setLocating(false);
-        loadArea(59.91, 10.75);
-      },
-      { timeout: 6000 }
-    );
-  };
-
   const loadArea = (lat: number, lon: number) => {
     setLoading(true);
+    setError(false);
     setCenter({ lat, lon });
     fetchStations(lat, lon)
       .then((data) => {
@@ -252,7 +232,7 @@ export function ChargingMap() {
         </div>
         <div className="flex items-center justify-between mt-2">
           <p className="text-xs text-muted-foreground">
-            {!asked ? "Velg om du vil bruke din posisjon" : locating ? "Finner posisjon..." : loading ? "Henter ladestasjoner..." : `${stations.length} ladestasjoner i nærheten — Kilde: OpenStreetMap`}
+            {locating ? "Finner posisjon..." : loading ? "Henter ladestasjoner..." : stations.length > 0 ? `${stations.length} ladestasjoner i nærheten — Kilde: OpenStreetMap` : "Søk etter et sted for å se ladestasjoner"}
           </p>
           <button
             disabled
@@ -268,26 +248,7 @@ export function ChargingMap() {
 
       {/* Map */}
       <div className="relative grow">
-        {!asked && (
-          <div className="absolute inset-0 flex items-center justify-center bg-background/80 z-[1000]">
-            <div className="bg-background rounded-2xl shadow-xl border px-6 py-6 max-w-sm w-full mx-4 flex flex-col items-center gap-4 text-center">
-              <LocateFixed className="h-8 w-8 text-muted-foreground" />
-              <div>
-                <p className="font-semibold text-base">Bruk din posisjon?</p>
-                <p className="text-sm text-muted-foreground mt-1">Vi kan vise ladestasjoner i nærheten av deg, eller du kan søke manuelt.</p>
-              </div>
-              <div className="flex gap-3 w-full">
-                <Button onClick={() => handleLocationChoice(true)} className="flex-1" size="lg">
-                  <LocateFixed className="h-4 w-4" /> Ja, bruk posisjon
-                </Button>
-                <Button onClick={() => handleLocationChoice(false)} variant="secondary" className="flex-1" size="lg">
-                  Nei takk
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
-        {asked && (loading || locating) && (
+        {(loading || locating) && (
           <div className="absolute inset-0 flex items-center justify-center bg-background/80 z-[1000]">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" />
