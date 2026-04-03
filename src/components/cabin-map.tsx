@@ -82,15 +82,17 @@ const CABIN_LABELS: Record<Cabin["cabinType"], string> = {
 };
 
 // SVG cabin icons — filled for betjent/selvbetjent, outline for ubetjent/privat
-function cabinIcon(type: Cabin["cabinType"], isSelected: boolean): L.DivIcon {
-  const color = isSelected ? "#003da5" : CABIN_COLORS[type];
+function cabinIcon(type: Cabin["cabinType"], isSelected: boolean, inverted: boolean): L.DivIcon {
+  const baseColor = isSelected ? "#003da5" : CABIN_COLORS[type];
   const size = type === "betjent" || type === "selvbetjent" ? 30 : 26;
   const filled = type === "betjent" || type === "selvbetjent";
+  const bg = inverted ? baseColor : "white";
+  const iconColor = inverted ? "white" : baseColor;
+  const border = isSelected ? "#003da5" : inverted ? "rgba(255,255,255,0.3)" : "rgba(0,0,0,0.15)";
 
-  // House path (simplified home icon)
   const housePath = filled
-    ? `<path d="M3 10.5L12 3l9 7.5V21a1 1 0 01-1 1H4a1 1 0 01-1-1z" fill="${color}" stroke="${color}" stroke-width="1.5"/>`
-    : `<path d="M3 10.5L12 3l9 7.5V21a1 1 0 01-1 1H4a1 1 0 01-1-1z" fill="none" stroke="${color}" stroke-width="2"/>`;
+    ? `<path d="M3 10.5L12 3l9 7.5V21a1 1 0 01-1 1H4a1 1 0 01-1-1z" fill="${iconColor}" stroke="${iconColor}" stroke-width="1.5"/>`
+    : `<path d="M3 10.5L12 3l9 7.5V21a1 1 0 01-1 1H4a1 1 0 01-1-1z" fill="none" stroke="${iconColor}" stroke-width="2"/>`;
 
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="${size * 0.5}" height="${size * 0.5}">${housePath}</svg>`;
 
@@ -98,7 +100,7 @@ function cabinIcon(type: Cabin["cabinType"], isSelected: boolean): L.DivIcon {
     className: "",
     iconSize: [size, size],
     iconAnchor: [size / 2, size / 2],
-    html: `<div style="width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;background:white;border-radius:50%;box-shadow:0 1px 4px rgba(0,0,0,0.25);border:2.5px solid ${isSelected ? "#003da5" : "rgba(0,0,0,0.15)"}">${svg}</div>`,
+    html: `<div style="width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;background:${bg};border-radius:50%;box-shadow:0 1px 4px rgba(0,0,0,0.25);border:2.5px solid ${border}">${svg}</div>`,
   });
 }
 
@@ -440,7 +442,7 @@ export function CabinMap() {
             <Marker
               key={c.id}
               position={[c.lat, c.lon]}
-              icon={cabinIcon(c.cabinType, selected?.id === c.id)}
+              icon={cabinIcon(c.cabinType, selected?.id === c.id, tileLayer === "gråtone")}
               eventHandlers={{
                 click() {
                   setSelected((prev) => (prev?.id === c.id ? null : c));

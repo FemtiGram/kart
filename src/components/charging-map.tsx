@@ -51,16 +51,18 @@ const TILE_LAYERS = {
 
 type TileLayerKey = keyof typeof TILE_LAYERS;
 
-function chargingIcon(isSelected: boolean): L.DivIcon {
-  const color = isSelected ? "#003da5" : "#00b140";
+function chargingIcon(isSelected: boolean, inverted: boolean): L.DivIcon {
   const size = 28;
-  const bolt = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="${color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>`;
+  const bg = inverted ? (isSelected ? "#003da5" : "#00b140") : "white";
+  const iconColor = inverted ? "white" : (isSelected ? "#003da5" : "#00b140");
+  const border = isSelected ? "#003da5" : inverted ? "rgba(255,255,255,0.3)" : "rgba(0,0,0,0.15)";
+  const bolt = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="${iconColor}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>`;
 
   return L.divIcon({
     className: "",
     iconSize: [size, size],
     iconAnchor: [size / 2, size / 2],
-    html: `<div style="width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;background:white;border-radius:50%;box-shadow:0 1px 4px rgba(0,0,0,0.25);border:2.5px solid ${isSelected ? "#003da5" : "rgba(0,0,0,0.15)"}">${bolt}</div>`,
+    html: `<div style="width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;background:${bg};border-radius:50%;box-shadow:0 1px 4px rgba(0,0,0,0.25);border:2.5px solid ${border}">${bolt}</div>`,
   });
 }
 
@@ -387,7 +389,7 @@ export function ChargingMap() {
             <Marker
               key={s.id}
               position={[s.lat, s.lon]}
-              icon={chargingIcon(selected?.id === s.id)}
+              icon={chargingIcon(selected?.id === s.id, tileLayer === "gråtone")}
               eventHandlers={{
                 click() {
                   setSelected((prev) => (prev?.id === s.id ? null : s));
