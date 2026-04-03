@@ -29,16 +29,25 @@ interface SelectedKommune {
   coords: { lat: number; lon: number };
 }
 
+// Red → Yellow → Green (3-stop diverging scale)
 function interpolateColor(t: number): string {
-  const r = Math.round(232 - t * 232);
-  const g = Math.round(245 - t * (245 - 177));
-  const b = Math.round(232 - t * (232 - 64));
+  if (t <= 0.5) {
+    const s = t * 2; // 0–1 within first half
+    const r = Math.round(239 + s * (250 - 239));
+    const g = Math.round(68 + s * (204 - 68));
+    const b = Math.round(68 + s * (21 - 68));
+    return `rgb(${r},${g},${b})`;
+  }
+  const s = (t - 0.5) * 2; // 0–1 within second half
+  const r = Math.round(250 - s * (250 - 22));
+  const g = Math.round(204 - s * (204 - 163));
+  const b = Math.round(21 + s * (74 - 21));
   return `rgb(${r},${g},${b})`;
 }
 
 function incomeColor(income: number | undefined, min: number, max: number): string {
   if (income == null || income === 0) return "#e5e7eb";
-  if (max === min) return "#00b140";
+  if (max === min) return "#16a34a";
   const t = Math.max(0, Math.min(1, (income - min) / (max - min)));
   return interpolateColor(t);
 }
@@ -486,7 +495,7 @@ export function IncomeMap() {
                         className="h-full rounded-full"
                         style={{
                           width: `${pct}%`,
-                          background: "linear-gradient(to right, rgb(232,245,232), rgb(0,177,64))",
+                          background: "linear-gradient(to right, #ef4444, #facc15, #16a34a)",
                         }}
                       />
                     </div>
@@ -502,7 +511,7 @@ export function IncomeMap() {
                       </span>
                       <span
                         className="text-xs font-semibold"
-                        style={{ color: above ? "var(--kv-green)" : "#ef4444" }}
+                        style={{ color: above ? "#16a34a" : "#ef4444" }}
                       >
                         {above ? "+" : ""}{vsMedian.toFixed(1)}% vs. medianen
                       </span>
@@ -545,7 +554,7 @@ export function IncomeMap() {
               <p className="text-xs font-semibold text-muted-foreground mb-1.5">Inntekt etter skatt</p>
               <div
                 className="h-3 w-24 rounded-sm"
-                style={{ background: "linear-gradient(to right, rgb(232,245,232), rgb(0,177,64))" }}
+                style={{ background: "linear-gradient(to right, #ef4444, #facc15, #16a34a)" }}
               />
               <div className="flex justify-between mt-0.5">
                 <span className="text-[10px] text-muted-foreground">{formatKr(min)}</span>

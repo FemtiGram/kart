@@ -43,10 +43,19 @@ const VERNE_LABELS: Record<string, string> = {
   nm: "Andre vernekategorier",
 };
 
+// Red → Yellow → Green (3-stop diverging scale)
 function interpolateColor(t: number): string {
-  const r = Math.round(236 - t * (236 - 20));
-  const g = Math.round(253 - t * (253 - 83));
-  const b = Math.round(245 - t * (245 - 45));
+  if (t <= 0.5) {
+    const s = t * 2;
+    const r = Math.round(239 + s * (250 - 239));
+    const g = Math.round(68 + s * (204 - 68));
+    const b = Math.round(68 + s * (21 - 68));
+    return `rgb(${r},${g},${b})`;
+  }
+  const s = (t - 0.5) * 2;
+  const r = Math.round(250 - s * (250 - 22));
+  const g = Math.round(204 - s * (204 - 163));
+  const b = Math.round(21 + s * (74 - 21));
   return `rgb(${r},${g},${b})`;
 }
 
@@ -437,7 +446,7 @@ export function ProtectedAreasMap() {
           <div className="bg-white/90 rounded-xl border px-3 py-2 shadow text-xs">
             <p className="font-semibold text-muted-foreground mb-1.5">Vernet areal (km²)</p>
             <div className="flex items-center gap-1.5">
-              <div className="h-2.5 w-24 rounded-full" style={{ background: "linear-gradient(to right, #ecfdf5, #145327)" }} />
+              <div className="h-2.5 w-24 rounded-full" style={{ background: "linear-gradient(to right, #ef4444, #facc15, #16a34a)" }} />
             </div>
             <div className="flex justify-between mt-0.5 text-muted-foreground/70">
               <span>0</span>
@@ -465,7 +474,7 @@ export function ProtectedAreasMap() {
                 <p className="font-bold text-base">{selected.kommunenavn}</p>
                 {selected.vern?.total ? (
                   <p className="text-sm text-muted-foreground mt-0.5">
-                    <span className="font-semibold" style={{ color: "#145327" }}>
+                    <span className="font-semibold" style={{ color: "#16a34a" }}>
                       {selected.vern.total.toFixed(2).replace(".", ",")} km²
                     </span>{" "}vernet
                   </p>
@@ -503,7 +512,7 @@ export function ProtectedAreasMap() {
                           className="h-full rounded-full"
                           style={{
                             width: `${pct}%`,
-                            background: "linear-gradient(to right, #ecfdf5, #145327)",
+                            background: "linear-gradient(to right, #ef4444, #facc15, #16a34a)",
                           }}
                         />
                       </div>
@@ -519,7 +528,7 @@ export function ProtectedAreasMap() {
                         </span>
                         <span
                           className="text-xs font-semibold"
-                          style={{ color: above ? "#145327" : "#ef4444" }}
+                          style={{ color: above ? "#16a34a" : "#ef4444" }}
                         >
                           {above ? "+" : ""}{vsMedian.toFixed(1)}% vs. medianen
                         </span>
