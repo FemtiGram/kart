@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { Menu, X, Mountain, DollarSign, Shield, Zap } from "lucide-react";
+import { Menu, X, Mountain, DollarSign, Shield, Zap, Home } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -17,6 +17,7 @@ const navLinks = [
   { href: "/lonn", label: "Inntektskart", icon: DollarSign },
   { href: "/vern", label: "Verneområder", icon: Shield },
   { href: "/lading", label: "Ladestasjoner", icon: Zap },
+  { href: "/hytter", label: "Turisthytter", icon: Home },
 ];
 
 export function Navbar() {

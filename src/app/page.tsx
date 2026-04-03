@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, Mountain, DollarSign, Shield, Zap } from "lucide-react";
+import { ArrowRight, Mountain, DollarSign, Shield, Zap, Home } from "lucide-react";
 
 const projects = [
   {
@@ -25,6 +25,12 @@ const projects = [
     description: "Se elbilladestasjoner i Norge. Kontakttyper, kapasitet og veibeskrivelse.",
     href: "/lading",
     icon: Zap,
+  },
+  {
+    title: "Turisthytter",
+    description: "Utforsk DNT-hytter og fjellhytter. Se type, høyde over havet og sengeplasser.",
+    href: "/hytter",
+    icon: Home,
   },
 ];
 
