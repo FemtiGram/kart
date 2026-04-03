@@ -58,6 +58,10 @@ interface Cabin {
   beds: number | null;
   website: string | null;
   description: string | null;
+  fee: boolean | null;
+  season: string | null;
+  phone: string | null;
+  shower: boolean | null;
 }
 
 const CABIN_COLORS: Record<Cabin["cabinType"], string> = {
@@ -439,7 +443,7 @@ export function CabinMap() {
           >
             <div className="flex items-start justify-between gap-2 mb-3">
               <div className="min-w-0">
-                <div className="flex items-center gap-2 mb-0.5">
+                <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
                   <span
                     className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full text-white"
                     style={{ background: CABIN_COLORS[selected.cabinType] }}
@@ -449,6 +453,21 @@ export function CabinMap() {
                   {selected.isDNT && (
                     <span className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">
                       DNT
+                    </span>
+                  )}
+                  {selected.fee === false && (
+                    <span className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-green-100 text-green-800">
+                      Gratis
+                    </span>
+                  )}
+                  {selected.fee === true && (
+                    <span className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-800">
+                      Betalt
+                    </span>
+                  )}
+                  {selected.season && (
+                    <span className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-800">
+                      {selected.season}
                     </span>
                   )}
                 </div>
@@ -483,6 +502,12 @@ export function CabinMap() {
                     {selected.beds}
                   </span>
                   <span className="text-xs font-medium text-muted-foreground">sengeplasser</span>
+                </div>
+              )}
+              {selected.shower === true && (
+                <div className="flex items-baseline gap-1.5">
+                  <Droplets className="h-3.5 w-3.5 text-muted-foreground self-center" />
+                  <span className="text-xs font-medium text-muted-foreground">Dusj</span>
                 </div>
               )}
               {selected.elevation == null && selected.beds == null && (

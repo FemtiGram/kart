@@ -60,6 +60,19 @@ export async function GET(request: NextRequest) {
       cabinType = tourism === "alpine_hut" ? "betjent" : "ubetjent";
     }
 
+    // Parse opening hours into a human-readable season label
+    const rawHours = t.opening_hours ?? null;
+    let season: string | null = null;
+    if (rawHours) {
+      const h = rawHours.toLowerCase();
+      if (h === "24/7" || h.includes("jan-dec") || h.includes("mo-su")) {
+        season = "Helårs";
+      } else {
+        // Use raw value but capitalize first letter
+        season = rawHours.charAt(0).toUpperCase() + rawHours.slice(1);
+      }
+    }
+
     return {
       id: el.id,
       lat,
@@ -69,9 +82,13 @@ export async function GET(request: NextRequest) {
       cabinType,
       isDNT,
       elevation: t.ele ? parseInt(t.ele) : null,
-      beds: t.beds ? parseInt(t.beds) : null,
+      beds: t.beds ? parseInt(t.beds) : t.capacity ? parseInt(t.capacity) : null,
       website: t.website ?? t["contact:website"] ?? null,
       description: t.description ?? null,
+      fee: t.fee === "yes" ? true : t.fee === "no" ? false : null,
+      season,
+      phone: t.phone ?? t["contact:phone"] ?? null,
+      shower: t.shower === "yes" ? true : t.shower === "no" ? false : null,
     };
   }).filter((c) => c.lat !== 0 && c.lon !== 0);
 
