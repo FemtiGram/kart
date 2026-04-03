@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, Mountain, DollarSign, Shield, Zap, Home } from "lucide-react";
+import { ArrowRight, Mountain, DollarSign, Shield, Zap, Home as HomeIcon } from "lucide-react";
 
 const projects = [
   {
@@ -30,7 +30,7 @@ const projects = [
     title: "Turisthytter",
     description: "Utforsk DNT-hytter og fjellhytter. Se type, høyde over havet og sengeplasser.",
     href: "/hytter",
-    icon: Home,
+    icon: HomeIcon,
   },
 ];
 
