@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { MapContainer, TileLayer, CircleMarker, useMap } from "react-leaflet";
+import { MapContainer, TileLayer, CircleMarker, useMap, useMapEvents } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import { Loader2, X, Zap, LocateFixed, ExternalLink, Search, MapPin, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -33,6 +33,8 @@ interface Station {
   address: string | null;
 }
 
+const MIN_ZOOM_FOR_FETCH = 8;
+
 function FlyTo({ lat, lon }: { lat: number; lon: number }) {
   const map = useMap();
   useEffect(() => {
@@ -47,6 +49,37 @@ function PanToSelected({ station }: { station: Station | null }) {
     if (!station) return;
     map.panTo([station.lat, station.lon], { animate: true, duration: 0.4 });
   }, [station, map]);
+  return null;
+}
+
+function ViewportLoader({ onLoad, onError, onLoading, onZoomLow }: {
+  onLoad: (stations: Station[]) => void;
+  onError: () => void;
+  onLoading: (v: boolean) => void;
+  onZoomLow: (v: boolean) => void;
+}) {
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useMapEvents({
+    moveend(e) {
+      const map = e.target;
+      const zoom = map.getZoom();
+      if (zoom < MIN_ZOOM_FOR_FETCH) {
+        onZoomLow(true);
+        return;
+      }
+      onZoomLow(false);
+      const { lat, lng } = map.getCenter();
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      debounceRef.current = setTimeout(() => {
+        onLoading(true);
+        fetchStations(lat, lng)
+          .then((data) => { onLoad(data); onLoading(false); })
+          .catch(() => { onError(); onLoading(false); });
+      }, 400);
+    },
+  });
+
   return null;
 }
 
@@ -65,6 +98,7 @@ export function ChargingMap() {
   const [showConnectorInfo, setShowConnectorInfo] = useState(false);
   const [selected, setSelected] = useState<Station | null>(null);
   const [center, setCenter] = useState<{ lat: number; lon: number } | null>(null);
+  const [zoomLow, setZoomLow] = useState(true);
 
   const [query, setQuery] = useState("");
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
@@ -141,27 +175,12 @@ export function ChargingMap() {
       const data = await res.json();
       const point = data.navn?.[0]?.representasjonspunkt;
       if (point) {
-        loadArea(point.nord, point.øst);
+        setCenter({ lat: point.nord, lon: point.øst });
       }
     } else {
       setQuery(`${s.addr.adressetekst}, ${s.addr.poststed}`);
-      loadArea(s.addr.representasjonspunkt.lat, s.addr.representasjonspunkt.lon);
+      setCenter({ lat: s.addr.representasjonspunkt.lat, lon: s.addr.representasjonspunkt.lon });
     }
-  };
-
-  const loadArea = (lat: number, lon: number) => {
-    setLoading(true);
-    setError(false);
-    setCenter({ lat, lon });
-    fetchStations(lat, lon)
-      .then((data) => {
-        setStations(data);
-        setLoading(false);
-      })
-      .catch(() => {
-        setError(true);
-        setLoading(false);
-      });
   };
 
   const handleLocate = () => {
@@ -171,7 +190,7 @@ export function ChargingMap() {
       (pos) => {
         setLocating(false);
         setSelected(null);
-        loadArea(pos.coords.latitude, pos.coords.longitude);
+        setCenter({ lat: pos.coords.latitude, lon: pos.coords.longitude });
       },
       () => setLocating(false),
       { timeout: 6000 }
@@ -232,11 +251,11 @@ export function ChargingMap() {
         </div>
         <div className="flex items-center justify-between mt-2">
           <p className="text-xs text-muted-foreground">
-            {locating ? "Finner posisjon..." : loading ? "Henter ladestasjoner..." : stations.length > 0 ? `${stations.length} ladestasjoner i nærheten — Kilde: OpenStreetMap` : "Søk etter et sted for å se ladestasjoner"}
+            {locating ? "Finner posisjon..." : loading ? "Henter ladestasjoner..." : zoomLow ? "Zoom inn p\u00e5 kartet for \u00e5 se ladestasjoner" : stations.length > 0 ? `${stations.length} ladestasjoner i omr\u00e5det \u2014 Kilde: OpenStreetMap` : "Ingen ladestasjoner funnet i dette omr\u00e5det"}
           </p>
           <button
             disabled
-            title="Krever sanntidsdata — kommer snart"
+            title="Krever sanntidsdata \u2014 kommer snart"
             className="relative inline-flex items-center gap-1.5 text-xs px-3 py-1 rounded-full border bg-muted text-muted-foreground opacity-50 cursor-not-allowed shrink-0"
           >
             <Zap className="h-3 w-3" />
@@ -256,9 +275,17 @@ export function ChargingMap() {
             </div>
           </div>
         )}
+        {!loading && !locating && zoomLow && stations.length === 0 && (
+          <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[1000] bg-background/90 backdrop-blur-sm border rounded-full px-4 py-2 shadow-lg">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Search className="h-4 w-4" />
+              Zoom inn eller s\u00f8k for \u00e5 se ladestasjoner
+            </div>
+          </div>
+        )}
         {error && (
           <div className="absolute inset-0 flex items-center justify-center z-[1000]">
-            <p className="text-sm text-destructive">Kunne ikke laste data. Prøv igjen senere.</p>
+            <p className="text-sm text-destructive">Kunne ikke laste data. Pr\u00f8v igjen senere.</p>
           </div>
         )}
 
@@ -269,6 +296,12 @@ export function ChargingMap() {
         >
           {center && <FlyTo lat={center.lat} lon={center.lon} />}
           <PanToSelected station={selected} />
+          <ViewportLoader
+            onLoad={(data) => { setStations(data); setError(false); }}
+            onError={() => setError(true)}
+            onLoading={setLoading}
+            onZoomLow={setZoomLow}
+          />
           <TileLayer
             url="https://cache.kartverket.no/v1/wmts/1.0.0/topo/default/webmercator/{z}/{y}/{x}.png"
             attribution='&copy; <a href="https://www.kartverket.no/">Kartverket</a>'
@@ -387,31 +420,31 @@ export function ChargingMap() {
               {[
                 {
                   name: "CCS",
-                  tag: "Hurtiglading · DC",
-                  desc: "Standard for de fleste nye elbiler (VW, BMW, Hyundai, Ford, Tesla med adapter). Finner du på de fleste hurtigladere langs veien.",
-                  speed: "50–350 kW",
-                  time: "Ca. 20–45 min (10–80%)",
+                  tag: "Hurtiglading \u00b7 DC",
+                  desc: "Standard for de fleste nye elbiler (VW, BMW, Hyundai, Ford, Tesla med adapter). Finner du p\u00e5 de fleste hurtigladere langs veien.",
+                  speed: "50\u2013350 kW",
+                  time: "Ca. 20\u201345 min (10\u201380%)",
                 },
                 {
                   name: "CHAdeMO",
-                  tag: "Hurtiglading · DC",
-                  desc: "Japansk standard brukt av eldre Nissan Leaf og Mitsubishi. Er på vei ut og erstattes av CCS.",
-                  speed: "50–100 kW",
-                  time: "Ca. 20–40 min (10–80%)",
+                  tag: "Hurtiglading \u00b7 DC",
+                  desc: "Japansk standard brukt av eldre Nissan Leaf og Mitsubishi. Er p\u00e5 vei ut og erstattes av CCS.",
+                  speed: "50\u2013100 kW",
+                  time: "Ca. 20\u201340 min (10\u201380%)",
                 },
                 {
                   name: "Type 2",
-                  tag: "Normallading · AC",
-                  desc: "Vanligste kontakt i Europa. Brukes både hjemme, på jobb og på offentlige ladere. Støttes av nesten alle elbiler.",
-                  speed: "3,6–22 kW",
-                  time: "Ca. 3–8 timer (full lading)",
+                  tag: "Normallading \u00b7 AC",
+                  desc: "Vanligste kontakt i Europa. Brukes b\u00e5de hjemme, p\u00e5 jobb og p\u00e5 offentlige ladere. St\u00f8ttes av nesten alle elbiler.",
+                  speed: "3,6\u201322 kW",
+                  time: "Ca. 3\u20138 timer (full lading)",
                 },
                 {
                   name: "Schuko",
-                  tag: "Langsomlading · AC",
-                  desc: "Vanlig stikkontakt. Kan brukes i nødstilfeller, men er ikke anbefalt til daglig lading – tar svært lang tid.",
+                  tag: "Langsomlading \u00b7 AC",
+                  desc: "Vanlig stikkontakt. Kan brukes i n\u00f8dstilfeller, men er ikke anbefalt til daglig lading \u2013 tar sv\u00e6rt lang tid.",
                   speed: "Ca. 2,3 kW",
-                  time: "Ca. 12–20 timer (full lading)",
+                  time: "Ca. 12\u201320 timer (full lading)",
                 },
               ].map((c) => (
                 <div key={c.name} className="flex gap-3">
@@ -419,7 +452,7 @@ export function ChargingMap() {
                   <div>
                     <p className="text-xs font-semibold text-muted-foreground">{c.tag}</p>
                     <p className="text-sm mt-0.5">{c.desc}</p>
-                    <p className="text-xs text-muted-foreground mt-1">{c.speed} · {c.time}</p>
+                    <p className="text-xs text-muted-foreground mt-1">{c.speed} \u00b7 {c.time}</p>
                   </div>
                 </div>
               ))}
