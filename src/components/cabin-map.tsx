@@ -568,7 +568,7 @@ export function CabinMap() {
               >
                 <ExternalLink className="h-3 w-3" /> Veibeskrivelse
               </a>
-              {selected.website && (
+              {selected.website && !selected.website.includes("ut.no") && (
                 <a
                   href={selected.website}
                   target="_blank"
@@ -576,6 +576,16 @@ export function CabinMap() {
                   className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
                 >
                   <ExternalLink className="h-3 w-3" /> Nettside
+                </a>
+              )}
+              {selected.isDNT && (
+                <a
+                  href={`https://www.dnt.no/sok/?q=${encodeURIComponent(selected.name)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                >
+                  <ExternalLink className="h-3 w-3" /> DNT.no
                 </a>
               )}
               <button
