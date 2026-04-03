@@ -106,6 +106,17 @@ export function ChargingMap() {
       .then((data) => {
         setStations(Array.isArray(data) ? data : []);
         setLoading(false);
+        // Auto-fly to user location or Oslo after data loads
+        const pref = localStorage.getItem("mapgram-use-location");
+        if (pref === "yes" && navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+            (pos) => setCenter({ lat: pos.coords.latitude, lon: pos.coords.longitude }),
+            () => setCenter({ lat: 59.91, lon: 10.75 }),
+            { timeout: 6000 }
+          );
+        } else {
+          setCenter({ lat: 59.91, lon: 10.75 });
+        }
       })
       .catch(() => {
         setError(true);
