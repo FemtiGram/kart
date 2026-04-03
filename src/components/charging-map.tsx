@@ -249,7 +249,7 @@ export function ChargingMap() {
       {/* Map */}
       <div className="relative grow">
         {(loading || locating) && (
-          <div className="absolute inset-0 flex items-center justify-center bg-background/80 z-[1000]">
+          <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[1000] bg-background/90 backdrop-blur-sm border rounded-full px-4 py-2 shadow-lg">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" />
               {locating ? "Finner posisjon..." : "Henter ladestasjoner..."}
