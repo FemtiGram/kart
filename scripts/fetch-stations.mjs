@@ -66,6 +66,7 @@ async function main() {
 }
 
 main().catch((err) => {
-  console.error("Failed to fetch stations:", err);
-  process.exit(1);
+  console.error("Failed to fetch stations:", err.message);
+  // Don't exit with error — let the build continue with existing data
+  console.log("Continuing build with existing stations.json");
 });
