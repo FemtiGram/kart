@@ -8,6 +8,7 @@ import type { GeoJsonObject, Feature } from "geojson";
 import type { Layer } from "leaflet";
 import { Search, MapPin, Loader2, X, LocateFixed, Map as MapIcon, ChevronDown, ChevronUp, Info, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { FYLKER } from "@/lib/fylker";
 
 interface VerneData {
   total: number | null;
@@ -26,6 +27,7 @@ interface IncomeAddress {
 }
 
 type Suggestion =
+  | { type: "fylke"; fylkesnavn: string; lat: number; lon: number; zoom: number }
   | { type: "kommune"; kommunenummer: string; kommunenavn: string }
   | { type: "adresse"; addr: IncomeAddress };
 
@@ -81,11 +83,11 @@ function computeVerneStats(verneData: Record<string, VerneData>, kommunenummer: 
   return { rank, total, medianVal, vsMedian };
 }
 
-function FlyTo({ lat, lon }: { lat: number; lon: number }) {
+function FlyTo({ lat, lon, zoom = 10 }: { lat: number; lon: number; zoom?: number }) {
   const map = useMap();
   useEffect(() => {
-    map.flyTo([lat, lon], 10, { duration: 1.0 });
-  }, [lat, lon, map]);
+    map.flyTo([lat, lon], zoom, { duration: 1.0 });
+  }, [lat, lon, zoom, map]);
   return null;
 }
 
@@ -101,7 +103,7 @@ export function ProtectedAreasMap() {
   const [showDropdown, setShowDropdown] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const [selected, setSelected] = useState<SelectedKommune | null>(null);
-  const [flyTarget, setFlyTarget] = useState<{ lat: number; lon: number } | null>(null);
+  const [flyTarget, setFlyTarget] = useState<{ lat: number; lon: number; zoom?: number } | null>(null);
   const [asked, setAsked] = useState(false);
   const [locating, setLocating] = useState(false);
   const [showBase, setShowBase] = useState(false);
@@ -214,19 +216,24 @@ export function ProtectedAreasMap() {
     if (q.length < 2) { setSuggestions([]); return; }
     setLoadingSuggestions(true);
 
+    const fylkeMatches: Suggestion[] = FYLKER
+      .filter((f) => f.fylkesnavn.toLowerCase().includes(q.toLowerCase()))
+      .slice(0, 3)
+      .map((f) => ({ type: "fylke", fylkesnavn: f.fylkesnavn, lat: f.lat, lon: f.lon, zoom: f.zoom }));
+
     const kommuneMatches: Suggestion[] = geoFeaturesRef.current
       .filter((f) => f.kommunenavn.toLowerCase().includes(q.toLowerCase()))
-      .slice(0, 4)
+      .slice(0, 5)
       .map((f) => ({ type: "kommune", kommunenummer: f.kommunenummer, kommunenavn: f.kommunenavn }));
 
     let adresseMatches: Suggestion[] = [];
     try {
-      const res = await fetch(`https://ws.geonorge.no/adresser/v1/sok?sok=${encodeURIComponent(q)}&treffPerSide=4&utkoordsys=4326`);
+      const res = await fetch(`https://ws.geonorge.no/adresser/v1/sok?sok=${encodeURIComponent(q)}&treffPerSide=2&utkoordsys=4326`);
       const data = await res.json();
       adresseMatches = (data.adresser ?? []).map((a: IncomeAddress) => ({ type: "adresse" as const, addr: a }));
     } catch { /* ignore */ }
 
-    setSuggestions([...kommuneMatches, ...adresseMatches]);
+    setSuggestions([...fylkeMatches, ...kommuneMatches, ...adresseMatches]);
     setShowDropdown(true);
     setLoadingSuggestions(false);
   }, []);
@@ -260,6 +267,11 @@ export function ProtectedAreasMap() {
   const handleSelect = (s: Suggestion) => {
     setShowDropdown(false);
     setSuggestions([]);
+    if (s.type === "fylke") {
+      setQuery(s.fylkesnavn);
+      setFlyTarget({ lat: s.lat, lon: s.lon, zoom: s.zoom });
+      return;
+    }
     if (s.type === "kommune") {
       setQuery(s.kommunenavn);
       highlightKommune(s.kommunenummer);
@@ -356,7 +368,12 @@ export function ProtectedAreasMap() {
                     className={`w-full text-left px-4 py-3 text-sm flex items-start gap-3 transition-colors border-b last:border-0 ${highlightedIndex === i ? "bg-muted" : "hover:bg-muted"}`}
                   >
                     <MapPin className="h-4 w-4 mt-0.5 shrink-0 text-muted-foreground" />
-                    {s.type === "kommune" ? (
+                    {s.type === "fylke" ? (
+                      <div>
+                        <p className="font-medium">{s.fylkesnavn}</p>
+                        <p className="text-xs text-muted-foreground">Fylke</p>
+                      </div>
+                    ) : s.type === "kommune" ? (
                       <div>
                         <p className="font-medium">{s.kommunenavn}</p>
                         <p className="text-xs text-muted-foreground">Kommune</p>
@@ -431,7 +448,7 @@ export function ProtectedAreasMap() {
                 attribution='&copy; <a href="https://www.kartverket.no/">Kartverket</a>'
               />
             )}
-            {flyTarget && <FlyTo lat={flyTarget.lat} lon={flyTarget.lon} />}
+            {flyTarget && <FlyTo lat={flyTarget.lat} lon={flyTarget.lon} zoom={flyTarget.zoom} />}
             <GeoJSON
               key={Object.keys(verneData).length}
               data={geoData}
