@@ -140,7 +140,7 @@ export function CabinMap() {
   const [locating, setLocating] = useState(false);
   const [error, setError] = useState(false);
   const [selected, setSelected] = useState<Cabin | null>(null);
-  const [center, setCenter] = useState<{ lat: number; lon: number; zoom?: number } | null>(null);
+  const [center, setCenter] = useState<{ lat: number; lon: number; zoom?: number; _t?: number } | null>(null);
   const [tileLayer, setTileLayer] = useState<TileLayerKey>("gråtone");
   const [showInfo, setShowInfo] = useState(false);
   const [weather, setWeather] = useState<WeatherResult | null>(null);
@@ -245,7 +245,7 @@ export function CabinMap() {
       (pos) => {
         setLocating(false);
         setSelected(null);
-        setCenter({ lat: pos.coords.latitude, lon: pos.coords.longitude });
+        setCenter({ lat: pos.coords.latitude, lon: pos.coords.longitude, zoom: 12, _t: Date.now() });
       },
       () => setLocating(false),
       { timeout: 6000 }

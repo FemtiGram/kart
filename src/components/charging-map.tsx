@@ -88,7 +88,7 @@ export function ChargingMap() {
   const [error, setError] = useState(false);
   const [showConnectorInfo, setShowConnectorInfo] = useState(false);
   const [selected, setSelected] = useState<Station | null>(null);
-  const [center, setCenter] = useState<{ lat: number; lon: number; zoom?: number } | null>(null);
+  const [center, setCenter] = useState<{ lat: number; lon: number; zoom?: number; _t?: number } | null>(null);
   const [tileLayer, setTileLayer] = useState<TileLayerKey>("gråtone");
 
   const [query, setQuery] = useState("");
@@ -215,7 +215,7 @@ export function ChargingMap() {
       (pos) => {
         setLocating(false);
         setSelected(null);
-        setCenter({ lat: pos.coords.latitude, lon: pos.coords.longitude });
+        setCenter({ lat: pos.coords.latitude, lon: pos.coords.longitude, zoom: 12, _t: Date.now() });
       },
       () => setLocating(false),
       { timeout: 6000 }
