@@ -3,8 +3,32 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { MapContainer, TileLayer, CircleMarker, useMap, useMapEvents } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
-import { Loader2, X, Search, MapPin, ExternalLink, Info, Map as MapIcon, Layers, LocateFixed, Mountain } from "lucide-react";
+import { Loader2, X, Search, MapPin, ExternalLink, Info, Map as MapIcon, Layers, LocateFixed, Mountain, Wind, Droplets, Sun, Cloud, CloudSun, CloudRain, CloudSnow, CloudLightning, CloudFog, CloudHail, CloudDrizzle, Moon } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
+
+interface WeatherResult {
+  temperature: number;
+  windSpeed: number;
+  precipitation: number;
+  symbolCode: string;
+}
+
+function weatherIcon(symbolCode: string): LucideIcon {
+  const c = symbolCode.toLowerCase();
+  if (c.includes("thunder")) return CloudLightning;
+  if (c.includes("snow") && c.includes("rain")) return CloudHail;
+  if (c.includes("sleet")) return CloudHail;
+  if (c.includes("snow")) return CloudSnow;
+  if (c.includes("heavyrain") || c.includes("rain")) return CloudRain;
+  if (c.includes("drizzle") || c.includes("lightrain")) return CloudDrizzle;
+  if (c.includes("fog")) return CloudFog;
+  if (c.includes("cloudy") && c.includes("partly")) return CloudSun;
+  if (c.includes("cloudy")) return Cloud;
+  if (c.includes("fair")) return CloudSun;
+  if (c.includes("night")) return Moon;
+  return Sun;
+}
 
 interface Address {
   adressetekst: string;
@@ -137,8 +161,10 @@ export function CabinMap() {
   const [selected, setSelected] = useState<Cabin | null>(null);
   const [center, setCenter] = useState<{ lat: number; lon: number } | null>(null);
   const [zoomLow, setZoomLow] = useState(true);
-  const [tileLayer, setTileLayer] = useState<TileLayerKey>("kart");
+  const [tileLayer, setTileLayer] = useState<TileLayerKey>("gråtone");
   const [showInfo, setShowInfo] = useState(false);
+  const [weather, setWeather] = useState<WeatherResult | null>(null);
+  const [loadingWeather, setLoadingWeather] = useState(false);
 
   const [query, setQuery] = useState("");
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
@@ -161,16 +187,17 @@ export function CabinMap() {
 
     const kommuneMatches: Suggestion[] = kommunerRef.current
       .filter((k) => k.kommunenavn.toLowerCase().includes(q.toLowerCase()))
-      .slice(0, 4)
+      .slice(0, 6)
       .map((k) => ({ type: "kommune", kommunenummer: k.kommunenummer, kommunenavn: k.kommunenavn }));
 
     let adresseMatches: Suggestion[] = [];
     try {
-      const res = await fetch(`https://ws.geonorge.no/adresser/v1/sok?sok=${encodeURIComponent(q)}&treffPerSide=4&utkoordsys=4326`);
+      const res = await fetch(`https://ws.geonorge.no/adresser/v1/sok?sok=${encodeURIComponent(q)}&treffPerSide=2&utkoordsys=4326`);
       const data = await res.json();
       adresseMatches = (data.adresser ?? []).map((a: Address) => ({ type: "adresse" as const, addr: a }));
     } catch { /* ignore */ }
 
+    // Show kommuner first, then addresses
     setSuggestions([...kommuneMatches, ...adresseMatches]);
     setShowDropdown(true);
     setLoadingSuggestions(false);
@@ -235,6 +262,16 @@ export function CabinMap() {
       { timeout: 6000 }
     );
   };
+
+  // Fetch weather when a cabin is selected
+  useEffect(() => {
+    if (!selected) { setWeather(null); return; }
+    setLoadingWeather(true);
+    fetch(`/api/weather?lat=${selected.lat}&lon=${selected.lon}`)
+      .then((r) => r.json())
+      .then((data) => { setWeather(data); setLoadingWeather(false); })
+      .catch(() => setLoadingWeather(false));
+  }, [selected?.id]);
 
   // Count cabins by type for the status bar
   const dntCount = cabins.filter((c) => c.isDNT).length;
@@ -452,6 +489,49 @@ export function CabinMap() {
                 <p className="text-sm text-muted-foreground">Ingen tilleggsdata tilgjengelig</p>
               )}
             </div>
+
+            {/* Weather */}
+            {(loadingWeather || weather) && (
+              <div className="border-t pt-3 mb-3">
+                {loadingWeather ? (
+                  <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" /> Henter vær...
+                  </div>
+                ) : weather && (() => {
+                  const WeatherIcon = weatherIcon(weather.symbolCode);
+                  return (
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <WeatherIcon className="h-9 w-9 shrink-0" style={{ color: "var(--kv-blue)" }} />
+                        <div className="flex flex-wrap gap-x-4 gap-y-0.5">
+                          <span className="text-xl font-extrabold" style={{ color: "var(--kv-blue)" }}>
+                            {weather.temperature.toFixed(1)}°C
+                          </span>
+                          <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                            <span className="flex items-center gap-1">
+                              <Wind className="h-3.5 w-3.5" />
+                              {weather.windSpeed.toFixed(1)} m/s
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Droplets className="h-3.5 w-3.5" />
+                              {weather.precipitation.toFixed(1)} mm
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      <a
+                        href={`https://www.yr.no/nb/søk?q=${encodeURIComponent(selected.name)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors shrink-0"
+                      >
+                        yr.no <ExternalLink className="h-3 w-3" />
+                      </a>
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
 
             {/* Links */}
             <div className="border-t pt-3 flex flex-wrap gap-2">
