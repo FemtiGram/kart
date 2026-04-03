@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { MapContainer, TileLayer, Marker, useMap } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, useMap, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { Loader2, X, Zap, LocateFixed, ExternalLink, Search, MapPin, Info, Map as MapIcon, Layers } from "lucide-react";
@@ -35,6 +35,8 @@ interface Station {
   connectors: string[];
   address: string | null;
 }
+
+const MIN_ZOOM_FOR_FETCH = 8;
 
 const TILE_LAYERS = {
   kart: {
@@ -81,14 +83,61 @@ function PanToSelected({ station }: { station: Station | null }) {
   return null;
 }
 
+async function fetchStations(lat: number, lon: number, signal?: AbortSignal): Promise<Station[]> {
+  const res = await fetch(`/api/charging?lat=${lat}&lon=${lon}`, { signal });
+  if (!res.ok) throw new Error("fetch failed");
+  const data = await res.json();
+  return Array.isArray(data) ? data : [];
+}
+
+function ViewportLoader({ onLoad, onError, onLoading, onZoomLow }: {
+  onLoad: (stations: Station[]) => void;
+  onError: () => void;
+  onLoading: (v: boolean) => void;
+  onZoomLow: (v: boolean) => void;
+}) {
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
+
+  useMapEvents({
+    moveend(e) {
+      const map = e.target;
+      const zoom = map.getZoom();
+      if (zoom < MIN_ZOOM_FOR_FETCH) {
+        onZoomLow(true);
+        return;
+      }
+      onZoomLow(false);
+      const { lat, lng } = map.getCenter();
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      if (abortRef.current) abortRef.current.abort();
+      debounceRef.current = setTimeout(() => {
+        const controller = new AbortController();
+        abortRef.current = controller;
+        onLoading(true);
+        fetchStations(lat, lng, controller.signal)
+          .then((data) => { onLoad(data); onLoading(false); })
+          .catch((err) => {
+            if (err instanceof DOMException && err.name === "AbortError") return;
+            onError(); onLoading(false);
+          });
+      }, 400);
+    },
+  });
+
+  return null;
+}
+
 export function ChargingMap() {
   const [stations, setStations] = useState<Station[]>([]);
-  const [loading, setLoading] = useState(true);
+  const cacheRef = useRef<Map<number, Station>>(new Map());
+  const [loading, setLoading] = useState(false);
   const [locating, setLocating] = useState(false);
   const [error, setError] = useState(false);
   const [showConnectorInfo, setShowConnectorInfo] = useState(false);
   const [selected, setSelected] = useState<Station | null>(null);
   const [center, setCenter] = useState<{ lat: number; lon: number; zoom?: number } | null>(null);
+  const [zoomLow, setZoomLow] = useState(true);
   const [tileLayer, setTileLayer] = useState<TileLayerKey>("gråtone");
 
   const [query, setQuery] = useState("");
@@ -98,20 +147,6 @@ export function ChargingMap() {
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const kommunerRef = useRef<KommuneEntry[]>([]);
-
-  // Fetch ALL stations on mount (single request, cached 24h server-side)
-  useEffect(() => {
-    fetch("/api/charging")
-      .then((r) => r.json())
-      .then((data) => {
-        setStations(Array.isArray(data) ? data : []);
-        setLoading(false);
-      })
-      .catch(() => {
-        setError(true);
-        setLoading(false);
-      });
-  }, []);
 
   useEffect(() => {
     fetch("https://ws.geonorge.no/kommuneinfo/v1/kommuner")
@@ -270,7 +305,7 @@ export function ChargingMap() {
         </div>
         <div className="flex items-center justify-between mt-2">
           <p className="text-xs text-muted-foreground">
-            {loading ? "Henter ladestasjoner..." : stations.length > 0 ? `${stations.length} ladestasjoner i Norge — Kilde: OpenStreetMap` : "Ingen ladestasjoner funnet"}
+            {locating ? "Finner posisjon..." : loading ? "Henter ladestasjoner..." : zoomLow ? "Zoom inn på kartet for å se ladestasjoner" : stations.length > 0 ? `${stations.length} ladestasjoner i området — Kilde: OpenStreetMap` : "Ingen ladestasjoner funnet i dette området"}
           </p>
           <button
             disabled
@@ -286,24 +321,23 @@ export function ChargingMap() {
 
       {/* Map */}
       <div className="relative grow">
-        {loading && (
-          <div className="absolute inset-0 z-[1000] bg-background p-4 flex flex-col gap-3">
-            <div className="flex gap-3">
-              <div className="h-8 w-32 rounded-lg bg-muted animate-pulse" />
-              <div className="h-8 w-24 rounded-lg bg-muted animate-pulse" />
-            </div>
-            <div className="flex-1 rounded-xl bg-muted animate-pulse" />
-          </div>
-        )}
-        {locating && (
+        {(loading || locating) && (
           <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[1000] bg-background/90 backdrop-blur-sm border rounded-full px-4 py-2 shadow-lg">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" />
-              Finner posisjon...
+              {locating ? "Finner posisjon..." : "Henter ladestasjoner..."}
             </div>
           </div>
         )}
-        {error && (
+        {!loading && !locating && zoomLow && stations.length === 0 && (
+          <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[1000] bg-background/90 backdrop-blur-sm border rounded-full px-4 py-2 shadow-lg">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Search className="h-4 w-4" />
+              Zoom inn eller søk for å se ladestasjoner
+            </div>
+          </div>
+        )}
+        {error && stations.length === 0 && (
           <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[1000] bg-destructive/10 backdrop-blur-sm border border-destructive/30 rounded-full px-4 py-2 shadow-lg">
             <p className="text-sm text-destructive">Kunne ikke laste data. Prøv igjen senere.</p>
           </div>
@@ -316,6 +350,16 @@ export function ChargingMap() {
         >
           {center && <FlyTo lat={center.lat} lon={center.lon} zoom={center.zoom} />}
           <PanToSelected station={selected} />
+          <ViewportLoader
+            onLoad={(data) => {
+              data.forEach((s) => cacheRef.current.set(s.id, s));
+              setStations(Array.from(cacheRef.current.values()));
+              setError(false);
+            }}
+            onError={() => setError(true)}
+            onLoading={setLoading}
+            onZoomLow={setZoomLow}
+          />
           <TileLayer
             key={tileLayer}
             url={TILE_LAYERS[tileLayer].url}
@@ -357,7 +401,6 @@ export function ChargingMap() {
             className="absolute bottom-4 left-3 right-3 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 sm:w-96 z-[999] bg-white rounded-2xl shadow-xl px-4 py-4"
             style={{ border: "1.5px solid var(--kv-green-light, #b3e6c8)" }}
           >
-            {/* Where is this */}
             <div className="flex items-start justify-between gap-2 mb-3">
               <div className="min-w-0">
                 <p className="font-bold text-base truncate leading-snug">{selected.name}</p>
@@ -385,7 +428,6 @@ export function ChargingMap() {
               </button>
             </div>
 
-            {/* How many points */}
             <div className="border-t pt-3 mb-3">
               {selected.capacity != null ? (
                 <div className="flex items-baseline gap-2">
@@ -400,7 +442,6 @@ export function ChargingMap() {
               <p className="text-xs text-muted-foreground/50 mt-0.5 italic">Sanntidsdata tilgjengelig snart</p>
             </div>
 
-            {/* What type */}
             {selected.connectors.length > 0 && (
               <div className="border-t pt-3">
                 <p className="text-xs text-muted-foreground font-medium mb-1.5">Kontakttyper</p>
