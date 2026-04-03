@@ -61,7 +61,7 @@ function chargingIcon(isSelected: boolean): L.DivIcon {
     className: "",
     iconSize: [size, size],
     iconAnchor: [size / 2, size / 2],
-    html: `<div style="width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;background:white;border-radius:50%;box-shadow:0 1px 4px rgba(0,0,0,0.3);border:1.5px solid ${isSelected ? "#003da5" : "white"}">${bolt}</div>`,
+    html: `<div style="width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;background:white;border-radius:50%;box-shadow:0 1px 4px rgba(0,0,0,0.25);border:2.5px solid ${isSelected ? "#003da5" : "rgba(0,0,0,0.15)"}">${bolt}</div>`,
   });
 }
 
@@ -129,6 +129,7 @@ async function fetchStations(lat: number, lon: number, signal?: AbortSignal): Pr
 
 export function ChargingMap() {
   const [stations, setStations] = useState<Station[]>([]);
+  const stationCacheRef = useRef<Map<number, Station>>(new Map());
   const [loading, setLoading] = useState(false);
   const [locating, setLocating] = useState(false);
   const [error, setError] = useState(false);
@@ -335,7 +336,11 @@ export function ChargingMap() {
           {center && <FlyTo lat={center.lat} lon={center.lon} />}
           <PanToSelected station={selected} />
           <ViewportLoader
-            onLoad={(data) => { setStations(data); setError(false); }}
+            onLoad={(data) => {
+              data.forEach((s) => stationCacheRef.current.set(s.id, s));
+              setStations(Array.from(stationCacheRef.current.values()));
+              setError(false);
+            }}
             onError={() => setError(true)}
             onLoading={setLoading}
             onZoomLow={setZoomLow}

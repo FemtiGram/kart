@@ -96,7 +96,7 @@ function cabinIcon(type: Cabin["cabinType"], isSelected: boolean): L.DivIcon {
     className: "",
     iconSize: [size, size],
     iconAnchor: [size / 2, size / 2],
-    html: `<div style="width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;background:white;border-radius:50%;box-shadow:0 1px 4px rgba(0,0,0,0.3);border:1.5px solid ${isSelected ? "#003da5" : "white"}">${svg}</div>`,
+    html: `<div style="width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;background:white;border-radius:50%;box-shadow:0 1px 4px rgba(0,0,0,0.25);border:2.5px solid ${isSelected ? "#003da5" : "rgba(0,0,0,0.15)"}">${svg}</div>`,
   });
 }
 
@@ -181,6 +181,7 @@ async function fetchCabins(lat: number, lon: number, signal?: AbortSignal): Prom
 
 export function CabinMap() {
   const [cabins, setCabins] = useState<Cabin[]>([]);
+  const cabinCacheRef = useRef<Map<number, Cabin>>(new Map());
   const [loading, setLoading] = useState(false);
   const [locating, setLocating] = useState(false);
   const [error, setError] = useState(false);
@@ -396,7 +397,11 @@ export function CabinMap() {
           {center && <FlyTo lat={center.lat} lon={center.lon} />}
           <PanToSelected cabin={selected} />
           <ViewportLoader
-            onLoad={(data) => { setCabins(data); setError(false); }}
+            onLoad={(data) => {
+              data.forEach((c) => cabinCacheRef.current.set(c.id, c));
+              setCabins(Array.from(cabinCacheRef.current.values()));
+              setError(false);
+            }}
             onError={() => setError(true)}
             onLoading={setLoading}
             onZoomLow={setZoomLow}
