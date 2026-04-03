@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { MapContainer, TileLayer, Marker, useMap, useMapEvents } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { Loader2, X, Search, MapPin, ExternalLink, Info, Map as MapIcon, Layers, LocateFixed, Mountain, Wind, Droplets, Sun, Cloud, CloudSun, CloudRain, CloudSnow, CloudLightning, CloudFog, CloudHail, CloudDrizzle, Moon } from "lucide-react";
@@ -102,8 +102,6 @@ function cabinIcon(type: Cabin["cabinType"], isSelected: boolean): L.DivIcon {
   });
 }
 
-const MIN_ZOOM_FOR_FETCH = 7;
-
 const TILE_LAYERS = {
   kart: {
     label: "Kart",
@@ -136,60 +134,13 @@ function PanToSelected({ cabin }: { cabin: Cabin | null }) {
   return null;
 }
 
-function ViewportLoader({ onLoad, onError, onLoading, onZoomLow }: {
-  onLoad: (cabins: Cabin[]) => void;
-  onError: () => void;
-  onLoading: (v: boolean) => void;
-  onZoomLow: (v: boolean) => void;
-}) {
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const abortRef = useRef<AbortController | null>(null);
-
-  useMapEvents({
-    moveend(e) {
-      const map = e.target;
-      const zoom = map.getZoom();
-      if (zoom < MIN_ZOOM_FOR_FETCH) {
-        onZoomLow(true);
-        return;
-      }
-      onZoomLow(false);
-      const { lat, lng } = map.getCenter();
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-      if (abortRef.current) abortRef.current.abort();
-      debounceRef.current = setTimeout(() => {
-        const controller = new AbortController();
-        abortRef.current = controller;
-        onLoading(true);
-        fetchCabins(lat, lng, controller.signal)
-          .then((data) => { onLoad(data); onLoading(false); })
-          .catch((err) => {
-            if (err instanceof DOMException && err.name === "AbortError") return;
-            onError(); onLoading(false);
-          });
-      }, 400);
-    },
-  });
-
-  return null;
-}
-
-async function fetchCabins(lat: number, lon: number, signal?: AbortSignal): Promise<Cabin[]> {
-  const res = await fetch(`/api/cabins?lat=${lat}&lon=${lon}`, { signal });
-  if (!res.ok) throw new Error("fetch failed");
-  const data = await res.json();
-  return Array.isArray(data) ? data : [];
-}
-
 export function CabinMap() {
   const [cabins, setCabins] = useState<Cabin[]>([]);
-  const cabinCacheRef = useRef<Map<number, Cabin>>(new Map());
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [locating, setLocating] = useState(false);
   const [error, setError] = useState(false);
   const [selected, setSelected] = useState<Cabin | null>(null);
   const [center, setCenter] = useState<{ lat: number; lon: number; zoom?: number } | null>(null);
-  const [zoomLow, setZoomLow] = useState(true);
   const [tileLayer, setTileLayer] = useState<TileLayerKey>("gråtone");
   const [showInfo, setShowInfo] = useState(false);
   const [weather, setWeather] = useState<WeatherResult | null>(null);
@@ -301,6 +252,31 @@ export function CabinMap() {
     );
   };
 
+  // Load all cabins from pre-built static JSON
+  useEffect(() => {
+    fetch("/data/cabins.json")
+      .then((r) => r.json())
+      .then((data) => {
+        setCabins(Array.isArray(data) ? data : []);
+        setLoading(false);
+        // Auto-fly to user location or Jotunheimen (great cabin area)
+        const pref = localStorage.getItem("mapgram-use-location");
+        if (pref === "yes" && navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+            (pos) => setCenter({ lat: pos.coords.latitude, lon: pos.coords.longitude, zoom: 10 }),
+            () => setCenter({ lat: 61.5, lon: 8.3, zoom: 9 }),
+            { timeout: 6000 }
+          );
+        } else {
+          setCenter({ lat: 61.5, lon: 8.3, zoom: 9 });
+        }
+      })
+      .catch(() => {
+        setError(true);
+        setLoading(false);
+      });
+  }, []);
+
   // Fetch weather when a cabin is selected
   useEffect(() => {
     if (!selected) { setWeather(null); return; }
@@ -311,11 +287,7 @@ export function CabinMap() {
       .catch(() => setLoadingWeather(false));
   }, [selected?.id]);
 
-  // Count cabins by type for the status bar
   const dntCount = cabins.filter((c) => c.isDNT).length;
-  const typeBreakdown = !zoomLow && cabins.length > 0
-    ? `${cabins.length} hytter (${dntCount} DNT) i området — Kilde: OpenStreetMap`
-    : null;
 
   return (
     <div className="flex flex-col" style={{ height: "calc(100svh - 57px)" }}>
@@ -376,31 +348,32 @@ export function CabinMap() {
         </div>
         <div className="flex items-center justify-between mt-2">
           <p className="text-xs text-muted-foreground">
-            {locating ? "Finner posisjon..." : loading ? "Henter hytter..." : zoomLow ? "Zoom inn på kartet for å se hytter" : typeBreakdown ?? "Ingen hytter funnet i dette området"}
+            {loading ? "Henter hytter..." : cabins.length > 0 ? `${cabins.length} hytter (${dntCount} DNT) i Norge — Kilde: OpenStreetMap` : "Ingen hytter funnet"}
           </p>
         </div>
       </div>
 
       {/* Map */}
       <div className="relative grow">
-        {(loading || locating) && (
-          <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[1000] bg-background/90 backdrop-blur-sm border rounded-full px-4 py-2 shadow-lg">
+        {loading && (
+          <div className="absolute inset-0 z-[1000] bg-background p-4 flex flex-col gap-3">
+            <div className="flex gap-3">
+              <div className="h-8 w-32 rounded-lg bg-muted animate-pulse" />
+              <div className="h-8 w-24 rounded-lg bg-muted animate-pulse" />
+            </div>
+            <div className="flex-1 rounded-xl bg-muted animate-pulse" />
+          </div>
+        )}
+        {locating && (
+          <div className="absolute bottom-20 sm:top-3 sm:bottom-auto left-1/2 -translate-x-1/2 z-[1000] bg-background/90 backdrop-blur-sm border rounded-full px-4 py-2 shadow-lg">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" />
-              {locating ? "Finner posisjon..." : "Henter hytter..."}
+              Finner posisjon...
             </div>
           </div>
         )}
-        {!loading && !locating && zoomLow && cabins.length === 0 && (
-          <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[1000] bg-background/90 backdrop-blur-sm border rounded-full px-4 py-2 shadow-lg">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Search className="h-4 w-4" />
-              Zoom inn eller søk for å se hytter
-            </div>
-          </div>
-        )}
-        {error && cabins.length === 0 && (
-          <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[1000] bg-destructive/10 backdrop-blur-sm border border-destructive/30 rounded-full px-4 py-2 shadow-lg">
+        {error && (
+          <div className="absolute bottom-20 sm:top-3 sm:bottom-auto left-1/2 -translate-x-1/2 z-[1000] bg-destructive/10 backdrop-blur-sm border border-destructive/30 rounded-full px-4 py-2 shadow-lg">
             <p className="text-sm text-destructive">Kunne ikke laste data. Prøv igjen senere.</p>
           </div>
         )}
@@ -412,16 +385,6 @@ export function CabinMap() {
         >
           {center && <FlyTo lat={center.lat} lon={center.lon} zoom={center.zoom} />}
           <PanToSelected cabin={selected} />
-          <ViewportLoader
-            onLoad={(data) => {
-              data.forEach((c) => cabinCacheRef.current.set(c.id, c));
-              setCabins(Array.from(cabinCacheRef.current.values()));
-              setError(false);
-            }}
-            onError={() => setError(true)}
-            onLoading={setLoading}
-            onZoomLow={setZoomLow}
-          />
           <TileLayer
             key={tileLayer}
             url={TILE_LAYERS[tileLayer].url}
