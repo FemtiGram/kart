@@ -19,8 +19,8 @@ async function main() {
   });
 
   if (!res.ok) {
-    console.error(`Overpass API returned ${res.status}`);
-    process.exit(1);
+    console.warn(`Overpass API returned ${res.status} — keeping existing stations.json`);
+    return;
   }
 
   const data = await res.json();
