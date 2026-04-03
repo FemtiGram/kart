@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { MapContainer, TileLayer, CircleMarker, useMap, useMapEvents } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, useMap, useMapEvents } from "react-leaflet";
+import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { Loader2, X, Zap, LocateFixed, ExternalLink, Search, MapPin, Info, Map as MapIcon, Layers } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -49,6 +50,20 @@ const TILE_LAYERS = {
 } as const;
 
 type TileLayerKey = keyof typeof TILE_LAYERS;
+
+function chargingIcon(isSelected: boolean): L.DivIcon {
+  const color = isSelected ? "#003da5" : "#00b140";
+  const size = 28;
+  // Lightning bolt path
+  const bolt = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="${color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>`;
+
+  return L.divIcon({
+    className: "",
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
+    html: `<div style="width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;background:white;border-radius:50%;box-shadow:0 1px 4px rgba(0,0,0,0.3);border:1.5px solid ${isSelected ? "#003da5" : "white"}">${bolt}</div>`,
+  });
+}
 
 function FlyTo({ lat, lon }: { lat: number; lon: number }) {
   const map = useMap();
@@ -332,16 +347,10 @@ export function ChargingMap() {
             maxZoom={17}
           />
           {stations.map((s) => (
-            <CircleMarker
+            <Marker
               key={s.id}
-              center={[s.lat, s.lon]}
-              radius={6}
-              pathOptions={{
-                color: selected?.id === s.id ? "#003da5" : "#00b140",
-                fillColor: selected?.id === s.id ? "#003da5" : "#00b140",
-                fillOpacity: 0.85,
-                weight: 1.5,
-              }}
+              position={[s.lat, s.lon]}
+              icon={chargingIcon(selected?.id === s.id)}
               eventHandlers={{
                 click() {
                   setSelected((prev) => (prev?.id === s.id ? null : s));

@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { MapContainer, TileLayer, CircleMarker, useMap, useMapEvents } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, useMap, useMapEvents } from "react-leaflet";
+import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { Loader2, X, Search, MapPin, ExternalLink, Info, Map as MapIcon, Layers, LocateFixed, Mountain, Wind, Droplets, Sun, Cloud, CloudSun, CloudRain, CloudSnow, CloudLightning, CloudFog, CloudHail, CloudDrizzle, Moon } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -77,6 +78,27 @@ const CABIN_LABELS: Record<Cabin["cabinType"], string> = {
   ubetjent: "Ubetjent",
   privat: "Annen hytte",
 };
+
+// SVG cabin icons — filled for betjent/selvbetjent, outline for ubetjent/privat
+function cabinIcon(type: Cabin["cabinType"], isSelected: boolean): L.DivIcon {
+  const color = isSelected ? "#003da5" : CABIN_COLORS[type];
+  const size = type === "betjent" || type === "selvbetjent" ? 30 : 26;
+  const filled = type === "betjent" || type === "selvbetjent";
+
+  // House path (simplified home icon)
+  const housePath = filled
+    ? `<path d="M3 10.5L12 3l9 7.5V21a1 1 0 01-1 1H4a1 1 0 01-1-1z" fill="${color}" stroke="${color}" stroke-width="1.5"/>`
+    : `<path d="M3 10.5L12 3l9 7.5V21a1 1 0 01-1 1H4a1 1 0 01-1-1z" fill="none" stroke="${color}" stroke-width="2"/>`;
+
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="${size * 0.5}" height="${size * 0.5}">${housePath}</svg>`;
+
+  return L.divIcon({
+    className: "",
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
+    html: `<div style="width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;background:white;border-radius:50%;box-shadow:0 1px 4px rgba(0,0,0,0.3);border:1.5px solid ${isSelected ? "#003da5" : "white"}">${svg}</div>`,
+  });
+}
 
 const MIN_ZOOM_FOR_FETCH = 7;
 
@@ -386,16 +408,10 @@ export function CabinMap() {
             maxZoom={17}
           />
           {cabins.map((c) => (
-            <CircleMarker
+            <Marker
               key={c.id}
-              center={[c.lat, c.lon]}
-              radius={selected?.id === c.id ? 8 : c.isDNT ? 7 : 5}
-              pathOptions={{
-                color: selected?.id === c.id ? "#003da5" : CABIN_COLORS[c.cabinType],
-                fillColor: selected?.id === c.id ? "#003da5" : CABIN_COLORS[c.cabinType],
-                fillOpacity: c.isDNT ? 0.9 : 0.6,
-                weight: selected?.id === c.id ? 2.5 : c.isDNT ? 2 : 1,
-              }}
+              position={[c.lat, c.lon]}
+              icon={cabinIcon(c.cabinType, selected?.id === c.id)}
               eventHandlers={{
                 click() {
                   setSelected((prev) => (prev?.id === c.id ? null : c));
