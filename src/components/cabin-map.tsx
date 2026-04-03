@@ -379,8 +379,8 @@ export function CabinMap() {
         )}
 
         <MapContainer
-          center={[65, 14]}
-          zoom={5}
+          center={[61.5, 8.3]}
+          zoom={9}
           style={{ height: "100%", width: "100%" }}
         >
           {center && <FlyTo lat={center.lat} lon={center.lon} zoom={center.zoom} />}

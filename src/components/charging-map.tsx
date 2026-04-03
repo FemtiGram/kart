@@ -99,14 +99,35 @@ export function ChargingMap() {
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const kommunerRef = useRef<KommuneEntry[]>([]);
 
-  // Load all stations from pre-built static JSON
+  // Load stations from pre-built static JSON, fallback to live API
   useEffect(() => {
     fetch("/data/stations.json")
       .then((r) => r.json())
-      .then((data) => {
-        setStations(Array.isArray(data) ? data : []);
+      .then(async (data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setStations(data);
+        } else {
+          // Static file empty — fallback to live Overpass for Oslo area
+          const res = await fetch("https://overpass-api.de/api/interpreter", {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: `data=${encodeURIComponent('[out:json][timeout:8];node["amenity"="charging_station"](57.5,4.0,71.5,31.5);out body;')}`,
+          });
+          if (res.ok) {
+            const osm = await res.json();
+            const stations = (osm.elements ?? []).map((el: { id: number; lat: number; lon: number; tags: Record<string, string> }) => {
+              const t = el.tags;
+              const connectors = ["type2", "chademo", "type2_combo", "type1", "schuko", "type3c"]
+                .filter((s) => t[`socket:${s}`] && t[`socket:${s}`] !== "no")
+                .map((s) => s.replace("type2_combo", "CCS").replace("type2", "Type 2").replace("chademo", "CHAdeMO").replace("type1", "Type 1").replace("schuko", "Schuko").replace("type3c", "Type 3C"));
+              const address = [t["addr:street"], t["addr:housenumber"], t["addr:city"]].filter(Boolean).join(" ");
+              return { id: el.id, lat: el.lat, lon: el.lon, name: t.name ?? t.operator ?? "Ladestasjon", operator: t.operator ?? null, capacity: t.capacity ? parseInt(t.capacity) : null, connectors, address: address || null };
+            });
+            setStations(stations);
+          }
+        }
         setLoading(false);
-        // Auto-fly to user location or Oslo after data loads
+        // Auto-fly to user location or Oslo
         const pref = localStorage.getItem("mapgram-use-location");
         if (pref === "yes" && navigator.geolocation) {
           navigator.geolocation.getCurrentPosition(
