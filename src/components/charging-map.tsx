@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { MapContainer, TileLayer, CircleMarker, useMap, useMapEvents } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
-import { Loader2, X, Zap, LocateFixed, ExternalLink, Search, MapPin, Info } from "lucide-react";
+import { Loader2, X, Zap, LocateFixed, ExternalLink, Search, MapPin, Info, Map as MapIcon, Layers } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface Address {
@@ -34,6 +34,21 @@ interface Station {
 }
 
 const MIN_ZOOM_FOR_FETCH = 8;
+
+const TILE_LAYERS = {
+  kart: {
+    label: "Kart",
+    url: "https://cache.kartverket.no/v1/wmts/1.0.0/topo/default/webmercator/{z}/{y}/{x}.png",
+    attribution: '&copy; <a href="https://www.kartverket.no/">Kartverket</a>',
+  },
+  gråtone: {
+    label: "Gråtone",
+    url: "https://cache.kartverket.no/v1/wmts/1.0.0/topograatone/default/webmercator/{z}/{y}/{x}.png",
+    attribution: '&copy; <a href="https://www.kartverket.no/">Kartverket</a>',
+  },
+} as const;
+
+type TileLayerKey = keyof typeof TILE_LAYERS;
 
 function FlyTo({ lat, lon }: { lat: number; lon: number }) {
   const map = useMap();
@@ -106,6 +121,7 @@ export function ChargingMap() {
   const [selected, setSelected] = useState<Station | null>(null);
   const [center, setCenter] = useState<{ lat: number; lon: number } | null>(null);
   const [zoomLow, setZoomLow] = useState(true);
+  const [tileLayer, setTileLayer] = useState<TileLayerKey>("kart");
 
   const [query, setQuery] = useState("");
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
@@ -310,8 +326,10 @@ export function ChargingMap() {
             onZoomLow={setZoomLow}
           />
           <TileLayer
-            url="https://cache.kartverket.no/v1/wmts/1.0.0/topo/default/webmercator/{z}/{y}/{x}.png"
-            attribution='&copy; <a href="https://www.kartverket.no/">Kartverket</a>'
+            key={tileLayer}
+            url={TILE_LAYERS[tileLayer].url}
+            attribution={TILE_LAYERS[tileLayer].attribution}
+            maxZoom={17}
           />
           {stations.map((s) => (
             <CircleMarker
@@ -332,6 +350,21 @@ export function ChargingMap() {
             />
           ))}
         </MapContainer>
+
+        {/* Tile layer toggle */}
+        <div className="absolute top-3 right-3 z-[999] flex rounded-lg border bg-white shadow-md overflow-hidden">
+          {(["kart", "gråtone"] as TileLayerKey[]).map((key, i) => (
+            <button
+              key={key}
+              onClick={() => setTileLayer(key)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold transition-colors ${i > 0 ? "border-l" : ""} ${tileLayer === key ? "text-white" : "text-muted-foreground hover:bg-muted"}`}
+              style={tileLayer === key ? { background: "var(--kv-blue)" } : {}}
+            >
+              {key === "kart" ? <MapIcon className="h-3.5 w-3.5" /> : <Layers className="h-3.5 w-3.5" />}
+              {TILE_LAYERS[key].label}
+            </button>
+          ))}
+        </div>
 
         {/* Info card */}
         {selected && (
