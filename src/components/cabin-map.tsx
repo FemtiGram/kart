@@ -617,7 +617,7 @@ export function CabinMap() {
               )}
               {selected.isDNT && (
                 <a
-                  href={`https://www.dnt.no/sok/?q=${encodeURIComponent(selected.name)}`}
+                  href={`https://www.dnt.no/sok/?q=${encodeURIComponent(selected.name)}&tab=cabins`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
