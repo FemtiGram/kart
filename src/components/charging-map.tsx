@@ -101,29 +101,48 @@ export function ChargingMap() {
 
   // Load stations from pre-built static JSON, fallback to live API
   useEffect(() => {
+    const OVERPASS_QUERY = '[out:json][timeout:45];node["amenity"="charging_station"](57.5,4.0,71.5,31.5);out body;';
+    const MIRRORS = [
+      "https://overpass-api.de/api/interpreter",
+      "https://overpass.kumi.systems/api/interpreter",
+      "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
+    ];
+
+    function parseStations(elements: Array<{ id: number; lat: number; lon: number; tags: Record<string, string> }>) {
+      return elements.map((el) => {
+        const t = el.tags;
+        const connectors = ["type2", "chademo", "type2_combo", "type1", "schuko", "type3c"]
+          .filter((s) => t[`socket:${s}`] && t[`socket:${s}`] !== "no")
+          .map((s) => s.replace("type2_combo", "CCS").replace("type2", "Type 2").replace("chademo", "CHAdeMO").replace("type1", "Type 1").replace("schuko", "Schuko").replace("type3c", "Type 3C"));
+        const address = [t["addr:street"], t["addr:housenumber"], t["addr:city"]].filter(Boolean).join(" ");
+        return { id: el.id, lat: el.lat, lon: el.lon, name: t.name ?? t.operator ?? "Ladestasjon", operator: t.operator ?? null, capacity: t.capacity ? parseInt(t.capacity) : null, connectors, address: address || null };
+      });
+    }
+
+    async function fetchFromMirrors() {
+      for (const endpoint of MIRRORS) {
+        try {
+          const res = await fetch(endpoint, {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: `data=${encodeURIComponent(OVERPASS_QUERY)}`,
+          });
+          if (res.ok) return res;
+        } catch { /* try next */ }
+      }
+      return null;
+    }
+
     fetch("/data/stations.json")
       .then((r) => r.json())
       .then(async (data) => {
         if (Array.isArray(data) && data.length > 0) {
           setStations(data);
         } else {
-          // Static file empty — fallback to live Overpass for Oslo area
-          const res = await fetch("https://overpass-api.de/api/interpreter", {
-            method: "POST",
-            headers: { "Content-Type": "application/x-www-form-urlencoded" },
-            body: `data=${encodeURIComponent('[out:json][timeout:8];node["amenity"="charging_station"](57.5,4.0,71.5,31.5);out body;')}`,
-          });
-          if (res.ok) {
+          const res = await fetchFromMirrors();
+          if (res) {
             const osm = await res.json();
-            const stations = (osm.elements ?? []).map((el: { id: number; lat: number; lon: number; tags: Record<string, string> }) => {
-              const t = el.tags;
-              const connectors = ["type2", "chademo", "type2_combo", "type1", "schuko", "type3c"]
-                .filter((s) => t[`socket:${s}`] && t[`socket:${s}`] !== "no")
-                .map((s) => s.replace("type2_combo", "CCS").replace("type2", "Type 2").replace("chademo", "CHAdeMO").replace("type1", "Type 1").replace("schuko", "Schuko").replace("type3c", "Type 3C"));
-              const address = [t["addr:street"], t["addr:housenumber"], t["addr:city"]].filter(Boolean).join(" ");
-              return { id: el.id, lat: el.lat, lon: el.lon, name: t.name ?? t.operator ?? "Ladestasjon", operator: t.operator ?? null, capacity: t.capacity ? parseInt(t.capacity) : null, connectors, address: address || null };
-            });
-            setStations(stations);
+            setStations(parseStations(osm.elements ?? []));
           }
         }
         setLoading(false);
@@ -321,10 +340,10 @@ export function ChargingMap() {
         {loading && (
           <div className="absolute inset-0 z-[1000] bg-background p-4 flex flex-col gap-3">
             <div className="flex gap-3">
-              <div className="h-8 w-32 rounded-lg bg-muted animate-pulse" />
-              <div className="h-8 w-24 rounded-lg bg-muted animate-pulse" />
+              <div className="h-8 w-32 rounded-lg skeleton-shimmer" />
+              <div className="h-8 w-24 rounded-lg skeleton-shimmer" />
             </div>
-            <div className="flex-1 rounded-xl bg-muted animate-pulse" />
+            <div className="flex-1 rounded-xl skeleton-shimmer" />
           </div>
         )}
         {locating && (

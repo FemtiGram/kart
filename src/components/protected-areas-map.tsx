@@ -397,13 +397,13 @@ export function ProtectedAreasMap() {
         {loading && (
           <div className="absolute inset-0 z-[1000] bg-background p-4 flex flex-col gap-3">
             <div className="flex gap-3">
-              <div className="h-8 w-32 rounded-lg bg-muted animate-pulse" />
-              <div className="h-8 w-24 rounded-lg bg-muted animate-pulse" />
+              <div className="h-8 w-32 rounded-lg skeleton-shimmer" />
+              <div className="h-8 w-24 rounded-lg skeleton-shimmer" />
             </div>
-            <div className="flex-1 rounded-xl bg-muted animate-pulse" />
+            <div className="flex-1 rounded-xl skeleton-shimmer" />
             <div className="flex gap-3 justify-center">
-              <div className="h-6 w-20 rounded-md bg-muted animate-pulse" />
-              <div className="h-6 w-28 rounded-md bg-muted animate-pulse" />
+              <div className="h-6 w-20 rounded-md skeleton-shimmer" />
+              <div className="h-6 w-28 rounded-md skeleton-shimmer" />
             </div>
           </div>
         )}
