@@ -17,3 +17,11 @@ export const FYLKER = [
   { fylkesnummer: "55", fylkesnavn: "Troms", lat: 69.2, lon: 18.5, zoom: 8 },
   { fylkesnummer: "56", fylkesnavn: "Finnmark", lat: 70.3, lon: 25.5, zoom: 7 },
 ] as const;
+
+// Norway bounding box (mainland + some margin)
+export function isInNorway(lat: number, lon: number): boolean {
+  return lat >= 57.5 && lat <= 71.5 && lon >= 4.0 && lon <= 31.5;
+}
+
+// Default fallback position (Oslo)
+export const OSLO = { lat: 59.91, lon: 10.75, zoom: 12 } as const;

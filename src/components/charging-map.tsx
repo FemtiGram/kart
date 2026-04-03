@@ -6,7 +6,7 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { Loader2, X, Zap, LocateFixed, ExternalLink, Search, MapPin, Info, Map as MapIcon, Layers } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { FYLKER } from "@/lib/fylker";
+import { FYLKER, isInNorway, OSLO } from "@/lib/fylker";
 
 interface Address {
   adressetekst: string;
@@ -136,17 +136,23 @@ export function ChargingMap() {
       if (pref === "yes" && navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
           (pos) => {
-            setCenter({ lat: pos.coords.latitude, lon: pos.coords.longitude });
-            onPos?.(pos.coords.latitude, pos.coords.longitude);
+            const { latitude: lat, longitude: lon } = pos.coords;
+            if (isInNorway(lat, lon)) {
+              setCenter({ lat, lon });
+              onPos?.(lat, lon);
+            } else {
+              setCenter({ lat: OSLO.lat, lon: OSLO.lon });
+              onPos?.(OSLO.lat, OSLO.lon);
+            }
           },
           () => {
-            setCenter({ lat: 59.91, lon: 10.75 });
-            onPos?.(59.91, 10.75);
+            setCenter({ lat: OSLO.lat, lon: OSLO.lon });
+            onPos?.(OSLO.lat, OSLO.lon);
           },
           { timeout: 6000 }
         );
       } else {
-        setCenter({ lat: 59.91, lon: 10.75 });
+        setCenter({ lat: OSLO.lat, lon: OSLO.lon });
         onPos?.(59.91, 10.75);
       }
     }
@@ -268,7 +274,12 @@ export function ChargingMap() {
       (pos) => {
         setLocating(false);
         setSelected(null);
-        setCenter({ lat: pos.coords.latitude, lon: pos.coords.longitude, zoom: 12, _t: Date.now() });
+        const { latitude: lat, longitude: lon } = pos.coords;
+        if (isInNorway(lat, lon)) {
+          setCenter({ lat, lon, zoom: 12, _t: Date.now() });
+        } else {
+          setCenter({ lat: OSLO.lat, lon: OSLO.lon, zoom: OSLO.zoom, _t: Date.now() });
+        }
       },
       () => setLocating(false),
       { timeout: 6000 }

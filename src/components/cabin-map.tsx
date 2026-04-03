@@ -7,7 +7,7 @@ import "leaflet/dist/leaflet.css";
 import { Loader2, X, Search, MapPin, ExternalLink, Info, Map as MapIcon, Layers, LocateFixed, Mountain, Wind, Droplets, Sun, Cloud, CloudSun, CloudRain, CloudSnow, CloudLightning, CloudFog, CloudHail, CloudDrizzle, Moon } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { FYLKER } from "@/lib/fylker";
+import { FYLKER, isInNorway, OSLO } from "@/lib/fylker";
 
 interface WeatherResult {
   temperature: number;
@@ -247,7 +247,12 @@ export function CabinMap() {
       (pos) => {
         setLocating(false);
         setSelected(null);
-        setCenter({ lat: pos.coords.latitude, lon: pos.coords.longitude, zoom: 12, _t: Date.now() });
+        const { latitude: lat, longitude: lon } = pos.coords;
+        if (isInNorway(lat, lon)) {
+          setCenter({ lat, lon, zoom: 12, _t: Date.now() });
+        } else {
+          setCenter({ lat: 61.5, lon: 8.3, zoom: 9, _t: Date.now() });
+        }
       },
       () => setLocating(false),
       { timeout: 6000 }
@@ -287,7 +292,14 @@ export function CabinMap() {
       const pref = localStorage.getItem("mapgram-use-location");
       if (pref === "yes" && navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
-          (pos) => setCenter({ lat: pos.coords.latitude, lon: pos.coords.longitude, zoom: 10 }),
+          (pos) => {
+            const { latitude: lat, longitude: lon } = pos.coords;
+            if (isInNorway(lat, lon)) {
+              setCenter({ lat, lon, zoom: 10 });
+            } else {
+              setCenter({ lat: 61.5, lon: 8.3, zoom: 9 });
+            }
+          },
           () => setCenter({ lat: 61.5, lon: 8.3, zoom: 9 }),
           { timeout: 6000 }
         );
