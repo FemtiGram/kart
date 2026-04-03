@@ -100,7 +100,7 @@ function cabinIcon(type: Cabin["cabinType"], isSelected: boolean, inverted: bool
     className: "",
     iconSize: [size, size],
     iconAnchor: [size / 2, size / 2],
-    html: `<div style="width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;background:${bg};border-radius:50%;box-shadow:0 1px 4px rgba(0,0,0,0.25);border:2.5px solid ${border}">${svg}</div>`,
+    html: `<div style="width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;line-height:0;background:${bg};border-radius:50%;box-shadow:0 1px 4px rgba(0,0,0,0.25);border:2.5px solid ${border}">${svg}</div>`,
   });
 }
 
@@ -323,9 +323,18 @@ export function CabinMap() {
             });
             if (res.ok) {
               const osm = await res.json();
-              setCabins(parseCabins(osm.elements ?? []));
+              const parsed = parseCabins(osm.elements ?? []);
+              if (parsed.length > 0) {
+                setCabins(parsed);
+              } else {
+                setError(true);
+              }
+            } else {
+              setError(true);
             }
-          } catch { /* ignore — show empty state */ }
+          } catch {
+            setError(true);
+          }
         }
         setLoading(false);
         flyToStart();
@@ -433,7 +442,7 @@ export function CabinMap() {
         )}
         {error && (
           <div className="absolute bottom-20 sm:top-3 sm:bottom-auto left-1/2 -translate-x-1/2 z-[1000] bg-destructive/10 backdrop-blur-sm border border-destructive/30 rounded-full px-4 py-2 shadow-lg">
-            <p className="text-sm text-destructive">Kunne ikke laste data. Prøv igjen senere.</p>
+            <p className="text-sm text-destructive">Kunne ikke hente hytter. Prøv å laste siden på nytt.</p>
           </div>
         )}
 

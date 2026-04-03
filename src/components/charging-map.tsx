@@ -62,7 +62,7 @@ function chargingIcon(isSelected: boolean, inverted: boolean): L.DivIcon {
     className: "",
     iconSize: [size, size],
     iconAnchor: [size / 2, size / 2],
-    html: `<div style="width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;background:${bg};border-radius:50%;box-shadow:0 1px 4px rgba(0,0,0,0.25);border:2.5px solid ${border}">${bolt}</div>`,
+    html: `<div style="width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;line-height:0;background:${bg};border-radius:50%;box-shadow:0 1px 4px rgba(0,0,0,0.25);border:2.5px solid ${border}">${bolt}</div>`,
   });
 }
 
@@ -172,8 +172,14 @@ export function ChargingMap() {
           flyToStart(async (lat, lon) => {
             try {
               const nearby = await fetchArea(lat, lon);
-              setStations(nearby);
-            } catch { /* ignore */ }
+              if (nearby.length > 0) {
+                setStations(nearby);
+              } else {
+                setError(true);
+              }
+            } catch {
+              setError(true);
+            }
           });
         }
       })
@@ -379,7 +385,7 @@ export function ChargingMap() {
         )}
         {error && (
           <div className="absolute bottom-20 sm:top-3 sm:bottom-auto left-1/2 -translate-x-1/2 z-[1000] bg-destructive/10 backdrop-blur-sm border border-destructive/30 rounded-full px-4 py-2 shadow-lg">
-            <p className="text-sm text-destructive">Kunne ikke laste data. Prøv igjen senere.</p>
+            <p className="text-sm text-destructive">Kunne ikke hente ladestasjoner. Prøv å laste siden på nytt.</p>
           </div>
         )}
 
