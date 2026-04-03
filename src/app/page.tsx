@@ -1,21 +1,30 @@
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Mountain, DollarSign, Shield, Zap } from "lucide-react";
 
 const projects = [
   {
     title: "Høydekart",
     description: "Søk etter adresse eller klikk i kartet. Få høyde over havet, værdata og veibeskrivelse.",
     href: "/map",
+    icon: Mountain,
   },
   {
     title: "Inntektskart",
     description: "Utforsk median inntekt etter skatt per husholdning i alle norske kommuner.",
     href: "/lonn",
+    icon: DollarSign,
+  },
+  {
+    title: "Verneområder",
+    description: "Se nasjonalparker, naturreservater og andre verneområder i Norge på kart.",
+    href: "/vern",
+    icon: Shield,
   },
   {
     title: "Ladestasjoner",
-    description: "Se alle elbilladestasjoner i Norge på kart. Klikk en stasjon for å se kontakttyper og kapasitet.",
+    description: "Se elbilladestasjoner i Norge. Kontakttyper, kapasitet og veibeskrivelse.",
     href: "/lading",
+    icon: Zap,
   },
 ];
 
@@ -31,7 +40,7 @@ export default function Home() {
       <div className="absolute inset-0 bg-black/40" />
 
       {/* Content */}
-      <div className="relative z-10 container mx-auto px-6 md:px-16 py-20 max-w-2xl">
+      <div className="relative z-10 container mx-auto px-6 md:px-16 py-20 max-w-5xl">
         <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight text-white">
           MapGram
         </h1>
@@ -39,22 +48,30 @@ export default function Home() {
           Prosjekter hvor jeg ser hva som er mulig med åpne geodata.
         </p>
 
-        <ul className="mt-12 flex flex-col gap-4">
-          {projects.map((p) => (
-            <li key={p.href}>
+        <div className="mt-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {projects.map((p) => {
+            const Icon = p.icon;
+            return (
               <Link
+                key={p.href}
                 href={p.href}
-                className="group flex items-start justify-between gap-4 rounded-xl border border-white/20 bg-white/10 backdrop-blur-sm p-6 hover:bg-white/20 hover:border-white/40 transition-all"
+                className="group flex flex-col justify-between rounded-xl border border-white/20 bg-white/10 backdrop-blur-sm p-5 hover:bg-white/20 hover:border-white/40 transition-all"
               >
                 <div>
-                  <h2 className="font-bold text-lg text-white">{p.title}</h2>
-                  <p className="mt-1 text-sm text-white/60">{p.description}</p>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Icon className="h-5 w-5 text-white/80" />
+                    <h2 className="font-bold text-base text-white">{p.title}</h2>
+                  </div>
+                  <p className="text-sm text-white/60 leading-relaxed">{p.description}</p>
                 </div>
-                <ArrowRight className="h-5 w-5 shrink-0 mt-0.5 text-white/60 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
+                <div className="flex items-center gap-1.5 mt-4 text-xs font-medium text-white/50 group-hover:text-white/80 transition-colors">
+                  Åpne kart
+                  <ArrowRight className="h-3.5 w-3.5 -translate-x-1 group-hover:translate-x-0 transition-transform" />
+                </div>
               </Link>
-            </li>
-          ))}
-        </ul>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
