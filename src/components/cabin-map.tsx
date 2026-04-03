@@ -252,24 +252,69 @@ export function CabinMap() {
     );
   };
 
-  // Load all cabins from pre-built static JSON
+  // Load cabins from pre-built static JSON, fallback to live Overpass
   useEffect(() => {
+    const OVERPASS_QUERY = '[out:json][timeout:15];(node["tourism"="alpine_hut"](57.5,4.0,71.5,31.5);node["tourism"="wilderness_hut"](57.5,4.0,71.5,31.5);way["tourism"="alpine_hut"](57.5,4.0,71.5,31.5);way["tourism"="wilderness_hut"](57.5,4.0,71.5,31.5););out center body;';
+
+    function parseCabins(elements: Array<{ id: number; lat?: number; lon?: number; center?: { lat: number; lon: number }; tags: Record<string, string> }>) {
+      return elements.map((el) => {
+        const t = el.tags || {};
+        const lat = el.lat ?? el.center?.lat ?? 0;
+        const lon = el.lon ?? el.center?.lon ?? 0;
+        const isDNT = /turistforening|dnt/i.test(t.operator ?? "");
+        const tourism = t.tourism;
+        let cabinType: Cabin["cabinType"] = "privat";
+        if (isDNT) {
+          if (tourism === "alpine_hut") cabinType = "betjent";
+          if (tourism === "wilderness_hut") cabinType = "ubetjent";
+          if (t["reservation"] === "required" || t["self_service"] === "yes" || /selvbetjent/i.test(t.description ?? "")) cabinType = "selvbetjent";
+        } else {
+          cabinType = tourism === "alpine_hut" ? "betjent" : "ubetjent";
+        }
+        const rawHours = t.opening_hours ?? null;
+        let season: string | null = null;
+        if (rawHours) {
+          const h = rawHours.toLowerCase();
+          season = (h === "24/7" || h.includes("jan-dec") || h.includes("mo-su")) ? "Helårs" : rawHours.charAt(0).toUpperCase() + rawHours.slice(1);
+        }
+        return { id: el.id, lat, lon, name: t.name ?? "Ukjent hytte", operator: t.operator ?? null, cabinType, isDNT, elevation: t.ele ? parseInt(t.ele) : null, beds: t.beds ? parseInt(t.beds) : t.capacity ? parseInt(t.capacity) : null, website: t.website ?? t["contact:website"] ?? null, description: t.description ?? null, fee: t.fee === "yes" ? true : t.fee === "no" ? false : null, season, phone: t.phone ?? t["contact:phone"] ?? null, shower: t.shower === "yes" ? true : t.shower === "no" ? false : null };
+      }).filter((c) => c.lat !== 0 && c.lon !== 0);
+    }
+
+    function flyToStart() {
+      const pref = localStorage.getItem("mapgram-use-location");
+      if (pref === "yes" && navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => setCenter({ lat: pos.coords.latitude, lon: pos.coords.longitude, zoom: 10 }),
+          () => setCenter({ lat: 61.5, lon: 8.3, zoom: 9 }),
+          { timeout: 6000 }
+        );
+      } else {
+        setCenter({ lat: 61.5, lon: 8.3, zoom: 9 });
+      }
+    }
+
     fetch("/data/cabins.json")
       .then((r) => r.json())
-      .then((data) => {
-        setCabins(Array.isArray(data) ? data : []);
-        setLoading(false);
-        // Auto-fly to user location or Jotunheimen (great cabin area)
-        const pref = localStorage.getItem("mapgram-use-location");
-        if (pref === "yes" && navigator.geolocation) {
-          navigator.geolocation.getCurrentPosition(
-            (pos) => setCenter({ lat: pos.coords.latitude, lon: pos.coords.longitude, zoom: 10 }),
-            () => setCenter({ lat: 61.5, lon: 8.3, zoom: 9 }),
-            { timeout: 6000 }
-          );
+      .then(async (data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setCabins(data);
         } else {
-          setCenter({ lat: 61.5, lon: 8.3, zoom: 9 });
+          // Static file empty — fallback to live Overpass
+          try {
+            const res = await fetch("https://overpass-api.de/api/interpreter", {
+              method: "POST",
+              headers: { "Content-Type": "application/x-www-form-urlencoded" },
+              body: `data=${encodeURIComponent(OVERPASS_QUERY)}`,
+            });
+            if (res.ok) {
+              const osm = await res.json();
+              setCabins(parseCabins(osm.elements ?? []));
+            }
+          } catch { /* ignore — show empty state */ }
         }
+        setLoading(false);
+        flyToStart();
       })
       .catch(() => {
         setError(true);
