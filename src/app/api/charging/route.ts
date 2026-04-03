@@ -1,17 +1,9 @@
-import { NextRequest } from "next/server";
-
-export async function GET(request: NextRequest) {
-  const lat = parseFloat(request.nextUrl.searchParams.get("lat") ?? "59.91");
-  const lon = parseFloat(request.nextUrl.searchParams.get("lon") ?? "10.75");
-
-  // ~50km bounding box
-  const dlat = 0.45;
-  const dlon = 0.45 / Math.cos((lat * Math.PI) / 180);
-  const bbox = `${lat - dlat},${lon - dlon},${lat + dlat},${lon + dlon}`;
-
+export async function GET() {
+  // Fetch ALL charging stations in Norway in a single query
+  // Bounding box covers mainland Norway + Svalbard
   const query = `
-    [out:json][timeout:8];
-    node["amenity"="charging_station"](${bbox});
+    [out:json][timeout:30];
+    node["amenity"="charging_station"](57.5,4.0,71.5,31.5);
     out body;
   `;
 
@@ -19,8 +11,8 @@ export async function GET(request: NextRequest) {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: `data=${encodeURIComponent(query)}`,
-    signal: AbortSignal.timeout(9000),
-    next: { revalidate: 21600 }, // 6h cache
+    signal: AbortSignal.timeout(45000),
+    next: { revalidate: 86400 }, // 24h cache — stations rarely change
   });
 
   if (!res.ok) {
