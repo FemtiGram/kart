@@ -6,7 +6,7 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import type { GeoJsonObject, Feature } from "geojson";
 import type { Layer } from "leaflet";
-import { Search, MapPin, Loader2, X, Info, LocateFixed, Map as MapIcon, ChevronDown, ChevronUp } from "lucide-react";
+import { Search, MapPin, Loader2, X, Info, LocateFixed, Map as MapIcon, ChevronDown, ChevronUp, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface IncomeAddress {
@@ -333,16 +333,9 @@ export function IncomeMap() {
               className="flex-1 bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground text-[16px] sm:text-sm"
             />
           </div>
-          <button
-            onClick={() => setShowInfo((v) => !v)}
-            className="shrink-0 p-2 rounded-xl border bg-background text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-            aria-label="Om dataene"
-          >
-            <Info className="h-4 w-4" />
-          </button>
 
           {showDropdown && suggestions.length > 0 && (
-            <ul className="absolute top-full mt-1 left-0 right-10 bg-background rounded-xl shadow-xl border overflow-hidden">
+            <ul className="absolute top-full mt-1 left-0 right-0 bg-background rounded-xl shadow-xl border overflow-hidden">
               {suggestions.map((s, i) => (
                 <li key={i}>
                   <button
@@ -369,51 +362,6 @@ export function IncomeMap() {
         </div>
 
       </div>
-
-      {/* Info modal */}
-      {showInfo && (
-        <div
-          className="fixed inset-0 z-[2000] flex items-center justify-center p-4"
-          onClick={() => setShowInfo(false)}
-        >
-          <div className="absolute inset-0 bg-black/40" />
-          <div
-            className="relative z-10 w-full max-w-md bg-white rounded-2xl shadow-2xl p-6"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-start justify-between gap-4 mb-4">
-              <h2 className="font-bold text-base">Om dataene</h2>
-              <button
-                onClick={() => setShowInfo(false)}
-                className="shrink-0 p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                aria-label="Lukk"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-            <div className="space-y-3 text-sm text-muted-foreground">
-              <p>
-                <strong className="text-foreground">Hva er medianinntekt?</strong> Medianinntekten er den midterste verdien når alle husholdninger i en kommune sorteres etter inntekt. Halvparten tjener mer, halvparten tjener mindre. Dette gir et mer representativt bilde enn gjennomsnittet, som lett påvirkes av svært høye enkeltinntekter.
-              </p>
-              <p>
-                <strong className="text-foreground">Hvordan beregnes tallene?</strong> Rang og sammenligningen mot medianen beregnes lokalt i nettleseren basert på alle kommuner med tilgjengelige data. Nasjonal median er medianen av alle kommunemedianer, ikke et vektet snitt av alle husholdninger i Norge.
-              </p>
-              <p>
-                <strong className="text-foreground">Datagrunnlag:</strong> Tall for 2024 fra SSB, tabell{" "}
-                <a
-                  href="https://www.ssb.no/inntekt-og-forbruk/inntekt-og-formue/statistikk/inntekts-og-formuesstatistikk-for-husholdninger"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="underline hover:text-foreground transition-colors"
-                >
-                  InntektStruk13
-                </a>
-                . Ikke alle kommuner har fullstendige data. Feil og unøyaktigheter kan forekomme.
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Map */}
       <div className="relative grow">
@@ -564,6 +512,25 @@ export function IncomeMap() {
               })() : (
                 <p className="text-sm text-muted-foreground mt-2">Ingen inntektsdata</p>
               )}
+
+              <div className="flex items-center justify-between mt-3">
+                <a
+                  href="https://www.ssb.no/inntekt-og-forbruk/inntekt-og-formue/statistikk/inntekts-og-formuesstatistikk-for-husholdninger"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-xs text-muted-foreground/50 italic hover:text-muted-foreground transition-colors"
+                >
+                  <ExternalLink className="h-3 w-3" />
+                  Kilde: SSB InntektStruk13, 2024
+                </a>
+                <button
+                  onClick={() => setShowInfo(true)}
+                  className="p-1 rounded-md text-muted-foreground/50 hover:text-foreground hover:bg-muted transition-colors"
+                  aria-label="Om dataene"
+                >
+                  <Info className="h-4 w-4" />
+                </button>
+              </div>
             </div>
           </div>
         )}
@@ -596,6 +563,53 @@ export function IncomeMap() {
           </div>
         )}
       </div>
+
+      {/* Info modal */}
+      {showInfo && (
+        <div
+          className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/40 px-4"
+          onClick={() => setShowInfo(false)}
+        >
+          <div
+            className="bg-background rounded-2xl shadow-xl border w-full max-w-sm p-5"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-bold text-base">Om inntektskartet</h2>
+              <button
+                onClick={() => setShowInfo(false)}
+                className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                aria-label="Lukk"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="flex flex-col gap-3 text-sm text-muted-foreground">
+              <p>
+                Kartet viser <span className="font-medium text-foreground">median inntekt etter skatt per husholdning</span> i hver kommune. Jo mørkere grønn farge, desto høyere inntekt.
+              </p>
+              <p>
+                <span className="font-medium text-foreground">Medianinntekt</span> er den midterste verdien når alle husholdninger sorteres etter inntekt. Halvparten tjener mer, halvparten mindre. Dette gir et mer representativt bilde enn gjennomsnittet, som påvirkes av svært høye enkeltinntekter.
+              </p>
+              <p>
+                <span className="font-medium text-foreground">Rangering</span> viser kommunens plassering blant alle kommuner med data. Prosentavviket sammenlignes med medianen av alle kommunemedianer.
+              </p>
+              <p>
+                Tallene beregnes lokalt i nettleseren. Ikke alle kommuner har fullstendige data.
+              </p>
+              <a
+                href="https://www.ssb.no/inntekt-og-forbruk/inntekt-og-formue/statistikk/inntekts-og-formuesstatistikk-for-husholdninger"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors mt-1"
+              >
+                <ExternalLink className="h-3 w-3" />
+                Åpne SSB InntektStruk13
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
