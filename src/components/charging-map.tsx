@@ -84,6 +84,7 @@ function PanToSelected({ station }: { station: Station | null }) {
 export function ChargingMap() {
   const [stations, setStations] = useState<Station[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMessage, setLoadingMessage] = useState("Henter ladestasjoner...");
   const [locating, setLocating] = useState(false);
   const [error, setError] = useState(false);
   const [showConnectorInfo, setShowConnectorInfo] = useState(false);
@@ -99,15 +100,8 @@ export function ChargingMap() {
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const kommunerRef = useRef<KommuneEntry[]>([]);
 
-  // Load stations from pre-built static JSON, fallback to live API
+  // Load stations from pre-built static JSON, fallback to local-area Overpass
   useEffect(() => {
-    const OVERPASS_QUERY = '[out:json][timeout:45];node["amenity"="charging_station"](57.5,4.0,71.5,31.5);out body;';
-    const MIRRORS = [
-      "https://overpass-api.de/api/interpreter",
-      "https://overpass.kumi.systems/api/interpreter",
-      "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
-    ];
-
     function parseStations(elements: Array<{ id: number; lat: number; lon: number; tags: Record<string, string> }>) {
       return elements.map((el) => {
         const t = el.tags;
@@ -119,43 +113,60 @@ export function ChargingMap() {
       });
     }
 
-    async function fetchFromMirrors() {
-      for (const endpoint of MIRRORS) {
-        try {
-          const res = await fetch(endpoint, {
-            method: "POST",
-            headers: { "Content-Type": "application/x-www-form-urlencoded" },
-            body: `data=${encodeURIComponent(OVERPASS_QUERY)}`,
-          });
-          if (res.ok) return res;
-        } catch { /* try next */ }
+    async function fetchArea(lat: number, lon: number) {
+      const dlat = 0.45;
+      const dlon = 0.45 / Math.cos((lat * Math.PI) / 180);
+      const bbox = `${lat - dlat},${lon - dlon},${lat + dlat},${lon + dlon}`;
+      const query = `[out:json][timeout:8];node["amenity"="charging_station"](${bbox});out body;`;
+      const res = await fetch("https://overpass-api.de/api/interpreter", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: `data=${encodeURIComponent(query)}`,
+        signal: AbortSignal.timeout(10000),
+      });
+      if (!res.ok) return [];
+      const data = await res.json();
+      return parseStations(data.elements ?? []);
+    }
+
+    function flyToStart(onPos?: (lat: number, lon: number) => void) {
+      const pref = localStorage.getItem("mapgram-use-location");
+      if (pref === "yes" && navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            setCenter({ lat: pos.coords.latitude, lon: pos.coords.longitude });
+            onPos?.(pos.coords.latitude, pos.coords.longitude);
+          },
+          () => {
+            setCenter({ lat: 59.91, lon: 10.75 });
+            onPos?.(59.91, 10.75);
+          },
+          { timeout: 6000 }
+        );
+      } else {
+        setCenter({ lat: 59.91, lon: 10.75 });
+        onPos?.(59.91, 10.75);
       }
-      return null;
     }
 
     fetch("/data/stations.json")
       .then((r) => r.json())
       .then(async (data) => {
         if (Array.isArray(data) && data.length > 0) {
+          // Static data available — instant load
           setStations(data);
+          setLoading(false);
+          flyToStart();
         } else {
-          const res = await fetchFromMirrors();
-          if (res) {
-            const osm = await res.json();
-            setStations(parseStations(osm.elements ?? []));
-          }
-        }
-        setLoading(false);
-        // Auto-fly to user location or Oslo
-        const pref = localStorage.getItem("mapgram-use-location");
-        if (pref === "yes" && navigator.geolocation) {
-          navigator.geolocation.getCurrentPosition(
-            (pos) => setCenter({ lat: pos.coords.latitude, lon: pos.coords.longitude }),
-            () => setCenter({ lat: 59.91, lon: 10.75 }),
-            { timeout: 6000 }
-          );
-        } else {
-          setCenter({ lat: 59.91, lon: 10.75 });
+          // Static file empty — fallback to local area fetch (fast, ~50km)
+          setLoadingMessage("Dataen er ikke ferdig cachet ennå. Henter fra OpenStreetMap...");
+          setLoading(false); // Show map immediately
+          flyToStart(async (lat, lon) => {
+            try {
+              const nearby = await fetchArea(lat, lon);
+              setStations(nearby);
+            } catch { /* ignore */ }
+          });
         }
       })
       .catch(() => {
@@ -321,7 +332,7 @@ export function ChargingMap() {
         </div>
         <div className="flex items-center justify-between mt-2">
           <p className="text-xs text-muted-foreground">
-            {loading ? "Henter ladestasjoner..." : stations.length > 0 ? `${stations.length} ladestasjoner i Norge — Kilde: OpenStreetMap` : "Ingen ladestasjoner funnet"}
+            {loading ? loadingMessage : stations.length > 0 ? `${stations.length} ladestasjoner${stations.length > 1000 ? " i Norge" : " i nærheten"} — Kilde: OpenStreetMap` : "Ingen ladestasjoner funnet"}
           </p>
           <button
             disabled
@@ -338,12 +349,11 @@ export function ChargingMap() {
       {/* Map */}
       <div className="relative grow">
         {loading && (
-          <div className="absolute inset-0 z-[1000] bg-background p-4 flex flex-col gap-3">
-            <div className="flex gap-3">
-              <div className="h-8 w-32 rounded-lg skeleton-shimmer" />
-              <div className="h-8 w-24 rounded-lg skeleton-shimmer" />
+          <div className="absolute inset-0 z-[1000] bg-background flex items-center justify-center">
+            <div className="flex flex-col items-center gap-3 text-center px-6">
+              <Loader2 className="h-8 w-8 animate-spin" style={{ color: "var(--kv-blue)" }} />
+              <p className="text-sm text-muted-foreground">{loadingMessage}</p>
             </div>
-            <div className="flex-1 rounded-xl skeleton-shimmer" />
           </div>
         )}
         {locating && (
