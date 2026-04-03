@@ -430,7 +430,7 @@ export function IncomeMap() {
           </div>
         )}
         {error && (
-          <div className="absolute inset-0 flex items-center justify-center z-[1000]">
+          <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[1000] bg-destructive/10 backdrop-blur-sm border border-destructive/30 rounded-full px-4 py-2 shadow-lg">
             <p className="text-sm text-destructive">Kunne ikke laste data. Prøv igjen senere.</p>
           </div>
         )}

@@ -6,6 +6,7 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { Loader2, X, Zap, LocateFixed, ExternalLink, Search, MapPin, Info, Map as MapIcon, Layers } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { FYLKER } from "@/lib/fylker";
 
 interface Address {
   adressetekst: string;
@@ -20,6 +21,7 @@ interface KommuneEntry {
 }
 
 type Suggestion =
+  | { type: "fylke"; fylkesnavn: string; lat: number; lon: number; zoom: number }
   | { type: "kommune"; kommunenummer: string; kommunenavn: string }
   | { type: "adresse"; addr: Address };
 
@@ -65,11 +67,11 @@ function chargingIcon(isSelected: boolean): L.DivIcon {
   });
 }
 
-function FlyTo({ lat, lon }: { lat: number; lon: number }) {
+function FlyTo({ lat, lon, zoom = 12 }: { lat: number; lon: number; zoom?: number }) {
   const map = useMap();
   useEffect(() => {
-    map.flyTo([lat, lon], 12, { duration: 1.2 });
-  }, [lat, lon, map]);
+    map.flyTo([lat, lon], zoom, { duration: 1.2 });
+  }, [lat, lon, zoom, map]);
   return null;
 }
 
@@ -135,7 +137,7 @@ export function ChargingMap() {
   const [error, setError] = useState(false);
   const [showConnectorInfo, setShowConnectorInfo] = useState(false);
   const [selected, setSelected] = useState<Station | null>(null);
-  const [center, setCenter] = useState<{ lat: number; lon: number } | null>(null);
+  const [center, setCenter] = useState<{ lat: number; lon: number; zoom?: number } | null>(null);
   const [zoomLow, setZoomLow] = useState(true);
   const [tileLayer, setTileLayer] = useState<TileLayerKey>("kart");
 
@@ -158,19 +160,24 @@ export function ChargingMap() {
     if (q.length < 2) { setSuggestions([]); return; }
     setLoadingSuggestions(true);
 
+    const fylkeMatches: Suggestion[] = FYLKER
+      .filter((f) => f.fylkesnavn.toLowerCase().includes(q.toLowerCase()))
+      .slice(0, 3)
+      .map((f) => ({ type: "fylke", fylkesnavn: f.fylkesnavn, lat: f.lat, lon: f.lon, zoom: f.zoom }));
+
     const kommuneMatches: Suggestion[] = kommunerRef.current
       .filter((k) => k.kommunenavn.toLowerCase().includes(q.toLowerCase()))
-      .slice(0, 4)
+      .slice(0, 5)
       .map((k) => ({ type: "kommune", kommunenummer: k.kommunenummer, kommunenavn: k.kommunenavn }));
 
     let adresseMatches: Suggestion[] = [];
     try {
-      const res = await fetch(`https://ws.geonorge.no/adresser/v1/sok?sok=${encodeURIComponent(q)}&treffPerSide=4&utkoordsys=4326`);
+      const res = await fetch(`https://ws.geonorge.no/adresser/v1/sok?sok=${encodeURIComponent(q)}&treffPerSide=2&utkoordsys=4326`);
       const data = await res.json();
       adresseMatches = (data.adresser ?? []).map((a: Address) => ({ type: "adresse" as const, addr: a }));
     } catch { /* ignore */ }
 
-    setSuggestions([...kommuneMatches, ...adresseMatches]);
+    setSuggestions([...fylkeMatches, ...kommuneMatches, ...adresseMatches]);
     setShowDropdown(true);
     setLoadingSuggestions(false);
   }, []);
@@ -205,6 +212,11 @@ export function ChargingMap() {
     setShowDropdown(false);
     setSuggestions([]);
     setSelected(null);
+    if (s.type === "fylke") {
+      setQuery(s.fylkesnavn);
+      setCenter({ lat: s.lat, lon: s.lon, zoom: s.zoom });
+      return;
+    }
     if (s.type === "kommune") {
       setQuery(s.kommunenavn);
       // Use stedsnavn to find the urban center of the municipality, not the geographic centroid
@@ -271,7 +283,12 @@ export function ChargingMap() {
                     className={`w-full text-left px-4 py-3 text-sm flex items-start gap-3 transition-colors border-b last:border-0 ${highlightedIndex === i ? "bg-muted" : "hover:bg-muted"}`}
                   >
                     <MapPin className="h-4 w-4 mt-0.5 shrink-0 text-muted-foreground" />
-                    {s.type === "kommune" ? (
+                    {s.type === "fylke" ? (
+                      <div>
+                        <p className="font-medium">{s.fylkesnavn}</p>
+                        <p className="text-xs text-muted-foreground">Fylke</p>
+                      </div>
+                    ) : s.type === "kommune" ? (
                       <div>
                         <p className="font-medium">{s.kommunenavn}</p>
                         <p className="text-xs text-muted-foreground">Kommune</p>
@@ -333,7 +350,7 @@ export function ChargingMap() {
           zoom={5}
           style={{ height: "100%", width: "100%" }}
         >
-          {center && <FlyTo lat={center.lat} lon={center.lon} />}
+          {center && <FlyTo lat={center.lat} lon={center.lon} zoom={center.zoom} />}
           <PanToSelected station={selected} />
           <ViewportLoader
             onLoad={(data) => {

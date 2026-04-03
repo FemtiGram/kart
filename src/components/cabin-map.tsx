@@ -7,6 +7,7 @@ import "leaflet/dist/leaflet.css";
 import { Loader2, X, Search, MapPin, ExternalLink, Info, Map as MapIcon, Layers, LocateFixed, Mountain, Wind, Droplets, Sun, Cloud, CloudSun, CloudRain, CloudSnow, CloudLightning, CloudFog, CloudHail, CloudDrizzle, Moon } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { FYLKER } from "@/lib/fylker";
 
 interface WeatherResult {
   temperature: number;
@@ -44,6 +45,7 @@ interface KommuneEntry {
 }
 
 type Suggestion =
+  | { type: "fylke"; fylkesnavn: string; lat: number; lon: number; zoom: number }
   | { type: "kommune"; kommunenummer: string; kommunenavn: string }
   | { type: "adresse"; addr: Address };
 
@@ -117,11 +119,11 @@ const TILE_LAYERS = {
 
 type TileLayerKey = keyof typeof TILE_LAYERS;
 
-function FlyTo({ lat, lon }: { lat: number; lon: number }) {
+function FlyTo({ lat, lon, zoom = 10 }: { lat: number; lon: number; zoom?: number }) {
   const map = useMap();
   useEffect(() => {
-    map.flyTo([lat, lon], 10, { duration: 1.2 });
-  }, [lat, lon, map]);
+    map.flyTo([lat, lon], zoom, { duration: 1.2 });
+  }, [lat, lon, zoom, map]);
   return null;
 }
 
@@ -186,7 +188,7 @@ export function CabinMap() {
   const [locating, setLocating] = useState(false);
   const [error, setError] = useState(false);
   const [selected, setSelected] = useState<Cabin | null>(null);
-  const [center, setCenter] = useState<{ lat: number; lon: number } | null>(null);
+  const [center, setCenter] = useState<{ lat: number; lon: number; zoom?: number } | null>(null);
   const [zoomLow, setZoomLow] = useState(true);
   const [tileLayer, setTileLayer] = useState<TileLayerKey>("gråtone");
   const [showInfo, setShowInfo] = useState(false);
@@ -212,9 +214,14 @@ export function CabinMap() {
     if (q.length < 2) { setSuggestions([]); return; }
     setLoadingSuggestions(true);
 
+    const fylkeMatches: Suggestion[] = FYLKER
+      .filter((f) => f.fylkesnavn.toLowerCase().includes(q.toLowerCase()))
+      .slice(0, 3)
+      .map((f) => ({ type: "fylke", fylkesnavn: f.fylkesnavn, lat: f.lat, lon: f.lon, zoom: f.zoom }));
+
     const kommuneMatches: Suggestion[] = kommunerRef.current
       .filter((k) => k.kommunenavn.toLowerCase().includes(q.toLowerCase()))
-      .slice(0, 6)
+      .slice(0, 5)
       .map((k) => ({ type: "kommune", kommunenummer: k.kommunenummer, kommunenavn: k.kommunenavn }));
 
     let adresseMatches: Suggestion[] = [];
@@ -224,8 +231,7 @@ export function CabinMap() {
       adresseMatches = (data.adresser ?? []).map((a: Address) => ({ type: "adresse" as const, addr: a }));
     } catch { /* ignore */ }
 
-    // Show kommuner first, then addresses
-    setSuggestions([...kommuneMatches, ...adresseMatches]);
+    setSuggestions([...fylkeMatches, ...kommuneMatches, ...adresseMatches]);
     setShowDropdown(true);
     setLoadingSuggestions(false);
   }, []);
@@ -260,6 +266,11 @@ export function CabinMap() {
     setShowDropdown(false);
     setSuggestions([]);
     setSelected(null);
+    if (s.type === "fylke") {
+      setQuery(s.fylkesnavn);
+      setCenter({ lat: s.lat, lon: s.lon, zoom: s.zoom });
+      return;
+    }
     if (s.type === "kommune") {
       setQuery(s.kommunenavn);
       const res = await fetch(
@@ -341,7 +352,12 @@ export function CabinMap() {
                     className={`w-full text-left px-4 py-3 text-sm flex items-start gap-3 transition-colors border-b last:border-0 ${highlightedIndex === i ? "bg-muted" : "hover:bg-muted"}`}
                   >
                     <MapPin className="h-4 w-4 mt-0.5 shrink-0 text-muted-foreground" />
-                    {s.type === "kommune" ? (
+                    {s.type === "fylke" ? (
+                      <div>
+                        <p className="font-medium">{s.fylkesnavn}</p>
+                        <p className="text-xs text-muted-foreground">Fylke</p>
+                      </div>
+                    ) : s.type === "kommune" ? (
                       <div>
                         <p className="font-medium">{s.kommunenavn}</p>
                         <p className="text-xs text-muted-foreground">Kommune</p>
@@ -394,7 +410,7 @@ export function CabinMap() {
           zoom={5}
           style={{ height: "100%", width: "100%" }}
         >
-          {center && <FlyTo lat={center.lat} lon={center.lon} />}
+          {center && <FlyTo lat={center.lat} lon={center.lon} zoom={center.zoom} />}
           <PanToSelected cabin={selected} />
           <ViewportLoader
             onLoad={(data) => {
@@ -460,7 +476,7 @@ export function CabinMap() {
         {selected && (
           <div
             className="absolute bottom-4 left-3 right-3 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 sm:w-96 z-[999] bg-white rounded-2xl shadow-xl px-4 py-4"
-            style={{ border: `1.5px solid ${CABIN_COLORS[selected.cabinType]}30` }}
+            style={{ border: "1.5px solid var(--kv-green-light, #b3e6c8)" }}
           >
             <div className="flex items-start justify-between gap-2 mb-3">
               <div className="min-w-0">

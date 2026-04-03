@@ -435,7 +435,7 @@ export function ProtectedAreasMap() {
           </div>
         )}
         {error && (
-          <div className="absolute inset-0 flex items-center justify-center z-[1000]">
+          <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[1000] bg-destructive/10 backdrop-blur-sm border border-destructive/30 rounded-full px-4 py-2 shadow-lg">
             <p className="text-sm text-destructive">Kunne ikke laste data. Prøv igjen senere.</p>
           </div>
         )}
@@ -484,7 +484,7 @@ export function ProtectedAreasMap() {
         {selected && (
           <div
             className="absolute bottom-4 left-3 right-3 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 sm:w-96 z-[999] bg-white rounded-2xl shadow-xl px-4 py-4"
-            style={{ border: "1.5px solid #86efac" }}
+            style={{ border: "1.5px solid var(--kv-green-light, #b3e6c8)" }}
           >
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">

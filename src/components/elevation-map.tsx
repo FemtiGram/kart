@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { Search, MapPin, Mountain, Loader2, X, ChevronDown, ChevronUp, LocateFixed, Wind, Droplets, Sun, Cloud, CloudSun, CloudRain, CloudSnow, CloudLightning, CloudFog, CloudHail, CloudDrizzle, Moon, ExternalLink, Map as MapIcon } from "lucide-react";
+import { Search, MapPin, Mountain, Loader2, X, ChevronDown, ChevronUp, LocateFixed, Wind, Droplets, Sun, Cloud, CloudSun, CloudRain, CloudSnow, CloudLightning, CloudFog, CloudHail, CloudDrizzle, Moon, ExternalLink, Map as MapIcon, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { LucideIcon } from "lucide-react";
 
@@ -113,6 +113,7 @@ export function ElevationMap() {
   const [loadingElevation, setLoadingElevation] = useState(false);
   const [loadingWeather, setLoadingWeather] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
+  const [showInfo, setShowInfo] = useState(false);
   const [tileLayer, setTileLayer] = useState<TileLayerKey>("kart");
   const [locating, setLocating] = useState(false);
   const [asked, setAsked] = useState(false);
@@ -609,6 +610,20 @@ export function ElevationMap() {
                 })()}
               </div>
             )}
+
+            {/* Source + info */}
+            <div className="flex items-center justify-between mt-3">
+              <p className="text-xs text-muted-foreground/50 italic">
+                Kilde: Kartverket, MET.no
+              </p>
+              <button
+                onClick={() => setShowInfo(true)}
+                className="p-1 rounded-md text-muted-foreground/50 hover:text-foreground hover:bg-muted transition-colors"
+                aria-label="Om dataene"
+              >
+                <Info className="h-4 w-4" />
+              </button>
+            </div>
           </div>
         )}
 
@@ -670,6 +685,64 @@ export function ElevationMap() {
           </div>
         )}
       </div>
+
+      {/* Info modal */}
+      {showInfo && (
+        <div
+          className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/40 px-4"
+          onClick={() => setShowInfo(false)}
+        >
+          <div
+            className="bg-background rounded-2xl shadow-xl border w-full max-w-sm p-5"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-bold text-base">Om høydekartet</h2>
+              <button
+                onClick={() => setShowInfo(false)}
+                className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                aria-label="Lukk"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="flex flex-col gap-3 text-sm text-muted-foreground">
+              <p>
+                Søk etter en adresse eller klikk i kartet for å se <span className="font-medium text-foreground">høyde over havet</span> for et punkt i Norge.
+              </p>
+              <p>
+                <span className="font-medium text-foreground">Høydedata</span> hentes fra Kartverkets høyde-API og er basert på den nasjonale terrengmodellen (DTM). Nøyaktigheten varierer, men er typisk ±2–5 meter.
+              </p>
+              <p>
+                <span className="font-medium text-foreground">Værdata</span> hentes fra MET.no (Meteorologisk institutt) og viser gjeldende temperatur, vindstyrke og nedbør for det valgte punktet.
+              </p>
+              <p>
+                Kartet bruker <span className="font-medium text-foreground">Kartverket</span> for bakgrunnskart og <span className="font-medium text-foreground">OpenTopoMap</span> for terrengvisning.
+              </p>
+              <div className="flex gap-3 mt-1">
+                <a
+                  href="https://www.kartverket.no/api-og-data/hoydedata"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <ExternalLink className="h-3 w-3" />
+                  Kartverket
+                </a>
+                <a
+                  href="https://api.met.no/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <ExternalLink className="h-3 w-3" />
+                  MET.no
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
