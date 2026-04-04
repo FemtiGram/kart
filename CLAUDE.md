@@ -24,11 +24,13 @@ src/app/
   lonn/page.tsx         — Income choropleth
   vern/page.tsx         — Protected areas choropleth
   map/page.tsx          — Elevation + weather map
+  vindkraft/page.tsx    — Wind power plants map
   api/
     income/route.ts     — SSB income data
     kommuner/route.ts   — GeoJSON kommune boundaries
     protected-areas/    — SSB verne data
     weather/route.ts    — MET.no proxy (30min cache)
+    wind-power/route.ts — NVE wind power proxy (1h cache)
 
 src/components/
   navbar.tsx            — Shared nav with mobile sheet
@@ -106,6 +108,7 @@ public/data/
 |------|--------|-------|
 | Charging stations | OpenStreetMap (Overpass) | Build-time static JSON + client fallback |
 | Cabins | OpenStreetMap (Overpass) | Build-time static JSON + client fallback |
+| Wind power plants | NVE Vindkraftdatabase | 1h server cache via API route |
 | Income | SSB InntektStruk13 | Loaded once on mount |
 | Protected areas | SSB tabell 08936 | Loaded once on mount |
 | Weather | MET.no locationforecast | 30min server cache |

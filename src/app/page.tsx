@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, Mountain, DollarSign, Shield, Zap, Home as HomeIcon } from "lucide-react";
+import { ArrowRight, Mountain, DollarSign, Shield, Zap, Home as HomeIcon, Wind } from "lucide-react";
 
 const featured = {
   title: "Høydekart",
@@ -9,6 +9,29 @@ const featured = {
 };
 
 const groups = [
+  {
+    label: "Utforsk",
+    items: [
+      {
+        title: "Vindkraft",
+        description: "Vindkraftverk i Norge. Kapasitet, turbiner og årlig produksjon.",
+        href: "/vindkraft",
+        icon: Wind,
+      },
+      {
+        title: "Ladestasjoner",
+        description: "Elbilladestasjoner i Norge. Kontakttyper, kapasitet og veibeskrivelse.",
+        href: "/lading",
+        icon: Zap,
+      },
+      {
+        title: "Turisthytter",
+        description: "DNT-hytter og fjellhytter. Type, høyde over havet og sengeplasser.",
+        href: "/hytter",
+        icon: HomeIcon,
+      },
+    ],
+  },
   {
     label: "Statistikk",
     items: [
@@ -23,23 +46,6 @@ const groups = [
         description: "Nasjonalparker, naturreservater og andre verneområder på kart.",
         href: "/vern",
         icon: Shield,
-      },
-    ],
-  },
-  {
-    label: "Utforsk",
-    items: [
-      {
-        title: "Ladestasjoner",
-        description: "Elbilladestasjoner i Norge. Kontakttyper, kapasitet og veibeskrivelse.",
-        href: "/lading",
-        icon: Zap,
-      },
-      {
-        title: "Turisthytter",
-        description: "DNT-hytter og fjellhytter. Type, høyde over havet og sengeplasser.",
-        href: "/hytter",
-        icon: HomeIcon,
       },
     ],
   },
@@ -104,7 +110,7 @@ export default function Home() {
               <p className="text-xs font-semibold uppercase tracking-widest text-white/50 mb-3">
                 {group.label}
               </p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className={`grid grid-cols-1 gap-4 ${group.items.length === 3 ? "sm:grid-cols-3" : "sm:grid-cols-2"}`}>
                 {group.items.map((item) => (
                   <CardLink key={item.href} {...item} />
                 ))}

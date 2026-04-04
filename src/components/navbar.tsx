@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { Menu, X, Mountain, DollarSign, Shield, Zap, Home } from "lucide-react";
+import { Menu, X, Mountain, DollarSign, Shield, Zap, Home, Wind } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -16,20 +16,28 @@ import {
   NavigationMenuList,
   NavigationMenuItem,
   NavigationMenuLink,
+  NavigationMenuTrigger,
+  NavigationMenuContent,
   navigationMenuTriggerStyle,
 } from "@/components/ui/navigation-menu";
 
-const navLinks = [
+const primaryLinks = [
   { href: "/map", label: "Høydekart", icon: Mountain },
-  { href: "/lonn", label: "Inntektskart", icon: DollarSign },
-  { href: "/vern", label: "Verneområder", icon: Shield },
+  { href: "/vindkraft", label: "Vindkraft", icon: Wind },
   { href: "/lading", label: "Ladestasjoner", icon: Zap },
   { href: "/hytter", label: "Turisthytter", icon: Home },
+];
+
+const secondaryLinks = [
+  { href: "/lonn", label: "Inntektskart", icon: DollarSign, description: "Median inntekt per kommune" },
+  { href: "/vern", label: "Verneområder", icon: Shield, description: "Nasjonalparker og naturreservater" },
 ];
 
 export function Navbar() {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
+
+  const isSecondaryActive = secondaryLinks.some((l) => l.href === pathname);
 
   return (
     <header className="sticky top-0 z-50 w-full bg-background border-b">
@@ -52,7 +60,7 @@ export function Navbar() {
         {/* Desktop nav */}
         <NavigationMenu className="hidden md:flex">
           <NavigationMenuList>
-            {navLinks.map((link) => (
+            {primaryLinks.map((link) => (
               <NavigationMenuItem key={link.href}>
                 <NavigationMenuLink
                   href={link.href}
@@ -64,6 +72,38 @@ export function Navbar() {
                 </NavigationMenuLink>
               </NavigationMenuItem>
             ))}
+
+            {/* "Mer" dropdown for secondary pages */}
+            <NavigationMenuItem>
+              <NavigationMenuTrigger
+                data-active={isSecondaryActive ? "" : undefined}
+              >
+                Mer
+              </NavigationMenuTrigger>
+              <NavigationMenuContent className="min-w-[240px]">
+                <ul className="flex flex-col">
+                  {secondaryLinks.map((link) => {
+                    const Icon = link.icon;
+                    return (
+                      <li key={link.href}>
+                        <NavigationMenuLink
+                          href={link.href}
+                          data-active={pathname === link.href ? "" : undefined}
+                          render={<Link href={link.href} />}
+                          className="flex items-start gap-3 p-3 rounded-md hover:bg-muted transition-colors"
+                        >
+                          <Icon className="h-5 w-5 mt-0.5 shrink-0 text-muted-foreground" />
+                          <div>
+                            <p className="text-sm font-medium">{link.label}</p>
+                            <p className="text-xs text-muted-foreground">{link.description}</p>
+                          </div>
+                        </NavigationMenuLink>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </NavigationMenuContent>
+            </NavigationMenuItem>
           </NavigationMenuList>
         </NavigationMenu>
 
@@ -86,7 +126,31 @@ export function Navbar() {
               </SheetTitle>
             </SheetHeader>
             <nav className="mt-2 flex flex-col">
-              {navLinks.map((link) => {
+              {primaryLinks.map((link) => {
+                const Icon = link.icon;
+                const active = pathname === link.href;
+                return (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className={`flex items-center gap-3 px-3 py-3.5 text-base font-medium border-b border-border transition-colors ${
+                      active
+                        ? "text-foreground bg-muted"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                    onClick={() => setOpen(false)}
+                  >
+                    <Icon className="h-5 w-5 shrink-0" />
+                    {link.label}
+                  </Link>
+                );
+              })}
+
+              {/* Separator + secondary items */}
+              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/60 px-3 pt-4 pb-2">
+                Annet
+              </p>
+              {secondaryLinks.map((link) => {
                 const Icon = link.icon;
                 const active = pathname === link.href;
                 return (

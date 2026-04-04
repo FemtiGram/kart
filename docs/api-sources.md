@@ -13,6 +13,7 @@
 | MET.no Locationforecast | `api.met.no/weatherapi/` | Elevation map (weather) |
 | SSB | Various tables | Income, protected areas |
 | OpenStreetMap Overpass | `overpass-api.de/api/` | Charging, cabins |
+| NVE Vindkraftdatabase | `api.nve.no/web/WindPowerPlant/` | Wind power map |
 
 ---
 
