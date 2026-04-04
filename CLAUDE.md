@@ -89,6 +89,9 @@ public/data/
 - Location permission dialog with localStorage preference
 - Skeleton shimmer loading on initial data fetch
 
+## Design References
+- **UX Laws** — https://uxlaws.com — Consult when making UX/design decisions. Key principles to keep in mind: Fitts's Law (touch targets), Hick's Law (limit choices), Miller's Law (chunk info), Jakob's Law (familiar patterns), aesthetic-usability effect.
+
 ## Design Tokens (CSS Variables)
 - `--kv-blue: #003da5` — primary brand, selected states, metric numbers
 - `--kv-green: #00b140` — secondary brand, positive values
