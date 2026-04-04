@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { MapContainer, GeoJSON, TileLayer, useMap } from "react-leaflet";
+import { MapContainer, GeoJSON, TileLayer } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import type { GeoJsonObject, Feature } from "geojson";
@@ -9,6 +9,8 @@ import type { Layer } from "leaflet";
 import { Search, MapPin, Loader2, X, LocateFixed, Map as MapIcon, ChevronDown, ChevronUp, Info, ExternalLink, RotateCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FYLKER } from "@/lib/fylker";
+import { FlyTo, interpolateColor, useDebounceRef, useSearchAbort } from "@/lib/map-utils";
+import { LocationPrompt } from "@/components/location-prompt";
 
 interface VerneData {
   total: number | null;
@@ -45,22 +47,6 @@ const VERNE_LABELS: Record<string, string> = {
   nm: "Andre vernekategorier",
 };
 
-// Red → Yellow → Green (3-stop diverging scale)
-function interpolateColor(t: number): string {
-  if (t <= 0.5) {
-    const s = t * 2;
-    const r = Math.round(239 + s * (250 - 239));
-    const g = Math.round(68 + s * (204 - 68));
-    const b = Math.round(68 + s * (21 - 68));
-    return `rgb(${r},${g},${b})`;
-  }
-  const s = (t - 0.5) * 2;
-  const r = Math.round(250 - s * (250 - 22));
-  const g = Math.round(204 - s * (204 - 163));
-  const b = Math.round(21 + s * (74 - 21));
-  return `rgb(${r},${g},${b})`;
-}
-
 function verneColor(total: number | null | undefined, max: number): string {
   if (!total || total === 0 || max === 0) return "#e3ddd4";
   const t = Math.max(0, Math.min(1, total / max));
@@ -81,14 +67,6 @@ function computeVerneStats(verneData: Record<string, VerneData>, kommunenummer: 
   const val = verneData[kommunenummer]?.total ?? 0;
   const vsMedian = medianVal > 0 ? ((val - medianVal) / medianVal) * 100 : 0;
   return { rank, total, medianVal, vsMedian };
-}
-
-function FlyTo({ lat, lon, zoom = 10 }: { lat: number; lon: number; zoom?: number }) {
-  const map = useMap();
-  useEffect(() => {
-    map.flyTo([lat, lon], zoom, { duration: 1.0 });
-  }, [lat, lon, zoom, map]);
-  return null;
 }
 
 export function ProtectedAreasMap() {
@@ -114,7 +92,8 @@ export function ProtectedAreasMap() {
   const geoFeaturesRef = useRef<Array<{ kommunenummer: string; kommunenavn: string }>>([]);
   const layerRefs = useRef<Map<string, L.Path>>(new Map());
   const selectedKommuneRef = useRef<string | null>(null);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const debounceRef = useDebounceRef();
+  const searchAbort = useSearchAbort();
 
   const loadData = useCallback(async () => {
     setError(false);
@@ -234,10 +213,11 @@ export function ProtectedAreasMap() {
 
     let adresseMatches: Suggestion[] = [];
     try {
-      const res = await fetch(`https://ws.geonorge.no/adresser/v1/sok?sok=${encodeURIComponent(q)}&treffPerSide=2&utkoordsys=4326`);
+      const signal = searchAbort.renew();
+      const res = await fetch(`https://ws.geonorge.no/adresser/v1/sok?sok=${encodeURIComponent(q)}&treffPerSide=2&utkoordsys=4326`, { signal });
       const data = await res.json();
       adresseMatches = (data.adresser ?? []).map((a: IncomeAddress) => ({ type: "adresse" as const, addr: a }));
-    } catch { /* ignore */ }
+    } catch { /* ignore — aborted or network error */ }
 
     setSuggestions([...fylkeMatches, ...kommuneMatches, ...adresseMatches]);
     setShowDropdown(true);
@@ -413,33 +393,13 @@ export function ProtectedAreasMap() {
             </div>
           </div>
         )}
-        {!loading && !asked && (
-          <div className="absolute inset-0 flex items-center justify-center bg-background/80 z-[1000]">
-            <div className="bg-background rounded-2xl shadow-xl border px-6 py-6 max-w-sm w-full mx-4 flex flex-col items-center gap-4 text-center">
-              <LocateFixed className="h-8 w-8 text-muted-foreground" />
-              <div>
-                <p className="font-semibold text-base">Bruk din posisjon?</p>
-                <p className="text-sm text-muted-foreground mt-1">Vi kan vise kommunen du befinner deg i, eller du kan søke manuelt.</p>
-              </div>
-              <div className="flex gap-3 w-full">
-                <Button onClick={() => handleLocationChoice(true)} className="flex-1" size="lg">
-                  <LocateFixed className="h-4 w-4" /> Ja, bruk posisjon
-                </Button>
-                <Button onClick={() => handleLocationChoice(false)} variant="secondary" className="flex-1" size="lg">
-                  Nei takk
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
-        {!loading && asked && locating && (
-          <div className="absolute inset-0 flex items-center justify-center bg-background/80 z-[1000]">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Finner posisjon...
-            </div>
-          </div>
-        )}
+        <LocationPrompt
+          asked={asked}
+          locating={locating}
+          loading={loading}
+          description="Vi kan vise kommunen du befinner deg i, eller du kan søke manuelt."
+          onChoice={handleLocationChoice}
+        />
         {error && (
           <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[1000] bg-destructive/10 backdrop-blur-sm border border-destructive/30 rounded-full px-4 py-2 shadow-lg">
             <div className="flex items-center gap-2">
@@ -471,7 +431,7 @@ export function ProtectedAreasMap() {
 
         {/* Legend + base layer toggle */}
         <div className="absolute top-3 right-3 z-[999] flex flex-col gap-2 items-end">
-          <div className="bg-white/90 rounded-xl border px-3 py-2 shadow text-xs">
+          <div className="bg-card/90 rounded-xl border px-3 py-2 shadow text-xs">
             <p className="font-semibold text-muted-foreground mb-1.5">Vernet areal (km²)</p>
             <div className="flex items-center gap-1.5">
               <div className="h-2.5 w-24 rounded-full" style={{ background: "linear-gradient(to right, #ef4444, #facc15, #16a34a)" }} />
@@ -483,7 +443,7 @@ export function ProtectedAreasMap() {
           </div>
           <button
             onClick={() => setShowBase((b) => !b)}
-            className={`flex items-center gap-1.5 rounded-lg border bg-white shadow-md px-3 py-1.5 text-xs font-semibold transition-colors ${showBase ? "text-white" : "text-muted-foreground hover:bg-muted"}`}
+            className={`flex items-center gap-1.5 rounded-lg border bg-card shadow-md px-3 py-1.5 text-xs font-semibold transition-colors ${showBase ? "text-white" : "text-muted-foreground hover:bg-muted"}`}
             style={showBase ? { background: "var(--kv-blue)" } : {}}
           >
             <MapIcon className="h-3.5 w-3.5" />
@@ -494,7 +454,7 @@ export function ProtectedAreasMap() {
         {/* Info card */}
         {selected && (
           <div
-            className="absolute bottom-4 left-3 right-3 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 sm:w-96 z-[999] bg-white rounded-2xl shadow-xl px-4 py-4"
+            className="absolute bottom-4 left-3 right-3 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 sm:w-96 z-[999] bg-card rounded-2xl shadow-xl px-4 py-4"
             style={{ border: "1.5px solid var(--border)" }}
           >
             <div className="flex items-start justify-between gap-2">

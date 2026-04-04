@@ -1,12 +1,14 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { Search, MapPin, Mountain, Loader2, X, ChevronDown, ChevronUp, LocateFixed, Wind, Droplets, Sun, Cloud, CloudSun, CloudRain, CloudSnow, CloudLightning, CloudFog, CloudHail, CloudDrizzle, Moon, ExternalLink, Map as MapIcon, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { LucideIcon } from "lucide-react";
+import { FlyTo, useDebounceRef, isDevMode } from "@/lib/map-utils";
+import { LocationPrompt } from "@/components/location-prompt";
 
 function weatherIcon(symbolCode: string): LucideIcon {
   const c = symbolCode.toLowerCase();
@@ -32,7 +34,6 @@ L.Icon.Default.mergeOptions({
   shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
 });
 
-const DEV = process.env.NEXT_PUBLIC_DEV === "true";
 
 const TILE_LAYERS = {
   kart: {
@@ -50,12 +51,7 @@ const TILE_LAYERS = {
 
 type TileLayerKey = keyof typeof TILE_LAYERS;
 
-interface Address {
-  adressetekst: string;
-  poststed: string;
-  kommunenavn: string;
-  representasjonspunkt: { lat: number; lon: number };
-}
+import type { Address } from "@/lib/map-utils";
 
 interface ElevationResult {
   datakilde: string;
@@ -97,14 +93,6 @@ function MapClickHandler({ onMapClick }: { onMapClick: (lat: number, lon: number
   return null;
 }
 
-function FlyTo({ lat, lon }: { lat: number; lon: number }) {
-  const map = useMap();
-  useEffect(() => {
-    map.flyTo([lat, lon], 16, { duration: 1.2 });
-  }, [lat, lon, map]);
-  return null;
-}
-
 export function ElevationMap() {
   const [query, setQuery] = useState("");
   const [suggestions, setSuggestions] = useState<Address[]>([]);
@@ -120,7 +108,8 @@ export function ElevationMap() {
   const [devLog, setDevLog] = useState<DevLogEntry[]>([]);
   const logIdRef = useRef(0);
   const [devOpen, setDevOpen] = useState(true);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const debounceRef = useDebounceRef();
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const inputRef = useRef<HTMLInputElement>(null);
   const [apiDown, setApiDown] = useState(false);
   const [apiBannerDismissed, setApiBannerDismissed] = useState(false);
@@ -130,7 +119,7 @@ export function ElevationMap() {
     const res = await fetch(url);
     const data = await res.json();
     const duration = Math.round(performance.now() - t0);
-    if (DEV) {
+    if (isDevMode()) {
       setDevLog((prev) => [
         {
           id: ++logIdRef.current,
@@ -182,8 +171,30 @@ export function ElevationMap() {
   const handleInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
     setQuery(val);
+    setHighlightedIndex(-1);
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => searchAddresses(val), 300);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (!showDropdown || suggestions.length === 0) return;
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setHighlightedIndex((i) => Math.min(i + 1, suggestions.length - 1));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setHighlightedIndex((i) => Math.max(i - 1, 0));
+    } else if (e.key === "Enter" && highlightedIndex >= 0) {
+      e.preventDefault();
+      const addr = suggestions[highlightedIndex];
+      setQuery(`${addr.adressetekst}, ${addr.poststed}`);
+      setShowDropdown(false);
+      setHighlightedIndex(-1);
+      handleMapClick(addr.representasjonspunkt.lat, addr.representasjonspunkt.lon);
+    } else if (e.key === "Escape") {
+      setShowDropdown(false);
+      setHighlightedIndex(-1);
+    }
   };
 
   const handleLocate = () => {
@@ -392,6 +403,7 @@ export function ElevationMap() {
               ref={inputRef}
               value={query}
               onChange={handleInput}
+              onKeyDown={handleKeyDown}
               autoFocus
               onFocus={() => suggestions.length > 0 && setShowDropdown(true)}
               onBlur={() => setTimeout(() => setShowDropdown(false), 150)}
@@ -416,7 +428,7 @@ export function ElevationMap() {
                 <li key={i}>
                   <button
                     onMouseDown={() => handleSelect(addr)}
-                    className="w-full text-left px-4 py-3 text-sm hover:bg-muted flex items-start gap-3 transition-colors border-b last:border-0"
+                    className={`w-full text-left px-4 py-3 text-sm flex items-start gap-3 transition-colors border-b last:border-0 ${highlightedIndex === i ? "bg-muted" : "hover:bg-muted"}`}
                   >
                     <MapPin className="h-4 w-4 mt-0.5 shrink-0 text-muted-foreground" />
                     <div>
@@ -435,33 +447,12 @@ export function ElevationMap() {
 
       {/* Map */}
       <div className="relative grow [&_.leaflet-grab]:cursor-pointer [&_.leaflet-dragging_.leaflet-grab]:cursor-grabbing">
-        {!asked && (
-          <div className="absolute inset-0 flex items-center justify-center bg-background/80 z-[1000]">
-            <div className="bg-background rounded-2xl shadow-xl border px-6 py-6 max-w-sm w-full mx-4 flex flex-col items-center gap-4 text-center">
-              <LocateFixed className="h-8 w-8 text-muted-foreground" />
-              <div>
-                <p className="font-semibold text-base">Bruk din posisjon?</p>
-                <p className="text-sm text-muted-foreground mt-1">Vi kan vise høyde og værdata for der du er, eller du kan søke manuelt.</p>
-              </div>
-              <div className="flex gap-3 w-full">
-                <Button onClick={() => handleLocationChoice(true)} className="flex-1" size="lg">
-                  <LocateFixed className="h-4 w-4" /> Ja, bruk posisjon
-                </Button>
-                <Button onClick={() => handleLocationChoice(false)} variant="secondary" className="flex-1" size="lg">
-                  Nei takk
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
-        {asked && locating && (
-          <div className="absolute inset-0 flex items-center justify-center bg-background/80 z-[1000]">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Finner posisjon...
-            </div>
-          </div>
-        )}
+        <LocationPrompt
+          asked={asked}
+          locating={locating}
+          description="Vi kan vise høyde og værdata for der du er, eller du kan søke manuelt."
+          onChoice={handleLocationChoice}
+        />
         <MapContainer
           center={[65, 14]}
           zoom={5}
@@ -477,7 +468,7 @@ export function ElevationMap() {
           />
           {selected && (
             <>
-              <FlyTo lat={lat} lon={lon} />
+              <FlyTo lat={lat} lon={lon} zoom={16} />
               <Marker position={[lat, lon]}>
                 <Popup>
                   <strong>{selected.address.adressetekst}</strong>
@@ -493,7 +484,7 @@ export function ElevationMap() {
         </MapContainer>
 
         {/* Tile layer toggle */}
-        <div className="absolute top-3 right-3 z-[999] flex rounded-lg border bg-white shadow-md overflow-hidden">
+        <div className="absolute top-3 right-3 z-[999] flex rounded-lg border bg-card shadow-md overflow-hidden">
           {(["kart", "terreng"] as TileLayerKey[]).map((key, i) => (
             <button
               key={key}
@@ -510,7 +501,7 @@ export function ElevationMap() {
         {/* Elevation card */}
         {selected && (
           <div
-            className="absolute bottom-4 left-3 right-3 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 sm:w-96 z-[999] bg-white rounded-2xl shadow-xl px-4 py-4"
+            className="absolute bottom-4 left-3 right-3 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 sm:w-96 z-[999] bg-card rounded-2xl shadow-xl px-4 py-4"
             style={{ border: "1.5px solid var(--border)" }}
           >
             <div className="flex items-start">
@@ -629,14 +620,14 @@ export function ElevationMap() {
 
         {!selected && (
           <div className="absolute inset-0 flex items-end justify-center pb-8 pointer-events-none z-[998]">
-            <div className="bg-white/90 backdrop-blur-sm rounded-xl px-5 py-3 shadow text-sm text-muted-foreground">
+            <div className="bg-card/90 backdrop-blur-sm rounded-xl px-5 py-3 shadow text-sm text-muted-foreground">
               Søk etter en adresse for å se høyden over havet
             </div>
           </div>
         )}
 
         {/* Dev panel */}
-        {DEV && (
+        {isDevMode() && (
           <div className="absolute bottom-3 right-3 z-[1000] w-80 rounded-xl border shadow-xl overflow-hidden font-mono text-[11px]"
             style={{ background: "#0f172a", color: "#94a3b8", borderColor: "#1e293b" }}
           >

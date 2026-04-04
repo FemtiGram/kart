@@ -5,6 +5,7 @@ import { MapContainer, TileLayer, Marker, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { Loader2, X, Search, MapPin, ExternalLink, Info, Map as MapIcon, Layers, LocateFixed, Mountain, Wind, Droplets, Sun, Cloud, CloudSun, CloudRain, CloudSnow, CloudLightning, CloudFog, CloudHail, CloudDrizzle, Moon, RotateCw } from "lucide-react";
+import { FlyTo, useDebounceRef, useSearchAbort } from "@/lib/map-utils";
 import type { LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FYLKER, isInNorway, OSLO } from "@/lib/fylker";
@@ -32,22 +33,7 @@ function weatherIcon(symbolCode: string): LucideIcon {
   return Sun;
 }
 
-interface Address {
-  adressetekst: string;
-  poststed: string;
-  kommunenavn: string;
-  representasjonspunkt: { lat: number; lon: number };
-}
-
-interface KommuneEntry {
-  kommunenummer: string;
-  kommunenavn: string;
-}
-
-type Suggestion =
-  | { type: "fylke"; fylkesnavn: string; lat: number; lon: number; zoom: number }
-  | { type: "kommune"; kommunenummer: string; kommunenavn: string }
-  | { type: "adresse"; addr: Address };
+import type { Address, KommuneEntry, Suggestion } from "@/lib/map-utils";
 
 interface Cabin {
   id: number;
@@ -119,14 +105,6 @@ const TILE_LAYERS = {
 
 type TileLayerKey = keyof typeof TILE_LAYERS;
 
-function FlyTo({ lat, lon, zoom = 10 }: { lat: number; lon: number; zoom?: number }) {
-  const map = useMap();
-  useEffect(() => {
-    map.flyTo([lat, lon], zoom, { duration: 1.2 });
-  }, [lat, lon, zoom, map]);
-  return null;
-}
-
 function PanToSelected({ cabin }: { cabin: Cabin | null }) {
   const map = useMap();
   useEffect(() => {
@@ -153,7 +131,8 @@ export function CabinMap() {
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const debounceRef = useDebounceRef();
+  const searchAbort = useSearchAbort();
   const kommunerRef = useRef<KommuneEntry[]>([]);
 
   useEffect(() => {
@@ -179,10 +158,11 @@ export function CabinMap() {
 
     let adresseMatches: Suggestion[] = [];
     try {
-      const res = await fetch(`https://ws.geonorge.no/adresser/v1/sok?sok=${encodeURIComponent(q)}&treffPerSide=2&utkoordsys=4326`);
+      const signal = searchAbort.renew();
+      const res = await fetch(`https://ws.geonorge.no/adresser/v1/sok?sok=${encodeURIComponent(q)}&treffPerSide=2&utkoordsys=4326`, { signal });
       const data = await res.json();
       adresseMatches = (data.adresser ?? []).map((a: Address) => ({ type: "adresse" as const, addr: a }));
-    } catch { /* ignore */ }
+    } catch { /* ignore — aborted or network error */ }
 
     setSuggestions([...fylkeMatches, ...kommuneMatches, ...adresseMatches]);
     setShowDropdown(true);
@@ -323,6 +303,7 @@ export function CabinMap() {
             method: "POST",
             headers: { "Content-Type": "application/x-www-form-urlencoded" },
             body: `data=${encodeURIComponent(OVERPASS_QUERY)}`,
+            signal: AbortSignal.timeout(15000),
           });
           if (res.ok) {
             const osm = await res.json();
@@ -486,7 +467,7 @@ export function CabinMap() {
 
         {/* Legend + tile toggle */}
         <div className="absolute top-3 right-3 z-[999] flex flex-col gap-2 items-end">
-          <div className="flex rounded-lg border bg-white shadow-md overflow-hidden">
+          <div className="flex rounded-lg border bg-card shadow-md overflow-hidden">
             {(["kart", "gråtone"] as TileLayerKey[]).map((key, i) => (
               <button
                 key={key}
@@ -501,7 +482,7 @@ export function CabinMap() {
           </div>
 
           {/* Color legend */}
-          <div className="bg-white/90 rounded-xl border px-3 py-2 shadow text-xs">
+          <div className="bg-card/90 rounded-xl border px-3 py-2 shadow text-xs">
             <p className="font-semibold text-muted-foreground mb-1.5">Hyttetype</p>
             <div className="flex flex-col gap-1">
               {(["betjent", "selvbetjent", "ubetjent", "privat"] as const).map((type) => (
@@ -517,7 +498,7 @@ export function CabinMap() {
         {/* Info card */}
         {selected && (
           <div
-            className="absolute bottom-4 left-3 right-3 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 sm:w-96 z-[999] bg-white rounded-2xl shadow-xl px-4 py-4"
+            className="absolute bottom-4 left-3 right-3 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 sm:w-96 z-[999] bg-card rounded-2xl shadow-xl px-4 py-4"
             style={{ border: "1.5px solid var(--border)" }}
           >
             <div className="flex items-start justify-between gap-2 mb-3">

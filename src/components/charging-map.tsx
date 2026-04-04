@@ -7,23 +7,8 @@ import "leaflet/dist/leaflet.css";
 import { Loader2, X, Zap, LocateFixed, ExternalLink, Search, MapPin, Info, Map as MapIcon, Layers, RotateCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FYLKER, isInNorway, OSLO } from "@/lib/fylker";
-
-interface Address {
-  adressetekst: string;
-  poststed: string;
-  kommunenavn: string;
-  representasjonspunkt: { lat: number; lon: number };
-}
-
-interface KommuneEntry {
-  kommunenummer: string;
-  kommunenavn: string;
-}
-
-type Suggestion =
-  | { type: "fylke"; fylkesnavn: string; lat: number; lon: number; zoom: number }
-  | { type: "kommune"; kommunenummer: string; kommunenavn: string }
-  | { type: "adresse"; addr: Address };
+import { FlyTo, useDebounceRef, useSearchAbort } from "@/lib/map-utils";
+import type { Address, KommuneEntry, Suggestion } from "@/lib/map-utils";
 
 interface Station {
   id: number;
@@ -66,14 +51,6 @@ function chargingIcon(isSelected: boolean, inverted: boolean): L.DivIcon {
   });
 }
 
-function FlyTo({ lat, lon, zoom = 12 }: { lat: number; lon: number; zoom?: number }) {
-  const map = useMap();
-  useEffect(() => {
-    map.flyTo([lat, lon], zoom, { duration: 1.2 });
-  }, [lat, lon, zoom, map]);
-  return null;
-}
-
 function PanToSelected({ station }: { station: Station | null }) {
   const map = useMap();
   useEffect(() => {
@@ -99,7 +76,8 @@ export function ChargingMap() {
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const debounceRef = useDebounceRef();
+  const searchAbort = useSearchAbort();
   const kommunerRef = useRef<KommuneEntry[]>([]);
 
   // Load stations from pre-built static JSON, fallback to local-area Overpass
@@ -218,15 +196,16 @@ export function ChargingMap() {
 
     let adresseMatches: Suggestion[] = [];
     try {
-      const res = await fetch(`https://ws.geonorge.no/adresser/v1/sok?sok=${encodeURIComponent(q)}&treffPerSide=2&utkoordsys=4326`);
+      const signal = searchAbort.renew();
+      const res = await fetch(`https://ws.geonorge.no/adresser/v1/sok?sok=${encodeURIComponent(q)}&treffPerSide=2&utkoordsys=4326`, { signal });
       const data = await res.json();
       adresseMatches = (data.adresser ?? []).map((a: Address) => ({ type: "adresse" as const, addr: a }));
-    } catch { /* ignore */ }
+    } catch { /* ignore — aborted or network error */ }
 
     setSuggestions([...fylkeMatches, ...kommuneMatches, ...adresseMatches]);
     setShowDropdown(true);
     setLoadingSuggestions(false);
-  }, []);
+  }, [searchAbort]);
 
   const handleInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
@@ -428,7 +407,7 @@ export function ChargingMap() {
         </MapContainer>
 
         {/* Tile layer toggle */}
-        <div className="absolute top-3 right-3 z-[999] flex rounded-lg border bg-white shadow-md overflow-hidden">
+        <div className="absolute top-3 right-3 z-[999] flex rounded-lg border bg-card shadow-md overflow-hidden">
           {(["kart", "gråtone"] as TileLayerKey[]).map((key, i) => (
             <button
               key={key}
@@ -445,7 +424,7 @@ export function ChargingMap() {
         {/* Info card */}
         {selected && (
           <div
-            className="absolute bottom-4 left-3 right-3 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 sm:w-96 z-[999] bg-white rounded-2xl shadow-xl px-4 py-4"
+            className="absolute bottom-4 left-3 right-3 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 sm:w-96 z-[999] bg-card rounded-2xl shadow-xl px-4 py-4"
             style={{ border: "1.5px solid var(--border)" }}
           >
             <div className="flex items-start justify-between gap-2 mb-3">
