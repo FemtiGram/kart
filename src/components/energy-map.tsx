@@ -148,7 +148,6 @@ export function EnergyMap() {
     setError(false);
     setLoading(true);
 
-    const t0 = Date.now();
     try {
       const res = await fetch("/api/energy");
       const data = await res.json();
@@ -158,28 +157,7 @@ export function EnergyMap() {
         return;
       }
       setPlants(data.plants);
-      const elapsed = Date.now() - t0;
-      if (elapsed < 3000)
-        await new Promise((r) => setTimeout(r, 3000 - elapsed));
       setLoading(false);
-
-      const pref = localStorage.getItem("mapgram-use-location");
-      if (pref === "yes" && navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          (pos) => {
-            const { latitude: lat, longitude: lon } = pos.coords;
-            if (isInNorway(lat, lon)) {
-              setCenter({ lat, lon });
-            } else {
-              setCenter({ lat: OSLO.lat, lon: OSLO.lon });
-            }
-          },
-          () => setCenter({ lat: OSLO.lat, lon: OSLO.lon }),
-          { timeout: 6000 }
-        );
-      } else {
-        setCenter({ lat: OSLO.lat, lon: OSLO.lon });
-      }
     } catch {
       setError(true);
       setLoading(false);

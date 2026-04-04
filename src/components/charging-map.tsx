@@ -119,57 +119,25 @@ export function ChargingMap() {
       return parseStations(data.elements ?? []);
     }
 
-    function flyToStart(onPos?: (lat: number, lon: number) => void) {
-      const pref = localStorage.getItem("mapgram-use-location");
-      if (pref === "yes" && navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          (pos) => {
-            const { latitude: lat, longitude: lon } = pos.coords;
-            if (isInNorway(lat, lon)) {
-              setCenter({ lat, lon });
-              onPos?.(lat, lon);
-            } else {
-              setCenter({ lat: OSLO.lat, lon: OSLO.lon });
-              onPos?.(OSLO.lat, OSLO.lon);
-            }
-          },
-          () => {
-            setCenter({ lat: OSLO.lat, lon: OSLO.lon });
-            onPos?.(OSLO.lat, OSLO.lon);
-          },
-          { timeout: 6000 }
-        );
-      } else {
-        setCenter({ lat: OSLO.lat, lon: OSLO.lon });
-        onPos?.(59.91, 10.75);
-      }
-    }
-
-    const t0 = Date.now();
     try {
       const r = await fetch("/data/stations.json");
       const data = await r.json();
       if (Array.isArray(data) && data.length > 0) {
         setStations(data);
-        const elapsed = Date.now() - t0;
-        if (elapsed < 3000) await new Promise((r) => setTimeout(r, 3000 - elapsed));
         setLoading(false);
-        flyToStart();
       } else {
         setLoadingMessage("Dataen er ikke ferdig cachet ennå. Henter fra OpenStreetMap...");
         setLoading(false);
-        flyToStart(async (lat, lon) => {
-          try {
-            const nearby = await fetchArea(lat, lon);
-            if (nearby.length > 0) {
-              setStations(nearby);
-            } else {
-              setError(true);
-            }
-          } catch {
+        try {
+          const nearby = await fetchArea(OSLO.lat, OSLO.lon);
+          if (nearby.length > 0) {
+            setStations(nearby);
+          } else {
             setError(true);
           }
-        });
+        } catch {
+          setError(true);
+        }
       }
     } catch {
       setError(true);

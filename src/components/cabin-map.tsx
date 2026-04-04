@@ -13,7 +13,7 @@ import type { LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Toggle } from "@/components/ui/toggle";
-import { FYLKER, isInNorway, OSLO } from "@/lib/fylker";
+import { FYLKER, isInNorway } from "@/lib/fylker";
 
 interface WeatherResult {
   temperature: number;
@@ -267,27 +267,6 @@ export function CabinMap() {
       }).filter((c) => c.lat !== 0 && c.lon !== 0);
     }
 
-    function flyToStart() {
-      const pref = localStorage.getItem("mapgram-use-location");
-      if (pref === "yes" && navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          (pos) => {
-            const { latitude: lat, longitude: lon } = pos.coords;
-            if (isInNorway(lat, lon)) {
-              setCenter({ lat, lon, zoom: 10 });
-            } else {
-              setCenter({ lat: 61.5, lon: 8.3, zoom: 9 });
-            }
-          },
-          () => setCenter({ lat: 61.5, lon: 8.3, zoom: 9 }),
-          { timeout: 6000 }
-        );
-      } else {
-        setCenter({ lat: 61.5, lon: 8.3, zoom: 9 });
-      }
-    }
-
-    const t0 = Date.now();
     try {
       const r = await fetch("/data/cabins.json");
       const data = await r.json();
@@ -316,10 +295,7 @@ export function CabinMap() {
           setError(true);
         }
       }
-      const elapsed = Date.now() - t0;
-      if (elapsed < 3000) await new Promise((r) => setTimeout(r, 3000 - elapsed));
       setLoading(false);
-      flyToStart();
     } catch {
       setError(true);
       setLoading(false);
