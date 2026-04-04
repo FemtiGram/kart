@@ -701,7 +701,7 @@ export function CabinMap() {
                 ))}
               </div>
               <p>
-                Høyde og sengeplasser vises når data er tilgjengelig i OpenStreetMap. Ikke alle hytter har komplett informasjon.
+                Data som sengeplasser og høyde hentes fra OpenStreetMap og kan være utdatert. Sjekk alltid <a href="https://www.dnt.no/hytter/" target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:text-foreground transition-colors">dnt.no</a> for oppdatert informasjon.
               </p>
               <a
                 href="https://www.dnt.no/hytter/"
