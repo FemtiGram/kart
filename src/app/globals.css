@@ -49,12 +49,12 @@
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
 
-  /* Kartverket brand colors */
-  --kv-blue: #003da5;
-  --kv-green: #00b140;
-  --kv-blue-dark: #002d7a;
-  --kv-blue-light: #e8edf8;
-  --kv-green-dark: #008a32;
+  /* Brand colors */
+  --kv-blue: #24374c;
+  --kv-green: #15803d;
+  --kv-blue-dark: #0f1923;
+  --kv-blue-light: #eae8e3;
+  --kv-green-dark: #166534;
   --kv-green-light: #e6f7ec;
 }
 

@@ -53,9 +53,9 @@ type TileLayerKey = keyof typeof TILE_LAYERS;
 
 function chargingIcon(isSelected: boolean, inverted: boolean): L.DivIcon {
   const size = 28;
-  const bg = inverted ? (isSelected ? "#003da5" : "#00b140") : "white";
-  const iconColor = inverted ? "white" : (isSelected ? "#003da5" : "#00b140");
-  const border = isSelected ? "#003da5" : inverted ? "rgba(255,255,255,0.3)" : "rgba(0,0,0,0.15)";
+  const bg = inverted ? (isSelected ? "#24374c" : "#15803d") : "white";
+  const iconColor = inverted ? "white" : (isSelected ? "#24374c" : "#15803d");
+  const border = isSelected ? "#24374c" : inverted ? "rgba(255,255,255,0.3)" : "rgba(0,0,0,0.15)";
   const bolt = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="${iconColor}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>`;
 
   return L.divIcon({
@@ -446,7 +446,7 @@ export function ChargingMap() {
         {selected && (
           <div
             className="absolute bottom-4 left-3 right-3 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 sm:w-96 z-[999] bg-white rounded-2xl shadow-xl px-4 py-4"
-            style={{ border: "1.5px solid var(--kv-green-light, #b3e6c8)" }}
+            style={{ border: "1.5px solid var(--border)" }}
           >
             <div className="flex items-start justify-between gap-2 mb-3">
               <div className="min-w-0">

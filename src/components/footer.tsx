@@ -28,7 +28,7 @@ export function Footer() {
               style={{ color: "var(--kv-blue)" }}
             >
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="22" height="22" aria-hidden="true">
-                <rect width="32" height="32" rx="7" fill="#003da5"/>
+                <rect width="32" height="32" rx="7" fill="#24374c"/>
                 <g transform="translate(5, 5) scale(0.9375)" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none">
                   <polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/>
                   <line x1="9" x2="9" y1="3" y2="18"/>

@@ -70,7 +70,7 @@ interface Cabin {
 const CABIN_COLORS: Record<Cabin["cabinType"], string> = {
   betjent: "#b91c1c",
   selvbetjent: "#2563eb",
-  ubetjent: "#16a34a",
+  ubetjent: "#15803d",
   privat: "#737373",
 };
 
@@ -83,12 +83,12 @@ const CABIN_LABELS: Record<Cabin["cabinType"], string> = {
 
 // SVG cabin icons — filled for betjent/selvbetjent, outline for ubetjent/privat
 function cabinIcon(type: Cabin["cabinType"], isSelected: boolean, inverted: boolean): L.DivIcon {
-  const baseColor = isSelected ? "#003da5" : CABIN_COLORS[type];
+  const baseColor = isSelected ? "#24374c" : CABIN_COLORS[type];
   const size = type === "betjent" || type === "selvbetjent" ? 30 : 26;
   const filled = type === "betjent" || type === "selvbetjent";
   const bg = inverted ? baseColor : "white";
   const iconColor = inverted ? "white" : baseColor;
-  const border = isSelected ? "#003da5" : inverted ? "rgba(255,255,255,0.3)" : "rgba(0,0,0,0.15)";
+  const border = isSelected ? "#24374c" : inverted ? "rgba(255,255,255,0.3)" : "rgba(0,0,0,0.15)";
 
   const housePath = filled
     ? `<path d="M3 10.5L12 3l9 7.5V21a1 1 0 01-1 1H4a1 1 0 01-1-1z" fill="${iconColor}" stroke="${iconColor}" stroke-width="1.5"/>`
@@ -518,7 +518,7 @@ export function CabinMap() {
         {selected && (
           <div
             className="absolute bottom-4 left-3 right-3 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 sm:w-96 z-[999] bg-white rounded-2xl shadow-xl px-4 py-4"
-            style={{ border: "1.5px solid var(--kv-green-light, #b3e6c8)" }}
+            style={{ border: "1.5px solid var(--border)" }}
           >
             <div className="flex items-start justify-between gap-2 mb-3">
               <div className="min-w-0">

@@ -62,7 +62,7 @@ function interpolateColor(t: number): string {
 }
 
 function verneColor(total: number | null | undefined, max: number): string {
-  if (!total || total === 0 || max === 0) return "#e5e7eb";
+  if (!total || total === 0 || max === 0) return "#e3ddd4";
   const t = Math.max(0, Math.min(1, total / max));
   return interpolateColor(t);
 }
@@ -155,7 +155,7 @@ export function ProtectedAreasMap() {
     }
     const layer = layerRefs.current.get(kommunenummer);
     if (layer) {
-      layer.setStyle({ weight: 2.5, color: "#003da5", fillOpacity: 1 });
+      layer.setStyle({ weight: 2.5, color: "#24374c", fillOpacity: 1 });
       layer.bringToFront();
     }
     selectedKommuneRef.current = kommunenummer;
@@ -314,7 +314,7 @@ export function ProtectedAreasMap() {
       mouseover(e) {
         const l = e.target as L.Path;
         if (nr !== selectedKommuneRef.current) {
-          l.setStyle({ weight: 1.5, color: "#003da5", fillOpacity: 1 });
+          l.setStyle({ weight: 1.5, color: "#24374c", fillOpacity: 1 });
           l.bringToFront();
         }
       },
@@ -495,7 +495,7 @@ export function ProtectedAreasMap() {
         {selected && (
           <div
             className="absolute bottom-4 left-3 right-3 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 sm:w-96 z-[999] bg-white rounded-2xl shadow-xl px-4 py-4"
-            style={{ border: "1.5px solid var(--kv-green-light, #b3e6c8)" }}
+            style={{ border: "1.5px solid var(--border)" }}
           >
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">

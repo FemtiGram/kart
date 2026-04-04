@@ -15,7 +15,7 @@ export default function OgImage() {
           flexDirection: "column",
           justifyContent: "center",
           padding: "80px",
-          background: "linear-gradient(135deg, #003da5 0%, #001d52 100%)",
+          background: "linear-gradient(135deg, #24374c 0%, #0f1923 100%)",
           fontFamily: "sans-serif",
         }}
       >
@@ -29,7 +29,7 @@ export default function OgImage() {
             <rect width="32" height="32" rx="7" fill="white" />
             <g
               transform="translate(5, 5) scale(0.9375)"
-              stroke="#003da5"
+              stroke="#24374c"
               stroke-width="2"
               stroke-linecap="round"
               stroke-linejoin="round"

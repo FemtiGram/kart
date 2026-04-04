@@ -511,7 +511,7 @@ export function ElevationMap() {
         {selected && (
           <div
             className="absolute bottom-4 left-3 right-3 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 sm:w-96 z-[999] bg-white rounded-2xl shadow-xl px-4 py-4"
-            style={{ border: "1.5px solid var(--kv-green-light, #b3e6c8)" }}
+            style={{ border: "1.5px solid var(--border)" }}
           >
             <div className="flex items-start">
               <div className="flex-1 min-w-0">
