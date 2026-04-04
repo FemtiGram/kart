@@ -2,8 +2,11 @@
 
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { MapContainer, TileLayer, Marker, useMap } from "react-leaflet";
+import MarkerClusterGroup from "react-leaflet-cluster";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import "react-leaflet-cluster/dist/assets/MarkerCluster.css";
+import "react-leaflet-cluster/dist/assets/MarkerCluster.Default.css";
 import { Loader2, X, Search, MapPin, ExternalLink, Info, Map as MapIcon, Layers, LocateFixed, Mountain, Wind, Droplets, Sun, Cloud, CloudSun, CloudRain, CloudSnow, CloudLightning, CloudFog, CloudHail, CloudDrizzle, Moon, RotateCw, SlidersHorizontal, Check } from "lucide-react";
 import { FlyTo, useDebounceRef, useSearchAbort } from "@/lib/map-utils";
 import type { LucideIcon } from "lucide-react";
@@ -534,18 +537,38 @@ export function CabinMap() {
             attribution={TILE_LAYERS[tileLayer].attribution}
             maxZoom={17}
           />
-          {filteredCabins.map((c) => (
-            <Marker
-              key={c.id}
-              position={[c.lat, c.lon]}
-              icon={cabinIcon(c.cabinType, selected?.id === c.id, tileLayer === "gråtone")}
-              eventHandlers={{
-                click() {
-                  setSelected((prev) => (prev?.id === c.id ? null : c));
-                },
-              }}
-            />
-          ))}
+          <MarkerClusterGroup
+            chunkedLoading
+            maxClusterRadius={60}
+            spiderfyOnMaxZoom
+            showCoverageOnHover={false}
+            iconCreateFunction={(cluster: { getChildCount: () => number }) => {
+              const count = cluster.getChildCount();
+              let size = 36;
+              let fontSize = 13;
+              if (count >= 100) { size = 44; fontSize = 14; }
+              if (count >= 500) { size = 52; fontSize = 15; }
+              return L.divIcon({
+                html: `<div style="width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;background:#b45309;color:white;border-radius:50%;font-weight:700;font-size:${fontSize}px;box-shadow:0 2px 6px rgba(0,0,0,0.3);border:2px solid rgba(255,255,255,0.6)">${count}</div>`,
+                className: "",
+                iconSize: [size, size],
+                iconAnchor: [size / 2, size / 2],
+              });
+            }}
+          >
+            {filteredCabins.map((c) => (
+              <Marker
+                key={c.id}
+                position={[c.lat, c.lon]}
+                icon={cabinIcon(c.cabinType, selected?.id === c.id, tileLayer === "gråtone")}
+                eventHandlers={{
+                  click() {
+                    setSelected((prev) => (prev?.id === c.id ? null : c));
+                  },
+                }}
+              />
+            ))}
+          </MarkerClusterGroup>
         </MapContainer>
 
         {/* Legend + tile toggle */}

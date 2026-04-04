@@ -2,8 +2,11 @@
 
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { MapContainer, TileLayer, Marker, useMap } from "react-leaflet";
+import MarkerClusterGroup from "react-leaflet-cluster";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import "react-leaflet-cluster/dist/assets/MarkerCluster.css";
+import "react-leaflet-cluster/dist/assets/MarkerCluster.Default.css";
 import {
   Loader2,
   X,
@@ -587,25 +590,45 @@ export function EnergyMap() {
             attribution={TILE_LAYERS[tileLayer].attribution}
             maxZoom={17}
           />
-          {filteredPlants.map((p) => (
-            <Marker
-              key={`${p.type}-${p.id}`}
-              position={[p.lat, p.lon]}
-              icon={energyIcon(
-                selected?.id === p.id && selected?.type === p.type,
-                tileLayer === "gråtone",
-                p.type,
-                p.capacityMW
-              )}
-              eventHandlers={{
-                click() {
-                  setSelected((prev) =>
-                    prev?.id === p.id && prev?.type === p.type ? null : p
-                  );
-                },
-              }}
-            />
-          ))}
+          <MarkerClusterGroup
+            chunkedLoading
+            maxClusterRadius={50}
+            spiderfyOnMaxZoom
+            showCoverageOnHover={false}
+            iconCreateFunction={(cluster: { getChildCount: () => number }) => {
+              const count = cluster.getChildCount();
+              let size = 36;
+              let fontSize = 13;
+              if (count >= 50) { size = 44; fontSize = 14; }
+              if (count >= 200) { size = 52; fontSize = 15; }
+              return L.divIcon({
+                html: `<div style="width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;background:#0369a1;color:white;border-radius:50%;font-weight:700;font-size:${fontSize}px;box-shadow:0 2px 6px rgba(0,0,0,0.3);border:2px solid rgba(255,255,255,0.6)">${count}</div>`,
+                className: "",
+                iconSize: [size, size],
+                iconAnchor: [size / 2, size / 2],
+              });
+            }}
+          >
+            {filteredPlants.map((p) => (
+              <Marker
+                key={`${p.type}-${p.id}`}
+                position={[p.lat, p.lon]}
+                icon={energyIcon(
+                  selected?.id === p.id && selected?.type === p.type,
+                  tileLayer === "gråtone",
+                  p.type,
+                  p.capacityMW
+                )}
+                eventHandlers={{
+                  click() {
+                    setSelected((prev) =>
+                      prev?.id === p.id && prev?.type === p.type ? null : p
+                    );
+                  },
+                }}
+              />
+            ))}
+          </MarkerClusterGroup>
         </MapContainer>
 
         {/* Tile layer toggle */}
