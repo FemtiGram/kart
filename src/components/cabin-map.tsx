@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { MapContainer, TileLayer, Marker, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { Loader2, X, Search, MapPin, ExternalLink, Info, Map as MapIcon, Layers, LocateFixed, Mountain, Wind, Droplets, Sun, Cloud, CloudSun, CloudRain, CloudSnow, CloudLightning, CloudFog, CloudHail, CloudDrizzle, Moon, RotateCw, SlidersHorizontal } from "lucide-react";
+import { Loader2, X, Search, MapPin, ExternalLink, Info, Map as MapIcon, Layers, LocateFixed, Mountain, Wind, Droplets, Sun, Cloud, CloudSun, CloudRain, CloudSnow, CloudLightning, CloudFog, CloudHail, CloudDrizzle, Moon, RotateCw, SlidersHorizontal, Check } from "lucide-react";
 import { FlyTo, useDebounceRef, useSearchAbort } from "@/lib/map-utils";
 import type { LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -401,55 +401,60 @@ export function CabinMap() {
                 }
               />
               <SheetContent side="bottom" className="rounded-t-2xl max-h-[70svh]">
-                <SheetHeader>
-                  <SheetTitle className="text-left">Filtrer hytter</SheetTitle>
-                </SheetHeader>
-                <div className="flex flex-col gap-5 py-4">
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground mb-3">Hyttetype</p>
-                    <div className="flex flex-col gap-2">
-                      {(["betjent", "selvbetjent", "ubetjent", "privat"] as const).map((type) => (
-                        <Toggle
-                          key={type}
-                          pressed={filterTypes.has(type)}
-                          onPressedChange={() => toggleType(type)}
-                          variant="outline"
-                          className="justify-start gap-3 h-12 px-4 w-full"
-                        >
-                          <div className="h-3 w-3 rounded-full shrink-0" style={{ background: CABIN_COLORS[type] }} />
-                          <div className="text-left">
-                            <span className="font-medium">{CABIN_LABELS[type]}</span>
-                            <span className="text-muted-foreground text-xs ml-2">
-                              {cabins.filter((c) => c.cabinType === type).length}
-                            </span>
-                          </div>
-                        </Toggle>
-                      ))}
+                <div className="mx-auto w-full max-w-md px-2">
+                  <SheetHeader>
+                    <SheetTitle className="text-left">Filtrer hytter</SheetTitle>
+                  </SheetHeader>
+                  <div className="flex flex-col gap-4 py-4">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Hyttetype</p>
+                      <div className="rounded-xl border overflow-hidden">
+                        {(["betjent", "selvbetjent", "ubetjent", "privat"] as const).map((type) => {
+                          const active = filterTypes.has(type);
+                          return (
+                            <button
+                              key={type}
+                              onClick={() => toggleType(type)}
+                              className={`flex items-center gap-3 w-full px-4 py-3 text-sm transition-colors border-b last:border-0 ${active ? "bg-background" : "bg-muted/40 text-muted-foreground"}`}
+                            >
+                              <div className={`h-5 w-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-colors ${active ? "border-primary bg-primary" : "border-muted-foreground/30 bg-background"}`}>
+                                {active && <Check className="h-3.5 w-3.5 text-primary-foreground" />}
+                              </div>
+                              <div className="h-3 w-3 rounded-full shrink-0" style={{ background: CABIN_COLORS[type] }} />
+                              <span className="font-medium flex-1 text-left">{CABIN_LABELS[type]}</span>
+                              <span className="text-xs text-muted-foreground tabular-nums">{cabins.filter((c) => c.cabinType === type).length}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground mb-3">Organisasjon</p>
-                    <Toggle
-                      pressed={filterDNT}
-                      onPressedChange={() => setFilterDNT((v) => !v)}
-                      variant="outline"
-                      className="justify-start gap-3 h-12 px-4 w-full"
-                    >
-                      <span className="font-medium">Kun DNT-hytter</span>
-                      <span className="text-muted-foreground text-xs">{dntCount}</span>
-                    </Toggle>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="secondary"
-                      className="flex-1"
-                      onClick={() => { setFilterTypes(new Set(["betjent", "selvbetjent", "ubetjent", "privat"])); setFilterDNT(false); }}
-                    >
-                      Nullstill
-                    </Button>
-                    <Button className="flex-1" onClick={() => setShowFilter(false)}>
-                      Vis {filteredCabins.length} hytter
-                    </Button>
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Organisasjon</p>
+                      <div className="rounded-xl border overflow-hidden">
+                        <button
+                          onClick={() => setFilterDNT((v) => !v)}
+                          className={`flex items-center gap-3 w-full px-4 py-3 text-sm transition-colors ${filterDNT ? "bg-background" : "bg-muted/40 text-muted-foreground"}`}
+                        >
+                          <div className={`h-5 w-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-colors ${filterDNT ? "border-primary bg-primary" : "border-muted-foreground/30 bg-background"}`}>
+                            {filterDNT && <Check className="h-3.5 w-3.5 text-primary-foreground" />}
+                          </div>
+                          <span className="font-medium flex-1 text-left">Kun DNT-hytter</span>
+                          <span className="text-xs text-muted-foreground tabular-nums">{dntCount}</span>
+                        </button>
+                      </div>
+                    </div>
+                    <div className="flex gap-2 pt-1">
+                      <Button
+                        variant="secondary"
+                        className="flex-1"
+                        onClick={() => { setFilterTypes(new Set(["betjent", "selvbetjent", "ubetjent", "privat"])); setFilterDNT(false); }}
+                      >
+                        Nullstill
+                      </Button>
+                      <Button className="flex-1" onClick={() => setShowFilter(false)}>
+                        Vis {filteredCabins.length} hytter
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </SheetContent>
