@@ -78,7 +78,7 @@ function cabinIcon(type: Cabin["cabinType"], isSelected: boolean, inverted: bool
     ? `<path d="M3 10.5L12 3l9 7.5V21a1 1 0 01-1 1H4a1 1 0 01-1-1z" fill="${iconColor}" stroke="${iconColor}" stroke-width="1.5"/>`
     : `<path d="M3 10.5L12 3l9 7.5V21a1 1 0 01-1 1H4a1 1 0 01-1-1z" fill="none" stroke="${iconColor}" stroke-width="2"/>`;
 
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="${size * 0.5}" height="${size * 0.5}">${housePath}</svg>`;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 1 24 24" width="${size * 0.5}" height="${size * 0.5}">${housePath}</svg>`;
 
   return L.divIcon({
     className: "",
@@ -356,28 +356,28 @@ export function CabinMap() {
     <div className="flex flex-col" style={{ height: "calc(100svh - 57px)" }}>
       {/* Search bar */}
       <div className="relative z-[1000] px-4 py-4 md:px-8 shrink-0 bg-background border-b">
-        <div className="max-w-xl mx-auto relative flex flex-col sm:flex-row sm:items-center gap-2">
-          <div className="flex flex-1 items-center gap-2 bg-background border rounded-xl px-4 py-3">
-            {loadingSuggestions ? (
-              <Loader2 className="h-4 w-4 shrink-0 animate-spin text-muted-foreground" />
-            ) : (
-              <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
-            )}
-            <input
-              value={query}
-              onChange={handleInput}
-              onFocus={() => suggestions.length > 0 && setShowDropdown(true)}
-              onBlur={() => setTimeout(() => setShowDropdown(false), 150)}
-              onKeyDown={handleKeyDown}
-              placeholder="Søk etter fjellområde eller sted..."
-              className="flex-1 bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground text-[16px] sm:text-sm"
-            />
-          </div>
-          <div className="flex gap-2 w-full sm:w-auto">
+        <div className="max-w-xl mx-auto relative flex flex-col gap-2">
+          <div className="flex items-center gap-2">
+            <div className="flex flex-1 items-center gap-2 bg-background border rounded-xl px-4 py-3">
+              {loadingSuggestions ? (
+                <Loader2 className="h-4 w-4 shrink-0 animate-spin text-muted-foreground" />
+              ) : (
+                <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
+              )}
+              <input
+                value={query}
+                onChange={handleInput}
+                onFocus={() => suggestions.length > 0 && setShowDropdown(true)}
+                onBlur={() => setTimeout(() => setShowDropdown(false), 150)}
+                onKeyDown={handleKeyDown}
+                placeholder="Søk etter fjellområde eller sted..."
+                className="flex-1 bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground text-[16px] sm:text-sm"
+              />
+            </div>
             <Sheet open={showFilter} onOpenChange={setShowFilter}>
               <SheetTrigger
                 render={
-                  <Button variant="secondary" size="lg" className="relative shadow-lg">
+                  <Button variant="secondary" size="lg" className="relative shadow-lg shrink-0">
                     <SlidersHorizontal className="h-4 w-4" />
                     <span className="sm:inline hidden">Filter</span>
                     {activeFilterCount > 0 && (
@@ -447,11 +447,11 @@ export function CabinMap() {
                 </div>
               </SheetContent>
             </Sheet>
-            <Button onClick={handleLocate} disabled={locating || loading} variant="secondary" size="lg" className="flex-1 sm:flex-initial shadow-lg">
-              {locating ? <Loader2 className="animate-spin" /> : <LocateFixed />}
-              Min posisjon
-            </Button>
           </div>
+          <Button onClick={handleLocate} disabled={locating || loading} variant="secondary" size="lg" className="w-full shadow-lg">
+            {locating ? <Loader2 className="animate-spin" /> : <LocateFixed />}
+            Min posisjon
+          </Button>
 
           {showDropdown && suggestions.length > 0 && (
             <ul className="absolute top-full mt-1 left-0 right-0 sm:right-auto sm:w-[calc(100%-theme(spacing.2)-theme(spacing.36))] bg-background rounded-xl shadow-xl border overflow-hidden">
