@@ -1,13 +1,15 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { MapContainer, TileLayer, Marker, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { Loader2, X, Search, MapPin, ExternalLink, Info, Map as MapIcon, Layers, LocateFixed, Mountain, Wind, Droplets, Sun, Cloud, CloudSun, CloudRain, CloudSnow, CloudLightning, CloudFog, CloudHail, CloudDrizzle, Moon, RotateCw } from "lucide-react";
+import { Loader2, X, Search, MapPin, ExternalLink, Info, Map as MapIcon, Layers, LocateFixed, Mountain, Wind, Droplets, Sun, Cloud, CloudSun, CloudRain, CloudSnow, CloudLightning, CloudFog, CloudHail, CloudDrizzle, Moon, RotateCw, SlidersHorizontal } from "lucide-react";
 import { FlyTo, useDebounceRef, useSearchAbort } from "@/lib/map-utils";
 import type { LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Toggle } from "@/components/ui/toggle";
 import { FYLKER, isInNorway, OSLO } from "@/lib/fylker";
 
 interface WeatherResult {
@@ -123,6 +125,9 @@ export function CabinMap() {
   const [center, setCenter] = useState<{ lat: number; lon: number; zoom?: number; _t?: number } | null>(null);
   const [tileLayer, setTileLayer] = useState<TileLayerKey>("gråtone");
   const [showInfo, setShowInfo] = useState(false);
+  const [showFilter, setShowFilter] = useState(false);
+  const [filterTypes, setFilterTypes] = useState<Set<Cabin["cabinType"]>>(new Set(["betjent", "selvbetjent", "ubetjent", "privat"]));
+  const [filterDNT, setFilterDNT] = useState(false);
   const [weather, setWeather] = useState<WeatherResult | null>(null);
   const [loadingWeather, setLoadingWeather] = useState(false);
 
@@ -344,6 +349,21 @@ export function CabinMap() {
 
   const dntCount = cabins.filter((c) => c.isDNT).length;
 
+  const filteredCabins = useMemo(() => {
+    return cabins.filter((c) => filterTypes.has(c.cabinType) && (!filterDNT || c.isDNT));
+  }, [cabins, filterTypes, filterDNT]);
+
+  const activeFilterCount = (4 - filterTypes.size) + (filterDNT ? 1 : 0);
+
+  const toggleType = (type: Cabin["cabinType"]) => {
+    setFilterTypes((prev) => {
+      const next = new Set(prev);
+      if (next.has(type)) { if (next.size > 1) next.delete(type); }
+      else next.add(type);
+      return next;
+    });
+  };
+
   return (
     <div className="flex flex-col" style={{ height: "calc(100svh - 57px)" }}>
       {/* Search bar */}
@@ -365,10 +385,80 @@ export function CabinMap() {
               className="flex-1 bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground text-[16px] sm:text-sm"
             />
           </div>
-          <Button onClick={handleLocate} disabled={locating || loading} variant="secondary" size="lg" className="w-full sm:w-auto shadow-lg">
-            {locating ? <Loader2 className="animate-spin" /> : <LocateFixed />}
-            Min posisjon
-          </Button>
+          <div className="flex gap-2 w-full sm:w-auto">
+            <Sheet open={showFilter} onOpenChange={setShowFilter}>
+              <SheetTrigger
+                render={
+                  <Button variant="secondary" size="lg" className="relative shadow-lg">
+                    <SlidersHorizontal className="h-4 w-4" />
+                    <span className="sm:inline hidden">Filter</span>
+                    {activeFilterCount > 0 && (
+                      <span className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center">
+                        {activeFilterCount}
+                      </span>
+                    )}
+                  </Button>
+                }
+              />
+              <SheetContent side="bottom" className="rounded-t-2xl max-h-[70svh]">
+                <SheetHeader>
+                  <SheetTitle className="text-left">Filtrer hytter</SheetTitle>
+                </SheetHeader>
+                <div className="flex flex-col gap-5 py-4">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground mb-3">Hyttetype</p>
+                    <div className="flex flex-col gap-2">
+                      {(["betjent", "selvbetjent", "ubetjent", "privat"] as const).map((type) => (
+                        <Toggle
+                          key={type}
+                          pressed={filterTypes.has(type)}
+                          onPressedChange={() => toggleType(type)}
+                          variant="outline"
+                          className="justify-start gap-3 h-12 px-4 w-full"
+                        >
+                          <div className="h-3 w-3 rounded-full shrink-0" style={{ background: CABIN_COLORS[type] }} />
+                          <div className="text-left">
+                            <span className="font-medium">{CABIN_LABELS[type]}</span>
+                            <span className="text-muted-foreground text-xs ml-2">
+                              {cabins.filter((c) => c.cabinType === type).length}
+                            </span>
+                          </div>
+                        </Toggle>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground mb-3">Organisasjon</p>
+                    <Toggle
+                      pressed={filterDNT}
+                      onPressedChange={() => setFilterDNT((v) => !v)}
+                      variant="outline"
+                      className="justify-start gap-3 h-12 px-4 w-full"
+                    >
+                      <span className="font-medium">Kun DNT-hytter</span>
+                      <span className="text-muted-foreground text-xs">{dntCount}</span>
+                    </Toggle>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="secondary"
+                      className="flex-1"
+                      onClick={() => { setFilterTypes(new Set(["betjent", "selvbetjent", "ubetjent", "privat"])); setFilterDNT(false); }}
+                    >
+                      Nullstill
+                    </Button>
+                    <Button className="flex-1" onClick={() => setShowFilter(false)}>
+                      Vis {filteredCabins.length} hytter
+                    </Button>
+                  </div>
+                </div>
+              </SheetContent>
+            </Sheet>
+            <Button onClick={handleLocate} disabled={locating || loading} variant="secondary" size="lg" className="flex-1 sm:flex-initial shadow-lg">
+              {locating ? <Loader2 className="animate-spin" /> : <LocateFixed />}
+              Min posisjon
+            </Button>
+          </div>
 
           {showDropdown && suggestions.length > 0 && (
             <ul className="absolute top-full mt-1 left-0 right-0 sm:right-auto sm:w-[calc(100%-theme(spacing.2)-theme(spacing.36))] bg-background rounded-xl shadow-xl border overflow-hidden">
@@ -403,7 +493,7 @@ export function CabinMap() {
         </div>
         <div className="flex items-center justify-between mt-2">
           <p className="text-xs text-muted-foreground">
-            {loading ? "Henter hytter..." : cabins.length > 0 ? `${cabins.length} hytter (${dntCount} DNT) i Norge — Kilde: OpenStreetMap` : "Ingen hytter funnet"}
+            {loading ? "Henter hytter..." : cabins.length > 0 ? `${filteredCabins.length} av ${cabins.length} hytter — Kilde: OpenStreetMap` : "Ingen hytter funnet"}
           </p>
         </div>
       </div>
@@ -451,7 +541,7 @@ export function CabinMap() {
             attribution={TILE_LAYERS[tileLayer].attribution}
             maxZoom={17}
           />
-          {cabins.map((c) => (
+          {filteredCabins.map((c) => (
             <Marker
               key={c.id}
               position={[c.lat, c.lon]}
@@ -481,18 +571,6 @@ export function CabinMap() {
             ))}
           </div>
 
-          {/* Color legend */}
-          <div className="bg-card/90 rounded-xl border px-3 py-2 shadow text-xs">
-            <p className="font-semibold text-muted-foreground mb-1.5">Hyttetype</p>
-            <div className="flex flex-col gap-1">
-              {(["betjent", "selvbetjent", "ubetjent", "privat"] as const).map((type) => (
-                <div key={type} className="flex items-center gap-2">
-                  <div className="h-2.5 w-2.5 rounded-full" style={{ background: CABIN_COLORS[type] }} />
-                  <span className="text-muted-foreground">{CABIN_LABELS[type]}</span>
-                </div>
-              ))}
-            </div>
-          </div>
         </div>
 
         {/* Info card */}
