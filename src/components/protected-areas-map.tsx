@@ -6,7 +6,7 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import type { GeoJsonObject, Feature } from "geojson";
 import type { Layer } from "leaflet";
-import { Search, MapPin, Loader2, X, LocateFixed, Map as MapIcon, ChevronDown, ChevronUp, Info, ExternalLink } from "lucide-react";
+import { Search, MapPin, Loader2, X, LocateFixed, Map as MapIcon, ChevronDown, ChevronUp, Info, ExternalLink, RotateCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FYLKER } from "@/lib/fylker";
 
@@ -116,26 +116,32 @@ export function ProtectedAreasMap() {
   const selectedKommuneRef = useRef<string | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => {
-    Promise.all([
-      fetch("/api/kommuner").then((r) => r.json()),
-      fetch("/api/protected-areas").then((r) => r.json()),
-    ])
-      .then(([geo, verne]) => {
-        verneRef.current = verne;
-        geoFeaturesRef.current = (geo.features ?? []).map((f: { properties: { kommunenummer: string; kommunenavn: string } }) => ({
-          kommunenummer: f.properties.kommunenummer,
-          kommunenavn: f.properties.kommunenavn,
-        }));
-        setGeoData(geo);
-        setVerneData(verne);
-        setLoading(false);
-      })
-      .catch(() => {
-        setError(true);
-        setLoading(false);
-      });
+  const loadData = useCallback(async () => {
+    setError(false);
+    setLoading(true);
+    const t0 = Date.now();
+    try {
+      const [geo, verne] = await Promise.all([
+        fetch("/api/kommuner").then((r) => r.json()),
+        fetch("/api/protected-areas").then((r) => r.json()),
+      ]);
+      verneRef.current = verne;
+      geoFeaturesRef.current = (geo.features ?? []).map((f: { properties: { kommunenummer: string; kommunenavn: string } }) => ({
+        kommunenummer: f.properties.kommunenummer,
+        kommunenavn: f.properties.kommunenavn,
+      }));
+      setGeoData(geo);
+      setVerneData(verne);
+      const elapsed = Date.now() - t0;
+      if (elapsed < 3000) await new Promise((r) => setTimeout(r, 3000 - elapsed));
+      setLoading(false);
+    } catch {
+      setError(true);
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => { loadData(); }, [loadData]);
 
   const max = Math.max(...Object.values(verneData).map((v) => v.total ?? 0));
 
@@ -436,7 +442,12 @@ export function ProtectedAreasMap() {
         )}
         {error && (
           <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[1000] bg-destructive/10 backdrop-blur-sm border border-destructive/30 rounded-full px-4 py-2 shadow-lg">
-            <p className="text-sm text-destructive">Kunne ikke laste data. Prøv igjen senere.</p>
+            <div className="flex items-center gap-2">
+              <p className="text-sm text-destructive">Kunne ikke laste data.</p>
+              <button onClick={loadData} className="inline-flex items-center gap-1 text-sm font-medium text-destructive hover:underline">
+                <RotateCw className="h-3.5 w-3.5" /> Prøv igjen
+              </button>
+            </div>
           </div>
         )}
 

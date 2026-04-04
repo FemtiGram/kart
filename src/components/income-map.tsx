@@ -6,7 +6,7 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import type { GeoJsonObject, Feature } from "geojson";
 import type { Layer } from "leaflet";
-import { Search, MapPin, Loader2, X, Info, LocateFixed, Map as MapIcon, ChevronDown, ChevronUp, ExternalLink } from "lucide-react";
+import { Search, MapPin, Loader2, X, Info, LocateFixed, Map as MapIcon, ChevronDown, ChevronUp, ExternalLink, RotateCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FYLKER } from "@/lib/fylker";
 
@@ -107,26 +107,32 @@ export function IncomeMap() {
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    Promise.all([
-      fetch("/api/kommuner").then((r) => r.json()),
-      fetch("/api/income").then((r) => r.json()),
-    ])
-      .then(([geo, income]) => {
-        incomeRef.current = income;
-        geoFeaturesRef.current = (geo.features ?? []).map((f: { properties: { kommunenummer: string; kommunenavn: string } }) => ({
-          kommunenummer: f.properties.kommunenummer,
-          kommunenavn: f.properties.kommunenavn,
-        }));
-        setGeoData(geo);
-        setIncomeData(income);
-        setLoading(false);
-      })
-      .catch(() => {
-        setError(true);
-        setLoading(false);
-      });
+  const loadData = useCallback(async () => {
+    setError(false);
+    setLoading(true);
+    const t0 = Date.now();
+    try {
+      const [geo, income] = await Promise.all([
+        fetch("/api/kommuner").then((r) => r.json()),
+        fetch("/api/income").then((r) => r.json()),
+      ]);
+      incomeRef.current = income;
+      geoFeaturesRef.current = (geo.features ?? []).map((f: { properties: { kommunenummer: string; kommunenavn: string } }) => ({
+        kommunenummer: f.properties.kommunenummer,
+        kommunenavn: f.properties.kommunenavn,
+      }));
+      setGeoData(geo);
+      setIncomeData(income);
+      const elapsed = Date.now() - t0;
+      if (elapsed < 3000) await new Promise((r) => setTimeout(r, 3000 - elapsed));
+      setLoading(false);
+    } catch {
+      setError(true);
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => { loadData(); }, [loadData]);
 
   const values = Object.values(incomeData).filter((v) => v > 0);
   const min = values.length ? Math.min(...values) : 0;
@@ -431,7 +437,12 @@ export function IncomeMap() {
         )}
         {error && (
           <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[1000] bg-destructive/10 backdrop-blur-sm border border-destructive/30 rounded-full px-4 py-2 shadow-lg">
-            <p className="text-sm text-destructive">Kunne ikke laste data. Prøv igjen senere.</p>
+            <div className="flex items-center gap-2">
+              <p className="text-sm text-destructive">Kunne ikke laste data.</p>
+              <button onClick={loadData} className="inline-flex items-center gap-1 text-sm font-medium text-destructive hover:underline">
+                <RotateCw className="h-3.5 w-3.5" /> Prøv igjen
+              </button>
+            </div>
           </div>
         )}
 

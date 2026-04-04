@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { MapContainer, TileLayer, Marker, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { Loader2, X, Search, MapPin, ExternalLink, Info, Map as MapIcon, Layers, LocateFixed, Mountain, Wind, Droplets, Sun, Cloud, CloudSun, CloudRain, CloudSnow, CloudLightning, CloudFog, CloudHail, CloudDrizzle, Moon } from "lucide-react";
+import { Loader2, X, Search, MapPin, ExternalLink, Info, Map as MapIcon, Layers, LocateFixed, Mountain, Wind, Droplets, Sun, Cloud, CloudSun, CloudRain, CloudSnow, CloudLightning, CloudFog, CloudHail, CloudDrizzle, Moon, RotateCw } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FYLKER, isInNorway, OSLO } from "@/lib/fylker";
@@ -260,7 +260,10 @@ export function CabinMap() {
   };
 
   // Load cabins from pre-built static JSON, fallback to live Overpass
-  useEffect(() => {
+  const loadCabins = useCallback(async () => {
+    setError(false);
+    setLoading(true);
+
     const OVERPASS_QUERY = '[out:json][timeout:15];(node["tourism"="alpine_hut"](57.5,4.0,71.5,31.5);node["tourism"="wilderness_hut"](57.5,4.0,71.5,31.5);way["tourism"="alpine_hut"](57.5,4.0,71.5,31.5);way["tourism"="wilderness_hut"](57.5,4.0,71.5,31.5););out center body;';
 
     function parseCabins(elements: Array<{ id: number; lat?: number; lon?: number; center?: { lat: number; lon: number }; tags: Record<string, string> }>) {
@@ -308,42 +311,45 @@ export function CabinMap() {
       }
     }
 
-    fetch("/data/cabins.json")
-      .then((r) => r.json())
-      .then(async (data) => {
-        if (Array.isArray(data) && data.length > 0) {
-          setCabins(data);
-        } else {
-          // Static file empty — fallback to live Overpass
-          try {
-            const res = await fetch("https://overpass-api.de/api/interpreter", {
-              method: "POST",
-              headers: { "Content-Type": "application/x-www-form-urlencoded" },
-              body: `data=${encodeURIComponent(OVERPASS_QUERY)}`,
-            });
-            if (res.ok) {
-              const osm = await res.json();
-              const parsed = parseCabins(osm.elements ?? []);
-              if (parsed.length > 0) {
-                setCabins(parsed);
-              } else {
-                setError(true);
-              }
+    const t0 = Date.now();
+    try {
+      const r = await fetch("/data/cabins.json");
+      const data = await r.json();
+      if (Array.isArray(data) && data.length > 0) {
+        setCabins(data);
+      } else {
+        try {
+          const res = await fetch("https://overpass-api.de/api/interpreter", {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: `data=${encodeURIComponent(OVERPASS_QUERY)}`,
+          });
+          if (res.ok) {
+            const osm = await res.json();
+            const parsed = parseCabins(osm.elements ?? []);
+            if (parsed.length > 0) {
+              setCabins(parsed);
             } else {
               setError(true);
             }
-          } catch {
+          } else {
             setError(true);
           }
+        } catch {
+          setError(true);
         }
-        setLoading(false);
-        flyToStart();
-      })
-      .catch(() => {
-        setError(true);
-        setLoading(false);
-      });
+      }
+      const elapsed = Date.now() - t0;
+      if (elapsed < 3000) await new Promise((r) => setTimeout(r, 3000 - elapsed));
+      setLoading(false);
+      flyToStart();
+    } catch {
+      setError(true);
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => { loadCabins(); }, [loadCabins]);
 
   // Fetch weather when a cabin is selected
   useEffect(() => {
@@ -442,7 +448,12 @@ export function CabinMap() {
         )}
         {error && (
           <div className="absolute bottom-20 sm:top-3 sm:bottom-auto left-1/2 -translate-x-1/2 z-[1000] bg-destructive/10 backdrop-blur-sm border border-destructive/30 rounded-full px-4 py-2 shadow-lg">
-            <p className="text-sm text-destructive">Kunne ikke hente hytter. Prøv å laste siden på nytt.</p>
+            <div className="flex items-center gap-2">
+              <p className="text-sm text-destructive">Kunne ikke hente hytter.</p>
+              <button onClick={loadCabins} className="inline-flex items-center gap-1 text-sm font-medium text-destructive hover:underline">
+                <RotateCw className="h-3.5 w-3.5" /> Prøv igjen
+              </button>
+            </div>
           </div>
         )}
 

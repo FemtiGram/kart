@@ -119,3 +119,8 @@ public/data/
 - **Decide approach first**, then implement — avoid build-try-revert cycles
 - **Keep map components consistent** — refer to the patterns above before making changes
 - **Vercel free tier limit: 10s serverless timeout** — don't make API routes that call slow external services
+
+## Model Selection (Opus vs Sonnet)
+- **Use Opus** for: architecture decisions, multi-file refactors, complex bug diagnosis, new feature design, code review
+- **Use Sonnet** for: simple edits (copy changes, renaming, import fixes), file creation from a template, repetitive changes across files, formatting/linting fixes, adding tests for existing code
+- Slower is fine — prefer correctness over speed. Use Opus when judgment matters.

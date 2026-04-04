@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { MapContainer, TileLayer, Marker, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { Loader2, X, Zap, LocateFixed, ExternalLink, Search, MapPin, Info, Map as MapIcon, Layers } from "lucide-react";
+import { Loader2, X, Zap, LocateFixed, ExternalLink, Search, MapPin, Info, Map as MapIcon, Layers, RotateCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FYLKER, isInNorway, OSLO } from "@/lib/fylker";
 
@@ -103,7 +103,11 @@ export function ChargingMap() {
   const kommunerRef = useRef<KommuneEntry[]>([]);
 
   // Load stations from pre-built static JSON, fallback to local-area Overpass
-  useEffect(() => {
+  const loadStations = useCallback(async () => {
+    setError(false);
+    setLoading(true);
+    setLoadingMessage("Henter ladestasjoner...");
+
     function parseStations(elements: Array<{ id: number; lat: number; lon: number; tags: Record<string, string> }>) {
       return elements.map((el) => {
         const t = el.tags;
@@ -157,37 +161,39 @@ export function ChargingMap() {
       }
     }
 
-    fetch("/data/stations.json")
-      .then((r) => r.json())
-      .then(async (data) => {
-        if (Array.isArray(data) && data.length > 0) {
-          // Static data available — instant load
-          setStations(data);
-          setLoading(false);
-          flyToStart();
-        } else {
-          // Static file empty — fallback to local area fetch (fast, ~50km)
-          setLoadingMessage("Dataen er ikke ferdig cachet ennå. Henter fra OpenStreetMap...");
-          setLoading(false); // Show map immediately
-          flyToStart(async (lat, lon) => {
-            try {
-              const nearby = await fetchArea(lat, lon);
-              if (nearby.length > 0) {
-                setStations(nearby);
-              } else {
-                setError(true);
-              }
-            } catch {
+    const t0 = Date.now();
+    try {
+      const r = await fetch("/data/stations.json");
+      const data = await r.json();
+      if (Array.isArray(data) && data.length > 0) {
+        setStations(data);
+        const elapsed = Date.now() - t0;
+        if (elapsed < 3000) await new Promise((r) => setTimeout(r, 3000 - elapsed));
+        setLoading(false);
+        flyToStart();
+      } else {
+        setLoadingMessage("Dataen er ikke ferdig cachet ennå. Henter fra OpenStreetMap...");
+        setLoading(false);
+        flyToStart(async (lat, lon) => {
+          try {
+            const nearby = await fetchArea(lat, lon);
+            if (nearby.length > 0) {
+              setStations(nearby);
+            } else {
               setError(true);
             }
-          });
-        }
-      })
-      .catch(() => {
-        setError(true);
-        setLoading(false);
-      });
+          } catch {
+            setError(true);
+          }
+        });
+      }
+    } catch {
+      setError(true);
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => { loadStations(); }, [loadStations]);
 
   useEffect(() => {
     fetch("https://ws.geonorge.no/kommuneinfo/v1/kommuner")
@@ -385,7 +391,12 @@ export function ChargingMap() {
         )}
         {error && (
           <div className="absolute bottom-20 sm:top-3 sm:bottom-auto left-1/2 -translate-x-1/2 z-[1000] bg-destructive/10 backdrop-blur-sm border border-destructive/30 rounded-full px-4 py-2 shadow-lg">
-            <p className="text-sm text-destructive">Kunne ikke hente ladestasjoner. Prøv å laste siden på nytt.</p>
+            <div className="flex items-center gap-2">
+              <p className="text-sm text-destructive">Kunne ikke hente ladestasjoner.</p>
+              <button onClick={loadStations} className="inline-flex items-center gap-1 text-sm font-medium text-destructive hover:underline">
+                <RotateCw className="h-3.5 w-3.5" /> Prøv igjen
+              </button>
+            </div>
           </div>
         )}
 
