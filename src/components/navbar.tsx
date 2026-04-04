@@ -26,13 +26,13 @@ export function Navbar() {
 
   return (
     <header className="sticky top-0 z-50 w-full bg-background border-b">
-      {/* Green top accent line */}
-      <div className="h-1 w-full" style={{ background: "var(--kv-green)" }} />
+      {/* Top accent line */}
+      <div className="h-1 w-full" style={{ background: "#24374c" }} />
       <div className="container mx-auto flex h-14 items-center justify-between px-6 md:px-16">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2.5">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" className="h-8 w-8 shrink-0">
-            <rect width="32" height="32" rx="7" fill="#003da5"/>
+            <rect width="32" height="32" rx="7" fill="#24374c"/>
             <g transform="translate(5, 5) scale(0.9375)" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none">
               <polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/>
               <line x1="9" x2="9" y1="3" y2="18"/>
