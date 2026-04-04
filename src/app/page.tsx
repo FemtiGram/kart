@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, Mountain, DollarSign, Shield, Zap, Home as HomeIcon, Wind } from "lucide-react";
+import { ArrowRight, Mountain, DollarSign, Shield, Zap, Home as HomeIcon, BatteryCharging } from "lucide-react";
 
 const featured = {
   title: "Høydekart",
@@ -13,10 +13,10 @@ const groups = [
     label: "Utforsk",
     items: [
       {
-        title: "Vindkraft",
-        description: "Vindkraftverk i Norge. Kapasitet, turbiner og årlig produksjon.",
-        href: "/vindkraft",
-        icon: Wind,
+        title: "Energikart",
+        description: "Norges fornybare kraftverk. Vindkraft og vannkraft på kart.",
+        href: "/energi",
+        icon: BatteryCharging,
       },
       {
         title: "Ladestasjoner",
