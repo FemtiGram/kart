@@ -398,10 +398,10 @@ export function IncomeMap() {
           onChoice={handleLocationChoice}
         />
         {error && (
-          <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[1000] bg-destructive/10 backdrop-blur-sm border border-destructive/30 rounded-full px-4 py-2 shadow-lg">
-            <div className="flex items-center gap-2">
-              <p className="text-sm text-destructive">Kunne ikke laste data.</p>
-              <button onClick={loadData} className="inline-flex items-center gap-1 text-sm font-medium text-destructive hover:underline">
+          <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[1000] rounded-full px-4 py-2 shadow-lg" style={{ background: "#b91c1c" }}>
+            <div className="flex items-center gap-3">
+              <p className="text-sm font-medium text-white">Kunne ikke laste data.</p>
+              <button onClick={loadData} className="inline-flex items-center gap-1 text-sm font-semibold text-white/90 hover:text-white transition-colors">
                 <RotateCw className="h-3.5 w-3.5" /> Prøv igjen
               </button>
             </div>
