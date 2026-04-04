@@ -43,7 +43,7 @@ interface Cabin {
   lon: number;
   name: string;
   operator: string | null;
-  cabinType: "betjent" | "selvbetjent" | "ubetjent" | "privat";
+  cabinType: "fjellhytte" | "ubetjent";
   isDNT: boolean;
   elevation: number | null;
   beds: number | null;
@@ -56,24 +56,20 @@ interface Cabin {
 }
 
 const CABIN_COLORS: Record<Cabin["cabinType"], string> = {
-  betjent: "#b91c1c",
-  selvbetjent: "#2563eb",
+  fjellhytte: "#b91c1c",
   ubetjent: "#15803d",
-  privat: "#737373",
 };
 
 const CABIN_LABELS: Record<Cabin["cabinType"], string> = {
-  betjent: "Betjent",
-  selvbetjent: "Selvbetjent",
-  ubetjent: "Ubetjent",
-  privat: "Annen hytte",
+  fjellhytte: "Fjellhytte",
+  ubetjent: "Ubetjent hytte",
 };
 
-// SVG cabin icons — filled for betjent/selvbetjent, outline for ubetjent/privat
+// SVG cabin icons — filled for fjellhytte, outline for ubetjent
 function cabinIcon(type: Cabin["cabinType"], isSelected: boolean, inverted: boolean): L.DivIcon {
   const baseColor = isSelected ? "#24374c" : CABIN_COLORS[type];
-  const size = type === "betjent" || type === "selvbetjent" ? 30 : 26;
-  const filled = type === "betjent" || type === "selvbetjent";
+  const size = type === "fjellhytte" ? 30 : 26;
+  const filled = type === "fjellhytte";
   const bg = inverted ? baseColor : "white";
   const iconColor = inverted ? "white" : baseColor;
   const border = isSelected ? "#24374c" : inverted ? "rgba(255,255,255,0.3)" : "rgba(0,0,0,0.15)";
@@ -126,7 +122,7 @@ export function CabinMap() {
   const [tileLayer, setTileLayer] = useState<TileLayerKey>("gråtone");
   const [showInfo, setShowInfo] = useState(false);
   const [showFilter, setShowFilter] = useState(false);
-  const [filterTypes, setFilterTypes] = useState<Set<Cabin["cabinType"]>>(new Set(["betjent", "selvbetjent", "ubetjent", "privat"]));
+  const [filterTypes, setFilterTypes] = useState<Set<Cabin["cabinType"]>>(new Set(["fjellhytte", "ubetjent"]));
   const [filterDNT, setFilterDNT] = useState(false);
   const [weather, setWeather] = useState<WeatherResult | null>(null);
   const [loadingWeather, setLoadingWeather] = useState(false);
@@ -257,15 +253,7 @@ export function CabinMap() {
         const lat = el.lat ?? el.center?.lat ?? 0;
         const lon = el.lon ?? el.center?.lon ?? 0;
         const isDNT = /turistforening|dnt/i.test(t.operator ?? "");
-        const tourism = t.tourism;
-        let cabinType: Cabin["cabinType"] = "privat";
-        if (isDNT) {
-          if (tourism === "alpine_hut") cabinType = "betjent";
-          if (tourism === "wilderness_hut") cabinType = "ubetjent";
-          if (t["reservation"] === "required" || t["self_service"] === "yes" || /selvbetjent/i.test(t.description ?? "")) cabinType = "selvbetjent";
-        } else {
-          cabinType = tourism === "alpine_hut" ? "betjent" : "ubetjent";
-        }
+        const cabinType: Cabin["cabinType"] = t.tourism === "alpine_hut" ? "fjellhytte" : "ubetjent";
         const rawHours = t.opening_hours ?? null;
         let season: string | null = null;
         if (rawHours) {
@@ -353,7 +341,7 @@ export function CabinMap() {
     return cabins.filter((c) => filterTypes.has(c.cabinType) && (!filterDNT || c.isDNT));
   }, [cabins, filterTypes, filterDNT]);
 
-  const activeFilterCount = (4 - filterTypes.size) + (filterDNT ? 1 : 0);
+  const activeFilterCount = (2 - filterTypes.size) + (filterDNT ? 1 : 0);
 
   const toggleType = (type: Cabin["cabinType"]) => {
     setFilterTypes((prev) => {
@@ -409,7 +397,7 @@ export function CabinMap() {
                     <div>
                       <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Hyttetype</p>
                       <div className="rounded-xl border overflow-hidden">
-                        {(["betjent", "selvbetjent", "ubetjent", "privat"] as const).map((type) => {
+                        {(["fjellhytte", "ubetjent"] as const).map((type) => {
                           const active = filterTypes.has(type);
                           return (
                             <button
@@ -447,7 +435,7 @@ export function CabinMap() {
                       <Button
                         variant="secondary"
                         className="flex-1"
-                        onClick={() => { setFilterTypes(new Set(["betjent", "selvbetjent", "ubetjent", "privat"])); setFilterDNT(false); }}
+                        onClick={() => { setFilterTypes(new Set(["fjellhytte", "ubetjent"])); setFilterDNT(false); }}
                       >
                         Nullstill
                       </Button>
@@ -768,20 +756,20 @@ export function CabinMap() {
               </p>
               <p>Hyttene er fargekodet etter type:</p>
               <div className="flex flex-col gap-1.5 ml-1">
-                {(["betjent", "selvbetjent", "ubetjent", "privat"] as const).map((type) => (
-                  <div key={type} className="flex items-start gap-2">
-                    <div className="h-3 w-3 rounded-full mt-0.5 shrink-0" style={{ background: CABIN_COLORS[type] }} />
-                    <div>
-                      <span className="font-medium text-foreground">{CABIN_LABELS[type]}</span>
-                      <span className="text-muted-foreground">
-                        {type === "betjent" && " — full servering og vertskap"}
-                        {type === "selvbetjent" && " — du lager mat selv, utstyr tilgjengelig"}
-                        {type === "ubetjent" && " — åpen hytte med basisutstyr"}
-                        {type === "privat" && " — andre hytter og overnattingssteder"}
-                      </span>
-                    </div>
+                <div className="flex items-start gap-2">
+                  <div className="h-3 w-3 rounded-full mt-0.5 shrink-0" style={{ background: CABIN_COLORS.fjellhytte }} />
+                  <div>
+                    <span className="font-medium text-foreground">Fjellhytte</span>
+                    <span className="text-muted-foreground"> — betjent eller selvbetjent hytte (alpine_hut)</span>
                   </div>
-                ))}
+                </div>
+                <div className="flex items-start gap-2">
+                  <div className="h-3 w-3 rounded-full mt-0.5 shrink-0" style={{ background: CABIN_COLORS.ubetjent }} />
+                  <div>
+                    <span className="font-medium text-foreground">Ubetjent hytte</span>
+                    <span className="text-muted-foreground"> — åpen hytte med basisutstyr (wilderness_hut)</span>
+                  </div>
+                </div>
               </div>
               <p>
                 Data som sengeplasser og høyde hentes fra OpenStreetMap og kan være utdatert. Sjekk alltid <a href="https://www.dnt.no/hytter/" target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:text-foreground transition-colors">dnt.no</a> for oppdatert informasjon.

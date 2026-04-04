@@ -59,18 +59,7 @@ async function main() {
     const lon = el.lon ?? el.center?.lon ?? 0;
 
     const isDNT = /turistforening|dnt/i.test(t.operator ?? "");
-    const tourism = t.tourism;
-
-    let cabinType = "privat";
-    if (isDNT) {
-      if (tourism === "alpine_hut") cabinType = "betjent";
-      if (tourism === "wilderness_hut") cabinType = "ubetjent";
-      if (t["reservation"] === "required" || t["self_service"] === "yes" || /selvbetjent/i.test(t.description ?? "")) {
-        cabinType = "selvbetjent";
-      }
-    } else {
-      cabinType = tourism === "alpine_hut" ? "betjent" : "ubetjent";
-    }
+    const cabinType = t.tourism === "alpine_hut" ? "fjellhytte" : "ubetjent";
 
     const rawHours = t.opening_hours ?? null;
     let season = null;

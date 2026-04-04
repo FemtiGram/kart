@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { MapContainer, TileLayer, Marker, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { Loader2, X, Zap, LocateFixed, ExternalLink, Search, MapPin, Info, Map as MapIcon, Layers, RotateCw } from "lucide-react";
+import { Loader2, X, Zap, LocateFixed, ExternalLink, Search, MapPin, Info, Map as MapIcon, Layers, RotateCw, SlidersHorizontal, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { FYLKER, isInNorway, OSLO } from "@/lib/fylker";
 import { FlyTo, useDebounceRef, useSearchAbort } from "@/lib/map-utils";
 import type { Address, KommuneEntry, Suggestion } from "@/lib/map-utils";
@@ -67,6 +68,8 @@ export function ChargingMap() {
   const [locating, setLocating] = useState(false);
   const [error, setError] = useState(false);
   const [showConnectorInfo, setShowConnectorInfo] = useState(false);
+  const [showFilter, setShowFilter] = useState(false);
+  const [filterConnectors, setFilterConnectors] = useState<Set<string>>(new Set());
   const [selected, setSelected] = useState<Station | null>(null);
   const [center, setCenter] = useState<{ lat: number; lon: number; zoom?: number; _t?: number } | null>(null);
   const [tileLayer, setTileLayer] = useState<TileLayerKey>("gråtone");
@@ -277,6 +280,29 @@ export function ChargingMap() {
     );
   };
 
+  // All unique connector types across loaded stations
+  const allConnectors = useMemo(() => {
+    const set = new Set<string>();
+    stations.forEach((s) => s.connectors.forEach((c) => set.add(c)));
+    return [...set].sort();
+  }, [stations]);
+
+  const filteredStations = useMemo(() => {
+    if (filterConnectors.size === 0) return stations;
+    return stations.filter((s) => s.connectors.some((c) => filterConnectors.has(c)));
+  }, [stations, filterConnectors]);
+
+  const activeFilterCount = filterConnectors.size;
+
+  const toggleConnector = (c: string) => {
+    setFilterConnectors((prev) => {
+      const next = new Set(prev);
+      if (next.has(c)) next.delete(c);
+      else next.add(c);
+      return next;
+    });
+  };
+
   return (
     <div className="flex flex-col" style={{ height: "calc(100svh - 57px)" }}>
       {/* Search bar */}
@@ -298,10 +324,71 @@ export function ChargingMap() {
               className="flex-1 bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground text-[16px] sm:text-sm"
             />
           </div>
-          <Button onClick={handleLocate} disabled={locating || loading} variant="secondary" size="lg" className="w-full sm:w-auto shadow-lg">
-            {locating ? <Loader2 className="animate-spin" /> : <LocateFixed />}
-            Min posisjon
-          </Button>
+          <div className="flex gap-2 w-full sm:w-auto">
+            <Sheet open={showFilter} onOpenChange={setShowFilter}>
+              <SheetTrigger
+                render={
+                  <Button variant="secondary" size="lg" className="relative shadow-lg" disabled={allConnectors.length === 0}>
+                    <SlidersHorizontal className="h-4 w-4" />
+                    <span className="sm:inline hidden">Filter</span>
+                    {activeFilterCount > 0 && (
+                      <span className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center">
+                        {activeFilterCount}
+                      </span>
+                    )}
+                  </Button>
+                }
+              />
+              <SheetContent side="bottom" className="rounded-t-2xl max-h-[70svh]">
+                <div className="mx-auto w-full max-w-md px-2">
+                  <SheetHeader>
+                    <SheetTitle className="text-left">Filtrer ladestasjoner</SheetTitle>
+                  </SheetHeader>
+                  <div className="flex flex-col gap-4 py-4">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Kontakttype</p>
+                      <div className="rounded-xl border overflow-hidden">
+                        {allConnectors.map((c) => {
+                          const active = filterConnectors.has(c);
+                          const count = stations.filter((s) => s.connectors.includes(c)).length;
+                          return (
+                            <button
+                              key={c}
+                              onClick={() => toggleConnector(c)}
+                              className={`flex items-center gap-3 w-full px-4 py-3 text-sm transition-colors border-b last:border-0 ${active ? "bg-background" : "bg-muted/40 text-muted-foreground"}`}
+                            >
+                              <div className={`h-5 w-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-colors ${active ? "border-primary bg-primary" : "border-muted-foreground/30 bg-background"}`}>
+                                {active && <Check className="h-3.5 w-3.5 text-primary-foreground" />}
+                              </div>
+                              <span className="font-medium flex-1 text-left">{c}</span>
+                              <span className="text-xs text-muted-foreground tabular-nums">{count}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-2">Ingen valgt = vis alle. Velg én eller flere for å filtrere.</p>
+                    </div>
+                    <div className="flex gap-2 pt-1">
+                      <Button
+                        variant="secondary"
+                        className="flex-1"
+                        onClick={() => setFilterConnectors(new Set())}
+                      >
+                        Nullstill
+                      </Button>
+                      <Button className="flex-1" onClick={() => setShowFilter(false)}>
+                        Vis {filteredStations.length} stasjoner
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </SheetContent>
+            </Sheet>
+            <Button onClick={handleLocate} disabled={locating || loading} variant="secondary" size="lg" className="flex-1 sm:flex-initial shadow-lg">
+              {locating ? <Loader2 className="animate-spin" /> : <LocateFixed />}
+              Min posisjon
+            </Button>
+          </div>
 
           {showDropdown && suggestions.length > 0 && (
             <ul className="absolute top-full mt-1 left-0 right-0 sm:right-auto sm:w-[calc(100%-theme(spacing.2)-theme(spacing.36))] bg-background rounded-xl shadow-xl border overflow-hidden">
@@ -336,7 +423,7 @@ export function ChargingMap() {
         </div>
         <div className="flex items-center justify-between mt-2">
           <p className="text-xs text-muted-foreground">
-            {loading ? loadingMessage : stations.length > 0 ? `${stations.length} ladestasjoner${stations.length > 1000 ? " i Norge" : " i nærheten"} — Kilde: OpenStreetMap` : "Ingen ladestasjoner funnet"}
+            {loading ? loadingMessage : stations.length > 0 ? `${filteredStations.length}${filterConnectors.size > 0 ? ` av ${stations.length}` : ""} ladestasjoner${stations.length > 1000 ? " i Norge" : " i nærheten"} — Kilde: OpenStreetMap` : "Ingen ladestasjoner funnet"}
           </p>
           <button
             disabled
@@ -392,7 +479,7 @@ export function ChargingMap() {
             attribution={TILE_LAYERS[tileLayer].attribution}
             maxZoom={17}
           />
-          {stations.map((s) => (
+          {filteredStations.map((s) => (
             <Marker
               key={s.id}
               position={[s.lat, s.lon]}
