@@ -101,7 +101,7 @@ export function ElevationMap() {
   const [loadingWeather, setLoadingWeather] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const [showInfo, setShowInfo] = useState(false);
-  const [tileLayer, setTileLayer] = useState<TileLayerKey>("kart");
+  const [tileLayer, setTileLayer] = useState<TileLayerKey>("terreng");
   const [locating, setLocating] = useState(false);
   const [locateError, setLocateError] = useState(false);
 
@@ -208,6 +208,7 @@ export function ElevationMap() {
       },
       () => {
         setLocating(false);
+        handleMapClick(59.91, 10.75);
         setLocateError(true);
         setTimeout(() => setLocateError(false), 4000);
       },
@@ -429,7 +430,7 @@ export function ElevationMap() {
       <div className="relative grow [&_.leaflet-grab]:cursor-pointer [&_.leaflet-dragging_.leaflet-grab]:cursor-grabbing">
         {locateError && (
           <div className="absolute bottom-20 sm:top-3 sm:bottom-auto left-1/2 -translate-x-1/2 z-[1000] bg-background/90 backdrop-blur-sm border rounded-full px-4 py-2 shadow-lg">
-            <p className="text-sm text-muted-foreground">Kunne ikke finne posisjon. Sjekk at du har gitt tilgang i nettleseren.</p>
+            <p className="text-sm text-muted-foreground">Kunne ikke finne posisjon — viser Oslo i stedet.</p>
           </div>
         )}
         <MapContainer

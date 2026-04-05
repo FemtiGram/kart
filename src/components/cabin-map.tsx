@@ -249,6 +249,7 @@ export function CabinMap() {
       },
       () => {
         setLocating(false);
+        setCenter({ lat: 61.5, lon: 8.3, zoom: 9, _t: Date.now() });
         setLocateError(true);
         setTimeout(() => setLocateError(false), 4000);
       },
@@ -504,7 +505,7 @@ export function CabinMap() {
         )}
         {locateError && (
           <div className="absolute bottom-20 sm:top-3 sm:bottom-auto left-1/2 -translate-x-1/2 z-[1000] bg-background/90 backdrop-blur-sm border rounded-full px-4 py-2 shadow-lg">
-            <p className="text-sm text-muted-foreground">Kunne ikke finne posisjon. Sjekk at du har gitt tilgang i nettleseren.</p>
+            <p className="text-sm text-muted-foreground">Kunne ikke finne posisjon — viser Jotunheimen i stedet.</p>
           </div>
         )}
         {error && (

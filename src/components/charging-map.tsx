@@ -257,6 +257,7 @@ export function ChargingMap() {
       },
       () => {
         setLocating(false);
+        setCenter({ lat: OSLO.lat, lon: OSLO.lon, zoom: OSLO.zoom, _t: Date.now() });
         setLocateError(true);
         setTimeout(() => setLocateError(false), 4000);
       },
@@ -441,7 +442,7 @@ export function ChargingMap() {
         )}
         {locateError && (
           <div className="absolute bottom-20 sm:top-3 sm:bottom-auto left-1/2 -translate-x-1/2 z-[1000] bg-background/90 backdrop-blur-sm border rounded-full px-4 py-2 shadow-lg">
-            <p className="text-sm text-muted-foreground">Kunne ikke finne posisjon. Sjekk at du har gitt tilgang i nettleseren.</p>
+            <p className="text-sm text-muted-foreground">Kunne ikke finne posisjon — viser Oslo i stedet.</p>
           </div>
         )}
         {error && (
