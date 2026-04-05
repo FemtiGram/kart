@@ -57,6 +57,7 @@ All data updates automatically. The maps use clustering for smooth performance e
 - Wind status filters: operational, under construction, approved, rejected
 - Individual wind turbines visible at zoom 12+
 - Compact card + expandable sheet per type (turbines + GWh for wind, fall height + river for hydro)
+- Live river data for hydro plants: discharge (m³/s), water level, and percentile context from NVE HydAPI
 
 ### Vindkraft (`/vindkraft`)
 - Standalone wind power map (also accessible independently)
@@ -146,6 +147,7 @@ All APIs are free and require no authentication.
 | Charging stations | OpenStreetMap (Overpass) | Build-time static JSON |
 | Tourist cabins | OpenStreetMap (Overpass) | Build-time static JSON |
 | Wind + hydro power | NVE ArcGIS (Vindkraft2, Vannkraft1) | 1h server cache |
+| River observations | NVE HydAPI (discharge, water level, percentiles) | Per-request |
 | Income | SSB InntektStruk13 | Server-side, loaded once |
 | Protected areas | SSB table 08936 | Server-side, loaded once |
 | Weather | MET.no locationforecast | 30min server cache |
@@ -181,6 +183,14 @@ node scripts/fetch-cabins.mjs
 
 npm run dev
 ```
+
+### Environment Variables
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `NVE_API_KEY` | For hydro data | API key from [NVE HydAPI](https://hydapi.nve.no/Users) — enables live river observations on hydro plant cards |
+
+Set in Vercel dashboard → Project Settings → Environment Variables, or locally in `.env.local`.
 
 Open [http://localhost:3000](http://localhost:3000).
 
@@ -220,6 +230,7 @@ src/app/
     weather/route.ts    — MET.no proxy (30min cache)
     wind-power/route.ts — NVE wind power proxy (1h cache)
     energy/route.ts     — NVE wind + hydro proxy (1h cache)
+    hydro-station/route.ts — NVE HydAPI live river data
 
 src/components/
   navbar.tsx            — Shared nav with mobile sheet + "Mer" dropdown
