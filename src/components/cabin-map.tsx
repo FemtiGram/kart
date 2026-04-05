@@ -69,7 +69,12 @@ const CABIN_LABELS: Record<Cabin["cabinType"], string> = {
 };
 
 // SVG cabin icons — filled for fjellhytte, outline for ubetjent
+const cabinIconCache = new Map<string, L.DivIcon>();
 function cabinIcon(type: Cabin["cabinType"], isSelected: boolean, inverted: boolean): L.DivIcon {
+  const key = `${type}-${isSelected}-${inverted}`;
+  const cached = cabinIconCache.get(key);
+  if (cached) return cached;
+
   const baseColor = isSelected ? "#24374c" : CABIN_COLORS[type];
   const size = type === "fjellhytte" ? 30 : 26;
   const filled = type === "fjellhytte";
@@ -83,12 +88,14 @@ function cabinIcon(type: Cabin["cabinType"], isSelected: boolean, inverted: bool
 
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 1 24 24" width="${size * 0.5}" height="${size * 0.5}">${housePath}</svg>`;
 
-  return L.divIcon({
+  const icon = L.divIcon({
     className: "",
     iconSize: [size, size],
     iconAnchor: [size / 2, size / 2],
     html: `<div style="width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;line-height:0;background:${bg};border-radius:50%;box-shadow:0 1px 4px rgba(0,0,0,0.25);border:2.5px solid ${border}">${svg}</div>`,
   });
+  cabinIconCache.set(key, icon);
+  return icon;
 }
 
 const TILE_LAYERS = {

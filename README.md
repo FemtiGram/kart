@@ -37,10 +37,20 @@ A portfolio project showcasing Norwegian open geodata on interactive maps. Built
 ### Turisthytter (`/hytter`)
 - DNT cabins and mountain huts across Norway
 - Data pre-fetched at build time from OpenStreetMap
-- Color-coded by type: betjent (red), selvbetjent (blue), ubetjent (green)
+- Color-coded by type: fjellhytte (red), ubetjent (green)
 - Elevation, bed count, season, fee info, weather
 - Links to DNT.no cabin search
 - OSM data disclaimer in info modal
+
+### Energikart (`/energi`)
+- Wind power plants + hydroelectric plants on one map
+- Data from NVE ArcGIS (Vindkraft2 + Vannkraft1), 1h server cache
+- Blue markers for wind, cyan for hydro, sized by capacity (MW)
+- Filter sheet: toggle wind/hydro types, show/hide small plants (<10 MW)
+- Info card adapts per type: turbines + GWh/year (wind), fall height + river + year built (hydro)
+
+### Vindkraft (`/vindkraft`)
+- Standalone wind power map (also accessible independently)
 
 ---
 
@@ -65,7 +75,7 @@ Landing page uses glass-morphism cards: `bg-white/10 · backdrop-blur · border-
 
 ### Shared Modules
 - `src/lib/map-utils.tsx` — FlyTo, interpolateColor, shared types, useDebounceRef, useSearchAbort, isDevMode
-- `src/components/location-prompt.tsx` — Reusable location permission modal
+- `src/lib/utm.ts` — UTM zone 33N → WGS84 conversion (for NVE ArcGIS data)
 
 ---
 
@@ -91,18 +101,25 @@ npm run prebuild
 
 ### Error Handling
 - All data-loading maps show a floating error pill with a **"Prøv igjen" retry button**
-- 3-second minimum loading delay ensures data settles before UI renders
+- Geolocation errors show a floating pill: "Kunne ikke finne posisjon..."
 - Search requests abort previous in-flight request (race condition prevention)
 - Debounce timers clean up on component unmount
 
-### Search Hierarchy
-All maps (except elevation) support: **Fylke → Kommune → Adresse** (3/5/2 results).
-Elevation uses address-only search with keyboard navigation.
+### Search
+All maps (except elevation) support a 3-tier search: **Fylke → Kommune → Adresse** (3/5/2 results).
+Elevation uses address-only search (6 results) since it needs a specific point.
+
+- **300ms debounce** — waits for typing to stop before fetching
+- **Abort controller** — each keystroke cancels the previous in-flight address request
+- **Keyboard navigation** — Arrow keys, Enter to select, Escape to close
+- Fylke + kommune matches are instant (local filter); only address lookup hits the network
+- Icon functions cache `L.divIcon` instances to avoid re-creating thousands of icons per keystroke
 
 ### Geolocation
-- Users outside Norway are redirected to Oslo (charging) or Jotunheimen (cabins)
-- Choropleth maps ask permission and auto-select the user's kommune
-- Location preference persisted in localStorage
+- All maps start zoomed out showing all of Norway — no auto-locate on load
+- "Min posisjon" button available on marker maps (charging, cabins, energy, elevation, vindkraft)
+- Users outside Norway are redirected to Oslo (or Jotunheimen for cabins)
+- 15s timeout with 60s cached position acceptance for slow networks
 
 ---
 
@@ -114,6 +131,7 @@ All APIs are free and require no authentication.
 |------|--------|-------|
 | Charging stations | OpenStreetMap (Overpass) | Build-time static JSON |
 | Tourist cabins | OpenStreetMap (Overpass) | Build-time static JSON |
+| Wind + hydro power | NVE ArcGIS (Vindkraft2, Vannkraft1) | 1h server cache |
 | Income | SSB InntektStruk13 | Server-side, loaded once |
 | Protected areas | SSB table 08936 | Server-side, loaded once |
 | Weather | MET.no locationforecast | 30min server cache |
@@ -131,7 +149,7 @@ See `docs/api-sources.md` for a full catalog of Norwegian open APIs we could use
 ## Tech Stack
 
 - **Next.js 16** (Turbopack) + **React 19** + **TypeScript**
-- **Leaflet** + **react-leaflet** — interactive maps
+- **Leaflet** + **react-leaflet** + **react-leaflet-cluster** — interactive maps with marker clustering
 - **Tailwind CSS 4** + **shadcn/ui** (Base UI) — styling
 - **Lucide React** — icons
 - **Vercel** — hosting (free tier, 10s serverless timeout)
@@ -172,29 +190,33 @@ window.__MAPGRAM_DEV = true
 
 ```
 src/app/
-  page.tsx              — Landing page (card grid, 5 maps)
+  page.tsx              — Landing page (card grid)
   not-found.tsx         — 404 page
   lading/page.tsx       — Charging stations map
   hytter/page.tsx       — Tourist cabins map
   lonn/page.tsx         — Income choropleth
   vern/page.tsx         — Protected areas choropleth
   map/page.tsx          — Elevation + weather map
+  energi/page.tsx       — Energy (wind + hydro) map
+  vindkraft/page.tsx    — Wind power plants map
   api/
     income/route.ts     — SSB income data
     kommuner/route.ts   — GeoJSON kommune boundaries
     protected-areas/    — SSB protected areas data
     weather/route.ts    — MET.no proxy (30min cache)
+    wind-power/route.ts — NVE wind power proxy (1h cache)
+    energy/route.ts     — NVE wind + hydro proxy (1h cache)
 
 src/components/
   navbar.tsx            — Shared nav with mobile sheet
-  location-prompt.tsx   — Shared location permission modal
   *-map.tsx             — Map components (one per page)
   *-map-loader.tsx      — Dynamic import wrappers (ssr: false)
   ui/                   — shadcn/ui primitives
 
 src/lib/
   fylker.ts             — 15 counties + isInNorway() + OSLO default
-  map-utils.tsx         — FlyTo, interpolateColor, shared types, hooks
+  map-utils.tsx         — FlyTo, interpolateColor, shared types (Suggestion, Address), hooks
+  utm.ts                — UTM zone 33N → WGS84 conversion
   utils.ts              — cn() helper
 
 scripts/
@@ -204,6 +226,7 @@ scripts/
 docs/
   api-sources.md        — Catalog of Norwegian open APIs
   cabin-data-sources.md — OSM tags, DNT API status, data quality notes
+  nve-arcgis-data.md    — NVE ArcGIS services catalog (energy, hazards, nature)
 
 public/data/
   stations.json         — Pre-built charging station data

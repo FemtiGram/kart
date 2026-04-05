@@ -24,22 +24,26 @@ src/app/
   lonn/page.tsx         — Income choropleth
   vern/page.tsx         — Protected areas choropleth
   map/page.tsx          — Elevation + weather map
-  vindkraft/page.tsx    — Wind power plants map
+  energi/page.tsx       — Energy (wind + hydro) map
+  vindkraft/page.tsx    — Wind power plants map (standalone)
   api/
     income/route.ts     — SSB income data
     kommuner/route.ts   — GeoJSON kommune boundaries
     protected-areas/    — SSB verne data
     weather/route.ts    — MET.no proxy (30min cache)
     wind-power/route.ts — NVE wind power proxy (1h cache)
+    energy/route.ts     — NVE wind + hydro proxy (1h cache)
 
 src/components/
-  navbar.tsx            — Shared nav with mobile sheet
+  navbar.tsx            — Shared nav with mobile sheet + "Mer" dropdown
   *-map.tsx             — Map components (one per page)
   *-map-loader.tsx      — Dynamic import wrappers (ssr: false)
   ui/                   — shadcn/ui primitives
 
 src/lib/
   fylker.ts             — Hardcoded 15 counties with coords + zoom, isInNorway(), OSLO default
+  map-utils.tsx         — FlyTo, interpolateColor, shared types (Suggestion, Address), useDebounceRef, useSearchAbort
+  utm.ts                — UTM zone 33N → WGS84 conversion (for NVE ArcGIS data)
   utils.ts              — cn() helper
 
 scripts/
@@ -72,23 +76,37 @@ public/data/
 - Info modal — explaining data sources
 - Source attribution + link in card footer
 - Error handling — floating pill, bottom on mobile (bottom-20), top on desktop (sm:top-3)
-- Geolocation with isInNorway() check — falls back to default if outside Norway
-- **Exception:** Elevation map uses address-only search (needs specific point)
+- "Min posisjon" button with isInNorway() check — falls back to OSLO/Jotunheimen if outside Norway
+- **Exception:** Elevation map uses address-only search (needs specific point, 6 results)
 - **Exception:** Choropleth maps use "Bakgrunnskart" toggle instead of Kart/Gråtone
+- **Exception:** Choropleth maps have no "Min posisjon" button
 
-### Markers (charging + cabin maps):
-- `L.divIcon` with inline SVG icons inside circles
-- 2.5px border, rgba(0,0,0,0.15) default, #003da5 when selected
+### Search architecture:
+- **Debounce:** 300ms after last keystroke before triggering search
+- **Abort controller:** Each new search aborts the previous in-flight address fetch (`useSearchAbort` from map-utils)
+- **Suggestion sources:** Fylke (local filter on hardcoded list), Kommune (local filter on loaded list), Adresse (Geonorge API)
+- **Kommune data:** Marker maps load from `geonorge.no/kommuneinfo/v1/kommuner`; choropleth maps use GeoJSON properties they already have
+- **Kommune center:** Marker maps resolve via `geonorge.no/stedsnavn` API; choropleth maps use GeoJSON layer bounds
+- **Dropdown:** `onMouseDown` for selection (fires before `onBlur`), 150ms blur delay, keyboard nav (↑↓ Enter Escape)
+- **Icon caching:** All icon functions (`chargingIcon`, `cabinIcon`, `energyIcon`) cache `L.divIcon` instances by args to avoid recreating 15,000 icons per re-render
+- **Future refactor:** Split search bar + map markers into separate React components to avoid keystroke re-renders propagating to marker layer
+
+### Markers (charging, cabin, energy maps):
+- `L.divIcon` with inline SVG icons inside circles, cached by args to avoid re-creation
+- `react-leaflet-cluster` for marker clustering at low zoom levels
+- Cluster colors: green (#15803d) charging, amber (#b45309) cabins, blue (#0369a1) energy
+- Cluster sizes scale by count: 36px (<100), 44px (100-499), 52px (500+)
+- 2.5px border, rgba(0,0,0,0.15) default, #24374c when selected
 - **Inverted on gråtone:** colored background + white icon (better visibility)
 - **Normal on kart:** white background + colored icon
 - Charging: green ⚡ bolt (28px)
-- Cabins: colored house icon — filled for betjent/selvbetjent, outline for ubetjent (26-30px)
+- Cabins: colored house icon — filled for fjellhytte, outline for ubetjent (26-30px)
+- Energy: blue wind icon or cyan water droplet, sized by capacity (26-32px)
 
 ### Choropleth maps (income, vern):
 - Red → Yellow → Green 3-stop diverging color scale
 - Red = low/bad, green = high/good
 - Optional "Bakgrunnskart" toggle (gråtone base layer)
-- Location permission dialog with localStorage preference
 - Skeleton shimmer loading on initial data fetch
 
 ## Design References

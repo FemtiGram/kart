@@ -72,18 +72,19 @@ const TILE_LAYERS = {
 
 type TileLayerKey = keyof typeof TILE_LAYERS;
 
+const energyIconCache = new Map<string, L.DivIcon>();
 function energyIcon(
   isSelected: boolean,
   inverted: boolean,
   type: EnergyType,
   capacityMW: number | null
 ): L.DivIcon {
-  const size =
-    capacityMW != null && capacityMW > 200
-      ? 32
-      : capacityMW != null && capacityMW >= 50
-        ? 30
-        : 26;
+  const sizeBucket = capacityMW != null && capacityMW > 200 ? "lg" : capacityMW != null && capacityMW >= 50 ? "md" : "sm";
+  const key = `${type}-${sizeBucket}-${isSelected}-${inverted}`;
+  const cached = energyIconCache.get(key);
+  if (cached) return cached;
+
+  const size = sizeBucket === "lg" ? 32 : sizeBucket === "md" ? 30 : 26;
   const iconSize = Math.round(size * 0.5);
   const color = TYPE_META[type].color;
 
@@ -100,12 +101,14 @@ function energyIcon(
       ? `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="${iconSize}" height="${iconSize}" fill="none" stroke="${iconColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.8 19.6A2 2 0 1 0 14 16H2"/><path d="M17.5 8a2.5 2.5 0 1 1 2 4H2"/><path d="M9.8 4.4A2 2 0 1 1 11 8H2"/></svg>`
       : `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="${iconSize}" height="${iconSize}" fill="none" stroke="${iconColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z"/></svg>`;
 
-  return L.divIcon({
+  const icon = L.divIcon({
     className: "",
     iconSize: [size, size],
     iconAnchor: [size / 2, size / 2],
     html: `<div style="width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;line-height:0;background:${bg};border-radius:50%;box-shadow:0 1px 4px rgba(0,0,0,0.25);border:2.5px solid ${border}">${svgIcon}</div>`,
   });
+  energyIconCache.set(key, icon);
+  return icon;
 }
 
 function PanToSelected({ plant }: { plant: EnergyPlant | null }) {

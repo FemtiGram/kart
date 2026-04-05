@@ -40,19 +40,26 @@ const TILE_LAYERS = {
 
 type TileLayerKey = keyof typeof TILE_LAYERS;
 
+const chargingIconCache = new Map<string, L.DivIcon>();
 function chargingIcon(isSelected: boolean, inverted: boolean): L.DivIcon {
+  const key = `${isSelected}-${inverted}`;
+  const cached = chargingIconCache.get(key);
+  if (cached) return cached;
+
   const size = 28;
   const bg = inverted ? (isSelected ? "#24374c" : "#15803d") : "white";
   const iconColor = inverted ? "white" : (isSelected ? "#24374c" : "#15803d");
   const border = isSelected ? "#24374c" : inverted ? "rgba(255,255,255,0.3)" : "rgba(0,0,0,0.15)";
   const bolt = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="${iconColor}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>`;
 
-  return L.divIcon({
+  const icon = L.divIcon({
     className: "",
     iconSize: [size, size],
     iconAnchor: [size / 2, size / 2],
     html: `<div style="width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;line-height:0;background:${bg};border-radius:50%;box-shadow:0 1px 4px rgba(0,0,0,0.25);border:2.5px solid ${border}">${bolt}</div>`,
   });
+  chargingIconCache.set(key, icon);
+  return icon;
 }
 
 function PanToSelected({ station }: { station: Station | null }) {
