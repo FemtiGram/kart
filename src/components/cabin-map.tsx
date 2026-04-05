@@ -7,7 +7,7 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "react-leaflet-cluster/dist/assets/MarkerCluster.css";
 import "react-leaflet-cluster/dist/assets/MarkerCluster.Default.css";
-import { Loader2, X, Search, MapPin, ExternalLink, Info, Map as MapIcon, Layers, LocateFixed, Mountain, Wind, Droplets, Sun, Cloud, CloudSun, CloudRain, CloudSnow, CloudLightning, CloudFog, CloudHail, CloudDrizzle, Moon, RotateCw, SlidersHorizontal, Check } from "lucide-react";
+import { Loader2, X, Search, MapPin, ExternalLink, Info, Map as MapIcon, Layers, LocateFixed, Mountain, Wind, Droplets, Sun, Cloud, CloudSun, CloudRain, CloudSnow, CloudLightning, CloudFog, CloudHail, CloudDrizzle, Moon, RotateCw, SlidersHorizontal, Check, ChevronUp, Navigation } from "lucide-react";
 import { FlyTo, useDebounceRef, useSearchAbort } from "@/lib/map-utils";
 import type { LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -133,6 +133,7 @@ export function CabinMap() {
   const [tileLayer, setTileLayer] = useState<TileLayerKey>("gråtone");
   const [showInfo, setShowInfo] = useState(false);
   const [showFilter, setShowFilter] = useState(false);
+  const [showInfoSheet, setShowInfoSheet] = useState(false);
   const [filterTypes, setFilterTypes] = useState<Set<Cabin["cabinType"]>>(new Set(["fjellhytte", "ubetjent"]));
   const [filterDNT, setFilterDNT] = useState(false);
   const [weather, setWeather] = useState<WeatherResult | null>(null);
@@ -367,7 +368,7 @@ export function CabinMap() {
                 className="flex-1 bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground text-[16px] sm:text-sm"
               />
             </div>
-            <Sheet open={showFilter} onOpenChange={setShowFilter}>
+            <Sheet open={showFilter} onOpenChange={(open) => { setShowFilter(open); if (open) setShowInfoSheet(false); }}>
               <SheetTrigger
                 render={
                   <Button variant="secondary" size="lg" className="relative shadow-lg shrink-0">
@@ -584,13 +585,14 @@ export function CabinMap() {
 
         </div>
 
-        {/* Info card */}
-        {selected && (
+        {/* Compact info card */}
+        {selected && !showInfoSheet && (
           <div
             className="absolute bottom-4 left-3 right-3 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 sm:w-96 z-[999] bg-card rounded-2xl shadow-xl px-4 py-4"
             style={{ border: "1.5px solid var(--border)" }}
           >
-            <div className="flex items-start justify-between gap-2 mb-3">
+            {/* Layer 1 — Identity */}
+            <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
                 <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
                   <span
@@ -600,30 +602,16 @@ export function CabinMap() {
                     {CABIN_LABELS[selected.cabinType]}
                   </span>
                   {selected.isDNT && (
-                    <span className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">
-                      DNT
-                    </span>
+                    <span className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">DNT</span>
                   )}
                   {selected.fee === false && (
-                    <span className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-green-100 text-green-800">
-                      Gratis
-                    </span>
-                  )}
-                  {selected.fee === true && (
-                    <span className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-800">
-                      Betalt
-                    </span>
-                  )}
-                  {selected.season && (
-                    <span className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-800">
-                      {selected.season}
-                    </span>
+                    <span className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-green-100 text-green-800">Gratis</span>
                   )}
                 </div>
-                <p className="font-bold text-base truncate leading-snug mt-1">{selected.name}</p>
-                {selected.operator && selected.operator !== selected.name && (
-                  <p className="text-xs text-muted-foreground truncate">{selected.operator}</p>
-                )}
+                <p className="font-bold text-base truncate leading-snug">{selected.name}</p>
+                <p className="text-xs text-muted-foreground truncate">
+                  {selected.operator !== selected.name ? selected.operator : null}
+                </p>
               </div>
               <button
                 onClick={() => setSelected(null)}
@@ -634,118 +622,193 @@ export function CabinMap() {
               </button>
             </div>
 
-            {/* Stats row */}
-            <div className="border-t pt-3 mb-3 flex items-center gap-6">
+            {/* Layer 2 — Key metrics */}
+            <div className="mt-3 flex items-center gap-6">
               {selected.elevation != null && (
                 <div className="flex items-baseline gap-1.5">
                   <Mountain className="h-3.5 w-3.5 text-muted-foreground self-center" />
-                  <span className="text-2xl font-extrabold" style={{ color: "var(--kv-blue)" }}>
-                    {selected.elevation}
-                  </span>
+                  <span className="text-2xl font-extrabold" style={{ color: "var(--kv-blue)" }}>{selected.elevation}</span>
                   <span className="text-xs font-medium text-muted-foreground">moh.</span>
                 </div>
               )}
               {selected.beds != null && (
                 <div className="flex items-baseline gap-1.5">
-                  <span className="text-2xl font-extrabold" style={{ color: "var(--kv-blue)" }}>
-                    {selected.beds}
-                  </span>
-                  <span className="text-xs font-medium text-muted-foreground">sengeplasser</span>
-                </div>
-              )}
-              {selected.shower === true && (
-                <div className="flex items-baseline gap-1.5">
-                  <Droplets className="h-3.5 w-3.5 text-muted-foreground self-center" />
-                  <span className="text-xs font-medium text-muted-foreground">Dusj</span>
+                  <span className="text-2xl font-extrabold" style={{ color: "var(--kv-blue)" }}>{selected.beds}</span>
+                  <span className="text-xs font-medium text-muted-foreground">senger</span>
                 </div>
               )}
               {selected.elevation == null && selected.beds == null && (
-                <p className="text-sm text-muted-foreground">Ingen tilleggsdata tilgjengelig</p>
+                <p className="text-sm text-muted-foreground">Ingen tilleggsdata</p>
               )}
             </div>
 
-            {/* Weather */}
-            {(loadingWeather || weather) && (
-              <div className="border-t pt-3 mb-3">
-                {loadingWeather ? (
-                  <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" /> Henter vær...
-                  </div>
-                ) : weather && (() => {
-                  const WeatherIcon = weatherIcon(weather.symbolCode);
-                  return (
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="flex items-center gap-3">
-                        <WeatherIcon className="h-9 w-9 shrink-0" style={{ color: "var(--kv-blue)" }} />
-                        <div className="flex flex-wrap gap-x-4 gap-y-0.5">
-                          <span className="text-xl font-extrabold" style={{ color: "var(--kv-blue)" }}>
-                            {weather.temperature.toFixed(1)}°C
-                          </span>
-                          <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                            <span className="flex items-center gap-1">
-                              <Wind className="h-3.5 w-3.5" />
-                              {weather.windSpeed.toFixed(1)} m/s
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <Droplets className="h-3.5 w-3.5" />
-                              {weather.precipitation.toFixed(1)} mm
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                      <a
-                        href={`https://www.yr.no/nb/søk?q=${encodeURIComponent(selected.name)}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors shrink-0"
-                      >
-                        yr.no <ExternalLink className="h-3 w-3" />
-                      </a>
-                    </div>
-                  );
-                })()}
-              </div>
-            )}
-
-            {/* Links */}
-            <div className="border-t pt-3 flex flex-wrap gap-2">
+            {/* Action row */}
+            <div className="flex gap-2 mt-3">
+              <button
+                onClick={() => { setShowInfoSheet(true); setShowFilter(false); }}
+                className="flex-1 inline-flex items-center justify-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl border bg-muted/50 hover:bg-muted transition-colors"
+              >
+                <ChevronUp className="h-3.5 w-3.5" /> Vis mer
+              </button>
               <a
                 href={`https://www.google.com/maps/dir/?api=1&destination=${selected.lat},${selected.lon}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                className="flex-1 inline-flex items-center justify-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl border bg-muted/50 hover:bg-muted transition-colors"
               >
-                <ExternalLink className="h-3 w-3" /> Veibeskrivelse
+                <Navigation className="h-3.5 w-3.5" /> Kjør hit
               </a>
-              {selected.website && !selected.website.includes("ut.no") && (
-                <a
-                  href={selected.website}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                >
-                  <ExternalLink className="h-3 w-3" /> Nettside
-                </a>
-              )}
-              {selected.isDNT && (
-                <a
-                  href={`https://www.dnt.no/sok/?q=${encodeURIComponent(selected.name)}&tab=cabins`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                >
-                  <ExternalLink className="h-3 w-3" /> DNT.no
-                </a>
-              )}
-              <button
-                onClick={() => setShowInfo(true)}
-                className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-              >
-                <Info className="h-3 w-3" /> Om data
-              </button>
             </div>
           </div>
         )}
+
+        {/* Info detail sheet */}
+        <Sheet open={showInfoSheet && !!selected} onOpenChange={(open) => { setShowInfoSheet(open); }}>
+          <SheetContent side="bottom" className="rounded-t-2xl max-h-[85svh] overflow-y-auto">
+            {selected && (
+              <div className="mx-auto w-full max-w-md px-2">
+                <SheetHeader>
+                  <SheetTitle className="text-left sr-only">{selected.name}</SheetTitle>
+                </SheetHeader>
+
+                {/* Layer 1 — Identity */}
+                <div className="flex items-center gap-1.5 flex-wrap mb-1">
+                  <span
+                    className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full text-white"
+                    style={{ background: CABIN_COLORS[selected.cabinType] }}
+                  >
+                    {CABIN_LABELS[selected.cabinType]}
+                  </span>
+                  {selected.isDNT && (
+                    <span className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">DNT</span>
+                  )}
+                  {selected.fee === false && (
+                    <span className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-green-100 text-green-800">Gratis</span>
+                  )}
+                  {selected.fee === true && (
+                    <span className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-800">Betalt</span>
+                  )}
+                  {selected.season && (
+                    <span className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-800">{selected.season}</span>
+                  )}
+                </div>
+                <p className="font-bold text-lg leading-snug">{selected.name}</p>
+                {selected.operator && selected.operator !== selected.name && (
+                  <p className="text-sm text-muted-foreground">{selected.operator}</p>
+                )}
+
+                {/* Layer 2 — Key metrics */}
+                <div className="mt-4 pt-4 border-t flex items-center gap-6">
+                  {selected.elevation != null && (
+                    <div className="flex items-baseline gap-1.5">
+                      <Mountain className="h-4 w-4 text-muted-foreground self-center" />
+                      <span className="text-3xl font-extrabold" style={{ color: "var(--kv-blue)" }}>{selected.elevation}</span>
+                      <span className="text-xs font-medium text-muted-foreground">moh.</span>
+                    </div>
+                  )}
+                  {selected.beds != null && (
+                    <div className="flex items-baseline gap-1.5">
+                      <span className="text-3xl font-extrabold" style={{ color: "var(--kv-blue)" }}>{selected.beds}</span>
+                      <span className="text-xs font-medium text-muted-foreground">sengeplasser</span>
+                    </div>
+                  )}
+                  {selected.shower === true && (
+                    <div className="flex items-baseline gap-1.5">
+                      <Droplets className="h-4 w-4 text-muted-foreground self-center" />
+                      <span className="text-xs font-medium text-muted-foreground">Dusj</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Layer 3 — Weather + details */}
+                {(loadingWeather || weather) && (
+                  <div className="mt-4 pt-4 border-t">
+                    {loadingWeather ? (
+                      <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" /> Henter vær...
+                      </div>
+                    ) : weather && (() => {
+                      const WeatherIcon = weatherIcon(weather.symbolCode);
+                      return (
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-3">
+                            <WeatherIcon className="h-9 w-9 shrink-0" style={{ color: "var(--kv-blue)" }} />
+                            <div className="flex flex-wrap gap-x-4 gap-y-0.5">
+                              <span className="text-xl font-extrabold" style={{ color: "var(--kv-blue)" }}>
+                                {weather.temperature.toFixed(1)}°C
+                              </span>
+                              <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                                <span className="flex items-center gap-1">
+                                  <Wind className="h-3.5 w-3.5" />
+                                  {weather.windSpeed.toFixed(1)} m/s
+                                </span>
+                                <span className="flex items-center gap-1">
+                                  <Droplets className="h-3.5 w-3.5" />
+                                  {weather.precipitation.toFixed(1)} mm
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                          <a
+                            href={`https://www.yr.no/nb/søk?q=${encodeURIComponent(selected.name)}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors shrink-0"
+                          >
+                            yr.no <ExternalLink className="h-3 w-3" />
+                          </a>
+                        </div>
+                      );
+                    })()}
+                  </div>
+                )}
+
+                {selected.description && (
+                  <div className="mt-4 pt-4 border-t">
+                    <p className="text-sm text-muted-foreground">{selected.description}</p>
+                  </div>
+                )}
+
+                {/* Layer 4 — Links & source */}
+                <div className="mt-4 pt-4 border-t flex flex-col gap-3">
+                  <div className="flex gap-2">
+                    <a
+                      href={`https://www.google.com/maps/dir/?api=1&destination=${selected.lat},${selected.lon}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-1 inline-flex items-center justify-center gap-2 text-sm font-semibold px-4 py-2.5 rounded-xl border bg-muted/50 hover:bg-muted transition-colors"
+                    >
+                      <Navigation className="h-4 w-4" /> Kjør hit
+                    </a>
+                    {selected.website && !selected.website.includes("ut.no") && (
+                      <a
+                        href={selected.website}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex-1 inline-flex items-center justify-center gap-2 text-sm font-semibold px-4 py-2.5 rounded-xl border bg-muted/50 hover:bg-muted transition-colors"
+                      >
+                        <ExternalLink className="h-4 w-4" /> Nettside
+                      </a>
+                    )}
+                  </div>
+                  {selected.isDNT && (
+                    <a
+                      href={`https://www.dnt.no/sok/?q=${encodeURIComponent(selected.name)}&tab=cabins`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center justify-center gap-2 text-sm font-semibold px-4 py-2.5 rounded-xl border bg-muted/50 hover:bg-muted transition-colors w-full"
+                    >
+                      <ExternalLink className="h-4 w-4" /> Finn på DNT.no
+                    </a>
+                  )}
+                  <p className="text-xs text-muted-foreground text-center">
+                    Kilde: OpenStreetMap
+                  </p>
+                </div>
+              </div>
+            )}
+          </SheetContent>
+        </Sheet>
       </div>
 
       {/* Info modal */}

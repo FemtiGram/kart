@@ -6,8 +6,9 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import type { GeoJsonObject, Feature } from "geojson";
 import type { Layer } from "leaflet";
-import { Search, MapPin, Loader2, X, LocateFixed, Map as MapIcon, ChevronDown, ChevronUp, Info, ExternalLink, RotateCw } from "lucide-react";
+import { Search, MapPin, Loader2, X, LocateFixed, Map as MapIcon, ChevronUp, Info, ExternalLink, RotateCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { FYLKER } from "@/lib/fylker";
 import { FlyTo, interpolateColor, useDebounceRef, useSearchAbort } from "@/lib/map-utils";
 
@@ -82,7 +83,7 @@ export function ProtectedAreasMap() {
   const [selected, setSelected] = useState<SelectedKommune | null>(null);
   const [flyTarget, setFlyTarget] = useState<{ lat: number; lon: number; zoom?: number } | null>(null);
   const [showBase, setShowBase] = useState(false);
-  const [cardExpanded, setCardExpanded] = useState(false);
+  const [showInfoSheet, setShowInfoSheet] = useState(false);
   const [showInfo, setShowInfo] = useState(false);
 
   const verneRef = useRef<Record<string, VerneData>>({});
@@ -395,15 +396,15 @@ export function ProtectedAreasMap() {
           </button>
         </div>
 
-        {/* Info card */}
-        {selected && (
+        {/* Compact info card */}
+        {selected && !showInfoSheet && (
           <div
             className="absolute bottom-4 left-3 right-3 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 sm:w-96 z-[999] bg-card rounded-2xl shadow-xl px-4 py-4"
             style={{ border: "1.5px solid var(--border)" }}
           >
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
-                <p className="font-bold text-base">{selected.kommunenavn}</p>
+                <p className="font-bold text-base leading-snug">{selected.kommunenavn}</p>
                 {selected.vern?.total ? (
                   <p className="text-sm text-muted-foreground mt-0.5">
                     <span className="font-semibold" style={{ color: "#16a34a" }}>
@@ -412,100 +413,103 @@ export function ProtectedAreasMap() {
                   </p>
                 ) : null}
               </div>
-              <div className="flex items-center gap-1 shrink-0">
-                <button
-                  onClick={() => setCardExpanded((e) => !e)}
-                  className="sm:hidden p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                  aria-label={cardExpanded ? "Skjul detaljer" : "Vis detaljer"}
-                >
-                  {cardExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
-                </button>
-                <button
-                  onClick={clearSelection}
-                  className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                  aria-label="Lukk"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
+              <button
+                onClick={clearSelection}
+                className="shrink-0 p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                aria-label="Lukk"
+              >
+                <X className="h-4 w-4" />
+              </button>
             </div>
 
-            <div className={`${cardExpanded ? "block" : "hidden"} sm:block`}>
-              {selected.vern?.total ? (() => {
-                const { rank, total, vsMedian } = computeVerneStats(verneData, selected.kommunenummer);
-                const pct = Math.max(0, Math.min(100, (selected.vern.total! / max) * 100));
-                const above = vsMedian >= 0;
-                return (
-                  <>
-                    <div className="border-t mt-3 pt-3 mb-3">
-                      {/* Progress bar */}
+            <div className="flex gap-2 mt-3">
+              <button
+                onClick={() => setShowInfoSheet(true)}
+                className="flex-1 inline-flex items-center justify-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl border bg-muted/50 hover:bg-muted transition-colors"
+              >
+                <ChevronUp className="h-3.5 w-3.5" /> Vis mer
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Info detail sheet */}
+        <Sheet open={showInfoSheet && !!selected} onOpenChange={(open) => { setShowInfoSheet(open); if (!open && !selected) clearSelection(); }}>
+          <SheetContent side="bottom" className="rounded-t-2xl max-h-[85svh] overflow-y-auto">
+            {selected && (
+              <div className="mx-auto w-full max-w-md px-2">
+                <SheetHeader>
+                  <SheetTitle className="text-left sr-only">{selected.kommunenavn}</SheetTitle>
+                </SheetHeader>
+
+                {/* Layer 1 — Identity */}
+                <p className="font-bold text-lg leading-snug">{selected.kommunenavn}</p>
+                {selected.vern?.total ? (
+                  <p className="text-sm text-muted-foreground">
+                    <span className="font-semibold" style={{ color: "#16a34a" }}>
+                      {selected.vern.total.toFixed(2).replace(".", ",")} km²
+                    </span>{" "}vernet areal
+                  </p>
+                ) : null}
+
+                {/* Layer 2 — Progress + rank */}
+                {selected.vern?.total ? (() => {
+                  const { rank, total, vsMedian } = computeVerneStats(verneData, selected.kommunenummer);
+                  const max = Math.max(...Object.values(verneData).map((v) => v.total ?? 0));
+                  const pct = Math.max(0, Math.min(100, (selected.vern.total! / max) * 100));
+                  const above = vsMedian >= 0;
+                  return (
+                    <div className="mt-4 pt-4 border-t">
                       <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
                         <div
                           className="h-full rounded-full"
-                          style={{
-                            width: `${pct}%`,
-                            background: "linear-gradient(to right, #ef4444, #facc15, #16a34a)",
-                          }}
+                          style={{ width: `${pct}%`, background: "linear-gradient(to right, #ef4444, #facc15, #16a34a)" }}
                         />
                       </div>
                       <div className="flex justify-between mt-0.5">
                         <span className="text-[10px] text-muted-foreground">0 km²</span>
                         <span className="text-[10px] text-muted-foreground">{fmt(max)}</span>
                       </div>
-
-                      {/* Rank + vs median */}
                       <div className="mt-3 flex items-center justify-between gap-2">
-                        <span className="text-xs text-muted-foreground">
-                          #{rank} av {total} kommuner
-                        </span>
-                        <span
-                          className="text-xs font-semibold"
-                          style={{ color: above ? "#16a34a" : "#ef4444" }}
-                        >
+                        <span className="text-xs text-muted-foreground">#{rank} av {total} kommuner</span>
+                        <span className="text-xs font-semibold" style={{ color: above ? "#16a34a" : "#ef4444" }}>
                           {above ? "+" : ""}{vsMedian.toFixed(1)}% vs. medianen
                         </span>
                       </div>
                     </div>
+                  );
+                })() : null}
 
-                    <div className="border-t pt-3 flex flex-col gap-1.5">
-                      {(["np", "nr", "lv", "nm"] as const).map((key) => {
-                        const val = selected.vern![key];
-                        if (!val) return null;
-                        return (
-                          <div key={key} className="flex items-center justify-between text-sm">
-                            <span className="text-muted-foreground">{VERNE_LABELS[key]}</span>
-                            <span className="font-medium tabular-nums">{fmt(val)}</span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </>
-                );
-              })() : (
-                <p className="text-sm text-muted-foreground border-t mt-3 pt-3">Ingen registrerte verneområder.</p>
-              )}
+                {/* Layer 3 — Category breakdown */}
+                {selected.vern?.total ? (
+                  <div className="mt-4 pt-4 border-t flex flex-col gap-2">
+                    {(["np", "nr", "lv", "nm"] as const).map((key) => {
+                      const val = selected.vern![key];
+                      if (!val) return null;
+                      return (
+                        <div key={key} className="flex items-center justify-between text-sm">
+                          <span className="text-muted-foreground">{VERNE_LABELS[key]}</span>
+                          <span className="font-medium tabular-nums">{fmt(val)}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="mt-4 pt-4 border-t">
+                    <p className="text-sm text-muted-foreground">Ingen registrerte verneområder.</p>
+                  </div>
+                )}
 
-              <div className="flex items-center justify-between mt-3">
-                <a
-                  href="https://www.ssb.no/statbank/table/08936/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-xs text-muted-foreground/50 italic hover:text-muted-foreground transition-colors"
-                >
-                  <ExternalLink className="h-3 w-3" />
-                  Kilde: SSB tabell 08936, 2024
-                </a>
-                <button
-                  onClick={() => setShowInfo(true)}
-                  className="p-1 rounded-md text-muted-foreground/50 hover:text-foreground hover:bg-muted transition-colors"
-                  aria-label="Om dataene"
-                >
-                  <Info className="h-4 w-4" />
-                </button>
+                {/* Layer 4 — Source */}
+                <div className="mt-4 pt-4 border-t">
+                  <p className="text-xs text-muted-foreground text-center">
+                    Kilde: <a href="https://www.ssb.no/natur-og-miljo/areal/statistikk/arealbruk-og-arealressurser" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">SSB tabell 08936</a>
+                  </p>
+                </div>
               </div>
-            </div>
-          </div>
-        )}
+            )}
+          </SheetContent>
+        </Sheet>
       </div>
 
       {/* Info modal */}

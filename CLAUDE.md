@@ -72,14 +72,33 @@ public/data/
 ### Each map component has:
 - Search bar (Fylke → Kommune → Adresse, limits: 3/5/2)
 - Tile layer toggle (Kart/Gråtone) — top-right
-- Info card — bottom-center, border: `var(--kv-green-light, #b3e6c8)`
+- Compact info card + expandable detail sheet (see card pattern below)
 - Info modal — explaining data sources
-- Source attribution + link in card footer
 - Error handling — floating pill, bottom on mobile (bottom-20), top on desktop (sm:top-3)
 - "Min posisjon" button with isInNorway() check — falls back to OSLO/Jotunheimen if outside Norway
 - **Exception:** Elevation map uses address-only search (needs specific point, 6 results)
 - **Exception:** Choropleth maps use "Bakgrunnskart" toggle instead of Kart/Gråtone
 - **Exception:** Choropleth maps have no "Min posisjon" button
+
+### Info card pattern (standard for all maps):
+All maps use a **compact floating card + expandable bottom Sheet** pattern:
+
+**Compact card** (floating, bottom-center):
+- Layer 1: Identity (badges, name, subtitle)
+- Layer 2: Key metric (big number + label)
+- Action row: "Vis mer" button + "Kjør hit" directions link
+
+**Detail sheet** (bottom Sheet, opened by "Vis mer"):
+- Layer 1: Full identity (badges, name, owner/operator, location)
+- Layer 2: Key metrics (bigger numbers, more detail)
+- Layer 3: Details (weather, connectors, category breakdown, etc.)
+- Layer 4: Links + source attribution
+
+**Interaction rules:**
+- Filter sheet and info sheet auto-close each other
+- Closing the detail sheet returns to the compact card
+- Closing the compact card deselects the item
+- Choropleth maps use `clearSelection()` which also resets polygon styling
 
 ### Search architecture:
 - **Debounce:** 300ms after last keystroke before triggering search

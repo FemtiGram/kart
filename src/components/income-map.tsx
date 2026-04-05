@@ -6,8 +6,9 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import type { GeoJsonObject, Feature } from "geojson";
 import type { Layer } from "leaflet";
-import { Search, MapPin, Loader2, X, Info, LocateFixed, Map as MapIcon, ChevronDown, ChevronUp, ExternalLink, RotateCw } from "lucide-react";
+import { Search, MapPin, Loader2, X, Info, LocateFixed, Map as MapIcon, ChevronUp, Navigation, ExternalLink, RotateCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { FYLKER } from "@/lib/fylker";
 import { FlyTo, interpolateColor, useDebounceRef, useSearchAbort } from "@/lib/map-utils";
 
@@ -74,7 +75,7 @@ export function IncomeMap() {
   const [flyTarget, setFlyTarget] = useState<{ lat: number; lon: number; zoom?: number } | null>(null);
   const [showInfo, setShowInfo] = useState(false);
   const [showBase, setShowBase] = useState(false);
-  const [cardExpanded, setCardExpanded] = useState(false);
+  const [showInfoSheet, setShowInfoSheet] = useState(false);
 
   const incomeRef = useRef<Record<string, number>>({});
   const geoFeaturesRef = useRef<Array<{ kommunenummer: string; kommunenavn: string }>>([]);
@@ -375,106 +376,110 @@ export function IncomeMap() {
           </MapContainer>
         )}
 
-        {/* Info card */}
-        {selected && (
+        {/* Compact info card */}
+        {selected && !showInfoSheet && (
           <div
             className="absolute bottom-4 left-3 right-3 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 sm:w-96 z-[999] bg-card rounded-2xl shadow-xl px-4 py-4"
             style={{ border: "1.5px solid var(--border)" }}
           >
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
-                <p className="font-bold text-sm">{selected.kommunenavn}</p>
-                {selected.address && (
-                  <p className="text-xs text-muted-foreground truncate mt-0.5">{selected.address}</p>
-                )}
+                <p className="font-bold text-base leading-snug">{selected.kommunenavn}</p>
                 {selected.income != null && (
-                  <p className="text-sm mt-1">
+                  <p className="text-sm mt-0.5">
                     <span className="font-semibold" style={{ color: "var(--kv-blue)" }}>{formatKr(selected.income)}</span>
                     <span className="text-muted-foreground text-xs ml-1">median inntekt</span>
                   </p>
                 )}
               </div>
-              <div className="flex items-center gap-1 shrink-0">
-                <button
-                  onClick={() => setCardExpanded((e) => !e)}
-                  className="sm:hidden p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                  aria-label={cardExpanded ? "Skjul detaljer" : "Vis detaljer"}
-                >
-                  {cardExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
-                </button>
-                <button
-                  onClick={clearSelection}
-                  className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                  aria-label="Lukk"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
+              <button
+                onClick={clearSelection}
+                className="shrink-0 p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                aria-label="Lukk"
+              >
+                <X className="h-4 w-4" />
+              </button>
             </div>
 
-            <div className={`${cardExpanded ? "block" : "hidden"} sm:block`}>
-              {selected.income != null ? (() => {
-                const { rank, total, vsMedian } = computeStats(incomeData, selected.kommunenummer);
-                const pct = Math.max(0, Math.min(100, ((selected.income - min) / (max - min)) * 100));
-                const above = vsMedian >= 0;
-                return (
-                  <>
-                    <p className="text-xs text-muted-foreground mt-2">median inntekt etter skatt per husholdning (2024)</p>
-
-                    {/* Progress bar */}
-                    <div className="mt-3 h-1.5 w-full rounded-full bg-muted overflow-hidden">
-                      <div
-                        className="h-full rounded-full"
-                        style={{
-                          width: `${pct}%`,
-                          background: "linear-gradient(to right, #ef4444, #facc15, #16a34a)",
-                        }}
-                      />
-                    </div>
-                    <div className="flex justify-between mt-0.5">
-                      <span className="text-[10px] text-muted-foreground">{formatKr(min)}</span>
-                      <span className="text-[10px] text-muted-foreground">{formatKr(max)}</span>
-                    </div>
-
-                    {/* Rank + vs median */}
-                    <div className="mt-3 flex items-center justify-between gap-2">
-                      <span className="text-xs text-muted-foreground">
-                        #{rank} av {total} kommuner
-                      </span>
-                      <span
-                        className="text-xs font-semibold"
-                        style={{ color: above ? "#16a34a" : "#ef4444" }}
-                      >
-                        {above ? "+" : ""}{vsMedian.toFixed(1)}% vs. medianen
-                      </span>
-                    </div>
-                  </>
-                );
-              })() : (
-                <p className="text-sm text-muted-foreground mt-2">Ingen inntektsdata</p>
-              )}
-
-              <div className="flex items-center justify-between mt-3">
-                <a
-                  href="https://www.ssb.no/inntekt-og-forbruk/inntekt-og-formue/statistikk/inntekts-og-formuesstatistikk-for-husholdninger"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-xs text-muted-foreground/50 italic hover:text-muted-foreground transition-colors"
-                >
-                  <ExternalLink className="h-3 w-3" />
-                  Kilde: SSB InntektStruk13, 2024
-                </a>
-                <button
-                  onClick={() => setShowInfo(true)}
-                  className="p-1 rounded-md text-muted-foreground/50 hover:text-foreground hover:bg-muted transition-colors"
-                  aria-label="Om dataene"
-                >
-                  <Info className="h-4 w-4" />
-                </button>
-              </div>
+            <div className="flex gap-2 mt-3">
+              <button
+                onClick={() => setShowInfoSheet(true)}
+                className="flex-1 inline-flex items-center justify-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl border bg-muted/50 hover:bg-muted transition-colors"
+              >
+                <ChevronUp className="h-3.5 w-3.5" /> Vis mer
+              </button>
             </div>
           </div>
         )}
+
+        {/* Info detail sheet */}
+        <Sheet open={showInfoSheet && !!selected} onOpenChange={(open) => { setShowInfoSheet(open); if (!open && !selected) clearSelection(); }}>
+          <SheetContent side="bottom" className="rounded-t-2xl max-h-[85svh] overflow-y-auto">
+            {selected && (
+              <div className="mx-auto w-full max-w-md px-2">
+                <SheetHeader>
+                  <SheetTitle className="text-left sr-only">{selected.kommunenavn}</SheetTitle>
+                </SheetHeader>
+
+                {/* Layer 1 — Identity */}
+                <p className="font-bold text-lg leading-snug">{selected.kommunenavn}</p>
+                {selected.address && (
+                  <p className="text-sm text-muted-foreground">{selected.address}</p>
+                )}
+
+                {/* Layer 2 — Key metric */}
+                <div className="mt-4 pt-4 border-t">
+                  {selected.income != null ? (
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-3xl font-extrabold" style={{ color: "var(--kv-blue)" }}>{formatKr(selected.income)}</span>
+                      <span className="text-sm font-medium text-muted-foreground">median inntekt</span>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">Ingen inntektsdata</p>
+                  )}
+                  <p className="text-xs text-muted-foreground mt-1">median inntekt etter skatt per husholdning (2024)</p>
+                </div>
+
+                {/* Layer 3 — Progress + rank */}
+                {selected.income != null && (() => {
+                  const { rank, total, vsMedian } = computeStats(incomeData, selected.kommunenummer);
+                  const values = Object.values(incomeData).filter((v) => v > 0);
+                  const min = values.length ? Math.min(...values) : 0;
+                  const max = values.length ? Math.max(...values) : 1;
+                  const pct = Math.max(0, Math.min(100, ((selected.income - min) / (max - min)) * 100));
+                  const above = vsMedian >= 0;
+                  return (
+                    <div className="mt-4 pt-4 border-t">
+                      <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+                        <div
+                          className="h-full rounded-full"
+                          style={{ width: `${pct}%`, background: "linear-gradient(to right, #ef4444, #facc15, #16a34a)" }}
+                        />
+                      </div>
+                      <div className="flex justify-between mt-0.5">
+                        <span className="text-[10px] text-muted-foreground">{formatKr(min)}</span>
+                        <span className="text-[10px] text-muted-foreground">{formatKr(max)}</span>
+                      </div>
+                      <div className="mt-3 flex items-center justify-between gap-2">
+                        <span className="text-xs text-muted-foreground">#{rank} av {total} kommuner</span>
+                        <span className="text-xs font-semibold" style={{ color: above ? "#16a34a" : "#ef4444" }}>
+                          {above ? "+" : ""}{vsMedian.toFixed(1)}% vs. medianen
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* Layer 4 — Source */}
+                <div className="mt-4 pt-4 border-t">
+                  <p className="text-xs text-muted-foreground text-center">
+                    Kilde: <a href="https://www.ssb.no/inntekt-og-forbruk/inntekt-og-formue/statistikk/inntekts-og-formuesstatistikk-for-husholdninger" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">SSB InntektStruk13</a>, 2024
+                  </p>
+                </div>
+              </div>
+            )}
+          </SheetContent>
+        </Sheet>
 
         {/* Legend + base layer toggle */}
         {!loading && values.length > 0 && (
