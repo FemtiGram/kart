@@ -24,6 +24,8 @@ import {
   Check,
   ChevronUp,
   Navigation,
+  Waves,
+  Gauge,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -185,6 +187,13 @@ export function EnergyMap() {
   const [filterWindStatus, setFilterWindStatus] = useState<Set<WindStatus>>(new Set(["operational"]));
   const [showSmall, setShowSmall] = useState(false);
   const [selected, setSelected] = useState<EnergyPlant | null>(null);
+  const [hydroStation, setHydroStation] = useState<{
+    station: { id: string; name: string; river: string | null; distanceKm: number } | null;
+    discharge: number | null;
+    waterLevel: number | null;
+    percentile: { p25: number | null; p50: number | null; p75: number | null; p90: number | null; min: number | null; max: number | null } | null;
+  } | null>(null);
+  const [loadingHydro, setLoadingHydro] = useState(false);
   const [center, setCenter] = useState<{
     lat: number;
     lon: number;
@@ -235,6 +244,31 @@ export function EnergyMap() {
       })
       .catch(() => {});
   }, []);
+
+  // Fetch live hydro station data when info sheet opens for a hydro plant
+  useEffect(() => {
+    if (!showInfoSheet || !selected || selected.type !== "vann") {
+      setHydroStation(null);
+      return;
+    }
+    let cancelled = false;
+    setLoadingHydro(true);
+    fetch(`/api/hydro-station?lat=${selected.lat}&lon=${selected.lon}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (!cancelled) {
+          setHydroStation(data.error ? null : data);
+          setLoadingHydro(false);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setHydroStation(null);
+          setLoadingHydro(false);
+        }
+      });
+    return () => { cancelled = true; };
+  }, [showInfoSheet, selected]);
 
   const search = useCallback(
     async (q: string) => {
@@ -890,7 +924,7 @@ export function EnergyMap() {
                 </div>
 
                 {/* Layer 3 — Details */}
-                {(selected.type === "vann" && (selected.river || selected.yearBuilt)) && (
+                {selected.type === "vann" && (
                   <div className="mt-4 pt-4 border-t flex flex-col gap-2">
                     {selected.river && (
                       <div className="flex items-center justify-between text-sm">
@@ -902,6 +936,70 @@ export function EnergyMap() {
                       <div className="flex items-center justify-between text-sm">
                         <span className="text-muted-foreground">Idriftsatt</span>
                         <span className="font-medium">{selected.yearBuilt}</span>
+                      </div>
+                    )}
+
+                    {/* Live hydro station data */}
+                    {loadingHydro && (
+                      <div className="flex items-center gap-1.5 text-sm text-muted-foreground mt-2">
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" /> Henter vanndata...
+                      </div>
+                    )}
+                    {!loadingHydro && hydroStation?.station && (
+                      <div className="mt-2 pt-3 border-t">
+                        <div className="flex items-center gap-1.5 mb-3">
+                          <Waves className="h-3.5 w-3.5 text-muted-foreground" />
+                          <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                            Målestasjon: {hydroStation.station.name}
+                          </span>
+                          <span className="text-[10px] text-muted-foreground/60">
+                            ({hydroStation.station.distanceKm} km unna)
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          {hydroStation.discharge != null && (
+                            <div>
+                              <span className="text-2xl font-extrabold" style={{ color: "#0891b2" }}>
+                                {hydroStation.discharge.toFixed(1)}
+                              </span>
+                              <p className="text-xs text-muted-foreground">m³/s vannføring</p>
+                            </div>
+                          )}
+                          {hydroStation.waterLevel != null && (
+                            <div>
+                              <span className="text-2xl font-extrabold" style={{ color: "#0891b2" }}>
+                                {hydroStation.waterLevel.toFixed(2)}
+                              </span>
+                              <p className="text-xs text-muted-foreground">m vannstand</p>
+                            </div>
+                          )}
+                        </div>
+                        {hydroStation.percentile && hydroStation.discharge != null && (
+                          <div className="mt-3">
+                            <div className="flex items-center gap-1.5 mb-1.5">
+                              <Gauge className="h-3 w-3 text-muted-foreground" />
+                              <span className="text-xs text-muted-foreground">Vannføring vs. normalen for denne tiden av året</span>
+                            </div>
+                            <div className="relative h-2 w-full rounded-full bg-muted overflow-hidden">
+                              <div
+                                className="absolute inset-y-0 left-0 rounded-full"
+                                style={{
+                                  width: `${Math.min(100, Math.max(0, hydroStation.percentile.max ? (hydroStation.discharge / hydroStation.percentile.max) * 100 : 50))}%`,
+                                  background: hydroStation.percentile.p75 && hydroStation.discharge > hydroStation.percentile.p75
+                                    ? "#dc2626"
+                                    : hydroStation.percentile.p50 && hydroStation.discharge > hydroStation.percentile.p50
+                                      ? "#ca8a04"
+                                      : "#16a34a",
+                                }}
+                              />
+                            </div>
+                            <div className="flex justify-between mt-0.5 text-[10px] text-muted-foreground">
+                              <span>Lavt</span>
+                              <span>{hydroStation.percentile.p50 != null ? `Median: ${hydroStation.percentile.p50.toFixed(1)} m³/s` : ""}</span>
+                              <span>Høyt</span>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
