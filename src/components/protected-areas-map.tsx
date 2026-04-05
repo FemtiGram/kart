@@ -10,7 +10,6 @@ import { Search, MapPin, Loader2, X, LocateFixed, Map as MapIcon, ChevronDown, C
 import { Button } from "@/components/ui/button";
 import { FYLKER } from "@/lib/fylker";
 import { FlyTo, interpolateColor, useDebounceRef, useSearchAbort } from "@/lib/map-utils";
-import { LocationPrompt } from "@/components/location-prompt";
 
 interface VerneData {
   total: number | null;
@@ -82,8 +81,6 @@ export function ProtectedAreasMap() {
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const [selected, setSelected] = useState<SelectedKommune | null>(null);
   const [flyTarget, setFlyTarget] = useState<{ lat: number; lon: number; zoom?: number } | null>(null);
-  const [asked, setAsked] = useState(false);
-  const [locating, setLocating] = useState(false);
   const [showBase, setShowBase] = useState(false);
   const [cardExpanded, setCardExpanded] = useState(false);
   const [showInfo, setShowInfo] = useState(false);
@@ -98,7 +95,6 @@ export function ProtectedAreasMap() {
   const loadData = useCallback(async () => {
     setError(false);
     setLoading(true);
-    const t0 = Date.now();
     try {
       const [geo, verne] = await Promise.all([
         fetch("/api/kommuner").then((r) => r.json()),
@@ -111,8 +107,6 @@ export function ProtectedAreasMap() {
       }));
       setGeoData(geo);
       setVerneData(verne);
-      const elapsed = Date.now() - t0;
-      if (elapsed < 3000) await new Promise((r) => setTimeout(r, 3000 - elapsed));
       setLoading(false);
     } catch {
       setError(true);
@@ -153,49 +147,6 @@ export function ProtectedAreasMap() {
     setQuery("");
   }, []);
 
-  useEffect(() => {
-    if (loading) return;
-    const pref = localStorage.getItem("mapgram-use-location");
-    if (pref !== null) handleLocationChoice(pref === "yes");
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading]);
-
-  const handleLocationChoice = (useLocation: boolean) => {
-    setAsked(true);
-    try { localStorage.setItem("mapgram-use-location", useLocation ? "yes" : "no"); } catch {}
-    if (!useLocation || !navigator.geolocation) {
-      setFlyTarget({ lat: 65, lon: 14 });
-      return;
-    }
-    setLocating(true);
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        const { latitude: lat, longitude: lon } = pos.coords;
-        setLocating(false);
-        setFlyTarget({ lat, lon });
-        try {
-          const res = await fetch(
-            `https://ws.geonorge.no/kommuneinfo/v1/punkt?nord=${lat}&ost=${lon}&koordsys=4258`
-          );
-          const data = await res.json();
-          if (data.kommunenummer) {
-            highlightKommune(data.kommunenummer);
-            setSelected({
-              kommunenummer: data.kommunenummer,
-              kommunenavn: data.kommunenavn,
-              vern: verneRef.current[data.kommunenummer] ?? null,
-              coords: { lat, lon },
-            });
-          }
-        } catch { /* ignore */ }
-      },
-      () => {
-        setLocating(false);
-        setFlyTarget({ lat: 65, lon: 14 });
-      },
-      { timeout: 6000 }
-    );
-  };
 
   const search = useCallback(async (q: string) => {
     if (q.length < 2) { setSuggestions([]); return; }
@@ -393,13 +344,6 @@ export function ProtectedAreasMap() {
             </div>
           </div>
         )}
-        <LocationPrompt
-          asked={asked}
-          locating={locating}
-          loading={loading}
-          description="Vi kan vise kommunen du befinner deg i, eller du kan søke manuelt."
-          onChoice={handleLocationChoice}
-        />
         {error && (
           <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[1000] rounded-full px-4 py-2 shadow-lg" style={{ background: "#b91c1c" }}>
             <div className="flex items-center gap-3">

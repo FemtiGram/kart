@@ -8,7 +8,6 @@ import { Search, MapPin, Mountain, Loader2, X, ChevronDown, ChevronUp, LocateFix
 import { Button } from "@/components/ui/button";
 import type { LucideIcon } from "lucide-react";
 import { FlyTo, useDebounceRef, isDevMode } from "@/lib/map-utils";
-import { LocationPrompt } from "@/components/location-prompt";
 
 function weatherIcon(symbolCode: string): LucideIcon {
   const c = symbolCode.toLowerCase();
@@ -104,7 +103,7 @@ export function ElevationMap() {
   const [showInfo, setShowInfo] = useState(false);
   const [tileLayer, setTileLayer] = useState<TileLayerKey>("kart");
   const [locating, setLocating] = useState(false);
-  const [asked, setAsked] = useState(false);
+
   const [devLog, setDevLog] = useState<DevLogEntry[]>([]);
   const logIdRef = useRef(0);
   const [devOpen, setDevOpen] = useState(true);
@@ -209,32 +208,6 @@ export function ElevationMap() {
     );
   };
 
-  useEffect(() => {
-    const pref = localStorage.getItem("mapgram-use-location");
-    if (pref !== null) handleLocationChoice(pref === "yes");
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const handleLocationChoice = (useLocation: boolean) => {
-    setAsked(true);
-    try { localStorage.setItem("mapgram-use-location", useLocation ? "yes" : "no"); } catch {}
-    if (!useLocation || !navigator.geolocation) {
-      handleMapClick(59.91, 10.75);
-      return;
-    }
-    setLocating(true);
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setLocating(false);
-        handleMapClick(pos.coords.latitude, pos.coords.longitude);
-      },
-      () => {
-        setLocating(false);
-        handleMapClick(59.91, 10.75);
-      },
-      { timeout: 6000 }
-    );
-  };
 
   const isWithinNorway = (lat: number, lon: number) =>
     lat >= 57.0 && lat <= 81.0 && lon >= 4.0 && lon <= 32.0;
@@ -447,12 +420,6 @@ export function ElevationMap() {
 
       {/* Map */}
       <div className="relative grow [&_.leaflet-grab]:cursor-pointer [&_.leaflet-dragging_.leaflet-grab]:cursor-grabbing">
-        <LocationPrompt
-          asked={asked}
-          locating={locating}
-          description="Vi kan vise høyde og værdata for der du er, eller du kan søke manuelt."
-          onChoice={handleLocationChoice}
-        />
         <MapContainer
           center={[65, 14]}
           zoom={5}
