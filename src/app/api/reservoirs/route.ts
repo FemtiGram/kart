@@ -19,64 +19,65 @@ interface ReservoirFeature {
 
 export async function GET() {
   try {
-    // Fetch all reservoirs — paginate since there may be many
+    // Fetch operational reservoirs in a single request (no pagination to stay within Vercel 10s limit)
+    const url = `${NVE_BASE}/Vannkraft1/MapServer/6/query?where=status%3D'D'&outFields=OBJECTID,magasinNavn,vannkraftverkNavn,elvenavnHierarki,hoyesteRegulerteVannstand_moh,lavesteRegulerteVannstand_moh,volumOppdemt_Mm3,magasinArealHRV_km2,idriftsattAar,magasinFormal_Liste&returnGeometry=true&f=json&resultRecordCount=1000`;
+    const res = await fetch(url, {
+      headers: { "User-Agent": "MapGram/1.0 github.com/FemtiGram/kart" },
+      next: { revalidate: 3600 },
+      signal: AbortSignal.timeout(9000),
+    });
+
+    if (!res.ok) {
+      return Response.json({ error: `NVE API: ${res.status}` }, { status: 502 });
+    }
+
+    const data = await res.json();
+    const features = data.features ?? [];
     const allFeatures: ReservoirFeature[] = [];
-    let offset = 0;
-    const pageSize = 1000;
-    let hasMore = true;
 
-    while (hasMore) {
-      const url = `${NVE_BASE}/Vannkraft1/MapServer/6/query?where=status%3D'D'&outFields=OBJECTID,magasinNavn,vannkraftverkNavn,elvenavnHierarki,hoyesteRegulerteVannstand_moh,lavesteRegulerteVannstand_moh,volumOppdemt_Mm3,magasinArealHRV_km2,idriftsattAar,magasinFormal_Liste&returnGeometry=true&f=json&resultRecordCount=${pageSize}&resultOffset=${offset}`;
-      const res = await fetch(url, {
-        headers: { "User-Agent": "MapGram/1.0 github.com/FemtiGram/kart" },
-        next: { revalidate: 3600 },
-        signal: AbortSignal.timeout(9000),
+    for (const f of features) {
+      const a = f.attributes;
+      const rings = f.geometry?.rings;
+      if (!rings?.length) continue;
+
+      // Convert UTM polygon rings to WGS84, simplify by skipping every other point for large rings
+      const wgsRings: [number, number][][] = rings.map(
+        (ring: number[][]) => {
+          const step = ring.length > 50 ? 3 : ring.length > 20 ? 2 : 1;
+          const simplified: [number, number][] = [];
+          for (let i = 0; i < ring.length; i += step) {
+            const { lat, lon } = utmToLatLon(ring[i][0], ring[i][1]);
+            simplified.push([lat, lon]);
+          }
+          // Always include last point to close the ring
+          if (simplified.length > 0) {
+            const last = ring[ring.length - 1];
+            const { lat, lon } = utmToLatLon(last[0], last[1]);
+            simplified.push([lat, lon]);
+          }
+          return simplified;
+        }
+      );
+
+      // Compute center from first ring's centroid
+      const firstRing = wgsRings[0];
+      const centerLat = firstRing.reduce((s, c) => s + c[0], 0) / firstRing.length;
+      const centerLon = firstRing.reduce((s, c) => s + c[1], 0) / firstRing.length;
+
+      allFeatures.push({
+        id: a.OBJECTID,
+        name: a.magasinNavn ?? "Ukjent magasin",
+        plantName: a.vannkraftverkNavn ?? null,
+        river: a.elvenavnHierarki ?? null,
+        hrv: a.hoyesteRegulerteVannstand_moh ?? null,
+        lrv: a.lavesteRegulerteVannstand_moh ?? null,
+        volumeMm3: a.volumOppdemt_Mm3 ?? null,
+        areaKm2: a.magasinArealHRV_km2 ?? null,
+        yearBuilt: a.idriftsattAar ?? null,
+        purpose: a.magasinFormal_Liste ?? null,
+        polygon: wgsRings,
+        center: { lat: centerLat, lon: centerLon },
       });
-
-      if (!res.ok) break;
-      const data = await res.json();
-      const features = data.features ?? [];
-
-      for (const f of features) {
-        const a = f.attributes;
-        const rings = f.geometry?.rings;
-        if (!rings?.length) continue;
-
-        // Convert UTM polygon rings to WGS84
-        const wgsRings: [number, number][][] = rings.map(
-          (ring: number[][]) =>
-            ring.map((coord: number[]) => {
-              const { lat, lon } = utmToLatLon(coord[0], coord[1]);
-              return [lat, lon] as [number, number];
-            })
-        );
-
-        // Compute center from first ring's centroid
-        const firstRing = wgsRings[0];
-        const centerLat = firstRing.reduce((s, c) => s + c[0], 0) / firstRing.length;
-        const centerLon = firstRing.reduce((s, c) => s + c[1], 0) / firstRing.length;
-
-        allFeatures.push({
-          id: a.OBJECTID,
-          name: a.magasinNavn ?? "Ukjent magasin",
-          plantName: a.vannkraftverkNavn ?? null,
-          river: a.elvenavnHierarki ?? null,
-          hrv: a.hoyesteRegulerteVannstand_moh ?? null,
-          lrv: a.lavesteRegulerteVannstand_moh ?? null,
-          volumeMm3: a.volumOppdemt_Mm3 ?? null,
-          areaKm2: a.magasinArealHRV_km2 ?? null,
-          yearBuilt: a.idriftsattAar ?? null,
-          purpose: a.magasinFormal_Liste ?? null,
-          polygon: wgsRings,
-          center: { lat: centerLat, lon: centerLon },
-        });
-      }
-
-      hasMore = !!data.exceededTransferLimit && features.length === pageSize;
-      offset += pageSize;
-
-      // Safety limit
-      if (offset > 5000) break;
     }
 
     return Response.json({
