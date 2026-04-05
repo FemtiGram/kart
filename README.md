@@ -12,42 +12,41 @@ A portfolio project showcasing Norwegian open geodata on interactive maps. Built
 - Click anywhere or search an address to see elevation (m.o.h.) and current weather
 - Smart location resolving: buildings → streets → place names
 - Weather from MET.no with yr.no link
-- Toggle between Kartverket topo and OpenTopoMap terrain
+- Defaults to OpenTopoMap terrain view, toggle to Kartverket topo
 - Keyboard-navigable search dropdown
 
 ### Inntektskart (`/lonn`)
 - Choropleth: median after-tax household income per municipality (2024)
 - Red → Yellow → Green diverging scale
-- Rank, % vs. national median, progress bar
-- Collapsible card on mobile
+- Compact card + expandable sheet with rank, progress bar, % vs. median
 - Data from SSB InntektStruk13
 
 ### Verneområder (`/vern`)
 - Choropleth: protected nature areas per municipality (km²)
-- Breakdown by category: nasjonalpark, naturreservat, landskapsvernområde, andre
-- Collapsible card on mobile
+- Compact card + expandable sheet with category breakdown (nasjonalpark, naturreservat, etc.)
 - Data from SSB table 08936
 
 ### Ladestasjoner (`/lading`)
-- All ~7,000 EV charging stations in Norway
+- All ~15,000 EV charging stations in Norway
 - Data pre-fetched at build time from OpenStreetMap (Overpass API)
+- Marker clustering for smooth performance at all zoom levels
 - Custom ⚡ markers that invert colors on gråtone map
-- Connector types, capacity, directions
+- Compact card + expandable sheet with connector types, capacity, directions
 
 ### Turisthytter (`/hytter`)
 - DNT cabins and mountain huts across Norway
 - Data pre-fetched at build time from OpenStreetMap
+- Marker clustering for smooth performance
 - Color-coded by type: fjellhytte (red), ubetjent (green)
-- Elevation, bed count, season, fee info, weather
-- Links to DNT.no cabin search
-- OSM data disclaimer in info modal
+- Compact card + expandable sheet with elevation, beds, weather, DNT links
 
 ### Energikart (`/energi`)
-- Wind power plants + hydroelectric plants on one map
+- Wind power + hydroelectric plants on one map
 - Data from NVE ArcGIS (Vindkraft2 + Vannkraft1), 1h server cache
-- Blue markers for wind, cyan for hydro, sized by capacity (MW)
-- Filter sheet: toggle wind/hydro types, show/hide small plants (<10 MW)
-- Info card adapts per type: turbines + GWh/year (wind), fall height + river + year built (hydro)
+- Marker clustering, blue for wind, cyan for hydro, sized by capacity (MW)
+- Wind status filters: operational, under construction, approved, rejected
+- Individual wind turbines visible at zoom 12+
+- Compact card + expandable sheet per type (turbines + GWh for wind, fall height + river for hydro)
 
 ### Vindkraft (`/vindkraft`)
 - Standalone wind power map (also accessible independently)
@@ -69,7 +68,12 @@ Warm off-white base aligned with homepage primary `#24374c`.
 | Highlight | teal | AA | Available for interactive elements |
 
 ### Card Components
-All info cards share: `384px · bg-card · rounded-2xl · 1.5px border · shadow-xl`
+All maps use a **compact floating card + expandable bottom Sheet** pattern:
+- **Compact card**: Identity + key metric + "Vis mer" / "Kjør hit" action buttons
+- **Detail sheet**: Full identity, bigger metrics, details (weather/connectors/breakdown), source links
+- Filter and info sheets auto-close each other
+
+Card style: `384px · bg-card · rounded-2xl · 1.5px border · shadow-xl`
 
 Landing page uses glass-morphism cards: `bg-white/10 · backdrop-blur · border-white/20 · rounded-xl`
 
@@ -208,7 +212,7 @@ src/app/
     energy/route.ts     — NVE wind + hydro proxy (1h cache)
 
 src/components/
-  navbar.tsx            — Shared nav with mobile sheet
+  navbar.tsx            — Shared nav with mobile sheet + "Mer" dropdown
   *-map.tsx             — Map components (one per page)
   *-map-loader.tsx      — Dynamic import wrappers (ssr: false)
   ui/                   — shadcn/ui primitives

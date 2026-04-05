@@ -8,9 +8,9 @@ A portfolio project showcasing Norwegian open geodata on interactive maps. Built
 ## Tech Stack
 - **Framework:** Next.js 16.2.1 (Turbopack) — see AGENTS.md for version caveats
 - **React:** 19.2.4
-- **Maps:** Leaflet 1.9.4 + react-leaflet 5.0.0
+- **Maps:** Leaflet 1.9.4 + react-leaflet 5.0.0 + react-leaflet-cluster
 - **Styling:** Tailwind CSS 4 + shadcn/ui (base-ui)
-- **Tiles:** Kartverket WMTS (topo + topograatone)
+- **Tiles:** Kartverket WMTS (topo + topograatone) + OpenTopoMap (terreng)
 - **Icons:** lucide-react
 
 ## Project Structure
@@ -145,7 +145,7 @@ All maps use a **compact floating card + expandable bottom Sheet** pattern:
 |------|--------|-------|
 | Charging stations | OpenStreetMap (Overpass) | Build-time static JSON + client fallback |
 | Cabins | OpenStreetMap (Overpass) | Build-time static JSON + client fallback |
-| Wind power plants | NVE Vindkraftdatabase | 1h server cache via API route |
+| Wind + hydro power | NVE ArcGIS (Vindkraft2 layers 0/1/2/4/8, Vannkraft1 layer 0) | 1h server cache via API route |
 | Income | SSB InntektStruk13 | Loaded once on mount |
 | Protected areas | SSB tabell 08936 | Loaded once on mount |
 | Weather | MET.no locationforecast | 30min server cache |
