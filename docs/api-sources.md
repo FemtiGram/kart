@@ -1,109 +1,171 @@
-# Norwegian Open APIs — Potential Data Sources for MapGram
+# Data Sources — What We Use and What's Available
 
-## What We Already Use
-
-| API | Endpoint | Used In |
-|-----|----------|---------|
-| Kartverket Adresser | `ws.geonorge.no/adresser/v1/` | All maps (address search) |
-| Kartverket Kommuneinfo | `ws.geonorge.no/kommuneinfo/v1/` | Charging, cabin (kommune search) |
-| Kartverket Stedsnavn | `ws.geonorge.no/stedsnavn/v1/` | Elevation (place name fallback) |
-| Kartverket Høydedata | `ws.geonorge.no/hoydedata/v1/` | Elevation map |
-| Kartverket WMTS tiles | `cache.kartverket.no/v1/wmts/` | All maps (topo + gråtone) |
-| Kartverket Kommuner GeoJSON | `/api/kommuner` (our proxy) | Income, protected areas |
-| MET.no Locationforecast | `api.met.no/weatherapi/` | Elevation map (weather) |
-| SSB | Various tables | Income, protected areas |
-| OpenStreetMap Overpass | `overpass-api.de/api/` | Charging, cabins |
-| NVE Vindkraftdatabase | `api.nve.no/web/WindPowerPlant/` | Wind power map |
+Overview of all data sources: what MapGram currently uses, and what remains untapped for future maps.
 
 ---
 
-## Kartverket APIs We DON'T Use Yet
+## Currently Used
 
-### Høydeprofil (Elevation Profile)
-- **Endpoint:** WPS-API via Kartverket
-- **What:** Get elevation profile along a line/route — not just single points
-- **Use case:** Show elevation graph for hiking routes
+### Kartverket (Norwegian Mapping Authority)
+
+| API | Endpoint | Used In | Status |
+|-----|----------|---------|--------|
+| Adresser (address search) | `ws.geonorge.no/adresser/v1/` | All maps | In use |
+| Kommuneinfo | `ws.geonorge.no/kommuneinfo/v1/` | Charging, cabin, energy | In use |
+| Stedsnavn (place names) | `ws.geonorge.no/stedsnavn/v1/` | All marker maps (kommune center) | In use |
+| Høydedata (elevation) | `ws.geonorge.no/hoydedata/v1/` | Elevation map | In use |
+| WMTS tiles (topo + graatone) | `cache.kartverket.no/v1/wmts/` | All maps | In use |
+| Kommune boundaries GeoJSON | Via `/api/kommuner` proxy | Income, protected areas | In use |
+
+### NVE (Norwegian Water Resources and Energy Directorate)
+
+| API | Endpoint / Layer | Used In | Status |
+|-----|-----------------|---------|--------|
+| Vindkraft2 layer 0 | Wind farms — operational | Energikart | In use |
+| Vindkraft2 layer 1 | Wind farms — under construction | Energikart | In use |
+| Vindkraft2 layer 2 | Wind farms — approved | Energikart | In use |
+| Vindkraft2 layer 8 | Wind farms — rejected | Energikart | In use |
+| Vindkraft2 layer 4 | Individual turbines | Energikart (zoom >= 12) | In use |
+| Vannkraft1 layer 0 | Hydro power plants | Energikart | In use |
+| Vannkraft1 layer 6 | Reservoir polygons | Magasinkart | In use |
+| Havvind2023 layer 0 | Offshore wind zones (2023) | Energikart | In use |
+| HydAPI | River discharge, water level | Energikart (hydro detail) | In use (requires NVE_API_KEY) |
+| Magasinstatistikk | National reservoir fill level | Magasinkart | In use |
+
+Full NVE layer catalog: [nve-arcgis-data.md](nve-arcgis-data.md)
+
+### Sodir (Norwegian Offshore Directorate, formerly NPD)
+
+| API | Endpoint / Layer | Used In | Status |
+|-----|-----------------|---------|--------|
+| FactMaps WGS84 layer 307 | All facilities (1200+ platforms, FPSOs, subsea) | Energikart | In use |
+| FactMaps WGS84 layer 311 | Pipelines (82 lines) | Energikart | In use |
+
+**Base URL:** `factmaps.sodir.no/api/rest/services/Factmaps/FactMapsWGS84/MapServer`
+
+### Other
+
+| API | Endpoint | Used In | Status |
+|-----|----------|---------|--------|
+| MET.no Locationforecast | `api.met.no/weatherapi/` | Elevation, cabins | In use |
+| SSB InntektStruk13 | `data.ssb.no/api/v0/` | Inntektskart | In use |
+| SSB tabell 08936 | `data.ssb.no/api/v0/` | Verneområder | In use |
+| OpenStreetMap Overpass | `overpass-api.de/api/` | Charging, cabins (build-time) | In use |
+| OpenTopoMap tiles | `tile.opentopomap.org/` | Elevation map (terreng) | In use |
+| biapi.nve.no | Magasinstatistikk API | Magasinkart | In use |
+
+---
+
+## Not Yet Used — Kartverket
+
+### Hoydeprofil (Elevation Profile)
+- **What:** Elevation profile along a line/route — not just single points
+- **Use case:** Elevation graph for hiking routes
 - **Docs:** https://www.kartverket.no/en/api-and-data/friluftsliv/hoydeprofil
 
-### Friluftsliv — National Hiking Trail Database
-- **What:** Footpaths, ski trails, cycling routes, rowing/paddling routes
-- **Also includes:** Cabins, parking, toilets, viewpoints connected to trails
-- **Format:** WMS/WFS (would need to convert or overlay)
-- **Use case:** New "Turruter" map page — hiking trails with elevation profiles
+### Friluftsliv (Hiking Trail Database)
+- **What:** Footpaths, ski trails, cycling routes, rowing/paddling routes, connected POIs
+- **Format:** WMS/WFS
+- **Use case:** New "Turruter" map — hiking trails with elevation profiles
 - **Docs:** https://www.kartverket.no/en/api-and-data/friluftsliv
 
-### Sjøkart (Nautical Charts)
+### Sjokart (Nautical Charts)
 - **What:** Water depth, coastal features, harbors
-- **Format:** WMS tile layers, S-57/S-100 data
-- **Use case:** Coastal/sailing map page
+- **Format:** WMS tile layers, S-57/S-100
+- **Use case:** Coastal map, could be base layer for offshore maps
 - **Docs:** https://www.kartverket.no/en/at-sea
 
 ### Grensedata (Boundary Data)
 - **What:** County, municipality, country boundaries as GeoJSON
-- **Use case:** We already use kommune boundaries — could add fylke boundaries
+- **Use case:** Fylke-level boundaries, we currently only use kommune
 - **Docs:** https://www.kartverket.no/en/api-and-data/grensedata
-
-### Eiendomsdata (Property Data)
-- **What:** Property boundaries, matrikkel (cadastre) data
-- **Format:** API access
-- **Use case:** Probably not relevant for MapGram
-- **Docs:** https://www.kartverket.no/en/api-and-data/eiendomsdata
 
 ---
 
-## NVE (Norwegian Water Resources & Energy Directorate)
+## Not Yet Used — NVE
 
-### Snøskredvarsel (Avalanche Warnings)
+### Solkraft (Solar Power)
+- **Layers:** Solar installations
+- **Use case:** Could add to Energikart as fifth type
+- **Service:** `Solkraft/MapServer`
+
+### Nettanlegg2/4 (Power Grid)
+- **Layers:** Transmission lines, substations, transformer stations
+- **Use case:** Power grid overlay on energy map
+- **Service:** `Nettanlegg2/MapServer`, `Nettanlegg4/MapServer`
+
+### Snoskredvarsel (Avalanche Warnings)
 - **Endpoint:** `api.nve.no/doc/snoeskredvarsel/`
-- **Format:** REST API, JSON
-- **What:** Avalanche danger ratings by region, danger level 1-5
-- **Use case:** Overlay on cabin/hiking map — show avalanche danger near cabins
-- **Docs:** https://api.nve.no/doc/snoeskredvarsel/
+- **What:** Avalanche danger ratings by region, level 1-5
+- **Use case:** Safety overlay on cabin/hiking map
 
 ### Flomvarsling (Flood Warnings)
 - **Endpoint:** `api.nve.no/doc/flomvarsling/`
-- **Format:** REST API, JSON
 - **What:** Flood danger levels by region
 - **Use case:** Flood risk overlay map
-- **Docs:** https://api.nve.no/doc/flomvarsling/
 
 ### Jordskredvarsling (Landslide Warnings)
 - **Endpoint:** `api.nve.no/doc/jordskredvarsling/`
-- **Format:** REST API, JSON
 - **What:** Landslide danger by region
-- **Docs:** https://api.nve.no/doc/jordskredvarsling/
 
-### Hydrologiske Data
-- **Endpoint:** `api.nve.no/doc/hydrologiske-data/`
-- **What:** Water levels, flow rates in rivers and lakes
-- **Use case:** Could be interesting for outdoor recreation maps
-- **Docs:** https://api.nve.no/doc/hydrologiske-data/
+### Bre1/Bre2 (Glaciers)
+- **Layers:** Glacier outlines, area, change over time
+- **Use case:** Climate/nature map
+- **Service:** `Bre1/MapServer`, `Bre2/MapServer`
+
+### Innsjodatabase2 (Lake Database)
+- **Layers:** All Norwegian lakes with metadata
+- **Service:** `Innsjodatabase2/MapServer`
+
+### Vindressurser (Wind Resources)
+- **Layers:** Wind speed/production raster maps at 50/80/120m height
+- **Service:** `Vindressurser/MapServer`
+- **Use case:** Wind potential overlay on energy map
 
 ---
 
-## Other Interesting Open Sources
+## Not Yet Used — Sodir
 
-### Miljødirektoratet (Environment Agency)
-- Naturbase — protected areas, species data
-- We already use some of this via SSB
+### Discoveries and Fields
+- **Layer 503:** Active discoveries by hydrocarbon type (point/polygon)
+- **Layer 504:** All discoveries by main HC type
+- **Use case:** Show oil/gas discovery areas alongside facilities
 
-### data.norge.no
-- Friluftslivsområder (mapped outdoor recreation areas)
-- Various municipality datasets
+### DataService API
+- **URL:** `factmaps.sodir.no/api/rest/services/DataService/Data/MapServer`
+- **What:** Full tabular data from FactPages — production volumes, well data, licence info
+- **Use case:** Production data on facility cards (barrels/day, Sm3/day)
+
+---
+
+## Not Yet Used — Other Sources
+
+### Miljodirektoratet (Environment Agency)
+- Naturbase — protected areas, species data, habitat maps
+- Some overlap with what we get from SSB
 
 ### Statens Vegvesen (Road Authority)
 - NVDB (Nasjonal Vegdatabank) — road data, speed limits, tunnels
-- Electric charging stations (NOBIL) — better source than OSM for chargers!
-  - **NOBIL API:** Requires API key, but free for non-commercial use
-  - Would solve our charging station data quality issues
+- NOBIL API — official charging station registry (better data than OSM, requires API key)
+
+### data.norge.no
+- Friluftslivsomrader — mapped outdoor recreation areas
+- Various municipality datasets
+
+### Fiskeridirektoratet (Fisheries Directorate)
+- Aquaculture locations — fish farms, shellfish farms
+- Use case: Could be interesting for a coastal/marine map
 
 ---
 
-## Best Candidates for New MapGram Pages
+## Best Candidates for Next Map
 
 1. **Turruter (Hiking Trails)** — Kartverket friluftsliv + elevation profile API
-2. **Snøskred (Avalanche Map)** — NVE avalanche API + cabin overlay
-3. **Sjøkart (Coastal Map)** — Kartverket nautical WMS tiles
-4. **NOBIL Ladestasjoner** — Replace OSM charging data with official NOBIL API (needs API key)
+2. **Snoskred (Avalanche Map)** — NVE avalanche API + cabin overlay
+3. **Sjokart (Coastal Map)** — Kartverket nautical WMS tiles
+4. **Solkraft** — NVE solar data, add to Energikart
+5. **Kraftnett (Power Grid)** — NVE transmission lines, add to Energikart
+6. **Akvakultur (Fish Farms)** — Fiskeridirektoratet, new coastal map
 
-All Kartverket/NVE APIs are free, no API key required, open data under NLOD license.
+All Kartverket and NVE APIs are free, no API key required, open data under NLOD license.
+Sodir data is also free under NLOD. NOBIL requires a free API key.
