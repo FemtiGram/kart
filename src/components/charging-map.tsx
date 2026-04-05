@@ -69,6 +69,7 @@ export function ChargingMap() {
   const [loading, setLoading] = useState(true);
   const [loadingMessage, setLoadingMessage] = useState("Henter ladestasjoner...");
   const [locating, setLocating] = useState(false);
+  const [locateError, setLocateError] = useState(false);
   const [error, setError] = useState(false);
   const [showConnectorInfo, setShowConnectorInfo] = useState(false);
   const [showFilter, setShowFilter] = useState(false);
@@ -235,6 +236,7 @@ export function ChargingMap() {
   const handleLocate = () => {
     if (!navigator.geolocation) return;
     setLocating(true);
+    setLocateError(false);
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         setLocating(false);
@@ -246,7 +248,11 @@ export function ChargingMap() {
           setCenter({ lat: OSLO.lat, lon: OSLO.lon, zoom: OSLO.zoom, _t: Date.now() });
         }
       },
-      () => setLocating(false),
+      () => {
+        setLocating(false);
+        setLocateError(true);
+        setTimeout(() => setLocateError(false), 4000);
+      },
       { timeout: 6000 }
     );
   };
@@ -424,6 +430,11 @@ export function ChargingMap() {
               <Loader2 className="h-4 w-4 animate-spin" />
               Finner posisjon...
             </div>
+          </div>
+        )}
+        {locateError && (
+          <div className="absolute bottom-20 sm:top-3 sm:bottom-auto left-1/2 -translate-x-1/2 z-[1000] bg-background/90 backdrop-blur-sm border rounded-full px-4 py-2 shadow-lg">
+            <p className="text-sm text-muted-foreground">Kunne ikke finne posisjon. Sjekk at du har gitt tilgang i nettleseren.</p>
           </div>
         )}
         {error && (

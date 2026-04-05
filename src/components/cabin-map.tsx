@@ -119,6 +119,7 @@ export function CabinMap() {
   const [cabins, setCabins] = useState<Cabin[]>([]);
   const [loading, setLoading] = useState(true);
   const [locating, setLocating] = useState(false);
+  const [locateError, setLocateError] = useState(false);
   const [error, setError] = useState(false);
   const [selected, setSelected] = useState<Cabin | null>(null);
   const [center, setCenter] = useState<{ lat: number; lon: number; zoom?: number; _t?: number } | null>(null);
@@ -227,6 +228,7 @@ export function CabinMap() {
   const handleLocate = () => {
     if (!navigator.geolocation) return;
     setLocating(true);
+    setLocateError(false);
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         setLocating(false);
@@ -238,7 +240,11 @@ export function CabinMap() {
           setCenter({ lat: 61.5, lon: 8.3, zoom: 9, _t: Date.now() });
         }
       },
-      () => setLocating(false),
+      () => {
+        setLocating(false);
+        setLocateError(true);
+        setTimeout(() => setLocateError(false), 4000);
+      },
       { timeout: 6000 }
     );
   };
@@ -487,6 +493,11 @@ export function CabinMap() {
               <Loader2 className="h-4 w-4 animate-spin" />
               Finner posisjon...
             </div>
+          </div>
+        )}
+        {locateError && (
+          <div className="absolute bottom-20 sm:top-3 sm:bottom-auto left-1/2 -translate-x-1/2 z-[1000] bg-background/90 backdrop-blur-sm border rounded-full px-4 py-2 shadow-lg">
+            <p className="text-sm text-muted-foreground">Kunne ikke finne posisjon. Sjekk at du har gitt tilgang i nettleseren.</p>
           </div>
         )}
         {error && (

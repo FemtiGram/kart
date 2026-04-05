@@ -103,6 +103,7 @@ export function ElevationMap() {
   const [showInfo, setShowInfo] = useState(false);
   const [tileLayer, setTileLayer] = useState<TileLayerKey>("kart");
   const [locating, setLocating] = useState(false);
+  const [locateError, setLocateError] = useState(false);
 
   const [devLog, setDevLog] = useState<DevLogEntry[]>([]);
   const logIdRef = useRef(0);
@@ -199,12 +200,18 @@ export function ElevationMap() {
   const handleLocate = () => {
     if (!navigator.geolocation) return;
     setLocating(true);
+    setLocateError(false);
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         setLocating(false);
         handleMapClick(pos.coords.latitude, pos.coords.longitude);
       },
-      () => setLocating(false)
+      () => {
+        setLocating(false);
+        setLocateError(true);
+        setTimeout(() => setLocateError(false), 4000);
+      },
+      { timeout: 6000 }
     );
   };
 
@@ -420,6 +427,11 @@ export function ElevationMap() {
 
       {/* Map */}
       <div className="relative grow [&_.leaflet-grab]:cursor-pointer [&_.leaflet-dragging_.leaflet-grab]:cursor-grabbing">
+        {locateError && (
+          <div className="absolute bottom-20 sm:top-3 sm:bottom-auto left-1/2 -translate-x-1/2 z-[1000] bg-background/90 backdrop-blur-sm border rounded-full px-4 py-2 shadow-lg">
+            <p className="text-sm text-muted-foreground">Kunne ikke finne posisjon. Sjekk at du har gitt tilgang i nettleseren.</p>
+          </div>
+        )}
         <MapContainer
           center={[65, 14]}
           zoom={5}
