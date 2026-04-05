@@ -442,13 +442,22 @@ export function ReservoirMap() {
                   {selected.plantName ?? selected.river}
                 </p>
               </div>
-              <button
-                onClick={() => { setSelected(null); setShowInfoSheet(false); }}
-                className="shrink-0 p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                aria-label="Lukk"
-              >
-                <X className="h-4 w-4" />
-              </button>
+              <div className="flex items-center gap-1 shrink-0">
+                <button
+                  onClick={() => setShowInfo(true)}
+                  className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                  aria-label="Om data"
+                >
+                  <Info className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={() => { setSelected(null); setShowInfoSheet(false); }}
+                  className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                  aria-label="Lukk"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
             </div>
 
             <div className="mt-3 flex gap-4">
@@ -578,6 +587,32 @@ export function ReservoirMap() {
                 )}
                 {!loadingHydro && hydroData?.station && (hydroData.discharge != null || hydroData.waterLevel != null) && (
                   <div className="mt-4 pt-4 border-t">
+                    {/* Fill level gauge */}
+                    {hydroData.waterLevel != null && selected.hrv != null && selected.lrv != null && selected.hrv > selected.lrv && (() => {
+                      const fillPct = Math.max(0, Math.min(100, ((hydroData.waterLevel - selected.lrv) / (selected.hrv - selected.lrv)) * 100));
+                      const fillLabel = fillPct > 75 ? "Høy" : fillPct > 40 ? "Middels" : "Lav";
+                      const fillBg = fillPct > 75 ? "#0369a1" : fillPct > 40 ? "#0891b2" : "#ca8a04";
+                      return (
+                        <div className="mb-4">
+                          <div className="flex items-center justify-between mb-1.5">
+                            <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Fyllingsgrad</span>
+                            <span className="text-sm font-bold" style={{ color: fillBg }}>{Math.round(fillPct)}% · {fillLabel}</span>
+                          </div>
+                          <div className="relative h-3 w-full rounded-full bg-muted overflow-hidden">
+                            <div
+                              className="absolute inset-y-0 left-0 rounded-full transition-all"
+                              style={{ width: `${fillPct}%`, background: fillBg }}
+                            />
+                          </div>
+                          <div className="flex justify-between mt-0.5 text-[10px] text-muted-foreground">
+                            <span>LRV {selected.lrv} m</span>
+                            <span>{hydroData.waterLevel.toFixed(1)} m</span>
+                            <span>HRV {selected.hrv} m</span>
+                          </div>
+                        </div>
+                      );
+                    })()}
+
                     <div className="flex items-center gap-1.5 mb-3">
                       <Waves className="h-3.5 w-3.5 text-muted-foreground" />
                       <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
@@ -641,7 +676,7 @@ export function ReservoirMap() {
                     <Navigation className="h-4 w-4" /> Kjør hit
                   </a>
                   <p className="text-xs text-muted-foreground text-center">
-                    Kilde: <a href="https://nve.geodataonline.no/arcgis/rest/services/" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">NVE Geodata</a> · Oppdateres hver time
+                    Kilde: <a href="https://nve.geodataonline.no/arcgis/rest/services/" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">NVE Geodata</a> · Vanndata fra <a href="https://hydapi.nve.no" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">NVE HydAPI</a>
                   </p>
                 </div>
               </div>
