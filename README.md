@@ -1,8 +1,18 @@
 # MapGram
 
-A portfolio project showcasing Norwegian open geodata on interactive maps. Built to explore what's possible with free, public data — and to impress during job interviews.
+Interactive maps built entirely on free, open Norwegian data. No API keys, no paid services — just public data from Kartverket, SSB, NVE, MET.no, and OpenStreetMap, visualized on maps that work on any device.
 
-**Live:** Deployed on Vercel, auto-deploys on push to master.
+**What you can explore:**
+- **Where to charge your EV** — every charging station in Norway, with connector types and capacity
+- **Where to find a cabin** — mountain huts and DNT cabins with elevation, weather, and availability
+- **Where the energy comes from** — wind farms and hydroelectric plants, including those under construction or rejected
+- **How much people earn** — median household income per municipality, ranked and color-coded
+- **What nature is protected** — national parks, nature reserves, and conservation areas by municipality
+- **How high you are** — click anywhere for elevation data and live weather
+
+All data updates automatically. The maps use clustering for smooth performance even with 15,000+ markers, and every info card expands into a detail sheet with source links.
+
+**Live:** [maps.andersgram.no](https://maps.andersgram.no) · Auto-deploys on push to master.
 
 ---
 
