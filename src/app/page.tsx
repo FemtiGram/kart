@@ -1,9 +1,9 @@
 import Link from "next/link";
-import { ArrowRight, Mountain, DollarSign, Shield, Zap, Home as HomeIcon, BatteryCharging, Waves } from "lucide-react";
+import { ArrowRight, Mountain, DollarSign, Shield, Zap, Home as HomeIcon, BatteryCharging, Waves, Database, Globe, Code } from "lucide-react";
 
 const featured = {
   title: "Energikart",
-  description: "Norges fornybare kraftverk. Vindkraft og vannkraft med live data fra NVE.",
+  description: "Norges komplette energibilde. Vindkraft, vannkraft, planlagt havvind og over 1200 olje- og gassanlegg med rørledninger — alt på ett kart.",
   href: "/energi",
   icon: BatteryCharging,
 };
@@ -14,25 +14,25 @@ const groups = [
     items: [
       {
         title: "Ladestasjoner",
-        description: "Elbilladestasjoner i Norge. Kontakttyper, kapasitet og veibeskrivelse.",
+        description: "Alle elbilladestasjoner i Norge med kontakttyper, kapasitet og veibeskrivelse.",
         href: "/lading",
         icon: Zap,
       },
       {
         title: "Magasinkart",
-        description: "Regulerte vannmagasiner med sanntids vanndata fra NVE.",
+        description: "Regulerte vannmagasiner med nasjonal fyllingsgrad og polygon-visning.",
         href: "/magasin",
         icon: Waves,
       },
       {
         title: "Turisthytter",
-        description: "DNT-hytter og fjellhytter. Type, høyde over havet og sengeplasser.",
+        description: "DNT-hytter og fjellhytter med sengeplasser, høyde og vær.",
         href: "/hytter",
         icon: HomeIcon,
       },
       {
         title: "Høydekart",
-        description: "Søk etter adresse eller klikk i kartet. Få høyde over havet, værdata og veibeskrivelse.",
+        description: "Klikk hvor som helst for høyde over havet, vær og terrengkart.",
         href: "/map",
         icon: Mountain,
       },
@@ -43,13 +43,13 @@ const groups = [
     items: [
       {
         title: "Inntektskart",
-        description: "Median inntekt etter skatt per husholdning i alle norske kommuner.",
+        description: "Median inntekt etter skatt per husholdning i alle kommuner.",
         href: "/lonn",
         icon: DollarSign,
       },
       {
         title: "Verneområder",
-        description: "Nasjonalparker, naturreservater og andre verneområder på kart.",
+        description: "Nasjonalparker, naturreservater og andre verneområder.",
         href: "/vern",
         icon: Shield,
       },
@@ -124,6 +124,55 @@ export default function Home() {
               </div>
             </div>
           ))}
+        </div>
+
+        {/* About section */}
+        <div className="mt-16 pt-12 border-t">
+          <h2 className="text-2xl font-extrabold tracking-tight" style={{ color: "#24374c" }}>Om prosjektet</h2>
+          <p className="mt-3 text-muted-foreground leading-relaxed max-w-2xl">
+            MapGram er et prosjekt der jeg utforsker hva som er mulig med åpne norske geodata. Alle kartene er bygget
+            utelukkende på gratis, offentlige datakilder — uten betalte API-er eller autentisering.
+          </p>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-8">
+            <div className="flex gap-3">
+              <div className="flex items-center justify-center h-9 w-9 rounded-lg shrink-0" style={{ background: "#24374c" }}>
+                <Database className="h-4 w-4 text-white" />
+              </div>
+              <div>
+                <p className="font-semibold text-sm">7 datakilder</p>
+                <p className="text-xs text-muted-foreground leading-relaxed mt-0.5">
+                  NVE, Sodir, SSB, Kartverket, MET.no, Geonorge og OpenStreetMap
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <div className="flex items-center justify-center h-9 w-9 rounded-lg shrink-0" style={{ background: "#24374c" }}>
+                <Globe className="h-4 w-4 text-white" />
+              </div>
+              <div>
+                <p className="font-semibold text-sm">7 interaktive kart</p>
+                <p className="text-xs text-muted-foreground leading-relaxed mt-0.5">
+                  Energi, lading, magasin, hytter, høyde, inntekt og verneområder
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <div className="flex items-center justify-center h-9 w-9 rounded-lg shrink-0" style={{ background: "#24374c" }}>
+                <Code className="h-4 w-4 text-white" />
+              </div>
+              <div>
+                <p className="font-semibold text-sm">Åpen kildekode</p>
+                <p className="text-xs text-muted-foreground leading-relaxed mt-0.5">
+                  Next.js, React, Leaflet og Tailwind. Hostet på Vercel.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <p className="text-xs text-muted-foreground mt-8">
+            Laget av Anders Gram Meldgaard.
+          </p>
         </div>
       </div>
     </div>
