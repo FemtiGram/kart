@@ -2,10 +2,10 @@ import Link from "next/link";
 import { ArrowRight, Mountain, DollarSign, Shield, Zap, Home as HomeIcon, BatteryCharging, Waves } from "lucide-react";
 
 const featured = {
-  title: "Høydekart",
-  description: "Søk etter adresse eller klikk i kartet. Få høyde over havet, værdata og veibeskrivelse.",
-  href: "/map",
-  icon: Mountain,
+  title: "Energikart",
+  description: "Norges fornybare kraftverk. Vindkraft og vannkraft med live data fra NVE.",
+  href: "/energi",
+  icon: BatteryCharging,
 };
 
 const groups = [
@@ -13,10 +13,10 @@ const groups = [
     label: "Utforsk",
     items: [
       {
-        title: "Energikart",
-        description: "Norges fornybare kraftverk. Vindkraft og vannkraft på kart.",
-        href: "/energi",
-        icon: BatteryCharging,
+        title: "Ladestasjoner",
+        description: "Elbilladestasjoner i Norge. Kontakttyper, kapasitet og veibeskrivelse.",
+        href: "/lading",
+        icon: Zap,
       },
       {
         title: "Magasinkart",
@@ -25,16 +25,16 @@ const groups = [
         icon: Waves,
       },
       {
-        title: "Ladestasjoner",
-        description: "Elbilladestasjoner i Norge. Kontakttyper, kapasitet og veibeskrivelse.",
-        href: "/lading",
-        icon: Zap,
-      },
-      {
         title: "Turisthytter",
         description: "DNT-hytter og fjellhytter. Type, høyde over havet og sengeplasser.",
         href: "/hytter",
         icon: HomeIcon,
+      },
+      {
+        title: "Høydekart",
+        description: "Søk etter adresse eller klikk i kartet. Få høyde over havet, værdata og veibeskrivelse.",
+        href: "/map",
+        icon: Mountain,
       },
     ],
   },
