@@ -381,7 +381,7 @@ export function CabinMap() {
                   </Button>
                 }
               />
-              <SheetContent side="bottom" className="rounded-t-2xl max-h-[70svh]">
+              <SheetContent side="bottom" className="rounded-t-2xl max-h-[70svh] overflow-y-auto">
                 <div className="mx-auto w-full max-w-md px-2">
                   <SheetHeader>
                     <SheetTitle className="text-left">Filtrer hytter</SheetTitle>

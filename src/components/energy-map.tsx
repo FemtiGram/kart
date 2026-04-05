@@ -267,6 +267,7 @@ export function EnergyMap() {
   const [oilGasFacilities, setOilGasFacilities] = useState<OilGasFacility[]>([]);
   const [pipelines, setPipelines] = useState<Pipeline[]>([]);
   const [selectedOilGas, setSelectedOilGas] = useState<OilGasFacility | null>(null);
+  const [selectedPipeline, setSelectedPipeline] = useState<Pipeline | null>(null);
   const [zoomLevel, setZoomLevel] = useState(5);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -601,7 +602,7 @@ export function EnergyMap() {
                   </Button>
                 }
               />
-              <SheetContent side="bottom" className="rounded-t-2xl max-h-[70svh]">
+              <SheetContent side="bottom" className="rounded-t-2xl max-h-[70svh] overflow-y-auto">
                 <div className="mx-auto w-full max-w-md px-2">
                   <SheetHeader>
                     <SheetTitle className="text-left">Filtrer energikilder</SheetTitle>
@@ -948,6 +949,12 @@ export function EnergyMap() {
                 weight: Math.max(1.5, Math.min(3, (p.dimension ?? 20) / 15)),
                 opacity: 0.6,
                 dashArray: p.phase === "DECOMMISSIONED" ? "6 4" : undefined,
+              }}
+              eventHandlers={{
+                click() {
+                  setSelectedPipeline(p);
+                  setShowInfo(true);
+                },
               }}
             />
           ))}
@@ -1515,58 +1522,119 @@ export function EnergyMap() {
       {showInfo && (
         <div
           className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/40 px-4"
-          onClick={() => setShowInfo(false)}
+          onClick={() => { setShowInfo(false); setSelectedPipeline(null); }}
         >
           <div
-            className="bg-background rounded-2xl shadow-xl border w-full max-w-sm p-5"
+            className="bg-background rounded-2xl shadow-xl border w-full max-w-sm p-5 max-h-[85svh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-4">
-              <h2 className="font-bold text-base">Om energidata</h2>
+              <h2 className="font-bold text-base">{selectedPipeline ? "Rørledning" : "Om energidata"}</h2>
               <button
-                onClick={() => setShowInfo(false)}
+                onClick={() => { setShowInfo(false); setSelectedPipeline(null); }}
                 className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
                 aria-label="Lukk"
               >
                 <X className="h-4 w-4" />
               </button>
             </div>
-            <div className="flex flex-col gap-3 text-sm">
-              <p>
-                Kartet viser fornybare kraftverk i Norge — vindkraft
-                og vannkraft. Data hentes fra{" "}
-                <strong>NVE</strong> (Norges vassdrags- og
-                energidirektorat).
-              </p>
-              <p>
-                <strong>MW (megawatt)</strong> er installert kapasitet.
-                Kraftverk under {MW_THRESHOLD} MW er skjult som standard — bruk filteret for å vise alle.
-              </p>
-              <p>
-                Norge har over 1700 vannkraftverk som dekker ~90% av
-                landets strømproduksjon, pluss et voksende antall
-                vindkraftverk. Kartet viser også utredningsområder for <strong>havvind</strong> og over 1200 <strong>olje- og gassanlegg</strong> på norsk sokkel.
-              </p>
-              <p className="text-xs text-muted-foreground">
-                Data oppdateres hver time. Kilde:{" "}
-                <a
-                  href="https://nve.geodataonline.no/arcgis/rest/services/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="underline hover:text-foreground"
-                >
-                  NVE Geodata
-                </a>{" · "}
-                <a
-                  href="https://www.sodir.no/en/facts/data-and-analyses/open-data/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="underline hover:text-foreground"
-                >
-                  Sodir
-                </a>
-              </p>
-            </div>
+
+            {selectedPipeline ? (
+              <div className="flex flex-col gap-4 text-sm">
+                {/* Pipeline detail */}
+                <div>
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <span className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full text-white" style={{ background: selectedPipeline.medium === "Gas" ? "#ca8a04" : OILGAS_COLOR }}>
+                      {selectedPipeline.medium ?? "Ukjent"}
+                    </span>
+                    {selectedPipeline.phase && (
+                      <span className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">
+                        {selectedPipeline.phase === "IN SERVICE" ? "I drift" : selectedPipeline.phase === "DECOMMISSIONED" ? "Nedlagt" : selectedPipeline.phase}
+                      </span>
+                    )}
+                  </div>
+                  <p className="font-bold text-base leading-snug mt-1">{selectedPipeline.name}</p>
+                </div>
+
+                <div className="flex flex-col gap-2 pt-3 border-t">
+                  {selectedPipeline.fromFacility && (
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">Fra</span>
+                      <span className="font-medium">{selectedPipeline.fromFacility}</span>
+                    </div>
+                  )}
+                  {selectedPipeline.toFacility && (
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">Til</span>
+                      <span className="font-medium">{selectedPipeline.toFacility}</span>
+                    </div>
+                  )}
+                  {selectedPipeline.dimension != null && (
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">Diameter</span>
+                      <span className="font-medium">{selectedPipeline.dimension}" ({Math.round(selectedPipeline.dimension * 25.4)} mm)</span>
+                    </div>
+                  )}
+                  {selectedPipeline.belongsTo && (
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">System</span>
+                      <span className="font-medium">{selectedPipeline.belongsTo}</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* General pipeline legend */}
+                <div className="pt-3 border-t">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Fargeforklaring</p>
+                  <div className="flex flex-col gap-1.5">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-0.5 rounded-full" style={{ background: OILGAS_COLOR }} />
+                      <span className="text-xs text-muted-foreground">Oljerørledning</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-0.5 rounded-full" style={{ background: "#facc15" }} />
+                      <span className="text-xs text-muted-foreground">Gassrørledning</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-0.5 rounded-full bg-neutral-400" />
+                      <span className="text-xs text-muted-foreground">Annet (vann, kjemikalier etc.)</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-0.5 rounded-full border border-dashed border-neutral-400" />
+                      <span className="text-xs text-muted-foreground">Nedlagt</span>
+                    </div>
+                  </div>
+                </div>
+
+                <p className="text-xs text-muted-foreground pt-2 border-t">
+                  Kilde: <a href="https://www.sodir.no/en/facts/data-and-analyses/open-data/" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Sokkeldirektoratet (Sodir)</a>
+                </p>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-3 text-sm">
+                <p>
+                  Kartet viser Norges energiinfrastruktur — fornybar og fossil — med data fra{" "}
+                  <strong>NVE</strong> og <strong>Sodir</strong>.
+                </p>
+                <div className="bg-muted/50 rounded-xl p-3">
+                  <p className="font-semibold mb-1">Vindkraft og vannkraft</p>
+                  <p className="text-muted-foreground">Over 1700 vannkraftverk og et voksende antall vindkraftverk. <strong>MW</strong> er installert kapasitet. Kraftverk under {MW_THRESHOLD} MW er skjult som standard.</p>
+                </div>
+                <div className="bg-muted/50 rounded-xl p-3">
+                  <p className="font-semibold mb-1">Havvind (planlagt)</p>
+                  <p className="text-muted-foreground">20 utredningsområder for offshore vindkraft. Disse er ikke bygget ennå — kun planlagte soner fra NVEs 2023-utredning.</p>
+                </div>
+                <div className="bg-muted/50 rounded-xl p-3">
+                  <p className="font-semibold mb-1">Olje og gass</p>
+                  <p className="text-muted-foreground">Over 1200 anlegg på norsk sokkel — plattformer, FPSO-er, undervannsinstallasjoner. Rørledninger vises ved innzooming og kan klikkes for detaljer.</p>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Data oppdateres hver time. Kilde:{" "}
+                  <a href="https://nve.geodataonline.no/arcgis/rest/services/" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">NVE Geodata</a>{" · "}
+                  <a href="https://www.sodir.no/en/facts/data-and-analyses/open-data/" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Sodir</a>
+                </p>
+              </div>
+            )}
           </div>
         </div>
       )}
