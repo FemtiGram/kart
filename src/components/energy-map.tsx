@@ -22,6 +22,8 @@ import {
   RotateCw,
   SlidersHorizontal,
   Check,
+  ChevronUp,
+  Navigation,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -178,6 +180,7 @@ export function EnergyMap() {
   const [locateError, setLocateError] = useState(false);
   const [showInfo, setShowInfo] = useState(false);
   const [showFilter, setShowFilter] = useState(false);
+  const [showInfoSheet, setShowInfoSheet] = useState(false);
   const [filterTypes, setFilterTypes] = useState<Set<EnergyType>>(new Set(["vind", "vann"]));
   const [filterWindStatus, setFilterWindStatus] = useState<Set<WindStatus>>(new Set(["operational"]));
   const [showSmall, setShowSmall] = useState(false);
@@ -438,7 +441,7 @@ export function EnergyMap() {
                 className="flex-1 bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground text-[16px] sm:text-sm"
               />
             </div>
-            <Sheet open={showFilter} onOpenChange={setShowFilter}>
+            <Sheet open={showFilter} onOpenChange={(open) => { setShowFilter(open); if (open) setShowInfoSheet(false); }}>
               <SheetTrigger
                 render={
                   <Button variant="secondary" size="lg" className="relative shadow-lg shrink-0">
@@ -743,15 +746,16 @@ export function EnergyMap() {
           ))}
         </div>
 
-        {/* Info card */}
-        {selected && (
+        {/* Compact info card */}
+        {selected && !showInfoSheet && (
           <div
             className="absolute bottom-4 left-3 right-3 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 sm:w-96 z-[999] bg-card rounded-2xl shadow-xl px-4 py-4"
             style={{ border: "1.5px solid var(--border)" }}
           >
-            <div className="flex items-start justify-between gap-2 mb-3">
+            {/* Layer 1 — Identity */}
+            <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
-                <div className="flex items-center gap-2 mb-0.5">
+                <div className="flex items-center gap-1.5 mb-0.5">
                   <span
                     className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full text-white"
                     style={{ background: selected.type === "vind" && selected.windStatus ? WIND_STATUS_META[selected.windStatus].color : TYPE_META[selected.type].color }}
@@ -767,30 +771,10 @@ export function EnergyMap() {
                     </span>
                   )}
                 </div>
-                <p className="font-bold text-base truncate leading-snug">
-                  {selected.name}
+                <p className="font-bold text-base truncate leading-snug">{selected.name}</p>
+                <p className="text-xs text-muted-foreground truncate">
+                  {[selected.owner !== selected.name ? selected.owner : null, selected.municipality].filter(Boolean).join(" · ")}
                 </p>
-                {selected.owner &&
-                  selected.owner !== selected.name && (
-                    <p className="text-xs text-muted-foreground truncate">
-                      {selected.owner}
-                    </p>
-                  )}
-                {(selected.municipality || selected.county) && (
-                  <p className="text-sm text-muted-foreground truncate mt-0.5">
-                    {[selected.municipality, selected.county]
-                      .filter(Boolean)
-                      .join(", ")}
-                  </p>
-                )}
-                <a
-                  href={`https://www.google.com/maps/dir/?api=1&destination=${selected.lat},${selected.lon}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border mt-2 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors w-fit"
-                >
-                  <ExternalLink className="h-3 w-3" /> Veibeskrivelse
-                </a>
               </div>
               <button
                 onClick={() => setSelected(null)}
@@ -801,42 +785,154 @@ export function EnergyMap() {
               </button>
             </div>
 
-            <div className="border-t pt-3">
-              <div className={`grid gap-3 ${selected.type === "vind" ? "grid-cols-3" : "grid-cols-2"}`}>
-                <div>
-                  <span className="text-2xl font-extrabold" style={{ color: TYPE_META[selected.type].color }}>
-                    {selected.capacityMW != null ? Math.round(selected.capacityMW) : "—"}
-                  </span>
-                  <p className="text-xs text-muted-foreground">MW</p>
-                </div>
-                {selected.type === "vind" && (
-                  <div>
-                    <span className="text-2xl font-extrabold" style={{ color: TYPE_META[selected.type].color }}>
-                      {selected.turbineCount ?? "—"}
-                    </span>
-                    <p className="text-xs text-muted-foreground">turbiner</p>
-                  </div>
-                )}
-                <div>
-                  <span className="text-2xl font-extrabold" style={{ color: TYPE_META[selected.type].color }}>
-                    {selected.type === "vind"
-                      ? (selected.productionGWh != null ? Math.round(selected.productionGWh) : "—")
-                      : (selected.fallHeight != null ? Math.round(selected.fallHeight) : "—")}
-                  </span>
-                  <p className="text-xs text-muted-foreground">
-                    {selected.type === "vind" ? "GWh/år" : "m fallhøyde"}
-                  </p>
-                </div>
+            {/* Layer 2 — Key metrics */}
+            <div className={`grid gap-3 mt-3 ${selected.type === "vind" ? "grid-cols-3" : "grid-cols-2"}`}>
+              <div>
+                <span className="text-2xl font-extrabold" style={{ color: TYPE_META[selected.type].color }}>
+                  {selected.capacityMW != null ? Math.round(selected.capacityMW) : "—"}
+                </span>
+                <p className="text-xs text-muted-foreground">MW</p>
               </div>
-              {selected.type === "vann" && selected.river && (
-                <p className="text-xs text-muted-foreground mt-2">Elv: {selected.river}</p>
+              {selected.type === "vind" && (
+                <div>
+                  <span className="text-2xl font-extrabold" style={{ color: TYPE_META[selected.type].color }}>
+                    {selected.turbineCount ?? "—"}
+                  </span>
+                  <p className="text-xs text-muted-foreground">turbiner</p>
+                </div>
               )}
-              {selected.type === "vann" && selected.yearBuilt && (
-                <p className="text-xs text-muted-foreground mt-1">Idriftsatt: {selected.yearBuilt}</p>
-              )}
+              <div>
+                <span className="text-2xl font-extrabold" style={{ color: TYPE_META[selected.type].color }}>
+                  {selected.type === "vind"
+                    ? (selected.productionGWh != null ? Math.round(selected.productionGWh) : "—")
+                    : (selected.fallHeight != null ? Math.round(selected.fallHeight) : "—")}
+                </span>
+                <p className="text-xs text-muted-foreground">
+                  {selected.type === "vind" ? "GWh/år" : "m fallhøyde"}
+                </p>
+              </div>
+            </div>
+
+            {/* Action row */}
+            <div className="flex gap-2 mt-3">
+              <button
+                onClick={() => { setShowInfoSheet(true); setShowFilter(false); }}
+                className="flex-1 inline-flex items-center justify-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl border bg-muted/50 hover:bg-muted transition-colors"
+              >
+                <ChevronUp className="h-3.5 w-3.5" /> Vis mer
+              </button>
+              <a
+                href={`https://www.google.com/maps/dir/?api=1&destination=${selected.lat},${selected.lon}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 inline-flex items-center justify-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl border bg-muted/50 hover:bg-muted transition-colors"
+              >
+                <Navigation className="h-3.5 w-3.5" /> Kjør hit
+              </a>
             </div>
           </div>
         )}
+
+        {/* Info detail sheet */}
+        <Sheet open={showInfoSheet && !!selected} onOpenChange={(open) => { setShowInfoSheet(open); if (!open) { /* keep selected so compact card reappears */ } }}>
+          <SheetContent side="bottom" className="rounded-t-2xl max-h-[85svh] overflow-y-auto">
+            {selected && (
+              <div className="mx-auto w-full max-w-md px-2">
+                <SheetHeader>
+                  <SheetTitle className="text-left sr-only">{selected.name}</SheetTitle>
+                </SheetHeader>
+
+                {/* Layer 1 — Identity */}
+                <div className="flex items-center gap-1.5 mb-1">
+                  <span
+                    className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full text-white"
+                    style={{ background: selected.type === "vind" && selected.windStatus ? WIND_STATUS_META[selected.windStatus].color : TYPE_META[selected.type].color }}
+                  >
+                    {TYPE_META[selected.type].label}
+                  </span>
+                  {selected.windStatus && selected.windStatus !== "operational" && (
+                    <span
+                      className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full text-white"
+                      style={{ background: WIND_STATUS_META[selected.windStatus].color }}
+                    >
+                      {WIND_STATUS_META[selected.windStatus].label}
+                    </span>
+                  )}
+                </div>
+                <p className="font-bold text-lg leading-snug">{selected.name}</p>
+                {selected.owner && selected.owner !== selected.name && (
+                  <p className="text-sm text-muted-foreground">{selected.owner}</p>
+                )}
+                {(selected.municipality || selected.county) && (
+                  <p className="text-sm text-muted-foreground">
+                    {[selected.municipality, selected.county].filter(Boolean).join(", ")}
+                  </p>
+                )}
+
+                {/* Layer 2 — Key metrics */}
+                <div className={`grid gap-4 mt-4 pt-4 border-t ${selected.type === "vind" ? "grid-cols-3" : "grid-cols-2"}`}>
+                  <div>
+                    <span className="text-3xl font-extrabold" style={{ color: TYPE_META[selected.type].color }}>
+                      {selected.capacityMW != null ? Math.round(selected.capacityMW) : "—"}
+                    </span>
+                    <p className="text-xs text-muted-foreground">MW kapasitet</p>
+                  </div>
+                  {selected.type === "vind" && (
+                    <div>
+                      <span className="text-3xl font-extrabold" style={{ color: TYPE_META[selected.type].color }}>
+                        {selected.turbineCount ?? "—"}
+                      </span>
+                      <p className="text-xs text-muted-foreground">turbiner</p>
+                    </div>
+                  )}
+                  <div>
+                    <span className="text-3xl font-extrabold" style={{ color: TYPE_META[selected.type].color }}>
+                      {selected.type === "vind"
+                        ? (selected.productionGWh != null ? Math.round(selected.productionGWh) : "—")
+                        : (selected.fallHeight != null ? Math.round(selected.fallHeight) : "—")}
+                    </span>
+                    <p className="text-xs text-muted-foreground">
+                      {selected.type === "vind" ? "GWh/år" : "m fallhøyde"}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Layer 3 — Details */}
+                {(selected.type === "vann" && (selected.river || selected.yearBuilt)) && (
+                  <div className="mt-4 pt-4 border-t flex flex-col gap-2">
+                    {selected.river && (
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">Elv</span>
+                        <span className="font-medium">{selected.river}</span>
+                      </div>
+                    )}
+                    {selected.yearBuilt && (
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">Idriftsatt</span>
+                        <span className="font-medium">{selected.yearBuilt}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Layer 4 — Links & source */}
+                <div className="mt-4 pt-4 border-t flex flex-col gap-3">
+                  <a
+                    href={`https://www.google.com/maps/dir/?api=1&destination=${selected.lat},${selected.lon}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center justify-center gap-2 text-sm font-semibold px-4 py-2.5 rounded-xl border bg-muted/50 hover:bg-muted transition-colors w-full"
+                  >
+                    <Navigation className="h-4 w-4" /> Kjør hit
+                  </a>
+                  <p className="text-xs text-muted-foreground text-center">
+                    Kilde: <a href="https://nve.geodataonline.no/arcgis/rest/services/" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">NVE Geodata</a> · Oppdateres hver time
+                  </p>
+                </div>
+              </div>
+            )}
+          </SheetContent>
+        </Sheet>
       </div>
 
       {/* Info modal */}
