@@ -111,6 +111,7 @@ export function ReservoirMap() {
   const [showInfo, setShowInfo] = useState(false);
   const [showInfoSheet, setShowInfoSheet] = useState(false);
   const [selected, setSelected] = useState<Reservoir | null>(null);
+  const [nationalFill, setNationalFill] = useState<{ fyllingsgrad: number; kapasitet_TWh: number; fylling_TWh: number; iso_uke: number; endring: number } | null>(null);
   const [center, setCenter] = useState<{ lat: number; lon: number; zoom?: number; _t?: number } | null>(null);
   const [tileLayer, setTileLayer] = useState<TileLayerKey>("gråtone");
   const [zoomLevel, setZoomLevel] = useState(5);
@@ -135,6 +136,7 @@ export function ReservoirMap() {
         return;
       }
       setReservoirs(data.reservoirs);
+      setNationalFill(data.nationalFill ?? null);
       setLoading(false);
     } catch {
       setError(true);
@@ -533,6 +535,35 @@ export function ReservoirMap() {
                     </div>
                   )}
                 </div>
+
+                {/* National fill level */}
+                {nationalFill && (
+                  <div className="mt-4 pt-4 border-t">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Norges magasiner · uke {nationalFill.iso_uke}</span>
+                      <span className="text-sm font-bold" style={{ color: nationalFill.fyllingsgrad > 0.5 ? "#0369a1" : nationalFill.fyllingsgrad > 0.3 ? "#ca8a04" : "#dc2626" }}>
+                        {(nationalFill.fyllingsgrad * 100).toFixed(1)}%
+                        {nationalFill.endring !== 0 && (
+                          <span className="text-xs font-normal ml-1" style={{ color: nationalFill.endring > 0 ? "#16a34a" : "#dc2626" }}>
+                            {nationalFill.endring > 0 ? "▲" : "▼"} {Math.abs(nationalFill.endring * 100).toFixed(1)}%
+                          </span>
+                        )}
+                      </span>
+                    </div>
+                    <div className="relative h-3 w-full rounded-full bg-muted overflow-hidden">
+                      <div
+                        className="absolute inset-y-0 left-0 rounded-full"
+                        style={{
+                          width: `${nationalFill.fyllingsgrad * 100}%`,
+                          background: nationalFill.fyllingsgrad > 0.5 ? "#0369a1" : nationalFill.fyllingsgrad > 0.3 ? "#ca8a04" : "#dc2626",
+                        }}
+                      />
+                    </div>
+                    <p className="text-[10px] text-muted-foreground mt-1">
+                      {nationalFill.fylling_TWh.toFixed(1)} av {nationalFill.kapasitet_TWh.toFixed(1)} TWh
+                    </p>
+                  </div>
+                )}
 
                 {/* Layer 4 — Links & source */}
                 <div className="mt-4 pt-4 border-t flex flex-col gap-3">

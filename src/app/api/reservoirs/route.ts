@@ -80,9 +80,36 @@ export async function GET() {
       });
     }
 
+    // Fetch national fill level from Magasinstatistikk (public, no key needed)
+    let nationalFill: { fyllingsgrad: number; kapasitet_TWh: number; fylling_TWh: number; iso_uke: number; endring: number } | null = null;
+    try {
+      const fillRes = await fetch(
+        "https://biapi.nve.no/magasinstatistikk/api/Magasinstatistikk/HentOffentligData",
+        { headers: { accept: "application/json" }, signal: AbortSignal.timeout(5000), next: { revalidate: 3600 } }
+      );
+      if (fillRes.ok) {
+        const fillData = await fillRes.json();
+        // Find latest national entry (omrnr=0)
+        const national = fillData
+          .filter((r: { omrnr: number }) => r.omrnr === 0)
+          .sort((a: { dato_Id: string }, b: { dato_Id: string }) => b.dato_Id.localeCompare(a.dato_Id));
+        if (national.length > 0) {
+          const latest = national[0];
+          nationalFill = {
+            fyllingsgrad: latest.fyllingsgrad,
+            kapasitet_TWh: latest.kapasitet_TWh,
+            fylling_TWh: latest.fylling_TWh,
+            iso_uke: latest.iso_uke,
+            endring: latest.endring_fyllingsgrad,
+          };
+        }
+      }
+    } catch { /* non-critical */ }
+
     return Response.json({
       reservoirs: allFeatures,
       count: allFeatures.length,
+      nationalFill,
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
