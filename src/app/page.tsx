@@ -26,7 +26,7 @@ const groups = [
       },
       {
         title: "Ladestasjoner",
-        description: "Elbilladestasjoner i Norge. Kontakttyper, kapasitet og veibeskrivelse.",
+        description: "Elbilladestasjoner i Norge og Sverige. Kontakttyper, kapasitet og veibeskrivelse.",
         href: "/lading",
         icon: Zap,
       },

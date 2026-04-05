@@ -7,7 +7,8 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "react-leaflet-cluster/dist/assets/MarkerCluster.css";
 import "react-leaflet-cluster/dist/assets/MarkerCluster.Default.css";
-import { Loader2, X, Zap, LocateFixed, ExternalLink, Search, MapPin, Info, Map as MapIcon, Layers, RotateCw, SlidersHorizontal, Check, ChevronUp, Navigation } from "lucide-react";
+import { Loader2, X, Zap, LocateFixed, ExternalLink, Search, MapPin, Info, Map as MapIcon, Layers, RotateCw, SlidersHorizontal, Check, ChevronUp, Navigation, ArrowRight } from "lucide-react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { FYLKER, isInNorway, OSLO } from "@/lib/fylker";
@@ -24,6 +25,27 @@ interface Station {
   connectors: string[];
   address: string | null;
 }
+
+export type ChargingRegion = "no" | "se";
+
+const REGION_CONFIG = {
+  no: {
+    center: [65, 14] as [number, number],
+    zoom: 5,
+    countryLabel: "i Norge",
+    placeholder: "Søk etter adresse eller sted...",
+    fallback: { lat: 59.91, lon: 10.75, zoom: 12, name: "Oslo" },
+    filter: null as null, // show all
+  },
+  se: {
+    center: [62, 16] as [number, number],
+    zoom: 5,
+    countryLabel: "i Sverige",
+    placeholder: "Søk etter sted i Sverige...",
+    fallback: { lat: 59.33, lon: 18.07, zoom: 12, name: "Stockholm" },
+    filter: (s: Station) => s.lat >= 55.3 && s.lat <= 69.1 && s.lon >= 11.0 && s.lon <= 24.2,
+  },
+} as const;
 
 const TILE_LAYERS = {
   kart: {
@@ -71,7 +93,8 @@ function PanToSelected({ station }: { station: Station | null }) {
   return null;
 }
 
-export function ChargingMap() {
+export function ChargingMap({ region = "no" }: { region?: ChargingRegion }) {
+  const config = REGION_CONFIG[region];
   const [stations, setStations] = useState<Station[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMessage, setLoadingMessage] = useState("Henter ladestasjoner...");
@@ -245,20 +268,21 @@ export function ChargingMap() {
     if (!navigator.geolocation) return;
     setLocating(true);
     setLocateError(false);
+    const fb = config.fallback;
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         setLocating(false);
         setSelected(null);
         const { latitude: lat, longitude: lon } = pos.coords;
-        if (isInNorway(lat, lon)) {
+        if (region === "no" ? isInNorway(lat, lon) : (lat >= 55.3 && lat <= 69.1 && lon >= 11.0 && lon <= 24.2)) {
           setCenter({ lat, lon, zoom: 12, _t: Date.now() });
         } else {
-          setCenter({ lat: OSLO.lat, lon: OSLO.lon, zoom: OSLO.zoom, _t: Date.now() });
+          setCenter({ lat: fb.lat, lon: fb.lon, zoom: fb.zoom, _t: Date.now() });
         }
       },
       () => {
         setLocating(false);
-        setCenter({ lat: OSLO.lat, lon: OSLO.lon, zoom: OSLO.zoom, _t: Date.now() });
+        setCenter({ lat: fb.lat, lon: fb.lon, zoom: fb.zoom, _t: Date.now() });
         setLocateError(true);
         setTimeout(() => setLocateError(false), 4000);
       },
@@ -266,17 +290,22 @@ export function ChargingMap() {
     );
   };
 
+  const regionStations = useMemo(() => {
+    if (!config.filter) return stations;
+    return stations.filter(config.filter);
+  }, [stations, config]);
+
   // All unique connector types across loaded stations
   const allConnectors = useMemo(() => {
     const set = new Set<string>();
-    stations.forEach((s) => s.connectors.forEach((c) => set.add(c)));
+    regionStations.forEach((s) => s.connectors.forEach((c) => set.add(c)));
     return [...set].sort();
-  }, [stations]);
+  }, [regionStations]);
 
   const filteredStations = useMemo(() => {
-    if (filterConnectors.size === 0) return stations;
-    return stations.filter((s) => s.connectors.some((c) => filterConnectors.has(c)));
-  }, [stations, filterConnectors]);
+    if (filterConnectors.size === 0) return regionStations;
+    return regionStations.filter((s) => s.connectors.some((c) => filterConnectors.has(c)));
+  }, [regionStations, filterConnectors]);
 
   const activeFilterCount = filterConnectors.size;
 
@@ -307,7 +336,7 @@ export function ChargingMap() {
                 onFocus={() => suggestions.length > 0 && setShowDropdown(true)}
                 onBlur={() => setTimeout(() => setShowDropdown(false), 150)}
                 onKeyDown={handleKeyDown}
-                placeholder="Søk etter adresse eller sted..."
+                placeholder={config.placeholder}
                 className="flex-1 bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground text-[16px] sm:text-sm"
               />
             </div>
@@ -335,7 +364,7 @@ export function ChargingMap() {
                       <div className="rounded-xl border overflow-hidden">
                         {allConnectors.map((c) => {
                           const active = filterConnectors.has(c);
-                          const count = stations.filter((s) => s.connectors.includes(c)).length;
+                          const count = regionStations.filter((s) => s.connectors.includes(c)).length;
                           return (
                             <button
                               key={c}
@@ -407,17 +436,15 @@ export function ChargingMap() {
         </div>
         <div className="flex items-center justify-between mt-2">
           <p className="text-xs text-muted-foreground">
-            {loading ? loadingMessage : stations.length > 0 ? `${filteredStations.length}${filterConnectors.size > 0 ? ` av ${stations.length}` : ""} ladestasjoner${stations.length > 1000 ? " i Norge" : " i nærheten"} — Kilde: OpenStreetMap` : "Ingen ladestasjoner funnet"}
+            {loading ? loadingMessage : regionStations.length > 0 ? `${filteredStations.length}${filterConnectors.size > 0 ? ` av ${regionStations.length}` : ""} ladestasjoner ${config.countryLabel} — Kilde: OpenStreetMap` : "Ingen ladestasjoner funnet"}
           </p>
-          <button
-            disabled
-            title="Krever sanntidsdata — kommer snart"
-            className="relative inline-flex items-center gap-1.5 text-xs px-3 py-1 rounded-full border bg-muted text-muted-foreground opacity-50 cursor-not-allowed shrink-0"
+          <Link
+            href={region === "no" ? "/lading/sverige" : "/lading"}
+            className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1 rounded-full border bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors shrink-0"
           >
-            <Zap className="h-3 w-3" />
-            Kun ledige
-            <span className="absolute -top-1.5 -right-1.5 text-[9px] px-1 rounded-full bg-foreground text-background font-bold leading-4">Snart</span>
-          </button>
+            {region === "no" ? "Sverige" : "Norge"}
+            <ArrowRight className="h-3 w-3" />
+          </Link>
         </div>
       </div>
 
@@ -441,7 +468,7 @@ export function ChargingMap() {
         )}
         {locateError && (
           <div className="absolute bottom-20 sm:top-3 sm:bottom-auto left-1/2 -translate-x-1/2 z-[1000] bg-background/90 backdrop-blur-sm border rounded-full px-4 py-2 shadow-lg">
-            <p className="text-sm text-muted-foreground">Kunne ikke finne posisjon — viser Oslo i stedet.</p>
+            <p className="text-sm text-muted-foreground">Kunne ikke finne posisjon — viser {config.fallback.name} i stedet.</p>
           </div>
         )}
         {error && (
@@ -456,8 +483,8 @@ export function ChargingMap() {
         )}
 
         <MapContainer
-          center={[65, 14]}
-          zoom={5}
+          center={config.center}
+          zoom={config.zoom}
           style={{ height: "100%", width: "100%" }}
         >
           {center && <FlyTo lat={center.lat} lon={center.lon} zoom={center.zoom} _t={center._t} />}
