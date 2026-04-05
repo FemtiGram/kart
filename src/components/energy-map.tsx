@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { MapContainer, TileLayer, Marker, useMap } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Polygon, useMap } from "react-leaflet";
 import MarkerClusterGroup from "react-leaflet-cluster";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -33,7 +33,7 @@ import { FYLKER, isInNorway, OSLO } from "@/lib/fylker";
 import { FlyTo, useDebounceRef, useSearchAbort } from "@/lib/map-utils";
 import type { Address, KommuneEntry, Suggestion } from "@/lib/map-utils";
 
-type EnergyType = "vind" | "vann";
+type EnergyType = "vind" | "vann" | "havvind";
 type WindStatus = "operational" | "construction" | "approved" | "rejected";
 
 interface EnergyPlant {
@@ -61,9 +61,23 @@ interface WindTurbine {
   plantName: string | null;
 }
 
+interface HavvindZone {
+  id: number;
+  name: string;
+  typeAnlegg: string;
+  arealKm2: number | null;
+  minDistanceKm: number | null;
+  nveUrl: string | null;
+  center: { lat: number; lon: number };
+  polygon: [number, number][][];
+}
+
+const HAVVIND_COLOR = "#7c3aed";
+
 const TYPE_META: Record<EnergyType, { label: string; color: string; icon: typeof Wind }> = {
   vind: { label: "Vindkraft", color: "#0369a1", icon: Wind },
   vann: { label: "Vannkraft", color: "#0891b2", icon: Droplets },
+  havvind: { label: "Havvind", color: HAVVIND_COLOR, icon: Wind },
 };
 
 const WIND_STATUS_META: Record<WindStatus, { label: string; color: string }> = {
@@ -153,6 +167,26 @@ function turbineIcon(inverted: boolean): L.DivIcon {
   return icon;
 }
 
+const havvindIconCache = new Map<string, L.DivIcon>();
+function havvindIcon(isSelected: boolean, inverted: boolean): L.DivIcon {
+  const key = `${isSelected}-${inverted}`;
+  const cached = havvindIconCache.get(key);
+  if (cached) return cached;
+  const size = 28;
+  const bg = inverted ? (isSelected ? "#24374c" : HAVVIND_COLOR) : "white";
+  const iconColor = inverted ? "white" : (isSelected ? "#24374c" : HAVVIND_COLOR);
+  const border = isSelected ? "#24374c" : inverted ? "rgba(255,255,255,0.3)" : "rgba(0,0,0,0.15)";
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="${iconColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.8 19.6A2 2 0 1 0 14 16H2"/><path d="M17.5 8a2.5 2.5 0 1 1 2 4H2"/><path d="M9.8 4.4A2 2 0 1 1 11 8H2"/></svg>`;
+  const icon = L.divIcon({
+    className: "",
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
+    html: `<div style="width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;line-height:0;background:${bg};border-radius:50%;box-shadow:0 1px 4px rgba(0,0,0,0.25);border:2.5px solid ${border}">${svg}</div>`,
+  });
+  havvindIconCache.set(key, icon);
+  return icon;
+}
+
 function ZoomTracker({ onZoom }: { onZoom: (z: number) => void }) {
   const map = useMap();
   useEffect(() => {
@@ -175,6 +209,7 @@ function PanToSelected({ plant }: { plant: EnergyPlant | null }) {
 export function EnergyMap() {
   const [plants, setPlants] = useState<EnergyPlant[]>([]);
   const [turbines, setTurbines] = useState<WindTurbine[]>([]);
+  const [havvindZones, setHavvindZones] = useState<HavvindZone[]>([]);
   const [zoomLevel, setZoomLevel] = useState(5);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -183,10 +218,11 @@ export function EnergyMap() {
   const [showInfo, setShowInfo] = useState(false);
   const [showFilter, setShowFilter] = useState(false);
   const [showInfoSheet, setShowInfoSheet] = useState(false);
-  const [filterTypes, setFilterTypes] = useState<Set<EnergyType>>(new Set(["vind", "vann"]));
+  const [filterTypes, setFilterTypes] = useState<Set<EnergyType>>(new Set(["vind", "vann", "havvind"]));
   const [filterWindStatus, setFilterWindStatus] = useState<Set<WindStatus>>(new Set(["operational"]));
   const [showSmall, setShowSmall] = useState(false);
   const [selected, setSelected] = useState<EnergyPlant | null>(null);
+  const [selectedHavvind, setSelectedHavvind] = useState<HavvindZone | null>(null);
   const [hydroStation, setHydroStation] = useState<{
     station: { id: string; name: string; river: string | null; distanceKm: number } | null;
     discharge: number | null;
@@ -225,6 +261,7 @@ export function EnergyMap() {
       }
       setPlants(data.plants);
       setTurbines(data.turbines ?? []);
+      setHavvindZones(data.havvindZones ?? []);
       setLoading(false);
     } catch {
       setError(true);
@@ -358,6 +395,7 @@ export function EnergyMap() {
     setShowDropdown(false);
     setSuggestions([]);
     setSelected(null);
+    setSelectedHavvind(null);
     if (s.type === "fylke") {
       setQuery(s.fylkesnavn);
       setCenter({ lat: s.lat, lon: s.lon, zoom: s.zoom });
@@ -439,7 +477,12 @@ export function EnergyMap() {
     });
   };
 
-  const activeFilterCount = (filterTypes.size < 2 ? 1 : 0) + (showSmall ? 1 : 0) + (filterWindStatus.size !== 1 || !filterWindStatus.has("operational") ? 1 : 0);
+  const filteredHavvindZones = useMemo(() => {
+    if (!filterTypes.has("havvind")) return [];
+    return havvindZones;
+  }, [havvindZones, filterTypes]);
+
+  const activeFilterCount = (filterTypes.size < 3 ? 1 : 0) + (showSmall ? 1 : 0) + (filterWindStatus.size !== 1 || !filterWindStatus.has("operational") ? 1 : 0);
 
   // Stats
   const windCount = useMemo(() => filteredPlants.filter((p) => p.type === "vind").length, [filteredPlants]);
@@ -497,10 +540,10 @@ export function EnergyMap() {
                     <div>
                       <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Type</p>
                       <div className="rounded-xl border overflow-hidden">
-                        {(["vind", "vann"] as EnergyType[]).map((t) => {
+                        {(["vind", "vann", "havvind"] as EnergyType[]).map((t) => {
                           const active = filterTypes.has(t);
                           const meta = TYPE_META[t];
-                          const count = plants.filter((p) => p.type === t && (showSmall || (p.capacityMW ?? 0) >= MW_THRESHOLD)).length;
+                          const count = t === "havvind" ? havvindZones.length : plants.filter((p) => p.type === t && (showSmall || (p.capacityMW ?? 0) >= MW_THRESHOLD)).length;
                           return (
                             <button
                               key={t}
@@ -563,7 +606,7 @@ export function EnergyMap() {
                       <Button
                         variant="secondary"
                         className="flex-1"
-                        onClick={() => { setFilterTypes(new Set(["vind", "vann"])); setFilterWindStatus(new Set(["operational"])); setShowSmall(false); }}
+                        onClick={() => { setFilterTypes(new Set(["vind", "vann", "havvind"])); setFilterWindStatus(new Set(["operational"])); setShowSmall(false); }}
                       >
                         Nullstill
                       </Button>
@@ -624,7 +667,7 @@ export function EnergyMap() {
             {loading
               ? "Henter kraftverk..."
               : plants.length > 0
-                ? `${filteredPlants.length} kraftverk (${windCount} vind, ${hydroCount} vann) — ${totalCapacity} MW — Kilde: NVE`
+                ? `${filteredPlants.length} kraftverk (${windCount} vind, ${hydroCount} vann${filteredHavvindZones.length > 0 ? `, ${filteredHavvindZones.length} havvind` : ""}) — ${totalCapacity} MW — Kilde: NVE`
                 : "Ingen kraftverk funnet"}
           </p>
           <button
@@ -735,6 +778,7 @@ export function EnergyMap() {
                     setSelected((prev) =>
                       prev?.id === p.id && prev?.type === p.type ? null : p
                     );
+                    setSelectedHavvind(null);
                   },
                 }}
               />
@@ -745,6 +789,42 @@ export function EnergyMap() {
               key={`turbine-${t.id}`}
               position={[t.lat, t.lon]}
               icon={turbineIcon(tileLayer === "gråtone")}
+            />
+          ))}
+          {/* Havvind zone markers */}
+          {filteredHavvindZones.map((z) => (
+            <Marker
+              key={`havvind-${z.id}`}
+              position={[z.center.lat, z.center.lon]}
+              icon={havvindIcon(selectedHavvind?.id === z.id, tileLayer === "gråtone")}
+              eventHandlers={{
+                click() {
+                  setSelectedHavvind((prev) => prev?.id === z.id ? null : z);
+                  setSelected(null);
+                  setShowInfoSheet(false);
+                },
+              }}
+            />
+          ))}
+          {/* Havvind zone polygons at zoom >= 7 */}
+          {zoomLevel >= 7 && filteredHavvindZones.map((z) => (
+            <Polygon
+              key={`havvind-poly-${z.id}`}
+              positions={z.polygon}
+              pathOptions={{
+                fillColor: HAVVIND_COLOR,
+                fillOpacity: selectedHavvind?.id === z.id ? 0.35 : 0.12,
+                color: selectedHavvind?.id === z.id ? "#5b21b6" : HAVVIND_COLOR,
+                weight: selectedHavvind?.id === z.id ? 2.5 : 1.5,
+                dashArray: selectedHavvind?.id === z.id ? undefined : "6 4",
+              }}
+              eventHandlers={{
+                click() {
+                  setSelectedHavvind((prev) => prev?.id === z.id ? null : z);
+                  setSelected(null);
+                  setShowInfoSheet(false);
+                },
+              }}
             />
           ))}
         </MapContainer>
@@ -858,6 +938,139 @@ export function EnergyMap() {
             </div>
           </div>
         )}
+
+        {/* Havvind compact card */}
+        {selectedHavvind && !showInfoSheet && (
+          <div
+            className="absolute bottom-4 left-3 right-3 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 sm:w-96 z-[999] bg-card rounded-2xl shadow-xl px-4 py-4"
+            style={{ border: "1.5px solid var(--border)" }}
+          >
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5 mb-0.5">
+                  <span className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full text-white" style={{ background: HAVVIND_COLOR }}>
+                    Havvind
+                  </span>
+                  <span className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">
+                    {selectedHavvind.typeAnlegg}
+                  </span>
+                </div>
+                <p className="font-bold text-base truncate leading-snug">{selectedHavvind.name}</p>
+              </div>
+              <button
+                onClick={() => setSelectedHavvind(null)}
+                className="shrink-0 p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                aria-label="Lukk"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="grid grid-cols-2 gap-3 mt-3">
+              {selectedHavvind.arealKm2 != null && (
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-2xl font-extrabold" style={{ color: HAVVIND_COLOR }}>
+                    {selectedHavvind.arealKm2.toLocaleString("nb-NO")}
+                  </span>
+                  <span className="text-xs text-muted-foreground">km²</span>
+                </div>
+              )}
+              {selectedHavvind.minDistanceKm != null && (
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-2xl font-extrabold" style={{ color: HAVVIND_COLOR }}>
+                    {selectedHavvind.minDistanceKm}
+                  </span>
+                  <span className="text-xs text-muted-foreground">km til land</span>
+                </div>
+              )}
+            </div>
+            <div className="flex gap-2 mt-3">
+              <button
+                onClick={() => { setShowInfoSheet(true); setShowFilter(false); }}
+                className="flex-1 inline-flex items-center justify-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl border bg-muted/50 hover:bg-muted transition-colors"
+              >
+                <ChevronUp className="h-3.5 w-3.5" /> Vis mer
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Havvind detail sheet */}
+        <Sheet open={showInfoSheet && !!selectedHavvind && !selected} onOpenChange={(open) => { setShowInfoSheet(open); }}>
+          <SheetContent side="bottom" className="rounded-t-2xl max-h-[85svh] overflow-y-auto">
+            {selectedHavvind && (
+              <div className="mx-auto w-full max-w-md px-4 pb-6">
+                <SheetHeader>
+                  <SheetTitle className="text-left sr-only">{selectedHavvind.name}</SheetTitle>
+                </SheetHeader>
+
+                <div className="flex items-center gap-1.5 mb-1">
+                  <span className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full text-white" style={{ background: HAVVIND_COLOR }}>
+                    Havvind
+                  </span>
+                  <span className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">
+                    {selectedHavvind.typeAnlegg}
+                  </span>
+                </div>
+                <p className="font-bold text-lg leading-snug">{selectedHavvind.name}</p>
+                <p className="text-sm text-muted-foreground">Utredningsområde for havvind</p>
+
+                <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t">
+                  {selectedHavvind.arealKm2 != null && (
+                    <div className="flex items-baseline gap-1.5">
+                      <span className="text-3xl font-extrabold" style={{ color: HAVVIND_COLOR }}>
+                        {selectedHavvind.arealKm2.toLocaleString("nb-NO")}
+                      </span>
+                      <span className="text-xs text-muted-foreground">km² areal</span>
+                    </div>
+                  )}
+                  {selectedHavvind.minDistanceKm != null && (
+                    <div className="flex items-baseline gap-1.5">
+                      <span className="text-3xl font-extrabold" style={{ color: HAVVIND_COLOR }}>
+                        {selectedHavvind.minDistanceKm}
+                      </span>
+                      <span className="text-xs text-muted-foreground">km til land</span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="mt-4 pt-4 border-t flex flex-col gap-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Type</span>
+                    <span className="font-medium">{selectedHavvind.typeAnlegg}</span>
+                  </div>
+                  {selectedHavvind.arealKm2 != null && (
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">Areal</span>
+                      <span className="font-medium">{selectedHavvind.arealKm2.toLocaleString("nb-NO")} km²</span>
+                    </div>
+                  )}
+                  {selectedHavvind.minDistanceKm != null && (
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">Avstand til fastland</span>
+                      <span className="font-medium">{selectedHavvind.minDistanceKm} km</span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="mt-4 pt-4 border-t flex flex-col gap-3">
+                  {selectedHavvind.nveUrl && (
+                    <a
+                      href={selectedHavvind.nveUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center justify-center gap-2 text-sm font-semibold px-4 py-2.5 rounded-xl border bg-muted/50 hover:bg-muted transition-colors w-full"
+                    >
+                      <ExternalLink className="h-4 w-4" /> Les mer på NVE
+                    </a>
+                  )}
+                  <p className="text-xs text-muted-foreground text-center">
+                    Kilde: <a href="https://nve.geodataonline.no/arcgis/rest/services/" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">NVE Geodata</a> · Havvind 2023
+                  </p>
+                </div>
+              </div>
+            )}
+          </SheetContent>
+        </Sheet>
 
         {/* Info detail sheet */}
         <Sheet open={showInfoSheet && !!selected} onOpenChange={(open) => { setShowInfoSheet(open); if (!open) { /* keep selected so compact card reappears */ } }}>
@@ -1059,7 +1272,7 @@ export function EnergyMap() {
               <p>
                 Norge har over 1700 vannkraftverk som dekker ~90% av
                 landets strømproduksjon, pluss et voksende antall
-                vindkraftverk.
+                vindkraftverk. Kartet viser også 20 utredningsområder for <strong>havvind</strong> — Norges planlagte offshore vindkraftsatsing.
               </p>
               <p className="text-xs text-muted-foreground">
                 Data oppdateres hver time. Kilde:{" "}

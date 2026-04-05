@@ -30,10 +30,21 @@ interface WindTurbine {
   plantName: string | null;
 }
 
+interface HavvindZone {
+  id: number;
+  name: string;
+  typeAnlegg: string;
+  arealKm2: number | null;
+  minDistanceKm: number | null;
+  nveUrl: string | null;
+  center: { lat: number; lon: number };
+  polygon: [number, number][][];
+}
+
 export async function GET() {
   try {
     // Fetch wind (4 layers), hydro, and turbines in parallel
-    const [windRes, windConstructionRes, windApprovedRes, windRejectedRes, hydroRes, turbineRes] = await Promise.all([
+    const [windRes, windConstructionRes, windApprovedRes, windRejectedRes, hydroRes, turbineRes, havvindRes] = await Promise.all([
       fetch(`${NVE_BASE}/Vindkraft2/MapServer/0/${QUERY}`, {
         headers: { "User-Agent": "MapGram/1.0 github.com/FemtiGram/kart" },
         next: { revalidate: 3600 },
@@ -60,6 +71,11 @@ export async function GET() {
         signal: AbortSignal.timeout(8000),
       }),
       fetch(`${NVE_BASE}/Vindkraft2/MapServer/4/${QUERY}`, {
+        headers: { "User-Agent": "MapGram/1.0 github.com/FemtiGram/kart" },
+        next: { revalidate: 3600 },
+        signal: AbortSignal.timeout(8000),
+      }),
+      fetch(`${NVE_BASE}/Havvind2023/MapServer/0/${QUERY}`, {
         headers: { "User-Agent": "MapGram/1.0 github.com/FemtiGram/kart" },
         next: { revalidate: 3600 },
         signal: AbortSignal.timeout(8000),
@@ -141,6 +157,48 @@ export async function GET() {
       }
     }
 
+    // Process offshore wind zones (polygons)
+    const havvindZones: HavvindZone[] = [];
+    if (havvindRes.ok) {
+      const havvindData = await havvindRes.json();
+      for (const f of havvindData.features ?? []) {
+        const a = f.attributes;
+        const rings = f.geometry?.rings;
+        if (!rings?.length) continue;
+
+        // Convert UTM polygon rings to WGS84 with aggressive simplification (large ocean zones)
+        const wgsRings: [number, number][][] = rings.map((ring: number[][]) => {
+          const step = ring.length > 200 ? 10 : ring.length > 100 ? 5 : ring.length > 50 ? 3 : 1;
+          const simplified: [number, number][] = [];
+          for (let i = 0; i < ring.length; i += step) {
+            const { lat, lon } = utmToLatLon(ring[i][0], ring[i][1]);
+            simplified.push([lat, lon]);
+          }
+          if (simplified.length > 0) {
+            const last = ring[ring.length - 1];
+            const { lat, lon } = utmToLatLon(last[0], last[1]);
+            simplified.push([lat, lon]);
+          }
+          return simplified;
+        });
+
+        const firstRing = wgsRings[0];
+        const centerLat = firstRing.reduce((s, c) => s + c[0], 0) / firstRing.length;
+        const centerLon = firstRing.reduce((s, c) => s + c[1], 0) / firstRing.length;
+
+        havvindZones.push({
+          id: a.OBJECTID,
+          name: a.navn ?? "Ukjent havvindområde",
+          typeAnlegg: a.typeAnlegg ?? "Ukjent",
+          arealKm2: a.areal_km2 ?? null,
+          minDistanceKm: a.minAvstandFastland_km ?? null,
+          nveUrl: a.nettsideURL ?? null,
+          center: { lat: centerLat, lon: centerLon },
+          polygon: wgsRings,
+        });
+      }
+    }
+
     // Summary stats
     const windCount = plants.filter((p) => p.type === "vind").length;
     const hydroCount = plants.filter((p) => p.type === "vann").length;
@@ -152,7 +210,8 @@ export async function GET() {
     return Response.json({
       plants,
       turbines,
-      stats: { windCount, hydroCount, totalCapacityMW: Math.round(totalCapacityMW) },
+      havvindZones,
+      stats: { windCount, hydroCount, havvindCount: havvindZones.length, totalCapacityMW: Math.round(totalCapacityMW) },
     });
   } catch (err) {
     const message =
