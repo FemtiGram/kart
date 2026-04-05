@@ -86,9 +86,18 @@ function CardLink({ href, icon: Icon, title, description, large }: {
 
 export default function Home() {
   return (
-    <div className="min-h-[calc(100svh-57px)] bg-background">
+    <div className="relative min-h-[calc(100svh-57px)] bg-background overflow-hidden">
+      {/* Subtle background accents */}
+      <div
+        className="pointer-events-none absolute -top-32 -right-32 h-[500px] w-[500px] rounded-full opacity-[0.07]"
+        style={{ background: "radial-gradient(circle, #003da5 0%, transparent 70%)" }}
+      />
+      <div
+        className="pointer-events-none absolute top-1/2 -left-48 h-[400px] w-[400px] rounded-full opacity-[0.04]"
+        style={{ background: "radial-gradient(circle, #24374c 0%, transparent 70%)" }}
+      />
       {/* Content */}
-      <div className="container mx-auto px-6 md:px-16 py-16 md:py-24 max-w-5xl">
+      <div className="relative container mx-auto px-6 md:px-16 py-16 md:py-24 max-w-5xl">
         <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight" style={{ color: "#24374c" }}>
           MapGram
         </h1>
