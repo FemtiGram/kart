@@ -355,17 +355,10 @@ export function WindPowerMap() {
                 className="flex-1 bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground text-[16px] sm:text-sm"
               />
             </div>
+            <Button onClick={handleLocate} disabled={locating || loading} variant="secondary" size="icon" className="shadow-lg shrink-0 h-11 w-11 rounded-xl">
+              {locating ? <Loader2 className="h-4 w-4 animate-spin" /> : <LocateFixed className="h-4 w-4" />}
+            </Button>
           </div>
-          <Button
-            onClick={handleLocate}
-            disabled={locating || loading}
-            variant="secondary"
-            size="lg"
-            className="w-full shadow-lg"
-          >
-            {locating ? <Loader2 className="animate-spin" /> : <LocateFixed />}
-            Min posisjon
-          </Button>
 
           {showDropdown && suggestions.length > 0 && (
             <ul className="absolute top-full mt-1 left-0 right-0 bg-background rounded-xl shadow-xl border overflow-hidden">

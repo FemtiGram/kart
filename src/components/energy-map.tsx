@@ -444,9 +444,8 @@ export function EnergyMap() {
             <Sheet open={showFilter} onOpenChange={(open) => { setShowFilter(open); if (open) setShowInfoSheet(false); }}>
               <SheetTrigger
                 render={
-                  <Button variant="secondary" size="lg" className="relative shadow-lg shrink-0">
+                  <Button variant="secondary" size="icon" className="relative shadow-lg shrink-0 h-11 w-11 rounded-xl">
                     <SlidersHorizontal className="h-4 w-4" />
-                    <span className="sm:inline hidden">Filter</span>
                     {activeFilterCount > 0 && (
                       <span className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center">
                         {activeFilterCount}
@@ -542,17 +541,10 @@ export function EnergyMap() {
                 </div>
               </SheetContent>
             </Sheet>
+            <Button onClick={handleLocate} disabled={locating || loading} variant="secondary" size="icon" className="shadow-lg shrink-0 h-11 w-11 rounded-xl">
+              {locating ? <Loader2 className="h-4 w-4 animate-spin" /> : <LocateFixed className="h-4 w-4" />}
+            </Button>
           </div>
-          <Button
-            onClick={handleLocate}
-            disabled={locating || loading}
-            variant="secondary"
-            size="lg"
-            className="w-full shadow-lg"
-          >
-            {locating ? <Loader2 className="animate-spin" /> : <LocateFixed />}
-            Min posisjon
-          </Button>
 
           {showDropdown && suggestions.length > 0 && (
             <ul className="absolute top-full mt-1 left-0 right-0 bg-background rounded-xl shadow-xl border overflow-hidden">
