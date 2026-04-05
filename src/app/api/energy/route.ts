@@ -47,6 +47,18 @@ interface OilGasFacility {
   lon: number;
 }
 
+interface Pipeline {
+  id: number;
+  name: string;
+  medium: string | null;
+  phase: string | null;
+  dimension: number | null;
+  fromFacility: string | null;
+  toFacility: string | null;
+  belongsTo: string | null;
+  path: [number, number][];
+}
+
 interface HavvindZone {
   id: number;
   name: string;
@@ -61,7 +73,7 @@ interface HavvindZone {
 export async function GET() {
   try {
     // Fetch wind (4 layers), hydro, and turbines in parallel
-    const [windRes, windConstructionRes, windApprovedRes, windRejectedRes, hydroRes, turbineRes, havvindRes, sodirRes] = await Promise.all([
+    const [windRes, windConstructionRes, windApprovedRes, windRejectedRes, hydroRes, turbineRes, havvindRes, sodirRes, pipelineRes] = await Promise.all([
       fetch(`${NVE_BASE}/Vindkraft2/MapServer/0/${QUERY}`, {
         headers: { "User-Agent": "MapGram/1.0 github.com/FemtiGram/kart" },
         next: { revalidate: 3600 },
@@ -98,6 +110,11 @@ export async function GET() {
         signal: AbortSignal.timeout(8000),
       }),
       fetch(`${SODIR_BASE}/307/${QUERY}`, {
+        headers: { "User-Agent": "MapGram/1.0 github.com/FemtiGram/kart" },
+        next: { revalidate: 3600 },
+        signal: AbortSignal.timeout(8000),
+      }),
+      fetch(`${SODIR_BASE}/311/query?where=1%3D1&outFields=*&returnGeometry=true&outSR=4326&f=json&resultRecordCount=500`, {
         headers: { "User-Agent": "MapGram/1.0 github.com/FemtiGram/kart" },
         next: { revalidate: 3600 },
         signal: AbortSignal.timeout(8000),
@@ -254,6 +271,36 @@ export async function GET() {
       }
     }
 
+    // Process pipelines
+    const pipelines: Pipeline[] = [];
+    if (pipelineRes.ok) {
+      const pipelineData = await pipelineRes.json();
+      for (const f of pipelineData.features ?? []) {
+        const a = f.attributes;
+        const paths = f.geometry?.paths;
+        if (!paths?.length) continue;
+        // Flatten all path segments into one array of [lat, lon]
+        const coords: [number, number][] = [];
+        for (const path of paths) {
+          for (const pt of path) {
+            coords.push([pt[1], pt[0]]); // ArcGIS returns [x=lon, y=lat] in WGS84
+          }
+        }
+        if (coords.length < 2) continue;
+        pipelines.push({
+          id: a.OBJECTID,
+          name: a.pplName ?? "Ukjent rørledning",
+          medium: a.pplMedium ?? null,
+          phase: a.pplCurrentPhase ?? null,
+          dimension: a.pplDimension ?? null,
+          fromFacility: a.fclNameFrom ?? null,
+          toFacility: a.fclNameTo ?? null,
+          belongsTo: a.pplBelongsToName ?? null,
+          path: coords,
+        });
+      }
+    }
+
     // Summary stats
     const windCount = plants.filter((p) => p.type === "vind").length;
     const hydroCount = plants.filter((p) => p.type === "vann").length;
@@ -267,7 +314,8 @@ export async function GET() {
       turbines,
       havvindZones,
       oilGasFacilities,
-      stats: { windCount, hydroCount, havvindCount: havvindZones.length, oilGasCount: oilGasFacilities.length, totalCapacityMW: Math.round(totalCapacityMW) },
+      pipelines,
+      stats: { windCount, hydroCount, havvindCount: havvindZones.length, oilGasCount: oilGasFacilities.length, pipelineCount: pipelines.length, totalCapacityMW: Math.round(totalCapacityMW) },
     });
   } catch (err) {
     const message =

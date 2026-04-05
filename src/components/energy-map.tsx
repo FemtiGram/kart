@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { MapContainer, TileLayer, Marker, Polygon, useMap } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Polygon, Polyline, useMap } from "react-leaflet";
 import MarkerClusterGroup from "react-leaflet-cluster";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -77,6 +77,18 @@ interface OilGasFacility {
   factPageUrl: string | null;
   lat: number;
   lon: number;
+}
+
+interface Pipeline {
+  id: number;
+  name: string;
+  medium: string | null;
+  phase: string | null;
+  dimension: number | null;
+  fromFacility: string | null;
+  toFacility: string | null;
+  belongsTo: string | null;
+  path: [number, number][];
 }
 
 interface HavvindZone {
@@ -253,6 +265,7 @@ export function EnergyMap() {
   const [turbines, setTurbines] = useState<WindTurbine[]>([]);
   const [havvindZones, setHavvindZones] = useState<HavvindZone[]>([]);
   const [oilGasFacilities, setOilGasFacilities] = useState<OilGasFacility[]>([]);
+  const [pipelines, setPipelines] = useState<Pipeline[]>([]);
   const [selectedOilGas, setSelectedOilGas] = useState<OilGasFacility | null>(null);
   const [zoomLevel, setZoomLevel] = useState(5);
   const [loading, setLoading] = useState(true);
@@ -307,6 +320,7 @@ export function EnergyMap() {
       setTurbines(data.turbines ?? []);
       setHavvindZones(data.havvindZones ?? []);
       setOilGasFacilities(data.oilGasFacilities ?? []);
+      setPipelines(data.pipelines ?? []);
       setLoading(false);
     } catch {
       setError(true);
@@ -532,6 +546,11 @@ export function EnergyMap() {
     if (!filterTypes.has("oilgas")) return [];
     return oilGasFacilities;
   }, [oilGasFacilities, filterTypes]);
+
+  const filteredPipelines = useMemo(() => {
+    if (!filterTypes.has("oilgas")) return [];
+    return pipelines;
+  }, [pipelines, filterTypes]);
 
   const activeFilterCount = (filterTypes.size < 4 ? 1 : 0) + (showSmall ? 1 : 0) + (filterWindStatus.size !== 1 || !filterWindStatus.has("operational") ? 1 : 0);
 
@@ -881,19 +900,54 @@ export function EnergyMap() {
               }}
             />
           ))}
-          {/* Oil & gas facility markers */}
-          {filteredOilGas.map((f) => (
-            <Marker
-              key={`oilgas-${f.id}`}
-              position={[f.lat, f.lon]}
-              icon={oilgasIcon(selectedOilGas?.id === f.id, tileLayer === "gråtone", f.isSurface)}
-              eventHandlers={{
-                click() {
-                  setSelectedOilGas((prev) => prev?.id === f.id ? null : f);
-                  setSelected(null);
-                  setSelectedHavvind(null);
-                  setShowInfoSheet(false);
-                },
+          {/* Oil & gas facility markers with clustering */}
+          {filteredOilGas.length > 0 && (
+            <MarkerClusterGroup
+              chunkedLoading
+              maxClusterRadius={50}
+              spiderfyOnMaxZoom
+              showCoverageOnHover={false}
+              iconCreateFunction={(cluster: { getChildCount: () => number }) => {
+                const count = cluster.getChildCount();
+                let size = 36;
+                let fontSize = 13;
+                if (count >= 50) { size = 44; fontSize = 14; }
+                if (count >= 200) { size = 52; fontSize = 15; }
+                return L.divIcon({
+                  html: `<div style="width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;background:${OILGAS_COLOR};color:white;border-radius:50%;font-weight:700;font-size:${fontSize}px;box-shadow:0 2px 6px rgba(0,0,0,0.3);border:2px solid rgba(255,255,255,0.6)">${count}</div>`,
+                  className: "",
+                  iconSize: [size, size],
+                  iconAnchor: [size / 2, size / 2],
+                });
+              }}
+            >
+              {filteredOilGas.map((f) => (
+                <Marker
+                  key={`oilgas-${f.id}`}
+                  position={[f.lat, f.lon]}
+                  icon={oilgasIcon(selectedOilGas?.id === f.id, tileLayer === "gråtone", f.isSurface)}
+                  eventHandlers={{
+                    click() {
+                      setSelectedOilGas((prev) => prev?.id === f.id ? null : f);
+                      setSelected(null);
+                      setSelectedHavvind(null);
+                      setShowInfoSheet(false);
+                    },
+                  }}
+                />
+              ))}
+            </MarkerClusterGroup>
+          )}
+          {/* Pipelines at zoom >= 8 */}
+          {zoomLevel >= 8 && filteredPipelines.map((p) => (
+            <Polyline
+              key={`pipe-${p.id}`}
+              positions={p.path}
+              pathOptions={{
+                color: p.medium === "Gas" ? "#facc15" : p.medium === "Oil" ? OILGAS_COLOR : "#a3a3a3",
+                weight: Math.max(1.5, Math.min(3, (p.dimension ?? 20) / 15)),
+                opacity: 0.6,
+                dashArray: p.phase === "DECOMMISSIONED" ? "6 4" : undefined,
               }}
             />
           ))}
