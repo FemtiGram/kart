@@ -19,8 +19,8 @@ interface ReservoirFeature {
 
 export async function GET() {
   try {
-    // Fetch operational reservoirs in a single request (no pagination to stay within Vercel 10s limit)
-    const url = `${NVE_BASE}/Vannkraft1/MapServer/6/query?where=status%3D'D'&outFields=OBJECTID,magasinNavn,vannkraftverkNavn,elvenavnHierarki,hoyesteRegulerteVannstand_moh,lavesteRegulerteVannstand_moh,volumOppdemt_Mm3,magasinArealHRV_km2,idriftsattAar,magasinFormal_Liste&returnGeometry=true&f=json&resultRecordCount=1000`;
+    // Fetch operational reservoirs — only those with known volume (most significant ones)
+    const url = `${NVE_BASE}/Vannkraft1/MapServer/6/query?where=status%3D'D'+AND+volumOppdemt_Mm3+IS+NOT+NULL&outFields=OBJECTID,magasinNavn,vannkraftverkNavn,elvenavnHierarki,hoyesteRegulerteVannstand_moh,lavesteRegulerteVannstand_moh,volumOppdemt_Mm3,magasinArealHRV_km2,idriftsattAar,magasinFormal_Liste&returnGeometry=true&f=json&resultRecordCount=500`;
     const res = await fetch(url, {
       headers: { "User-Agent": "MapGram/1.0 github.com/FemtiGram/kart" },
       next: { revalidate: 3600 },
@@ -43,7 +43,7 @@ export async function GET() {
       // Convert UTM polygon rings to WGS84, simplify by skipping every other point for large rings
       const wgsRings: [number, number][][] = rings.map(
         (ring: number[][]) => {
-          const step = ring.length > 50 ? 3 : ring.length > 20 ? 2 : 1;
+          const step = ring.length > 100 ? 5 : ring.length > 50 ? 3 : ring.length > 20 ? 2 : 1;
           const simplified: [number, number][] = [];
           for (let i = 0; i < ring.length; i += step) {
             const { lat, lon } = utmToLatLon(ring[i][0], ring[i][1]);
