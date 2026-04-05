@@ -30,6 +30,7 @@ import { FlyTo, useDebounceRef, useSearchAbort } from "@/lib/map-utils";
 import type { Address, KommuneEntry, Suggestion } from "@/lib/map-utils";
 
 type EnergyType = "vind" | "vann";
+type WindStatus = "operational" | "construction" | "approved" | "rejected";
 
 interface EnergyPlant {
   id: number;
@@ -42,15 +43,30 @@ interface EnergyPlant {
   capacityMW: number | null;
   productionGWh: number | null;
   type: EnergyType;
+  windStatus?: WindStatus;
   turbineCount?: number | null;
   fallHeight?: number | null;
   yearBuilt?: number | null;
   river?: string | null;
 }
 
+interface WindTurbine {
+  id: number;
+  lat: number;
+  lon: number;
+  plantName: string | null;
+}
+
 const TYPE_META: Record<EnergyType, { label: string; color: string; icon: typeof Wind }> = {
   vind: { label: "Vindkraft", color: "#0369a1", icon: Wind },
   vann: { label: "Vannkraft", color: "#0891b2", icon: Droplets },
+};
+
+const WIND_STATUS_META: Record<WindStatus, { label: string; color: string }> = {
+  operational: { label: "I drift", color: "#0369a1" },
+  construction: { label: "Under bygging", color: "#ca8a04" },
+  approved: { label: "Godkjent", color: "#16a34a" },
+  rejected: { label: "Avslått", color: "#dc2626" },
 };
 
 const MW_THRESHOLD = 10; // Default: only show plants >= 10 MW
@@ -77,16 +93,20 @@ function energyIcon(
   isSelected: boolean,
   inverted: boolean,
   type: EnergyType,
-  capacityMW: number | null
+  capacityMW: number | null,
+  windStatus?: WindStatus
 ): L.DivIcon {
   const sizeBucket = capacityMW != null && capacityMW > 200 ? "lg" : capacityMW != null && capacityMW >= 50 ? "md" : "sm";
-  const key = `${type}-${sizeBucket}-${isSelected}-${inverted}`;
+  const statusKey = windStatus ?? "operational";
+  const key = `${type}-${sizeBucket}-${isSelected}-${inverted}-${statusKey}`;
   const cached = energyIconCache.get(key);
   if (cached) return cached;
 
   const size = sizeBucket === "lg" ? 32 : sizeBucket === "md" ? 30 : 26;
   const iconSize = Math.round(size * 0.5);
-  const color = TYPE_META[type].color;
+  const color = type === "vind" && windStatus && windStatus !== "operational"
+    ? WIND_STATUS_META[windStatus].color
+    : TYPE_META[type].color;
 
   const bg = inverted ? (isSelected ? "#24374c" : color) : "white";
   const iconColor = inverted ? "white" : isSelected ? "#24374c" : color;
@@ -111,6 +131,34 @@ function energyIcon(
   return icon;
 }
 
+const turbineIconCache = new Map<string, L.DivIcon>();
+function turbineIcon(inverted: boolean): L.DivIcon {
+  const key = `${inverted}`;
+  const cached = turbineIconCache.get(key);
+  if (cached) return cached;
+  const size = 16;
+  const color = inverted ? "white" : "#0369a1";
+  const bg = inverted ? "#0369a1" : "white";
+  const icon = L.divIcon({
+    className: "",
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
+    html: `<div style="width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;background:${bg};border-radius:50%;box-shadow:0 1px 3px rgba(0,0,0,0.2);border:1.5px solid ${inverted ? "rgba(255,255,255,0.3)" : "rgba(0,0,0,0.1)"}"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="9" height="9" fill="none" stroke="${color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12.8 19.6A2 2 0 1 0 14 16H2"/><path d="M17.5 8a2.5 2.5 0 1 1 2 4H2"/><path d="M9.8 4.4A2 2 0 1 1 11 8H2"/></svg></div>`,
+  });
+  turbineIconCache.set(key, icon);
+  return icon;
+}
+
+function ZoomTracker({ onZoom }: { onZoom: (z: number) => void }) {
+  const map = useMap();
+  useEffect(() => {
+    const handler = () => onZoom(map.getZoom());
+    map.on("zoomend", handler);
+    return () => { map.off("zoomend", handler); };
+  }, [map, onZoom]);
+  return null;
+}
+
 function PanToSelected({ plant }: { plant: EnergyPlant | null }) {
   const map = useMap();
   useEffect(() => {
@@ -122,6 +170,8 @@ function PanToSelected({ plant }: { plant: EnergyPlant | null }) {
 
 export function EnergyMap() {
   const [plants, setPlants] = useState<EnergyPlant[]>([]);
+  const [turbines, setTurbines] = useState<WindTurbine[]>([]);
+  const [zoomLevel, setZoomLevel] = useState(5);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [locating, setLocating] = useState(false);
@@ -129,6 +179,7 @@ export function EnergyMap() {
   const [showInfo, setShowInfo] = useState(false);
   const [showFilter, setShowFilter] = useState(false);
   const [filterTypes, setFilterTypes] = useState<Set<EnergyType>>(new Set(["vind", "vann"]));
+  const [filterWindStatus, setFilterWindStatus] = useState<Set<WindStatus>>(new Set(["operational"]));
   const [showSmall, setShowSmall] = useState(false);
   const [selected, setSelected] = useState<EnergyPlant | null>(null);
   const [center, setCenter] = useState<{
@@ -161,6 +212,7 @@ export function EnergyMap() {
         return;
       }
       setPlants(data.plants);
+      setTurbines(data.turbines ?? []);
       setLoading(false);
     } catch {
       setError(true);
@@ -326,10 +378,11 @@ export function EnergyMap() {
   const filteredPlants = useMemo(() => {
     return plants.filter((p) => {
       if (!filterTypes.has(p.type)) return false;
+      if (p.type === "vind" && p.windStatus && !filterWindStatus.has(p.windStatus)) return false;
       if (!showSmall && (p.capacityMW ?? 0) < MW_THRESHOLD) return false;
       return true;
     });
-  }, [plants, filterTypes, showSmall]);
+  }, [plants, filterTypes, filterWindStatus, showSmall]);
 
   const toggleType = (t: EnergyType) => {
     setFilterTypes((prev) => {
@@ -340,7 +393,16 @@ export function EnergyMap() {
     });
   };
 
-  const activeFilterCount = (filterTypes.size < 2 ? 1 : 0) + (showSmall ? 1 : 0);
+  const toggleWindStatus = (s: WindStatus) => {
+    setFilterWindStatus((prev) => {
+      const next = new Set(prev);
+      if (next.has(s)) { if (next.size > 1) next.delete(s); }
+      else next.add(s);
+      return next;
+    });
+  };
+
+  const activeFilterCount = (filterTypes.size < 2 ? 1 : 0) + (showSmall ? 1 : 0) + (filterWindStatus.size !== 1 || !filterWindStatus.has("operational") ? 1 : 0);
 
   // Stats
   const windCount = useMemo(() => filteredPlants.filter((p) => p.type === "vind").length, [filteredPlants]);
@@ -420,6 +482,32 @@ export function EnergyMap() {
                         })}
                       </div>
                     </div>
+                    {filterTypes.has("vind") && (
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Vindkraftstatus</p>
+                        <div className="rounded-xl border overflow-hidden">
+                          {(["operational", "construction", "approved", "rejected"] as WindStatus[]).map((s) => {
+                            const active = filterWindStatus.has(s);
+                            const meta = WIND_STATUS_META[s];
+                            const count = plants.filter((p) => p.type === "vind" && p.windStatus === s).length;
+                            return (
+                              <button
+                                key={s}
+                                onClick={() => toggleWindStatus(s)}
+                                className={`flex items-center gap-3 w-full px-4 py-3 text-sm transition-colors border-b last:border-0 ${active ? "bg-background" : "bg-muted/40 text-muted-foreground"}`}
+                              >
+                                <div className={`h-5 w-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-colors ${active ? "border-primary bg-primary" : "border-muted-foreground/30 bg-background"}`}>
+                                  {active && <Check className="h-3.5 w-3.5 text-primary-foreground" />}
+                                </div>
+                                <div className="h-3 w-3 rounded-full shrink-0" style={{ background: meta.color }} />
+                                <span className="font-medium flex-1 text-left">{meta.label}</span>
+                                <span className="text-xs text-muted-foreground tabular-nums">{count}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
                     <div>
                       <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Størrelse</p>
                       <div className="rounded-xl border overflow-hidden">
@@ -439,7 +527,7 @@ export function EnergyMap() {
                       <Button
                         variant="secondary"
                         className="flex-1"
-                        onClick={() => { setFilterTypes(new Set(["vind", "vann"])); setShowSmall(false); }}
+                        onClick={() => { setFilterTypes(new Set(["vind", "vann"])); setFilterWindStatus(new Set(["operational"])); setShowSmall(false); }}
                       >
                         Nullstill
                       </Button>
@@ -576,6 +664,7 @@ export function EnergyMap() {
             <FlyTo lat={center.lat} lon={center.lon} zoom={center.zoom} _t={center._t} />
           )}
           <PanToSelected plant={selected} />
+          <ZoomTracker onZoom={setZoomLevel} />
           <TileLayer
             key={tileLayer}
             url={TILE_LAYERS[tileLayer].url}
@@ -609,7 +698,8 @@ export function EnergyMap() {
                   selected?.id === p.id && selected?.type === p.type,
                   tileLayer === "gråtone",
                   p.type,
-                  p.capacityMW
+                  p.capacityMW,
+                  p.windStatus
                 )}
                 eventHandlers={{
                   click() {
@@ -621,6 +711,13 @@ export function EnergyMap() {
               />
             ))}
           </MarkerClusterGroup>
+          {zoomLevel >= 12 && turbines.map((t) => (
+            <Marker
+              key={`turbine-${t.id}`}
+              position={[t.lat, t.lon]}
+              icon={turbineIcon(tileLayer === "gråtone")}
+            />
+          ))}
         </MapContainer>
 
         {/* Tile layer toggle */}
@@ -657,10 +754,18 @@ export function EnergyMap() {
                 <div className="flex items-center gap-2 mb-0.5">
                   <span
                     className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full text-white"
-                    style={{ background: TYPE_META[selected.type].color }}
+                    style={{ background: selected.type === "vind" && selected.windStatus ? WIND_STATUS_META[selected.windStatus].color : TYPE_META[selected.type].color }}
                   >
                     {TYPE_META[selected.type].label}
                   </span>
+                  {selected.windStatus && selected.windStatus !== "operational" && (
+                    <span
+                      className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full text-white"
+                      style={{ background: WIND_STATUS_META[selected.windStatus].color }}
+                    >
+                      {WIND_STATUS_META[selected.windStatus].label}
+                    </span>
+                  )}
                 </div>
                 <p className="font-bold text-base truncate leading-snug">
                   {selected.name}
