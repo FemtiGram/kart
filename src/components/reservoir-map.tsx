@@ -391,6 +391,15 @@ export function ReservoirMap() {
           ))}
         </div>
 
+        {/* Floating info button */}
+        <button
+          onClick={() => setShowInfo(true)}
+          className="absolute top-3 left-3 z-[999] flex items-center justify-center h-8 w-8 rounded-full bg-card border shadow-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+          aria-label="Om magasindata"
+        >
+          <Info className="h-4 w-4" />
+        </button>
+
         {/* Compact info card */}
         {selected && !showInfoSheet && (
           <div
@@ -408,13 +417,6 @@ export function ReservoirMap() {
                 </p>
               </div>
               <div className="flex items-center gap-1 shrink-0">
-                <button
-                  onClick={() => setShowInfo(true)}
-                  className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                  aria-label="Om data"
-                >
-                  <Info className="h-4 w-4" />
-                </button>
                 <button
                   onClick={() => { setSelected(null); setShowInfoSheet(false); }}
                   className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
@@ -440,14 +442,6 @@ export function ReservoirMap() {
                     {selected.areaKm2.toFixed(2)}
                   </span>
                   <span className="text-xs text-muted-foreground">km²</span>
-                </div>
-              )}
-              {selected.hrv != null && selected.lrv != null && (
-                <div className="flex items-baseline gap-1.5">
-                  <span className="text-2xl font-extrabold" style={{ color: "#0891b2" }}>
-                    {Math.round(selected.hrv - selected.lrv)}
-                  </span>
-                  <span className="text-xs text-muted-foreground">m regulering</span>
                 </div>
               )}
             </div>
@@ -597,9 +591,16 @@ export function ReservoirMap() {
             </div>
             <div className="flex flex-col gap-3 text-sm">
               <p>Kartet viser regulerte vannmagasiner i Norge. Disse samler vann for kraftproduksjon og er en viktig del av Norges energisystem.</p>
-              <p><strong>HRV</strong> (høyeste regulerte vannstand) og <strong>LRV</strong> (laveste regulerte vannstand) viser reguleringsområdet. Forskjellen mellom disse angir hvor mye magasinet kan tappes.</p>
+              <div className="bg-muted/50 rounded-xl p-3">
+                <p className="font-semibold mb-1">Hva betyr «m regulering»?</p>
+                <p className="text-muted-foreground">Regulering er forskjellen mellom <strong>HRV</strong> (høyeste regulerte vannstand) og <strong>LRV</strong> (laveste regulerte vannstand), målt i meter. Det viser hvor mye vannstanden i magasinet kan varieres — jo høyere tall, desto mer vann kan lagres og tappes for kraftproduksjon.</p>
+              </div>
+              <div className="bg-muted/50 rounded-xl p-3">
+                <p className="font-semibold mb-1">Volum (Mm³)</p>
+                <p className="text-muted-foreground">Magasinets totale lagringskapasitet i millioner kubikkmeter vann.</p>
+              </div>
               <p className="text-xs text-muted-foreground">
-                Kilde: <a href="https://nve.geodataonline.no/arcgis/rest/services/" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">NVE Geodata</a>
+                Kilde: <a href="https://nve.geodataonline.no/arcgis/rest/services/" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">NVE Geodata</a> · <a href="https://www.nve.no/energi/energisystem/magasinstatistikk/" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">NVE Magasinstatistikk</a>
               </p>
             </div>
           </div>
