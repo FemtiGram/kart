@@ -12,9 +12,9 @@ const footerLinks = {
     { label: "Verneområder", href: "/vern" },
   ],
   Ressurser: [
+    { label: "Datakilder og lisenser", href: "/kilder" },
     { label: "kartverket.no", href: "https://www.kartverket.no", external: true },
     { label: "Geonorge", href: "https://geonorge.no", external: true },
-    { label: "API-dokumentasjon", href: "https://kartkatalog.geonorge.no", external: true },
   ],
 };
 
@@ -85,16 +85,14 @@ export function Footer() {
           <p>© {new Date().getFullYear()} MapGram</p>
           <p>
             Bygd med{" "}
-            <span style={{ color: "var(--kv-green)" }}>♥</span>
-            {" "}og åpne data fra{" "}
-            <a
-              href="https://www.kartverket.no"
-              target="_blank"
-              rel="noopener noreferrer"
+            <span style={{ color: "var(--kv-green)" }}>&#9829;</span>
+            {" "}og{" "}
+            <Link
+              href="/kilder"
               className="hover:text-foreground transition-colors underline underline-offset-2"
             >
-              Kartverket
-            </a>
+              apne data
+            </Link>
           </p>
         </div>
       </div>
