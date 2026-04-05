@@ -159,7 +159,7 @@ export function WindPowerMap() {
             }
           },
           () => setCenter({ lat: OSLO.lat, lon: OSLO.lon }),
-          { timeout: 6000 }
+          { timeout: 15000, maximumAge: 60000 }
         );
       } else {
         setCenter({ lat: OSLO.lat, lon: OSLO.lon });
@@ -315,7 +315,7 @@ export function WindPowerMap() {
         }
       },
       () => setLocating(false),
-      { timeout: 6000 }
+      { timeout: 15000, maximumAge: 60000 }
     );
   };
 

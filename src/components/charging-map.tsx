@@ -253,7 +253,7 @@ export function ChargingMap() {
         setLocateError(true);
         setTimeout(() => setLocateError(false), 4000);
       },
-      { timeout: 6000 }
+      { timeout: 15000, maximumAge: 60000 }
     );
   };
 
