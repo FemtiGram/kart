@@ -813,29 +813,29 @@ export function EnergyMap() {
 
             {/* Layer 2 — Key metrics */}
             <div className={`grid gap-3 mt-3 ${selected.type === "vind" ? "grid-cols-3" : "grid-cols-2"}`}>
-              <div>
+              <div className="flex items-baseline gap-1.5">
                 <span className="text-2xl font-extrabold" style={{ color: TYPE_META[selected.type].color }}>
                   {selected.capacityMW != null ? Math.round(selected.capacityMW) : "—"}
                 </span>
-                <p className="text-xs text-muted-foreground">MW</p>
+                <span className="text-xs text-muted-foreground">MW</span>
               </div>
               {selected.type === "vind" && (
-                <div>
+                <div className="flex items-baseline gap-1.5">
                   <span className="text-2xl font-extrabold" style={{ color: TYPE_META[selected.type].color }}>
                     {selected.turbineCount ?? "—"}
                   </span>
-                  <p className="text-xs text-muted-foreground">turbiner</p>
+                  <span className="text-xs text-muted-foreground">turbiner</span>
                 </div>
               )}
-              <div>
+              <div className="flex items-baseline gap-1.5">
                 <span className="text-2xl font-extrabold" style={{ color: TYPE_META[selected.type].color }}>
                   {selected.type === "vind"
                     ? (selected.productionGWh != null ? Math.round(selected.productionGWh) : "—")
                     : (selected.fallHeight != null ? Math.round(selected.fallHeight) : "—")}
                 </span>
-                <p className="text-xs text-muted-foreground">
+                <span className="text-xs text-muted-foreground">
                   {selected.type === "vind" ? "GWh/år" : "m fallhøyde"}
-                </p>
+                </span>
               </div>
             </div>
 
@@ -897,29 +897,29 @@ export function EnergyMap() {
 
                 {/* Layer 2 — Key metrics */}
                 <div className={`grid gap-4 mt-4 pt-4 border-t ${selected.type === "vind" ? "grid-cols-3" : "grid-cols-2"}`}>
-                  <div>
+                  <div className="flex items-baseline gap-1.5">
                     <span className="text-3xl font-extrabold" style={{ color: TYPE_META[selected.type].color }}>
                       {selected.capacityMW != null ? Math.round(selected.capacityMW) : "—"}
                     </span>
-                    <p className="text-xs text-muted-foreground">MW kapasitet</p>
+                    <span className="text-xs text-muted-foreground">MW kapasitet</span>
                   </div>
                   {selected.type === "vind" && (
-                    <div>
+                    <div className="flex items-baseline gap-1.5">
                       <span className="text-3xl font-extrabold" style={{ color: TYPE_META[selected.type].color }}>
                         {selected.turbineCount ?? "—"}
                       </span>
-                      <p className="text-xs text-muted-foreground">turbiner</p>
+                      <span className="text-xs text-muted-foreground">turbiner</span>
                     </div>
                   )}
-                  <div>
+                  <div className="flex items-baseline gap-1.5">
                     <span className="text-3xl font-extrabold" style={{ color: TYPE_META[selected.type].color }}>
                       {selected.type === "vind"
                         ? (selected.productionGWh != null ? Math.round(selected.productionGWh) : "—")
                         : (selected.fallHeight != null ? Math.round(selected.fallHeight) : "—")}
                     </span>
-                    <p className="text-xs text-muted-foreground">
+                    <span className="text-xs text-muted-foreground">
                       {selected.type === "vind" ? "GWh/år" : "m fallhøyde"}
-                    </p>
+                    </span>
                   </div>
                 </div>
 
@@ -958,19 +958,19 @@ export function EnergyMap() {
                         </div>
                         <div className="grid grid-cols-2 gap-3">
                           {hydroStation.discharge != null && (
-                            <div>
+                            <div className="flex items-baseline gap-1.5">
                               <span className="text-2xl font-extrabold" style={{ color: "#0891b2" }}>
                                 {hydroStation.discharge.toFixed(1)}
                               </span>
-                              <p className="text-xs text-muted-foreground">m³/s vannføring</p>
+                              <span className="text-xs text-muted-foreground">m³/s vannføring</span>
                             </div>
                           )}
                           {hydroStation.waterLevel != null && (
-                            <div>
+                            <div className="flex items-baseline gap-1.5">
                               <span className="text-2xl font-extrabold" style={{ color: "#0891b2" }}>
                                 {hydroStation.waterLevel.toFixed(2)}
                               </span>
-                              <p className="text-xs text-muted-foreground">m vannstand</p>
+                              <span className="text-xs text-muted-foreground">m vannstand</span>
                             </div>
                           )}
                         </div>
