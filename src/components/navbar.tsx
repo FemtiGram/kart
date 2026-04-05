@@ -41,9 +41,7 @@ export function Navbar() {
   const isSecondaryActive = secondaryLinks.some((l) => l.href === pathname);
 
   return (
-    <header className="sticky top-0 z-[1100] w-full bg-background border-b">
-      {/* Top accent line */}
-      <div className="h-1 w-full" style={{ background: "#24374c" }} />
+    <header className="sticky top-0 z-[1100] w-full shadow-sm" style={{ background: "#24374c" }}>
       <div className="container mx-auto flex h-14 items-center justify-between px-6 md:px-16">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2.5">
@@ -55,29 +53,33 @@ export function Navbar() {
               <line x1="15" x2="15" y1="6" y2="21"/>
             </g>
           </svg>
-          <span className="font-extrabold text-base tracking-tight">MapGram</span>
+          <span className="font-extrabold text-base tracking-tight text-white">MapGram</span>
         </Link>
 
         {/* Desktop nav */}
         <NavigationMenu className="hidden md:flex">
           <NavigationMenuList>
-            {primaryLinks.map((link) => (
-              <NavigationMenuItem key={link.href}>
-                <NavigationMenuLink
-                  href={link.href}
-                  data-active={pathname === link.href ? "" : undefined}
-                  className={navigationMenuTriggerStyle()}
-                  render={<Link href={link.href} />}
-                >
-                  {link.label}
-                </NavigationMenuLink>
-              </NavigationMenuItem>
-            ))}
+            {primaryLinks.map((link) => {
+              const active = pathname === link.href;
+              return (
+                <NavigationMenuItem key={link.href}>
+                  <NavigationMenuLink
+                    href={link.href}
+                    data-active={active ? "" : undefined}
+                    className="inline-flex h-9 w-max items-center justify-center rounded-lg px-2.5 py-1.5 text-sm font-medium transition-all text-white/70 hover:text-white hover:bg-white/10 data-[active]:text-white data-[active]:bg-white/15"
+                    render={<Link href={link.href} />}
+                  >
+                    {link.label}
+                  </NavigationMenuLink>
+                </NavigationMenuItem>
+              );
+            })}
 
             {/* "Mer" dropdown for secondary pages */}
             <NavigationMenuItem>
               <NavigationMenuTrigger
                 data-active={isSecondaryActive ? "" : undefined}
+                className="text-white/70 hover:text-white hover:bg-white/10 data-[active]:text-white data-[active]:bg-white/15"
               >
                 Mer
               </NavigationMenuTrigger>
@@ -113,7 +115,7 @@ export function Navbar() {
           <SheetTrigger
             render={
               <button
-                className="md:hidden inline-flex items-center justify-center rounded-md p-2 text-foreground hover:bg-muted transition-colors"
+                className="md:hidden inline-flex items-center justify-center rounded-md p-2 text-white hover:bg-white/10 transition-colors"
                 aria-label={open ? "Lukk meny" : "Åpne meny"}
               >
                 {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
