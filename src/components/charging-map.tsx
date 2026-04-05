@@ -442,7 +442,7 @@ export function ChargingMap() {
           zoom={5}
           style={{ height: "100%", width: "100%" }}
         >
-          {center && <FlyTo lat={center.lat} lon={center.lon} zoom={center.zoom} />}
+          {center && <FlyTo lat={center.lat} lon={center.lon} zoom={center.zoom} _t={center._t} />}
           <PanToSelected station={selected} />
           <TileLayer
             key={tileLayer}

@@ -24,11 +24,11 @@ export type Suggestion =
 
 // ─── FlyTo map component ────────────────────────────────────
 
-export function FlyTo({ lat, lon, zoom = 10 }: { lat: number; lon: number; zoom?: number }) {
+export function FlyTo({ lat, lon, zoom = 10, _t }: { lat: number; lon: number; zoom?: number; _t?: number }) {
   const map = useMap();
   useEffect(() => {
     map.flyTo([lat, lon], zoom, { duration: 1.2 });
-  }, [lat, lon, zoom, map]);
+  }, [lat, lon, zoom, _t, map]);
   return null;
 }
 

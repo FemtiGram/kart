@@ -559,7 +559,7 @@ export function EnergyMap() {
           style={{ height: "100%", width: "100%" }}
         >
           {center && (
-            <FlyTo lat={center.lat} lon={center.lon} zoom={center.zoom} />
+            <FlyTo lat={center.lat} lon={center.lon} zoom={center.zoom} _t={center._t} />
           )}
           <PanToSelected plant={selected} />
           <TileLayer

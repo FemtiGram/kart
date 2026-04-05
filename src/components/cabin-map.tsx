@@ -501,11 +501,11 @@ export function CabinMap() {
         )}
 
         <MapContainer
-          center={[61.5, 8.3]}
-          zoom={9}
+          center={[65, 14]}
+          zoom={5}
           style={{ height: "100%", width: "100%" }}
         >
-          {center && <FlyTo lat={center.lat} lon={center.lon} zoom={center.zoom} />}
+          {center && <FlyTo lat={center.lat} lon={center.lon} zoom={center.zoom} _t={center._t} />}
           <PanToSelected cabin={selected} />
           <TileLayer
             key={tileLayer}
