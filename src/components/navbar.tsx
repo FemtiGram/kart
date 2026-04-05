@@ -40,7 +40,7 @@ export function Navbar() {
   const isSecondaryActive = secondaryLinks.some((l) => l.href === pathname);
 
   return (
-    <header className="sticky top-0 z-50 w-full bg-background border-b">
+    <header className="sticky top-0 z-[1100] w-full bg-background border-b">
       {/* Top accent line */}
       <div className="h-1 w-full" style={{ background: "#24374c" }} />
       <div className="container mx-auto flex h-14 items-center justify-between px-6 md:px-16">
