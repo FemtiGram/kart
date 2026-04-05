@@ -1,8 +1,12 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { MapContainer, TileLayer, Polygon, useMap } from "react-leaflet";
+import { MapContainer, TileLayer, Polygon, Marker, useMap } from "react-leaflet";
+import MarkerClusterGroup from "react-leaflet-cluster";
+import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import "react-leaflet-cluster/dist/assets/MarkerCluster.css";
+import "react-leaflet-cluster/dist/assets/MarkerCluster.Default.css";
 import {
   Loader2,
   X,
@@ -61,13 +65,44 @@ const TILE_LAYERS = {
 
 type TileLayerKey = keyof typeof TILE_LAYERS;
 
+const RESERVOIR_COLOR = "#0891b2";
+
+const reservoirIconCache = new Map<string, L.DivIcon>();
+function reservoirIcon(isSelected: boolean, inverted: boolean): L.DivIcon {
+  const key = `${isSelected}-${inverted}`;
+  const cached = reservoirIconCache.get(key);
+  if (cached) return cached;
+  const size = 24;
+  const bg = inverted ? (isSelected ? "#24374c" : RESERVOIR_COLOR) : "white";
+  const iconColor = inverted ? "white" : (isSelected ? "#24374c" : RESERVOIR_COLOR);
+  const border = isSelected ? "#24374c" : inverted ? "rgba(255,255,255,0.3)" : "rgba(0,0,0,0.15)";
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="${iconColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6c.6.5 1.2 1 2.5 1C7 7 7 5 9.5 5c2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/><path d="M2 12c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/><path d="M2 18c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/></svg>`;
+  const icon = L.divIcon({
+    className: "",
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
+    html: `<div style="width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;line-height:0;background:${bg};border-radius:50%;box-shadow:0 1px 4px rgba(0,0,0,0.25);border:2.5px solid ${border}">${svg}</div>`,
+  });
+  reservoirIconCache.set(key, icon);
+  return icon;
+}
+
 function fillColor(hrv: number | null, lrv: number | null): string {
-  // Without live water level, color by regulation range (bigger range = more significant)
-  if (hrv == null || lrv == null) return "#0891b2";
+  if (hrv == null || lrv == null) return RESERVOIR_COLOR;
   const range = hrv - lrv;
-  if (range > 30) return "#0369a1"; // large regulation
-  if (range > 10) return "#0891b2"; // medium
-  return "#22d3ee"; // small
+  if (range > 30) return "#0369a1";
+  if (range > 10) return "#0891b2";
+  return "#22d3ee";
+}
+
+function ZoomTracker({ onZoom }: { onZoom: (z: number) => void }) {
+  const map = useMap();
+  useEffect(() => {
+    const handler = () => onZoom(map.getZoom());
+    map.on("zoomend", handler);
+    return () => { map.off("zoomend", handler); };
+  }, [map, onZoom]);
+  return null;
 }
 
 function PanToSelected({ reservoir }: { reservoir: Reservoir | null }) {
@@ -89,7 +124,8 @@ export function ReservoirMap() {
   const [hydroData, setHydroData] = useState<HydroStationData | null>(null);
   const [loadingHydro, setLoadingHydro] = useState(false);
   const [center, setCenter] = useState<{ lat: number; lon: number; zoom?: number; _t?: number } | null>(null);
-  const [tileLayer, setTileLayer] = useState<TileLayerKey>("kart");
+  const [tileLayer, setTileLayer] = useState<TileLayerKey>("gråtone");
+  const [zoomLevel, setZoomLevel] = useState(5);
 
   const [query, setQuery] = useState("");
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
@@ -311,13 +347,51 @@ export function ReservoirMap() {
         <MapContainer center={[65, 14]} zoom={5} style={{ height: "100%", width: "100%" }}>
           {center && <FlyTo lat={center.lat} lon={center.lon} zoom={center.zoom} _t={center._t} />}
           <PanToSelected reservoir={selected} />
+          <ZoomTracker onZoom={setZoomLevel} />
           <TileLayer
             key={tileLayer}
             url={TILE_LAYERS[tileLayer].url}
             attribution={TILE_LAYERS[tileLayer].attribution}
             maxZoom={17}
           />
-          {reservoirs.map((r) => (
+          {/* Point markers with clustering at low zoom */}
+          {zoomLevel < 10 && (
+            <MarkerClusterGroup
+              chunkedLoading
+              maxClusterRadius={60}
+              spiderfyOnMaxZoom
+              showCoverageOnHover={false}
+              iconCreateFunction={(cluster: { getChildCount: () => number }) => {
+                const count = cluster.getChildCount();
+                let size = 36;
+                let fontSize = 13;
+                if (count >= 50) { size = 44; fontSize = 14; }
+                if (count >= 200) { size = 52; fontSize = 15; }
+                return L.divIcon({
+                  html: `<div style="width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;background:${RESERVOIR_COLOR};color:white;border-radius:50%;font-weight:700;font-size:${fontSize}px;box-shadow:0 2px 6px rgba(0,0,0,0.3);border:2px solid rgba(255,255,255,0.6)">${count}</div>`,
+                  className: "",
+                  iconSize: [size, size],
+                  iconAnchor: [size / 2, size / 2],
+                });
+              }}
+            >
+              {reservoirs.map((r) => (
+                <Marker
+                  key={r.id}
+                  position={[r.center.lat, r.center.lon]}
+                  icon={reservoirIcon(selected?.id === r.id, tileLayer === "gråtone")}
+                  eventHandlers={{
+                    click() {
+                      setSelected((prev) => (prev?.id === r.id ? null : r));
+                      setShowInfoSheet(false);
+                    },
+                  }}
+                />
+              ))}
+            </MarkerClusterGroup>
+          )}
+          {/* Polygon overlays at high zoom */}
+          {zoomLevel >= 10 && reservoirs.map((r) => (
             <Polygon
               key={r.id}
               positions={r.polygon}
