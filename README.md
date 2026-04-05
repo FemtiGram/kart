@@ -6,6 +6,7 @@ Interactive maps built entirely on free, open Norwegian data. No API keys, no pa
 - **Where to charge your EV** — every charging station in Norway, with connector types and capacity
 - **Where to find a cabin** — mountain huts and DNT cabins with elevation, weather, and availability
 - **Where the energy comes from** — wind farms and hydroelectric plants, including those under construction or rejected
+- **How full the reservoirs are** — regulated water reservoirs with live water levels from NVE
 - **How much people earn** — median household income per municipality, ranked and color-coded
 - **What nature is protected** — national parks, nature reserves, and conservation areas by municipality
 - **How high you are** — click anywhere for elevation data and live weather
@@ -58,6 +59,12 @@ All data updates automatically. The maps use clustering for smooth performance e
 - Individual wind turbines visible at zoom 12+
 - Compact card + expandable sheet per type (turbines + GWh for wind, fall height + river for hydro)
 - Live river data for hydro plants: discharge (m³/s), water level, and percentile context from NVE HydAPI
+
+### Magasinkart (`/magasin`)
+- Regulated water reservoirs shown as polygon overlays on the map
+- Data from NVE ArcGIS (Vannkraft1 layer 6), polygons colored by regulation range
+- Detail sheet shows HRV/LRV levels, volume, area, linked power plant
+- Live water level + discharge data from nearest NVE HydAPI station with percentile gauge
 
 ### Vindkraft (`/vindkraft`)
 - Standalone wind power map (also accessible independently)
@@ -147,6 +154,7 @@ All APIs are free and require no authentication.
 | Charging stations | OpenStreetMap (Overpass) | Build-time static JSON |
 | Tourist cabins | OpenStreetMap (Overpass) | Build-time static JSON |
 | Wind + hydro power | NVE ArcGIS (Vindkraft2, Vannkraft1) | 1h server cache |
+| Reservoirs | NVE ArcGIS (Vannkraft1 layer 6) | 1h server cache |
 | River observations | NVE HydAPI (discharge, water level, percentiles) | Per-request |
 | Income | SSB InntektStruk13 | Server-side, loaded once |
 | Protected areas | SSB table 08936 | Server-side, loaded once |
@@ -230,6 +238,7 @@ src/app/
     weather/route.ts    — MET.no proxy (30min cache)
     wind-power/route.ts — NVE wind power proxy (1h cache)
     energy/route.ts     — NVE wind + hydro proxy (1h cache)
+    reservoirs/route.ts — NVE reservoir polygons (1h cache)
     hydro-station/route.ts — NVE HydAPI live river data
 
 src/components/

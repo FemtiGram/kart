@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { Menu, X, Mountain, DollarSign, Shield, Zap, Home, Wind, BatteryCharging } from "lucide-react";
+import { Menu, X, Mountain, DollarSign, Shield, Zap, Home, Wind, BatteryCharging, Waves } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -24,6 +24,7 @@ import {
 const primaryLinks = [
   { href: "/map", label: "Høydekart", icon: Mountain },
   { href: "/energi", label: "Energikart", icon: BatteryCharging },
+  { href: "/magasin", label: "Magasinkart", icon: Waves },
   { href: "/lading", label: "Ladestasjoner", icon: Zap },
   { href: "/hytter", label: "Turisthytter", icon: Home },
 ];

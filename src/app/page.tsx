@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, Mountain, DollarSign, Shield, Zap, Home as HomeIcon, BatteryCharging } from "lucide-react";
+import { ArrowRight, Mountain, DollarSign, Shield, Zap, Home as HomeIcon, BatteryCharging, Waves } from "lucide-react";
 
 const featured = {
   title: "Høydekart",
@@ -17,6 +17,12 @@ const groups = [
         description: "Norges fornybare kraftverk. Vindkraft og vannkraft på kart.",
         href: "/energi",
         icon: BatteryCharging,
+      },
+      {
+        title: "Magasinkart",
+        description: "Regulerte vannmagasiner med sanntids vanndata fra NVE.",
+        href: "/magasin",
+        icon: Waves,
       },
       {
         title: "Ladestasjoner",

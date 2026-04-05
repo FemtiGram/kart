@@ -25,6 +25,7 @@ src/app/
   vern/page.tsx         — Protected areas choropleth
   map/page.tsx          — Elevation + weather map
   energi/page.tsx       — Energy (wind + hydro) map
+  magasin/page.tsx      — Reservoir monitor map
   vindkraft/page.tsx    — Wind power plants map (standalone)
   api/
     income/route.ts     — SSB income data
@@ -33,6 +34,7 @@ src/app/
     weather/route.ts    — MET.no proxy (30min cache)
     wind-power/route.ts — NVE wind power proxy (1h cache)
     energy/route.ts     — NVE wind + hydro proxy (1h cache)
+    reservoirs/route.ts — NVE reservoir polygons (1h cache)
     hydro-station/route.ts — NVE HydAPI live river data (requires API key)
 
 src/components/
@@ -147,6 +149,7 @@ All maps use a **compact floating card + expandable bottom Sheet** pattern:
 | Charging stations | OpenStreetMap (Overpass) | Build-time static JSON + client fallback |
 | Cabins | OpenStreetMap (Overpass) | Build-time static JSON + client fallback |
 | Wind + hydro power | NVE ArcGIS (Vindkraft2 layers 0/1/2/4/8, Vannkraft1 layer 0) | 1h server cache via API route |
+| Reservoirs | NVE ArcGIS (Vannkraft1 layer 6 — Magasin) | 1h server cache via API route |
 | River observations | NVE HydAPI (discharge, water level, percentiles) | Per-request (requires NVE_API_KEY) |
 | Income | SSB InntektStruk13 | Loaded once on mount |
 | Protected areas | SSB tabell 08936 | Loaded once on mount |

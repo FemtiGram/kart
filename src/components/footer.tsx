@@ -5,6 +5,7 @@ const footerLinks = {
   Utforsk: [
     { label: "Høydekart", href: "/map" },
     { label: "Energikart", href: "/energi" },
+    { label: "Magasinkart", href: "/magasin" },
     { label: "Ladestasjoner", href: "/lading" },
     { label: "Turisthytter", href: "/hytter" },
     { label: "Inntektskart", href: "/lonn" },
