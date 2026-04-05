@@ -3,10 +3,12 @@ import { Separator } from "@/components/ui/separator";
 
 const footerLinks = {
   Utforsk: [
-    { label: "Kart", href: "/map" },
-    { label: "Åpne data", href: "/data" },
-    { label: "Stedsnavn", href: "/stedsnavn" },
-    { label: "Om tjenesten", href: "/about" },
+    { label: "Høydekart", href: "/map" },
+    { label: "Energikart", href: "/energi" },
+    { label: "Ladestasjoner", href: "/lading" },
+    { label: "Turisthytter", href: "/hytter" },
+    { label: "Inntektskart", href: "/lonn" },
+    { label: "Verneområder", href: "/vern" },
   ],
   Ressurser: [
     { label: "kartverket.no", href: "https://www.kartverket.no", external: true },
