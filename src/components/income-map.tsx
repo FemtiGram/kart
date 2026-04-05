@@ -416,7 +416,7 @@ export function IncomeMap() {
         <Sheet open={showInfoSheet && !!selected} onOpenChange={(open) => { setShowInfoSheet(open); if (!open && !selected) clearSelection(); }}>
           <SheetContent side="bottom" className="rounded-t-2xl max-h-[85svh] overflow-y-auto">
             {selected && (
-              <div className="mx-auto w-full max-w-md px-2">
+              <div className="mx-auto w-full max-w-md px-4 pb-6">
                 <SheetHeader>
                   <SheetTitle className="text-left sr-only">{selected.kommunenavn}</SheetTitle>
                 </SheetHeader>
