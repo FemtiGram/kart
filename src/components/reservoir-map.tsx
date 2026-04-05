@@ -461,14 +461,6 @@ export function ReservoirMap() {
             </div>
 
             <div className="mt-3 flex gap-4">
-              {selected.hrv != null && selected.lrv != null && (
-                <div className="flex items-baseline gap-1.5">
-                  <span className="text-2xl font-extrabold" style={{ color: "#0891b2" }}>
-                    {Math.round(selected.hrv - selected.lrv)}
-                  </span>
-                  <span className="text-xs text-muted-foreground">m regulering</span>
-                </div>
-              )}
               {selected.volumeMm3 != null && (
                 <div className="flex items-baseline gap-1.5">
                   <span className="text-2xl font-extrabold" style={{ color: "#0891b2" }}>
@@ -483,6 +475,14 @@ export function ReservoirMap() {
                     {selected.areaKm2.toFixed(2)}
                   </span>
                   <span className="text-xs text-muted-foreground">km²</span>
+                </div>
+              )}
+              {selected.hrv != null && selected.lrv != null && (
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-2xl font-extrabold" style={{ color: "#0891b2" }}>
+                    {Math.round(selected.hrv - selected.lrv)}
+                  </span>
+                  <span className="text-xs text-muted-foreground">m regulering</span>
                 </div>
               )}
             </div>
@@ -529,18 +529,6 @@ export function ReservoirMap() {
 
                 {/* Layer 2 — Key metrics */}
                 <div className="mt-4 pt-4 border-t flex flex-wrap gap-x-6 gap-y-2">
-                  {selected.hrv != null && (
-                    <div className="flex items-baseline gap-1.5">
-                      <span className="text-3xl font-extrabold" style={{ color: "#0891b2" }}>{selected.hrv}</span>
-                      <span className="text-xs text-muted-foreground">m HRV</span>
-                    </div>
-                  )}
-                  {selected.lrv != null && (
-                    <div className="flex items-baseline gap-1.5">
-                      <span className="text-3xl font-extrabold" style={{ color: "#0891b2" }}>{selected.lrv}</span>
-                      <span className="text-xs text-muted-foreground">m LRV</span>
-                    </div>
-                  )}
                   {selected.volumeMm3 != null && (
                     <div className="flex items-baseline gap-1.5">
                       <span className="text-3xl font-extrabold" style={{ color: "#0891b2" }}>{selected.volumeMm3.toFixed(1)}</span>
@@ -557,10 +545,16 @@ export function ReservoirMap() {
 
                 {/* Layer 3 — Details */}
                 <div className="mt-4 pt-4 border-t flex flex-col gap-2">
-                  {selected.purpose && (
+                  {selected.plantName && (
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Formål</span>
-                      <span className="font-medium">{selected.purpose}</span>
+                      <span className="text-muted-foreground">Kraftverk</span>
+                      <span className="font-medium">{selected.plantName}</span>
+                    </div>
+                  )}
+                  {selected.hrv != null && selected.lrv != null && (
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">Regulering</span>
+                      <span className="font-medium">{selected.lrv}–{selected.hrv} moh. ({Math.round(selected.hrv - selected.lrv)} m)</span>
                     </div>
                   )}
                   {selected.yearBuilt && (
@@ -569,10 +563,10 @@ export function ReservoirMap() {
                       <span className="font-medium">{selected.yearBuilt}</span>
                     </div>
                   )}
-                  {selected.hrv != null && selected.lrv != null && (
+                  {selected.purpose && selected.purpose !== "Kraftproduksjon" && (
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Reguleringsområde</span>
-                      <span className="font-medium">{Math.round(selected.hrv - selected.lrv)} m ({selected.lrv}–{selected.hrv} moh.)</span>
+                      <span className="text-muted-foreground">Formål</span>
+                      <span className="font-medium">{selected.purpose}</span>
                     </div>
                   )}
                 </div>
@@ -585,58 +579,22 @@ export function ReservoirMap() {
                     </div>
                   </div>
                 )}
-                {!loadingHydro && hydroData?.station && (hydroData.discharge != null || hydroData.waterLevel != null) && (
+                {!loadingHydro && hydroData?.station && hydroData.discharge != null && (
                   <div className="mt-4 pt-4 border-t">
-                    {/* Fill level gauge */}
-                    {hydroData.waterLevel != null && selected.hrv != null && selected.lrv != null && selected.hrv > selected.lrv && (() => {
-                      const fillPct = Math.max(0, Math.min(100, ((hydroData.waterLevel - selected.lrv) / (selected.hrv - selected.lrv)) * 100));
-                      const fillLabel = fillPct > 75 ? "Høy" : fillPct > 40 ? "Middels" : "Lav";
-                      const fillBg = fillPct > 75 ? "#0369a1" : fillPct > 40 ? "#0891b2" : "#ca8a04";
-                      return (
-                        <div className="mb-4">
-                          <div className="flex items-center justify-between mb-1.5">
-                            <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Fyllingsgrad</span>
-                            <span className="text-sm font-bold" style={{ color: fillBg }}>{Math.round(fillPct)}% · {fillLabel}</span>
-                          </div>
-                          <div className="relative h-3 w-full rounded-full bg-muted overflow-hidden">
-                            <div
-                              className="absolute inset-y-0 left-0 rounded-full transition-all"
-                              style={{ width: `${fillPct}%`, background: fillBg }}
-                            />
-                          </div>
-                          <div className="flex justify-between mt-0.5 text-[10px] text-muted-foreground">
-                            <span>LRV {selected.lrv} m</span>
-                            <span>{hydroData.waterLevel.toFixed(1)} m</span>
-                            <span>HRV {selected.hrv} m</span>
-                          </div>
-                        </div>
-                      );
-                    })()}
-
                     <div className="flex items-center gap-1.5 mb-3">
                       <Waves className="h-3.5 w-3.5 text-muted-foreground" />
                       <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                        Målestasjon: {hydroData.station.name}
+                        Nærmeste stasjon: {hydroData.station.name}
                       </span>
                       <span className="text-[10px] text-muted-foreground/60">
                         ({hydroData.station.distanceKm} km)
                       </span>
                     </div>
-                    <div className="flex flex-wrap gap-x-6 gap-y-2">
-                      {hydroData.discharge != null && (
-                        <div className="flex items-baseline gap-1.5">
-                          <span className="text-2xl font-extrabold" style={{ color: "#0891b2" }}>{hydroData.discharge.toFixed(1)}</span>
-                          <span className="text-xs text-muted-foreground">m³/s vannføring</span>
-                        </div>
-                      )}
-                      {hydroData.waterLevel != null && (
-                        <div className="flex items-baseline gap-1.5">
-                          <span className="text-2xl font-extrabold" style={{ color: "#0891b2" }}>{hydroData.waterLevel.toFixed(2)}</span>
-                          <span className="text-xs text-muted-foreground">m vannstand</span>
-                        </div>
-                      )}
+                    <div className="flex items-baseline gap-1.5">
+                      <span className="text-2xl font-extrabold" style={{ color: "#0891b2" }}>{hydroData.discharge.toFixed(1)}</span>
+                      <span className="text-xs text-muted-foreground">m³/s vannføring</span>
                     </div>
-                    {hydroData.percentile && hydroData.discharge != null && (
+                    {hydroData.percentile && (
                       <div className="mt-3">
                         <div className="flex items-center gap-1.5 mb-1.5">
                           <Gauge className="h-3 w-3 text-muted-foreground" />
