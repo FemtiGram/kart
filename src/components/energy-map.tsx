@@ -77,7 +77,7 @@ const HAVVIND_COLOR = "#7c3aed";
 const TYPE_META: Record<EnergyType, { label: string; color: string; icon: typeof Wind }> = {
   vind: { label: "Vindkraft", color: "#0369a1", icon: Wind },
   vann: { label: "Vannkraft", color: "#0891b2", icon: Droplets },
-  havvind: { label: "Havvind", color: HAVVIND_COLOR, icon: Wind },
+  havvind: { label: "Havvind (planlagt)", color: HAVVIND_COLOR, icon: Wind },
 };
 
 const WIND_STATUS_META: Record<WindStatus, { label: string; color: string }> = {
@@ -949,13 +949,14 @@ export function EnergyMap() {
               <div className="min-w-0">
                 <div className="flex items-center gap-1.5 mb-0.5">
                   <span className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full text-white" style={{ background: HAVVIND_COLOR }}>
-                    Havvind
+                    Havvind · Utredning
                   </span>
                   <span className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">
                     {selectedHavvind.typeAnlegg}
                   </span>
                 </div>
                 <p className="font-bold text-base truncate leading-snug">{selectedHavvind.name}</p>
+                <p className="text-xs text-muted-foreground">Planlagt område — ikke bygget ennå</p>
               </div>
               <button
                 onClick={() => setSelectedHavvind(null)}
@@ -1005,14 +1006,14 @@ export function EnergyMap() {
 
                 <div className="flex items-center gap-1.5 mb-1">
                   <span className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full text-white" style={{ background: HAVVIND_COLOR }}>
-                    Havvind
+                    Havvind · Utredning
                   </span>
                   <span className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">
                     {selectedHavvind.typeAnlegg}
                   </span>
                 </div>
                 <p className="font-bold text-lg leading-snug">{selectedHavvind.name}</p>
-                <p className="text-sm text-muted-foreground">Utredningsområde for havvind</p>
+                <p className="text-sm text-muted-foreground">Planlagt utredningsområde — ingen turbiner er bygget ennå</p>
 
                 <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t">
                   {selectedHavvind.arealKm2 != null && (
