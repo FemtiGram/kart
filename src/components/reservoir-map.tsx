@@ -18,9 +18,6 @@ import {
   RotateCw,
   ChevronUp,
   Navigation,
-  Waves,
-  Gauge,
-  Droplets,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -41,13 +38,6 @@ interface Reservoir {
   purpose: string | null;
   polygon: [number, number][][];
   center: { lat: number; lon: number };
-}
-
-interface HydroStationData {
-  station: { id: string; name: string; river: string | null; distanceKm: number } | null;
-  discharge: number | null;
-  waterLevel: number | null;
-  percentile: { p25: number | null; p50: number | null; p75: number | null; p90: number | null; min: number | null; max: number | null } | null;
 }
 
 const TILE_LAYERS = {
@@ -121,8 +111,6 @@ export function ReservoirMap() {
   const [showInfo, setShowInfo] = useState(false);
   const [showInfoSheet, setShowInfoSheet] = useState(false);
   const [selected, setSelected] = useState<Reservoir | null>(null);
-  const [hydroData, setHydroData] = useState<HydroStationData | null>(null);
-  const [loadingHydro, setLoadingHydro] = useState(false);
   const [center, setCenter] = useState<{ lat: number; lon: number; zoom?: number; _t?: number } | null>(null);
   const [tileLayer, setTileLayer] = useState<TileLayerKey>("gråtone");
   const [zoomLevel, setZoomLevel] = useState(5);
@@ -155,31 +143,6 @@ export function ReservoirMap() {
   }, []);
 
   useEffect(() => { loadReservoirs(); }, [loadReservoirs]);
-
-  // Fetch hydro data when info sheet opens
-  useEffect(() => {
-    if (!showInfoSheet || !selected) {
-      setHydroData(null);
-      return;
-    }
-    let cancelled = false;
-    setLoadingHydro(true);
-    fetch(`/api/hydro-station?lat=${selected.center.lat}&lon=${selected.center.lon}`)
-      .then((r) => r.json())
-      .then((data) => {
-        if (!cancelled) {
-          setHydroData(data.error ? null : data);
-          setLoadingHydro(false);
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setHydroData(null);
-          setLoadingHydro(false);
-        }
-      });
-    return () => { cancelled = true; };
-  }, [showInfoSheet, selected]);
 
   // Search
   const search = useCallback(async (q: string) => {
@@ -571,58 +534,6 @@ export function ReservoirMap() {
                   )}
                 </div>
 
-                {/* Live hydro station data */}
-                {loadingHydro && (
-                  <div className="mt-4 pt-4 border-t">
-                    <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" /> Henter vanndata...
-                    </div>
-                  </div>
-                )}
-                {!loadingHydro && hydroData?.station && hydroData.discharge != null && (
-                  <div className="mt-4 pt-4 border-t">
-                    <div className="flex items-center gap-1.5 mb-3">
-                      <Waves className="h-3.5 w-3.5 text-muted-foreground" />
-                      <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                        Nærmeste stasjon: {hydroData.station.name}
-                      </span>
-                      <span className="text-[10px] text-muted-foreground/60">
-                        ({hydroData.station.distanceKm} km)
-                      </span>
-                    </div>
-                    <div className="flex items-baseline gap-1.5">
-                      <span className="text-2xl font-extrabold" style={{ color: "#0891b2" }}>{hydroData.discharge.toFixed(1)}</span>
-                      <span className="text-xs text-muted-foreground">m³/s vannføring</span>
-                    </div>
-                    {hydroData.percentile && (
-                      <div className="mt-3">
-                        <div className="flex items-center gap-1.5 mb-1.5">
-                          <Gauge className="h-3 w-3 text-muted-foreground" />
-                          <span className="text-xs text-muted-foreground">Vannføring vs. normalen</span>
-                        </div>
-                        <div className="relative h-2 w-full rounded-full bg-muted overflow-hidden">
-                          <div
-                            className="absolute inset-y-0 left-0 rounded-full"
-                            style={{
-                              width: `${Math.min(100, Math.max(0, hydroData.percentile.max ? (hydroData.discharge / hydroData.percentile.max) * 100 : 50))}%`,
-                              background: hydroData.percentile.p75 && hydroData.discharge > hydroData.percentile.p75
-                                ? "#dc2626"
-                                : hydroData.percentile.p50 && hydroData.discharge > hydroData.percentile.p50
-                                  ? "#ca8a04"
-                                  : "#16a34a",
-                            }}
-                          />
-                        </div>
-                        <div className="flex justify-between mt-0.5 text-[10px] text-muted-foreground">
-                          <span>Lavt</span>
-                          <span>{hydroData.percentile.p50 != null ? `Median: ${hydroData.percentile.p50.toFixed(1)} m³/s` : ""}</span>
-                          <span>Høyt</span>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-
                 {/* Layer 4 — Links & source */}
                 <div className="mt-4 pt-4 border-t flex flex-col gap-3">
                   <a
@@ -634,7 +545,7 @@ export function ReservoirMap() {
                     <Navigation className="h-4 w-4" /> Kjør hit
                   </a>
                   <p className="text-xs text-muted-foreground text-center">
-                    Kilde: <a href="https://nve.geodataonline.no/arcgis/rest/services/" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">NVE Geodata</a> · Vanndata fra <a href="https://hydapi.nve.no" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">NVE HydAPI</a>
+                    Kilde: <a href="https://nve.geodataonline.no/arcgis/rest/services/" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">NVE Geodata</a>
                   </p>
                 </div>
               </div>
@@ -656,9 +567,8 @@ export function ReservoirMap() {
             <div className="flex flex-col gap-3 text-sm">
               <p>Kartet viser regulerte vannmagasiner i Norge. Disse samler vann for kraftproduksjon og er en viktig del av Norges energisystem.</p>
               <p><strong>HRV</strong> (høyeste regulerte vannstand) og <strong>LRV</strong> (laveste regulerte vannstand) viser reguleringsområdet. Forskjellen mellom disse angir hvor mye magasinet kan tappes.</p>
-              <p>Sanntids vanndata hentes fra NVE HydAPI og viser vannføring og vannstand fra nærmeste målestasjon.</p>
               <p className="text-xs text-muted-foreground">
-                Kilde: <a href="https://nve.geodataonline.no/arcgis/rest/services/" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">NVE Geodata</a> · <a href="https://hydapi.nve.no" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">NVE HydAPI</a>
+                Kilde: <a href="https://nve.geodataonline.no/arcgis/rest/services/" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">NVE Geodata</a>
               </p>
             </div>
           </div>
