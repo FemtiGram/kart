@@ -171,7 +171,7 @@ export default function Home() {
           </div>
 
           <p className="text-xs text-muted-foreground mt-8">
-            Laget av Anders Gram Meldgaard.
+            Laget av Anders Gram.
           </p>
         </div>
       </div>
