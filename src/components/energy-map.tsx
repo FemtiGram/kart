@@ -26,6 +26,8 @@ import {
   Navigation,
   Waves,
   Gauge,
+  Fuel,
+  Anchor,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -33,7 +35,7 @@ import { FYLKER, isInNorway, OSLO } from "@/lib/fylker";
 import { FlyTo, useDebounceRef, useSearchAbort } from "@/lib/map-utils";
 import type { Address, KommuneEntry, Suggestion } from "@/lib/map-utils";
 
-type EnergyType = "vind" | "vann" | "havvind";
+type EnergyType = "vind" | "vann" | "havvind" | "oilgas";
 type WindStatus = "operational" | "construction" | "approved" | "rejected";
 
 interface EnergyPlant {
@@ -61,6 +63,22 @@ interface WindTurbine {
   plantName: string | null;
 }
 
+interface OilGasFacility {
+  id: number;
+  name: string;
+  kind: string;
+  phase: string;
+  functions: string | null;
+  operator: string | null;
+  fieldName: string | null;
+  waterDepth: number | null;
+  yearStartup: number | null;
+  isSurface: boolean;
+  factPageUrl: string | null;
+  lat: number;
+  lon: number;
+}
+
 interface HavvindZone {
   id: number;
   name: string;
@@ -73,11 +91,13 @@ interface HavvindZone {
 }
 
 const HAVVIND_COLOR = "#7c3aed";
+const OILGAS_COLOR = "#d97706";
 
 const TYPE_META: Record<EnergyType, { label: string; color: string; icon: typeof Wind }> = {
   vind: { label: "Vindkraft", color: "#0369a1", icon: Wind },
   vann: { label: "Vannkraft", color: "#0891b2", icon: Droplets },
   havvind: { label: "Havvind (planlagt)", color: HAVVIND_COLOR, icon: Wind },
+  oilgas: { label: "Olje & gass", color: OILGAS_COLOR, icon: Fuel },
 };
 
 const WIND_STATUS_META: Record<WindStatus, { label: string; color: string }> = {
@@ -167,6 +187,28 @@ function turbineIcon(inverted: boolean): L.DivIcon {
   return icon;
 }
 
+const oilgasIconCache = new Map<string, L.DivIcon>();
+function oilgasIcon(isSelected: boolean, inverted: boolean, isSurface: boolean): L.DivIcon {
+  const key = `${isSelected}-${inverted}-${isSurface}`;
+  const cached = oilgasIconCache.get(key);
+  if (cached) return cached;
+  const size = isSurface ? 28 : 22;
+  const iconSize = isSurface ? 14 : 10;
+  const bg = inverted ? (isSelected ? "#24374c" : OILGAS_COLOR) : "white";
+  const iconColor = inverted ? "white" : (isSelected ? "#24374c" : OILGAS_COLOR);
+  const border = isSelected ? "#24374c" : inverted ? "rgba(255,255,255,0.3)" : "rgba(0,0,0,0.15)";
+  // Fuel/droplet icon for oil
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="${iconSize}" height="${iconSize}" fill="none" stroke="${iconColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 22h18"/><path d="M6 18V2"/><path d="m6 7 5-1v4l-5 1"/><circle cx="18" cy="16" r="4"/><path d="m18 13-1 5h2l-1-5"/></svg>`;
+  const icon = L.divIcon({
+    className: "",
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
+    html: `<div style="width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;line-height:0;background:${bg};border-radius:50%;box-shadow:0 1px 4px rgba(0,0,0,0.25);border:2.5px solid ${border}${!isSurface ? ";opacity:0.7" : ""}">${svg}</div>`,
+  });
+  oilgasIconCache.set(key, icon);
+  return icon;
+}
+
 const havvindIconCache = new Map<string, L.DivIcon>();
 function havvindIcon(isSelected: boolean, inverted: boolean): L.DivIcon {
   const key = `${isSelected}-${inverted}`;
@@ -210,6 +252,8 @@ export function EnergyMap() {
   const [plants, setPlants] = useState<EnergyPlant[]>([]);
   const [turbines, setTurbines] = useState<WindTurbine[]>([]);
   const [havvindZones, setHavvindZones] = useState<HavvindZone[]>([]);
+  const [oilGasFacilities, setOilGasFacilities] = useState<OilGasFacility[]>([]);
+  const [selectedOilGas, setSelectedOilGas] = useState<OilGasFacility | null>(null);
   const [zoomLevel, setZoomLevel] = useState(5);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -218,7 +262,7 @@ export function EnergyMap() {
   const [showInfo, setShowInfo] = useState(false);
   const [showFilter, setShowFilter] = useState(false);
   const [showInfoSheet, setShowInfoSheet] = useState(false);
-  const [filterTypes, setFilterTypes] = useState<Set<EnergyType>>(new Set(["vind", "vann", "havvind"]));
+  const [filterTypes, setFilterTypes] = useState<Set<EnergyType>>(new Set(["vind", "vann", "havvind", "oilgas"]));
   const [filterWindStatus, setFilterWindStatus] = useState<Set<WindStatus>>(new Set(["operational"]));
   const [showSmall, setShowSmall] = useState(false);
   const [selected, setSelected] = useState<EnergyPlant | null>(null);
@@ -262,6 +306,7 @@ export function EnergyMap() {
       setPlants(data.plants);
       setTurbines(data.turbines ?? []);
       setHavvindZones(data.havvindZones ?? []);
+      setOilGasFacilities(data.oilGasFacilities ?? []);
       setLoading(false);
     } catch {
       setError(true);
@@ -396,6 +441,7 @@ export function EnergyMap() {
     setSuggestions([]);
     setSelected(null);
     setSelectedHavvind(null);
+    setSelectedOilGas(null);
     if (s.type === "fylke") {
       setQuery(s.fylkesnavn);
       setCenter({ lat: s.lat, lon: s.lon, zoom: s.zoom });
@@ -482,7 +528,12 @@ export function EnergyMap() {
     return havvindZones;
   }, [havvindZones, filterTypes]);
 
-  const activeFilterCount = (filterTypes.size < 3 ? 1 : 0) + (showSmall ? 1 : 0) + (filterWindStatus.size !== 1 || !filterWindStatus.has("operational") ? 1 : 0);
+  const filteredOilGas = useMemo(() => {
+    if (!filterTypes.has("oilgas")) return [];
+    return oilGasFacilities;
+  }, [oilGasFacilities, filterTypes]);
+
+  const activeFilterCount = (filterTypes.size < 4 ? 1 : 0) + (showSmall ? 1 : 0) + (filterWindStatus.size !== 1 || !filterWindStatus.has("operational") ? 1 : 0);
 
   // Stats
   const windCount = useMemo(() => filteredPlants.filter((p) => p.type === "vind").length, [filteredPlants]);
@@ -540,10 +591,10 @@ export function EnergyMap() {
                     <div>
                       <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Type</p>
                       <div className="rounded-xl border overflow-hidden">
-                        {(["vind", "vann", "havvind"] as EnergyType[]).map((t) => {
+                        {(["vind", "vann", "havvind", "oilgas"] as EnergyType[]).map((t) => {
                           const active = filterTypes.has(t);
                           const meta = TYPE_META[t];
-                          const count = t === "havvind" ? havvindZones.length : plants.filter((p) => p.type === t && (showSmall || (p.capacityMW ?? 0) >= MW_THRESHOLD)).length;
+                          const count = t === "havvind" ? havvindZones.length : t === "oilgas" ? oilGasFacilities.length : plants.filter((p) => p.type === t && (showSmall || (p.capacityMW ?? 0) >= MW_THRESHOLD)).length;
                           return (
                             <button
                               key={t}
@@ -606,7 +657,7 @@ export function EnergyMap() {
                       <Button
                         variant="secondary"
                         className="flex-1"
-                        onClick={() => { setFilterTypes(new Set(["vind", "vann", "havvind"])); setFilterWindStatus(new Set(["operational"])); setShowSmall(false); }}
+                        onClick={() => { setFilterTypes(new Set(["vind", "vann", "havvind", "oilgas"])); setFilterWindStatus(new Set(["operational"])); setShowSmall(false); }}
                       >
                         Nullstill
                       </Button>
@@ -667,7 +718,7 @@ export function EnergyMap() {
             {loading
               ? "Henter kraftverk..."
               : plants.length > 0
-                ? `${filteredPlants.length} kraftverk (${windCount} vind, ${hydroCount} vann${filteredHavvindZones.length > 0 ? `, ${filteredHavvindZones.length} havvind` : ""}) — ${totalCapacity} MW — Kilde: NVE`
+                ? `${filteredPlants.length} kraftverk${filteredOilGas.length > 0 ? ` + ${filteredOilGas.length} anlegg` : ""}${filteredHavvindZones.length > 0 ? ` + ${filteredHavvindZones.length} havvind` : ""} — Kilde: NVE / Sodir`
                 : "Ingen kraftverk funnet"}
           </p>
           <button
@@ -779,6 +830,7 @@ export function EnergyMap() {
                       prev?.id === p.id && prev?.type === p.type ? null : p
                     );
                     setSelectedHavvind(null);
+                    setSelectedOilGas(null);
                   },
                 }}
               />
@@ -801,6 +853,7 @@ export function EnergyMap() {
                 click() {
                   setSelectedHavvind((prev) => prev?.id === z.id ? null : z);
                   setSelected(null);
+                  setSelectedOilGas(null);
                   setShowInfoSheet(false);
                 },
               }}
@@ -822,6 +875,23 @@ export function EnergyMap() {
                 click() {
                   setSelectedHavvind((prev) => prev?.id === z.id ? null : z);
                   setSelected(null);
+                  setSelectedOilGas(null);
+                  setShowInfoSheet(false);
+                },
+              }}
+            />
+          ))}
+          {/* Oil & gas facility markers */}
+          {filteredOilGas.map((f) => (
+            <Marker
+              key={`oilgas-${f.id}`}
+              position={[f.lat, f.lon]}
+              icon={oilgasIcon(selectedOilGas?.id === f.id, tileLayer === "gråtone", f.isSurface)}
+              eventHandlers={{
+                click() {
+                  setSelectedOilGas((prev) => prev?.id === f.id ? null : f);
+                  setSelected(null);
+                  setSelectedHavvind(null);
                   setShowInfoSheet(false);
                 },
               }}
@@ -938,6 +1008,154 @@ export function EnergyMap() {
             </div>
           </div>
         )}
+
+        {/* Oil & gas compact card */}
+        {selectedOilGas && !showInfoSheet && (
+          <div
+            className="absolute bottom-4 left-3 right-3 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 sm:w-96 z-[999] bg-card rounded-2xl shadow-xl px-4 py-4"
+            style={{ border: "1.5px solid var(--border)" }}
+          >
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5 mb-0.5">
+                  <span className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full text-white" style={{ background: OILGAS_COLOR }}>
+                    Olje & gass
+                  </span>
+                  <span className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">
+                    {selectedOilGas.isSurface ? "Overflate" : "Undervanns"}
+                  </span>
+                </div>
+                <p className="font-bold text-base truncate leading-snug">{selectedOilGas.name}</p>
+                <p className="text-xs text-muted-foreground truncate">
+                  {[selectedOilGas.operator, selectedOilGas.fieldName].filter(Boolean).join(" · ")}
+                </p>
+              </div>
+              <button
+                onClick={() => setSelectedOilGas(null)}
+                className="shrink-0 p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                aria-label="Lukk"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="grid grid-cols-2 gap-3 mt-3">
+              {selectedOilGas.waterDepth != null && (
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-2xl font-extrabold" style={{ color: OILGAS_COLOR }}>
+                    {Math.round(selectedOilGas.waterDepth)}
+                  </span>
+                  <span className="text-xs text-muted-foreground">m dybde</span>
+                </div>
+              )}
+              {selectedOilGas.yearStartup != null && (
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-2xl font-extrabold" style={{ color: OILGAS_COLOR }}>
+                    {selectedOilGas.yearStartup}
+                  </span>
+                  <span className="text-xs text-muted-foreground">oppstart</span>
+                </div>
+              )}
+            </div>
+            <div className="flex gap-2 mt-3">
+              <button
+                onClick={() => { setShowInfoSheet(true); setShowFilter(false); }}
+                className="flex-1 inline-flex items-center justify-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl border bg-muted/50 hover:bg-muted transition-colors"
+              >
+                <ChevronUp className="h-3.5 w-3.5" /> Vis mer
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Oil & gas detail sheet */}
+        <Sheet open={showInfoSheet && !!selectedOilGas && !selected && !selectedHavvind} onOpenChange={(open) => { setShowInfoSheet(open); }}>
+          <SheetContent side="bottom" className="rounded-t-2xl max-h-[85svh] overflow-y-auto">
+            {selectedOilGas && (
+              <div className="mx-auto w-full max-w-md px-4 pb-6">
+                <SheetHeader>
+                  <SheetTitle className="text-left sr-only">{selectedOilGas.name}</SheetTitle>
+                </SheetHeader>
+
+                <div className="flex items-center gap-1.5 mb-1">
+                  <span className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full text-white" style={{ background: OILGAS_COLOR }}>
+                    Olje & gass
+                  </span>
+                  <span className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">
+                    {selectedOilGas.isSurface ? "Overflate" : "Undervanns"}
+                  </span>
+                  {selectedOilGas.phase === "IN SERVICE" && (
+                    <span className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-green-100 text-green-800">I drift</span>
+                  )}
+                  {selectedOilGas.phase === "REMOVED" && (
+                    <span className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-red-100 text-red-800">Fjernet</span>
+                  )}
+                </div>
+                <p className="font-bold text-lg leading-snug">{selectedOilGas.name}</p>
+                {selectedOilGas.operator && (
+                  <p className="text-sm text-muted-foreground">{selectedOilGas.operator}</p>
+                )}
+
+                <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t">
+                  {selectedOilGas.waterDepth != null && (
+                    <div className="flex items-baseline gap-1.5">
+                      <span className="text-3xl font-extrabold" style={{ color: OILGAS_COLOR }}>
+                        {Math.round(selectedOilGas.waterDepth)}
+                      </span>
+                      <span className="text-xs text-muted-foreground">m dybde</span>
+                    </div>
+                  )}
+                  {selectedOilGas.yearStartup != null && (
+                    <div className="flex items-baseline gap-1.5">
+                      <span className="text-3xl font-extrabold" style={{ color: OILGAS_COLOR }}>
+                        {selectedOilGas.yearStartup}
+                      </span>
+                      <span className="text-xs text-muted-foreground">oppstart</span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="mt-4 pt-4 border-t flex flex-col gap-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Type</span>
+                    <span className="font-medium">{selectedOilGas.kind}</span>
+                  </div>
+                  {selectedOilGas.fieldName && (
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">Felt</span>
+                      <span className="font-medium">{selectedOilGas.fieldName}</span>
+                    </div>
+                  )}
+                  {selectedOilGas.functions && (
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">Funksjoner</span>
+                      <span className="font-medium text-right max-w-[200px]">{selectedOilGas.functions.toLowerCase().replace(/ - /g, ", ")}</span>
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Status</span>
+                    <span className="font-medium">{selectedOilGas.phase === "IN SERVICE" ? "I drift" : selectedOilGas.phase === "REMOVED" ? "Fjernet" : selectedOilGas.phase === "DECOMMISSIONED" ? "Nedlagt" : selectedOilGas.phase}</span>
+                  </div>
+                </div>
+
+                <div className="mt-4 pt-4 border-t flex flex-col gap-3">
+                  {selectedOilGas.factPageUrl && (
+                    <a
+                      href={selectedOilGas.factPageUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center justify-center gap-2 text-sm font-semibold px-4 py-2.5 rounded-xl border bg-muted/50 hover:bg-muted transition-colors w-full"
+                    >
+                      <ExternalLink className="h-4 w-4" /> Les mer på Sodir
+                    </a>
+                  )}
+                  <p className="text-xs text-muted-foreground text-center">
+                    Kilde: <a href="https://www.sodir.no/en/facts/data-and-analyses/open-data/" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Sokkeldirektoratet (Sodir)</a>
+                  </p>
+                </div>
+              </div>
+            )}
+          </SheetContent>
+        </Sheet>
 
         {/* Havvind compact card */}
         {selectedHavvind && !showInfoSheet && (
@@ -1273,7 +1491,7 @@ export function EnergyMap() {
               <p>
                 Norge har over 1700 vannkraftverk som dekker ~90% av
                 landets strømproduksjon, pluss et voksende antall
-                vindkraftverk. Kartet viser også 20 utredningsområder for <strong>havvind</strong> — Norges planlagte offshore vindkraftsatsing.
+                vindkraftverk. Kartet viser også utredningsområder for <strong>havvind</strong> og over 1200 <strong>olje- og gassanlegg</strong> på norsk sokkel.
               </p>
               <p className="text-xs text-muted-foreground">
                 Data oppdateres hver time. Kilde:{" "}
@@ -1284,6 +1502,14 @@ export function EnergyMap() {
                   className="underline hover:text-foreground"
                 >
                   NVE Geodata
+                </a>{" · "}
+                <a
+                  href="https://www.sodir.no/en/facts/data-and-analyses/open-data/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline hover:text-foreground"
+                >
+                  Sodir
                 </a>
               </p>
             </div>

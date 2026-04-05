@@ -1,6 +1,7 @@
 import { utmToLatLon } from "@/lib/utm";
 
 const NVE_BASE = "https://nve.geodataonline.no/arcgis/rest/services";
+const SODIR_BASE = "https://factmaps.sodir.no/api/rest/services/Factmaps/FactMapsWGS84/MapServer";
 const QUERY = "query?where=1%3D1&outFields=*&returnGeometry=true&f=json&resultRecordCount=2000";
 
 type WindStatus = "operational" | "construction" | "approved" | "rejected";
@@ -30,6 +31,22 @@ interface WindTurbine {
   plantName: string | null;
 }
 
+interface OilGasFacility {
+  id: number;
+  name: string;
+  kind: string;
+  phase: string;
+  functions: string | null;
+  operator: string | null;
+  fieldName: string | null;
+  waterDepth: number | null;
+  yearStartup: number | null;
+  isSurface: boolean;
+  factPageUrl: string | null;
+  lat: number;
+  lon: number;
+}
+
 interface HavvindZone {
   id: number;
   name: string;
@@ -44,7 +61,7 @@ interface HavvindZone {
 export async function GET() {
   try {
     // Fetch wind (4 layers), hydro, and turbines in parallel
-    const [windRes, windConstructionRes, windApprovedRes, windRejectedRes, hydroRes, turbineRes, havvindRes] = await Promise.all([
+    const [windRes, windConstructionRes, windApprovedRes, windRejectedRes, hydroRes, turbineRes, havvindRes, sodirRes] = await Promise.all([
       fetch(`${NVE_BASE}/Vindkraft2/MapServer/0/${QUERY}`, {
         headers: { "User-Agent": "MapGram/1.0 github.com/FemtiGram/kart" },
         next: { revalidate: 3600 },
@@ -76,6 +93,11 @@ export async function GET() {
         signal: AbortSignal.timeout(8000),
       }),
       fetch(`${NVE_BASE}/Havvind2023/MapServer/0/${QUERY}`, {
+        headers: { "User-Agent": "MapGram/1.0 github.com/FemtiGram/kart" },
+        next: { revalidate: 3600 },
+        signal: AbortSignal.timeout(8000),
+      }),
+      fetch(`${SODIR_BASE}/307/${QUERY}`, {
         headers: { "User-Agent": "MapGram/1.0 github.com/FemtiGram/kart" },
         next: { revalidate: 3600 },
         signal: AbortSignal.timeout(8000),
@@ -199,6 +221,39 @@ export async function GET() {
       }
     }
 
+    // Process oil & gas facilities from Sodir
+    const oilGasFacilities: OilGasFacility[] = [];
+    if (sodirRes.ok) {
+      const sodirData = await sodirRes.json();
+      for (const f of sodirData.features ?? []) {
+        const a = f.attributes;
+        // Only Norwegian facilities
+        if (a.fclNationCode2 !== "NO") continue;
+        // Convert DMS to decimal degrees
+        const lat = (a.fclNsDeg ?? 0) + (a.fclNsMin ?? 0) / 60 + (a.fclNsSec ?? 0) / 3600;
+        const lon = (a.fclEwDeg ?? 0) + (a.fclEwMin ?? 0) / 60 + (a.fclEwSec ?? 0) / 3600;
+        if (lat === 0 || lon === 0) continue;
+        // Negate longitude if west
+        const lonSigned = a.fclEwCode === "W" ? -lon : lon;
+
+        oilGasFacilities.push({
+          id: a.OBJECTID,
+          name: a.fclName ?? "Ukjent anlegg",
+          kind: a.fclKind ?? "Ukjent",
+          phase: a.fclPhase ?? "UNKNOWN",
+          functions: a.fclFunctions ?? null,
+          operator: a.fclCurrentOperatorName ?? null,
+          fieldName: a.fclBelongsToName ?? null,
+          waterDepth: a.fclWaterDepth ?? null,
+          yearStartup: a.fclStartupDate ? new Date(a.fclStartupDate).getFullYear() : null,
+          isSurface: a.fclSurface === "Y",
+          factPageUrl: a.fclFactPageUrl ?? null,
+          lat,
+          lon: lonSigned,
+        });
+      }
+    }
+
     // Summary stats
     const windCount = plants.filter((p) => p.type === "vind").length;
     const hydroCount = plants.filter((p) => p.type === "vann").length;
@@ -211,7 +266,8 @@ export async function GET() {
       plants,
       turbines,
       havvindZones,
-      stats: { windCount, hydroCount, havvindCount: havvindZones.length, totalCapacityMW: Math.round(totalCapacityMW) },
+      oilGasFacilities,
+      stats: { windCount, hydroCount, havvindCount: havvindZones.length, oilGasCount: oilGasFacilities.length, totalCapacityMW: Math.round(totalCapacityMW) },
     });
   } catch (err) {
     const message =
