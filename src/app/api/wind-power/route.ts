@@ -28,7 +28,7 @@ export async function GET() {
 
     const res = await fetch(url, {
       headers: {
-        "User-Agent": "MapGram/1.0 github.com/FemtiGram/kart",
+        "User-Agent": "Datakart/1.0 github.com/FemtiGram/kart",
       },
       next: { revalidate: 3600 },
       signal: AbortSignal.timeout(8000),

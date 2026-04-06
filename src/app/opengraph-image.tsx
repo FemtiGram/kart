@@ -1,6 +1,6 @@
 import { ImageResponse } from "next/og";
 
-export const alt = "MapGram — Utforsk norske geodata";
+export const alt = "Datakart — Utforsk norske geodata";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -41,7 +41,7 @@ export default function OgImage() {
             </g>
           </svg>
           <span style={{ fontSize: 64, fontWeight: 800, color: "white" }}>
-            MapGram
+            Datakart
           </span>
         </div>
         <p style={{ fontSize: 28, color: "rgba(255,255,255,0.7)", marginTop: 24 }}>

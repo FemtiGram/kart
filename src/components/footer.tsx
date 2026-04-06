@@ -38,7 +38,7 @@ export function Footer() {
                   <line x1="15" x2="15" y1="6" y2="21"/>
                 </g>
               </svg>
-              MapGram
+              Datakart
             </Link>
             <p className="text-sm text-muted-foreground max-w-xs leading-relaxed">
               Et åpent utforskningsverktøy for Norges geografi, kart og
@@ -82,7 +82,7 @@ export function Footer() {
         <Separator className="my-8" />
 
         <div className="flex flex-col md:flex-row items-center justify-between gap-3 text-xs text-muted-foreground">
-          <p>© {new Date().getFullYear()} MapGram</p>
+          <p>© {new Date().getFullYear()} Datakart</p>
           <p>
             Bygd med{" "}
             <span style={{ color: "var(--kv-green)" }}>&#9829;</span>

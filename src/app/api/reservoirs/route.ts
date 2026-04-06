@@ -22,7 +22,7 @@ export async function GET() {
     // Fetch operational reservoirs — only those with known volume (most significant ones)
     const url = `${NVE_BASE}/Vannkraft1/MapServer/6/query?where=status%3D'D'+AND+volumOppdemt_Mm3+IS+NOT+NULL&outFields=OBJECTID,magasinNavn,vannkraftverkNavn,elvenavnHierarki,hoyesteRegulerteVannstand_moh,lavesteRegulerteVannstand_moh,volumOppdemt_Mm3,magasinArealHRV_km2,idriftsattAar,magasinFormal_Liste&returnGeometry=true&f=json&resultRecordCount=500`;
     const res = await fetch(url, {
-      headers: { "User-Agent": "MapGram/1.0 github.com/FemtiGram/kart" },
+      headers: { "User-Agent": "Datakart/1.0 github.com/FemtiGram/kart" },
       next: { revalidate: 3600 },
       signal: AbortSignal.timeout(9000),
     });

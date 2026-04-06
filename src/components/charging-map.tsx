@@ -11,7 +11,7 @@ import { Loader2, X, Zap, LocateFixed, ExternalLink, Search, MapPin, Info, Map a
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { FYLKER, isInNorway, OSLO } from "@/lib/fylker";
-import { FlyTo, useDebounceRef, useSearchAbort } from "@/lib/map-utils";
+import { FlyTo, DataDisclaimer, useDebounceRef, useSearchAbort } from "@/lib/map-utils";
 import type { Address, KommuneEntry, Suggestion } from "@/lib/map-utils";
 
 interface Station {
@@ -247,7 +247,7 @@ export function ChargingMap() {
       if (point) {
         setCenter({ lat: point.nord, lon: point.øst });
       }
-    } else {
+    } else if (s.type === "adresse") {
       setQuery(`${s.addr.adressetekst}, ${s.addr.poststed}`);
       setCenter({ lat: s.addr.representasjonspunkt.lat, lon: s.addr.representasjonspunkt.lon });
     }
@@ -410,12 +410,12 @@ export function ChargingMap() {
                         <p className="font-medium">{s.kommunenavn}</p>
                         <p className="text-xs text-muted-foreground">Kommune</p>
                       </div>
-                    ) : (
+                    ) : s.type === "adresse" ? (
                       <div>
                         <p className="font-medium">{s.addr.adressetekst}</p>
                         <p className="text-xs text-muted-foreground">{s.addr.poststed}, {s.addr.kommunenavn}</p>
                       </div>
-                    )}
+                    ) : null}
                   </button>
                 </li>
               ))}
@@ -655,6 +655,7 @@ export function ChargingMap() {
                   <p className="text-xs text-muted-foreground text-center">
                     Kilde: OpenStreetMap
                   </p>
+                  <DataDisclaimer />
                 </div>
               </div>
             )}

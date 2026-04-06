@@ -1,7 +1,7 @@
 import { ChargingMapLoader } from "@/components/charging-map-loader";
 
 export const metadata = {
-  title: "Ladestasjoner – MapGram",
+  title: "Ladestasjoner – Datakart",
   description: "Se alle elbilladestasjoner i Norge på kart med kontakttyper og kapasitet",
 };
 

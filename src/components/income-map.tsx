@@ -10,7 +10,7 @@ import { Search, MapPin, Loader2, X, Info, LocateFixed, Map as MapIcon, ChevronU
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { FYLKER } from "@/lib/fylker";
-import { FlyTo, interpolateColor, useDebounceRef, useSearchAbort } from "@/lib/map-utils";
+import { FlyTo, DataDisclaimer, interpolateColor, useDebounceRef, useSearchAbort } from "@/lib/map-utils";
 
 interface IncomeAddress {
   adressetekst: string;
@@ -312,12 +312,12 @@ export function IncomeMap() {
                         <p className="font-medium">{s.kommunenavn}</p>
                         <p className="text-xs text-muted-foreground">Kommune</p>
                       </div>
-                    ) : (
+                    ) : s.type === "adresse" ? (
                       <div>
                         <p className="font-medium">{s.addr.adressetekst}</p>
                         <p className="text-xs text-muted-foreground">{s.addr.poststed}, {s.addr.kommunenavn}</p>
                       </div>
-                    )}
+                    ) : null}
                   </button>
                 </li>
               ))}
@@ -475,6 +475,7 @@ export function IncomeMap() {
                   <p className="text-xs text-muted-foreground text-center">
                     Kilde: <a href="https://www.ssb.no/inntekt-og-forbruk/inntekt-og-formue/statistikk/inntekts-og-formuesstatistikk-for-husholdninger" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">SSB InntektStruk13</a>, 2024
                   </p>
+                  <DataDisclaimer />
                 </div>
               </div>
             )}

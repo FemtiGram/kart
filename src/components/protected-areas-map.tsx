@@ -10,7 +10,7 @@ import { Search, MapPin, Loader2, X, LocateFixed, Map as MapIcon, ChevronUp, Inf
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { FYLKER } from "@/lib/fylker";
-import { FlyTo, interpolateColor, useDebounceRef, useSearchAbort } from "@/lib/map-utils";
+import { FlyTo, DataDisclaimer, interpolateColor, useDebounceRef, useSearchAbort } from "@/lib/map-utils";
 
 interface VerneData {
   total: number | null;
@@ -316,12 +316,12 @@ export function ProtectedAreasMap() {
                         <p className="font-medium">{s.kommunenavn}</p>
                         <p className="text-xs text-muted-foreground">Kommune</p>
                       </div>
-                    ) : (
+                    ) : s.type === "adresse" ? (
                       <div>
                         <p className="font-medium">{s.addr.adressetekst}</p>
                         <p className="text-xs text-muted-foreground">{s.addr.poststed}, {s.addr.kommunenavn}</p>
                       </div>
-                    )}
+                    ) : null}
                   </button>
                 </li>
               ))}
@@ -505,6 +505,7 @@ export function ProtectedAreasMap() {
                   <p className="text-xs text-muted-foreground text-center">
                     Kilde: <a href="https://www.ssb.no/natur-og-miljo/areal/statistikk/arealbruk-og-arealressurser" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">SSB tabell 08936</a>
                   </p>
+                  <DataDisclaimer />
                 </div>
               </div>
             )}

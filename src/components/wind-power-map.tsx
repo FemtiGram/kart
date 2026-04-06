@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FYLKER, isInNorway, OSLO } from "@/lib/fylker";
-import { FlyTo, useDebounceRef, useSearchAbort } from "@/lib/map-utils";
+import { FlyTo, DataDisclaimer, useDebounceRef, useSearchAbort } from "@/lib/map-utils";
 import type { Address, KommuneEntry, Suggestion } from "@/lib/map-utils";
 
 interface WindFarm {
@@ -286,7 +286,7 @@ export function WindPowerMap() {
       if (point) {
         setCenter({ lat: point.nord, lon: point.øst });
       }
-    } else {
+    } else if (s.type === "adresse") {
       setQuery(`${s.addr.adressetekst}, ${s.addr.poststed}`);
       setCenter({
         lat: s.addr.representasjonspunkt.lat,
@@ -383,7 +383,7 @@ export function WindPowerMap() {
                           Kommune
                         </p>
                       </div>
-                    ) : (
+                    ) : s.type === "adresse" ? (
                       <div>
                         <p className="font-medium">
                           {s.addr.adressetekst}
@@ -392,7 +392,7 @@ export function WindPowerMap() {
                           {s.addr.poststed}, {s.addr.kommunenavn}
                         </p>
                       </div>
-                    )}
+                    ) : null}
                   </button>
                 </li>
               ))}
@@ -653,6 +653,7 @@ export function WindPowerMap() {
                   api.nve.no
                 </a>
               </p>
+              <DataDisclaimer />
             </div>
           </div>
         </div>

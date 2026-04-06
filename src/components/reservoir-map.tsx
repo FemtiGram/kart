@@ -22,7 +22,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { FYLKER } from "@/lib/fylker";
-import { FlyTo, useDebounceRef, useSearchAbort } from "@/lib/map-utils";
+import { FlyTo, DataDisclaimer, useDebounceRef, useSearchAbort } from "@/lib/map-utils";
 import type { Suggestion } from "@/lib/map-utils";
 
 interface Reservoir {
@@ -271,12 +271,12 @@ export function ReservoirMap() {
                         <p className="font-medium">{s.addr.adressetekst}</p>
                         <p className="text-xs text-muted-foreground">{s.addr.poststed}, {s.addr.kommunenavn}</p>
                       </div>
-                    ) : (
+                    ) : s.type === "kommune" ? (
                       <div>
                         <p className="font-medium">{s.kommunenavn}</p>
                         <p className="text-xs text-muted-foreground">Kommune</p>
                       </div>
-                    )}
+                    ) : null}
                   </button>
                 </li>
               ))}
@@ -572,6 +572,7 @@ export function ReservoirMap() {
                   <p className="text-xs text-muted-foreground text-center">
                     Kilde: <a href="https://nve.geodataonline.no/arcgis/rest/services/" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">NVE Geodata</a>
                   </p>
+                  <DataDisclaimer />
                 </div>
               </div>
             )}
@@ -602,6 +603,7 @@ export function ReservoirMap() {
               <p className="text-xs text-muted-foreground">
                 Kilde: <a href="https://nve.geodataonline.no/arcgis/rest/services/" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">NVE Geodata</a> · <a href="https://www.nve.no/energi/energisystem/magasinstatistikk/" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">NVE Magasinstatistikk</a>
               </p>
+              <DataDisclaimer />
             </div>
           </div>
         </div>

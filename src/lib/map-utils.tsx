@@ -20,7 +20,8 @@ export interface KommuneEntry {
 export type Suggestion =
   | { type: "fylke"; fylkesnavn: string; lat: number; lon: number; zoom: number }
   | { type: "kommune"; kommunenummer: string; kommunenavn: string }
-  | { type: "adresse"; addr: Address };
+  | { type: "adresse"; addr: Address }
+  | { type: "anlegg"; name: string; subtitle: string; lat: number; lon: number };
 
 // ─── FlyTo map component ────────────────────────────────────
 
@@ -81,6 +82,16 @@ export function useSearchAbort() {
       return ref.current.signal;
     },
   };
+}
+
+// ─── Disclaimer ─────────────────────────────────────────────
+
+export function DataDisclaimer() {
+  return (
+    <p className="text-[10px] text-muted-foreground/60 text-center mt-2">
+      Data kan inneholde feil og bør ikke brukes som eneste kilde for beslutninger.
+    </p>
+  );
 }
 
 // ─── Dev feature flag ───────────────────────────────────────

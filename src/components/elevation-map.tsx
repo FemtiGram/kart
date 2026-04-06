@@ -8,7 +8,7 @@ import { Search, MapPin, Mountain, Loader2, X, ChevronDown, ChevronUp, LocateFix
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import type { LucideIcon } from "lucide-react";
-import { FlyTo, useDebounceRef, isDevMode } from "@/lib/map-utils";
+import { FlyTo, DataDisclaimer, useDebounceRef, isDevMode } from "@/lib/map-utils";
 
 function weatherIcon(symbolCode: string): LucideIcon {
   const c = symbolCode.toLowerCase();
@@ -636,6 +636,7 @@ export function ElevationMap() {
                   <p className="text-xs text-muted-foreground text-center">
                     Kilde: Kartverket, MET.no
                   </p>
+                  <DataDisclaimer />
                 </div>
               </div>
             )}

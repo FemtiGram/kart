@@ -8,7 +8,7 @@ import "leaflet/dist/leaflet.css";
 import "react-leaflet-cluster/dist/assets/MarkerCluster.css";
 import "react-leaflet-cluster/dist/assets/MarkerCluster.Default.css";
 import { Loader2, X, Search, MapPin, ExternalLink, Info, Map as MapIcon, Layers, LocateFixed, Mountain, Wind, Droplets, Sun, Cloud, CloudSun, CloudRain, CloudSnow, CloudLightning, CloudFog, CloudHail, CloudDrizzle, Moon, RotateCw, SlidersHorizontal, Check, ChevronUp, Navigation } from "lucide-react";
-import { FlyTo, useDebounceRef, useSearchAbort } from "@/lib/map-utils";
+import { FlyTo, DataDisclaimer, useDebounceRef, useSearchAbort } from "@/lib/map-utils";
 import type { LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -227,7 +227,7 @@ export function CabinMap() {
       if (point) {
         setCenter({ lat: point.nord, lon: point.øst });
       }
-    } else {
+    } else if (s.type === "adresse") {
       setQuery(`${s.addr.adressetekst}, ${s.addr.poststed}`);
       setCenter({ lat: s.addr.representasjonspunkt.lat, lon: s.addr.representasjonspunkt.lon });
     }
@@ -464,12 +464,12 @@ export function CabinMap() {
                         <p className="font-medium">{s.kommunenavn}</p>
                         <p className="text-xs text-muted-foreground">Kommune</p>
                       </div>
-                    ) : (
+                    ) : s.type === "adresse" ? (
                       <div>
                         <p className="font-medium">{s.addr.adressetekst}</p>
                         <p className="text-xs text-muted-foreground">{s.addr.poststed}, {s.addr.kommunenavn}</p>
                       </div>
-                    )}
+                    ) : null}
                   </button>
                 </li>
               ))}
@@ -802,6 +802,7 @@ export function CabinMap() {
                   <p className="text-xs text-muted-foreground text-center">
                     Kilde: OpenStreetMap
                   </p>
+                  <DataDisclaimer />
                 </div>
               </div>
             )}

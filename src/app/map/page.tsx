@@ -1,7 +1,7 @@
 import { ElevationMapLoader } from "@/components/elevation-map-loader";
 
 export const metadata = {
-  title: "Høydekart – MapGram",
+  title: "Høydekart – Datakart",
   description: "Søk etter en adresse og finn høyden over havet",
 };
 

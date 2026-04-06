@@ -32,7 +32,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { FYLKER, isInNorway, OSLO } from "@/lib/fylker";
-import { FlyTo, useDebounceRef, useSearchAbort } from "@/lib/map-utils";
+import { FlyTo, DataDisclaimer, useDebounceRef, useSearchAbort } from "@/lib/map-utils";
 import type { Address, KommuneEntry, Suggestion } from "@/lib/map-utils";
 
 type EnergyType = "vind" | "vann" | "havvind" | "oilgas";
@@ -398,6 +398,18 @@ export function EnergyMap() {
           kommunenavn: k.kommunenavn,
         }));
 
+      const ql = q.toLowerCase();
+      const facilityMatches: Suggestion[] = oilGasFacilities
+        .filter((f) => f.name.toLowerCase().includes(ql) || (f.fieldName && f.fieldName.toLowerCase().includes(ql)))
+        .slice(0, 5)
+        .map((f) => ({
+          type: "anlegg",
+          name: f.name,
+          subtitle: [f.kind, f.fieldName].filter(Boolean).join(" · "),
+          lat: f.lat,
+          lon: f.lon,
+        }));
+
       let adresseMatches: Suggestion[] = [];
       try {
         const signal = searchAbort.renew();
@@ -415,6 +427,7 @@ export function EnergyMap() {
       }
 
       setSuggestions([
+        ...facilityMatches,
         ...fylkeMatches,
         ...kommuneMatches,
         ...adresseMatches,
@@ -422,7 +435,7 @@ export function EnergyMap() {
       setShowDropdown(true);
       setLoadingSuggestions(false);
     },
-    [searchAbort]
+    [searchAbort, oilGasFacilities]
   );
 
   const handleInput = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -457,6 +470,11 @@ export function EnergyMap() {
     setSelected(null);
     setSelectedHavvind(null);
     setSelectedOilGas(null);
+    if (s.type === "anlegg") {
+      setQuery(s.name);
+      setCenter({ lat: s.lat, lon: s.lon, zoom: 12 });
+      return;
+    }
     if (s.type === "fylke") {
       setQuery(s.fylkesnavn);
       setCenter({ lat: s.lat, lon: s.lon, zoom: s.zoom });
@@ -472,7 +490,7 @@ export function EnergyMap() {
       if (point) {
         setCenter({ lat: point.nord, lon: point.øst });
       }
-    } else {
+    } else if (s.type === "adresse") {
       setQuery(`${s.addr.adressetekst}, ${s.addr.poststed}`);
       setCenter({
         lat: s.addr.representasjonspunkt.lat,
@@ -702,8 +720,13 @@ export function EnergyMap() {
                     onMouseDown={() => handleSelect(s)}
                     className={`w-full text-left px-4 py-3 text-sm flex items-start gap-3 transition-colors border-b last:border-0 ${highlightedIndex === i ? "bg-muted" : "hover:bg-muted"}`}
                   >
-                    <MapPin className="h-4 w-4 mt-0.5 shrink-0 text-muted-foreground" />
-                    {s.type === "fylke" ? (
+                    {s.type === "anlegg" ? <Anchor className="h-4 w-4 mt-0.5 shrink-0 text-muted-foreground" /> : <MapPin className="h-4 w-4 mt-0.5 shrink-0 text-muted-foreground" />}
+                    {s.type === "anlegg" ? (
+                      <div>
+                        <p className="font-medium">{s.name}</p>
+                        <p className="text-xs text-muted-foreground">{s.subtitle}</p>
+                      </div>
+                    ) : s.type === "fylke" ? (
                       <div>
                         <p className="font-medium">{s.fylkesnavn}</p>
                         <p className="text-xs text-muted-foreground">
@@ -717,7 +740,7 @@ export function EnergyMap() {
                           Kommune
                         </p>
                       </div>
-                    ) : (
+                    ) : s.type === "adresse" ? (
                       <div>
                         <p className="font-medium">
                           {s.addr.adressetekst}
@@ -726,7 +749,7 @@ export function EnergyMap() {
                           {s.addr.poststed}, {s.addr.kommunenavn}
                         </p>
                       </div>
-                    )}
+                    ) : null}
                   </button>
                 </li>
               ))}
@@ -941,22 +964,30 @@ export function EnergyMap() {
           )}
           {/* Pipelines at zoom >= 8 */}
           {zoomLevel >= 8 && filteredPipelines.map((p) => (
-            <Polyline
-              key={`pipe-${p.id}`}
-              positions={p.path}
-              pathOptions={{
-                color: p.medium === "Gas" ? "#facc15" : p.medium === "Oil" ? OILGAS_COLOR : "#a3a3a3",
-                weight: Math.max(1.5, Math.min(3, (p.dimension ?? 20) / 15)),
-                opacity: 0.6,
-                dashArray: p.phase === "DECOMMISSIONED" ? "6 4" : undefined,
-              }}
-              eventHandlers={{
-                click() {
-                  setSelectedPipeline(p);
-                  setShowInfo(true);
-                },
-              }}
-            />
+            <span key={`pipe-${p.id}`}>
+              {/* Invisible wide hit area */}
+              <Polyline
+                positions={p.path}
+                pathOptions={{ color: "transparent", weight: 16, opacity: 0 }}
+                eventHandlers={{
+                  click() {
+                    setSelectedPipeline(p);
+                    setShowInfo(true);
+                  },
+                }}
+              />
+              {/* Visible line */}
+              <Polyline
+                positions={p.path}
+                pathOptions={{
+                  color: p.medium === "Gas" ? "#facc15" : p.medium === "Oil" ? OILGAS_COLOR : "#a3a3a3",
+                  weight: Math.max(1.5, Math.min(3, (p.dimension ?? 20) / 15)),
+                  opacity: 0.6,
+                  dashArray: p.phase === "DECOMMISSIONED" ? "6 4" : undefined,
+                }}
+                interactive={false}
+              />
+            </span>
           ))}
         </MapContainer>
 
@@ -1212,6 +1243,7 @@ export function EnergyMap() {
                   <p className="text-xs text-muted-foreground text-center">
                     Kilde: <a href="https://www.sodir.no/en/facts/data-and-analyses/open-data/" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Sokkeldirektoratet (Sodir)</a>
                   </p>
+                  <DataDisclaimer />
                 </div>
               </div>
             )}
@@ -1346,6 +1378,7 @@ export function EnergyMap() {
                   <p className="text-xs text-muted-foreground text-center">
                     Kilde: <a href="https://nve.geodataonline.no/arcgis/rest/services/" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">NVE Geodata</a> · Havvind 2023
                   </p>
+                  <DataDisclaimer />
                 </div>
               </div>
             )}
@@ -1511,6 +1544,7 @@ export function EnergyMap() {
                   <p className="text-xs text-muted-foreground text-center">
                     Kilde: <a href="https://nve.geodataonline.no/arcgis/rest/services/" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">NVE Geodata</a> · Oppdateres hver time
                   </p>
+                  <DataDisclaimer />
                 </div>
               </div>
             )}
@@ -1609,6 +1643,7 @@ export function EnergyMap() {
                 <p className="text-xs text-muted-foreground pt-2 border-t">
                   Kilde: <a href="https://www.sodir.no/en/facts/data-and-analyses/open-data/" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Sokkeldirektoratet (Sodir)</a>
                 </p>
+                <DataDisclaimer />
               </div>
             ) : (
               <div className="flex flex-col gap-3 text-sm">
@@ -1633,6 +1668,7 @@ export function EnergyMap() {
                   <a href="https://nve.geodataonline.no/arcgis/rest/services/" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">NVE Geodata</a>{" · "}
                   <a href="https://www.sodir.no/en/facts/data-and-analyses/open-data/" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Sodir</a>
                 </p>
+                <DataDisclaimer />
               </div>
             )}
           </div>

@@ -1,8 +1,8 @@
 import { ExternalLink } from "lucide-react";
 
 export const metadata = {
-  title: "Datakilder og lisenser – MapGram",
-  description: "Oversikt over alle datakilder, lisenser og attribusjon brukt i MapGram",
+  title: "Datakilder og lisenser – Datakart",
+  description: "Oversikt over alle datakilder, lisenser og attribusjon brukt i Datakart",
 };
 
 const sources = [
@@ -88,7 +88,7 @@ export default function KilderPage() {
           Datakilder og lisenser
         </h1>
         <p className="mt-3 text-muted-foreground text-base max-w-xl">
-          MapGram er bygget utelukkende pa fritt tilgjengelige, offentlige data. Ingen betalte API-er,
+          Datakart er bygget utelukkende pa fritt tilgjengelige, offentlige data. Ingen betalte API-er,
           ingen autentisering. Her er en oversikt over alle datakilder og deres lisenser.
         </p>
 
