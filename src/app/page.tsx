@@ -10,19 +10,30 @@ const featured = {
 
 const groups = [
   {
-    label: "Utforsk",
+    label: "Energi",
     items: [
+      {
+        title: "Magasinkart",
+        description: "Regulerte vannmagasiner med nasjonal fyllingsgrad og polygon-visning.",
+        href: "/magasin",
+        icon: Waves,
+      },
       {
         title: "Ladestasjoner",
         description: "Alle elbilladestasjoner i Norge med kontakttyper, kapasitet og veibeskrivelse.",
         href: "/lading",
         icon: Zap,
       },
+    ],
+  },
+  {
+    label: "Natur",
+    items: [
       {
-        title: "Magasinkart",
-        description: "Regulerte vannmagasiner med nasjonal fyllingsgrad og polygon-visning.",
-        href: "/magasin",
-        icon: Waves,
+        title: "Høydekart",
+        description: "Klikk hvor som helst for høyde over havet, vær og terrengkart.",
+        href: "/map",
+        icon: Mountain,
       },
       {
         title: "Turisthytter",
@@ -31,27 +42,21 @@ const groups = [
         icon: HomeIcon,
       },
       {
-        title: "Høydekart",
-        description: "Klikk hvor som helst for høyde over havet, vær og terrengkart.",
-        href: "/map",
-        icon: Mountain,
+        title: "Verneområder",
+        description: "Nasjonalparker, naturreservater og andre verneområder.",
+        href: "/vern",
+        icon: Shield,
       },
     ],
   },
   {
-    label: "Statistikk",
+    label: "Samfunn",
     items: [
       {
         title: "Inntektskart",
         description: "Median inntekt etter skatt per husholdning i alle kommuner.",
         href: "/lonn",
         icon: DollarSign,
-      },
-      {
-        title: "Verneområder",
-        description: "Nasjonalparker, naturreservater og andre verneområder.",
-        href: "/vern",
-        icon: Shield,
       },
     ],
   },
@@ -99,7 +104,7 @@ export default function Home() {
       {/* Content */}
       <div className="relative container mx-auto px-6 md:px-16 py-16 md:py-24 max-w-5xl">
         <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight" style={{ color: "#24374c" }}>
-          MapGram
+          Datakart
         </h1>
         <p className="mt-3 text-muted-foreground text-lg md:text-xl max-w-md">
           Prosjekter hvor jeg ser hva som er mulig med åpne geodata.
@@ -117,7 +122,7 @@ export default function Home() {
               <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/60 mb-3">
                 {group.label}
               </p>
-              <div className={`grid grid-cols-1 gap-4 ${group.items.length === 3 ? "sm:grid-cols-3" : "sm:grid-cols-2"}`}>
+              <div className={`grid grid-cols-1 gap-4 ${group.items.length >= 3 ? "sm:grid-cols-3" : "sm:grid-cols-2"}`}>
                 {group.items.map((item) => (
                   <CardLink key={item.href} {...item} />
                 ))}
@@ -130,7 +135,7 @@ export default function Home() {
         <div className="mt-16 pt-12 border-t">
           <h2 className="text-2xl font-extrabold tracking-tight" style={{ color: "#24374c" }}>Om prosjektet</h2>
           <p className="mt-3 text-muted-foreground leading-relaxed max-w-2xl">
-            MapGram er et prosjekt der jeg utforsker hva som er mulig med åpne norske geodata. Alle kartene er bygget
+            Datakart er et prosjekt der jeg utforsker hva som er mulig med åpne norske geodata. Alle kartene er bygget
             utelukkende på gratis, offentlige datakilder — uten betalte API-er eller autentisering.
           </p>
 

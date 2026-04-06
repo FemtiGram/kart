@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { Menu, X, Mountain, DollarSign, Shield, Zap, Home, Wind, BatteryCharging, Waves } from "lucide-react";
+import { Menu, X, Mountain, DollarSign, Shield, Zap, Home, BatteryCharging, Waves } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -18,27 +18,53 @@ import {
   NavigationMenuLink,
   NavigationMenuTrigger,
   NavigationMenuContent,
-  navigationMenuTriggerStyle,
 } from "@/components/ui/navigation-menu";
 
-const primaryLinks = [
-  { href: "/map", label: "Høydekart", icon: Mountain },
-  { href: "/energi", label: "Energikart", icon: BatteryCharging },
-  { href: "/magasin", label: "Magasinkart", icon: Waves },
-  { href: "/lading", label: "Ladestasjoner", icon: Zap },
-  { href: "/hytter", label: "Turisthytter", icon: Home },
+interface NavLink {
+  href: string;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  description: string;
+}
+
+interface NavGroup {
+  label: string;
+  links: NavLink[];
+}
+
+const navGroups: NavGroup[] = [
+  {
+    label: "Energi",
+    links: [
+      { href: "/energi", label: "Energikart", icon: BatteryCharging, description: "Vind- og vannkraftverk" },
+      { href: "/magasin", label: "Magasinkart", icon: Waves, description: "Vannmagasiner og fyllingsgrad" },
+      { href: "/lading", label: "Ladestasjoner", icon: Zap, description: "Elbil-lading i hele Norge" },
+    ],
+  },
+  {
+    label: "Natur",
+    links: [
+      { href: "/map", label: "Høydekart", icon: Mountain, description: "Høydedata og værforhold" },
+      { href: "/hytter", label: "Turisthytter", icon: Home, description: "DNT-hytter og fjellstuer" },
+      { href: "/vern", label: "Verneområder", icon: Shield, description: "Nasjonalparker og naturreservater" },
+    ],
+  },
+  {
+    label: "Samfunn",
+    links: [
+      { href: "/lonn", label: "Inntektskart", icon: DollarSign, description: "Median inntekt per kommune" },
+    ],
+  },
 ];
 
-const secondaryLinks = [
-  { href: "/lonn", label: "Inntektskart", icon: DollarSign, description: "Median inntekt per kommune" },
-  { href: "/vern", label: "Verneområder", icon: Shield, description: "Nasjonalparker og naturreservater" },
-];
+const allLinks = navGroups.flatMap((g) => g.links);
+
+const triggerClass =
+  "text-white/70 hover:text-white hover:bg-white/10 focus:text-[#24374c] focus:bg-white/90 data-[active]:text-[#24374c] data-[active]:bg-white data-popup-open:text-[#24374c] data-popup-open:bg-white/90";
 
 export function Navbar() {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
-
-  const isSecondaryActive = secondaryLinks.some((l) => l.href === pathname);
 
   return (
     <header className="sticky top-0 z-[1100] w-full shadow-sm" style={{ background: "#24374c" }}>
@@ -53,60 +79,48 @@ export function Navbar() {
               <line x1="15" x2="15" y1="6" y2="21"/>
             </g>
           </svg>
-          <span className="font-extrabold text-base tracking-tight text-white">MapGram</span>
+          <span className="font-extrabold text-base tracking-tight text-white">Datakart</span>
         </Link>
 
         {/* Desktop nav */}
-        <NavigationMenu className="hidden md:flex">
-          <NavigationMenuList>
-            {primaryLinks.map((link) => {
-              const active = pathname === link.href;
+        <NavigationMenu align="center" className="hidden md:flex">
+          <NavigationMenuList className="gap-1">
+            {navGroups.map((group) => {
+              const isGroupActive = group.links.some((l) => l.href === pathname);
               return (
-                <NavigationMenuItem key={link.href}>
-                  <NavigationMenuLink
-                    href={link.href}
-                    data-active={active ? "" : undefined}
-                    className="inline-flex h-9 w-max items-center justify-center rounded-lg px-2.5 py-1.5 text-sm font-medium transition-all text-white/70 hover:text-white hover:bg-white/10 focus:text-[#24374c] focus:bg-white/90 data-[active]:text-[#24374c] data-[active]:bg-white"
-                    render={<Link href={link.href} />}
+                <NavigationMenuItem key={group.label}>
+                  <NavigationMenuTrigger
+                    data-active={isGroupActive ? "" : undefined}
+                    className={triggerClass}
                   >
-                    {link.label}
-                  </NavigationMenuLink>
+                    {group.label}
+                  </NavigationMenuTrigger>
+                  <NavigationMenuContent className="min-w-[280px]">
+                    <ul className="flex flex-col gap-1 p-1">
+                      {group.links.map((link) => {
+                        const Icon = link.icon;
+                        return (
+                          <li key={link.href}>
+                            <NavigationMenuLink
+                              href={link.href}
+                              data-active={pathname === link.href ? "" : undefined}
+                              render={<Link href={link.href} />}
+                              className="flex items-start gap-3 px-3 py-3.5 rounded-md hover:bg-muted transition-colors"
+                            >
+                              <Icon className="h-5 w-5 mt-0.5 shrink-0 text-muted-foreground" />
+                              <div>
+                                <p className="text-sm font-medium">{link.label}</p>
+                                <p className="text-xs text-muted-foreground">{link.description}</p>
+                              </div>
+                            </NavigationMenuLink>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </NavigationMenuContent>
                 </NavigationMenuItem>
               );
             })}
-
-            {/* "Mer" dropdown for secondary pages */}
-            <NavigationMenuItem>
-              <NavigationMenuTrigger
-                data-active={isSecondaryActive ? "" : undefined}
-                className="text-white/70 hover:text-white hover:bg-white/10 focus:text-[#24374c] focus:bg-white/90 data-[active]:text-[#24374c] data-[active]:bg-white data-popup-open:text-[#24374c] data-popup-open:bg-white/90"
-              >
-                Mer
-              </NavigationMenuTrigger>
-              <NavigationMenuContent className="min-w-[240px]">
-                <ul className="flex flex-col">
-                  {secondaryLinks.map((link) => {
-                    const Icon = link.icon;
-                    return (
-                      <li key={link.href}>
-                        <NavigationMenuLink
-                          href={link.href}
-                          data-active={pathname === link.href ? "" : undefined}
-                          render={<Link href={link.href} />}
-                          className="flex items-start gap-3 p-3 rounded-md hover:bg-muted transition-colors"
-                        >
-                          <Icon className="h-5 w-5 mt-0.5 shrink-0 text-muted-foreground" />
-                          <div>
-                            <p className="text-sm font-medium">{link.label}</p>
-                            <p className="text-xs text-muted-foreground">{link.description}</p>
-                          </div>
-                        </NavigationMenuLink>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </NavigationMenuContent>
-            </NavigationMenuItem>
           </NavigationMenuList>
         </NavigationMenu>
 
@@ -125,53 +139,36 @@ export function Navbar() {
           <SheetContent side="right" className="w-72">
             <SheetHeader>
               <SheetTitle className="text-left font-extrabold text-base">
-                MapGram
+                Datakart
               </SheetTitle>
             </SheetHeader>
             <nav className="mt-2 flex flex-col">
-              {primaryLinks.map((link) => {
-                const Icon = link.icon;
-                const active = pathname === link.href;
-                return (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    className={`flex items-center gap-3 px-3 py-3.5 text-base font-medium border-b border-border transition-colors ${
-                      active
-                        ? "text-foreground bg-muted"
-                        : "text-muted-foreground hover:text-foreground"
-                    }`}
-                    onClick={() => setOpen(false)}
-                  >
-                    <Icon className="h-5 w-5 shrink-0" />
-                    {link.label}
-                  </Link>
-                );
-              })}
-
-              {/* Separator + secondary items */}
-              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/60 px-3 pt-4 pb-2">
-                Annet
-              </p>
-              {secondaryLinks.map((link) => {
-                const Icon = link.icon;
-                const active = pathname === link.href;
-                return (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    className={`flex items-center gap-3 px-3 py-3.5 text-base font-medium border-b border-border last:border-0 transition-colors ${
-                      active
-                        ? "text-foreground bg-muted"
-                        : "text-muted-foreground hover:text-foreground"
-                    }`}
-                    onClick={() => setOpen(false)}
-                  >
-                    <Icon className="h-5 w-5 shrink-0" />
-                    {link.label}
-                  </Link>
-                );
-              })}
+              {navGroups.map((group) => (
+                <div key={group.label}>
+                  <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/60 px-3 pt-4 pb-2">
+                    {group.label}
+                  </p>
+                  {group.links.map((link) => {
+                    const Icon = link.icon;
+                    const active = pathname === link.href;
+                    return (
+                      <Link
+                        key={link.href}
+                        href={link.href}
+                        className={`flex items-center gap-3 px-3 py-3.5 text-base font-medium border-b border-border transition-colors ${
+                          active
+                            ? "text-foreground bg-muted"
+                            : "text-muted-foreground hover:text-foreground"
+                        }`}
+                        onClick={() => setOpen(false)}
+                      >
+                        <Icon className="h-5 w-5 shrink-0" />
+                        {link.label}
+                      </Link>
+                    );
+                  })}
+                </div>
+              ))}
             </nav>
           </SheetContent>
         </Sheet>
