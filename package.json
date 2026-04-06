@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "prebuild": "node scripts/fetch-stations.mjs && node scripts/fetch-cabins.mjs",
+    "prebuild": "node scripts/fetch-stations.mjs && node scripts/fetch-cabins.mjs && node scripts/fetch-production.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "eslint"

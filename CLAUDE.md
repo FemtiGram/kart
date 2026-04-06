@@ -1,6 +1,6 @@
 @AGENTS.md
 
-# MapGram — Project Guide for Claude
+# Datakart — Project Guide for Claude
 
 ## What is this?
 A portfolio project showcasing Norwegian open geodata on interactive maps. Built to impress during job interviews. Deployed on Vercel (free tier, 10s serverless timeout).
@@ -10,7 +10,7 @@ A portfolio project showcasing Norwegian open geodata on interactive maps. Built
 - **React:** 19.2.4
 - **Maps:** Leaflet 1.9.4 + react-leaflet 5.0.0 + react-leaflet-cluster
 - **Styling:** Tailwind CSS 4 + shadcn/ui (base-ui)
-- **Tiles:** Kartverket WMTS (topo + topograatone) + OpenTopoMap (terreng)
+- **Tiles:** Kartverket WMTS (topo + topograatone + sjokartraster) + OpenTopoMap (terreng)
 - **Icons:** lucide-react
 
 ## Project Structure
@@ -38,39 +38,42 @@ src/app/
     hydro-station/route.ts — NVE HydAPI live river data (requires API key)
 
 src/components/
-  navbar.tsx            — Shared nav with mobile sheet + "Mer" dropdown
+  navbar.tsx            — Shared nav with grouped dropdowns (Energi/Natur/Samfunn) + mobile sheet
   *-map.tsx             — Map components (one per page)
   *-map-loader.tsx      — Dynamic import wrappers (ssr: false)
   ui/                   — shadcn/ui primitives
 
 src/lib/
   fylker.ts             — Hardcoded 15 counties with coords + zoom, isInNorway(), OSLO default
-  map-utils.tsx         — FlyTo, interpolateColor, shared types (Suggestion, Address), useDebounceRef, useSearchAbort
+  map-utils.tsx         — FlyTo, interpolateColor, DataDisclaimer, shared types (Suggestion, Address), useDebounceRef, useSearchAbort
   utm.ts                — UTM zone 33N → WGS84 conversion (for NVE ArcGIS data)
   utils.ts              — cn() helper
 
 scripts/
   fetch-stations.mjs    — Build-time: fetches ALL charging stations → public/data/stations.json
   fetch-cabins.mjs      — Build-time: fetches ALL cabins → public/data/cabins.json
+  fetch-production.mjs  — Build-time: fetches yearly oil/gas production from Sodir → public/data/production.json
 
 public/data/
   stations.json         — Pre-built charging station data (committed to repo)
   cabins.json           — Pre-built cabin data (committed to repo)
+  production.json       — Pre-built Sodir yearly field production data (committed to repo)
 ```
 
 ## Map Architecture Patterns
 
 ### Three data loading patterns:
-1. **Build-time static** (charging, cabins) — Data fetched at build time via Overpass, saved as static JSON, loaded on mount
+1. **Build-time static** (charging, cabins, production) — Data fetched at build time via Overpass/Sodir, saved as static JSON, loaded on mount
 2. **Preload on mount** (income, vern) — Single API call loads ALL data, renders everything client-side
 3. **Per-request** (elevation, weather) — Fetch on user interaction
 
 ### Build-time data pipeline:
-- `scripts/fetch-stations.mjs` and `scripts/fetch-cabins.mjs` run as `prebuild` hook
-- Each tries 3 Overpass mirrors with retry; if all fail, keeps existing data
+- `scripts/fetch-stations.mjs`, `scripts/fetch-cabins.mjs`, and `scripts/fetch-production.mjs` run as `prebuild` hook
+- Overpass scripts try 3 mirrors with retry; if all fail, keeps existing data
 - Frontend has client-side Overpass fallback if static file is empty
+- Production script fetches yearly CSV from Sodir FactPages (~205 KB, 130 fields)
 - **Vercel's 10s timeout prevents runtime Overpass calls for large bbox queries**
-- **To seed data locally:** `node scripts/fetch-stations.mjs && node scripts/fetch-cabins.mjs`
+- **To seed data locally:** `node scripts/fetch-stations.mjs && node scripts/fetch-cabins.mjs && node scripts/fetch-production.mjs`
 
 ### Each map component has:
 - Search bar (Fylke → Kommune → Adresse, limits: 3/5/2)
@@ -106,7 +109,7 @@ All maps use a **compact floating card + expandable bottom Sheet** pattern:
 ### Search architecture:
 - **Debounce:** 300ms after last keystroke before triggering search
 - **Abort controller:** Each new search aborts the previous in-flight address fetch (`useSearchAbort` from map-utils)
-- **Suggestion sources:** Fylke (local filter on hardcoded list), Kommune (local filter on loaded list), Adresse (Geonorge API)
+- **Suggestion sources:** Fylke (local filter on hardcoded list), Kommune (local filter on loaded list), Adresse (Geonorge API), Anlegg (energy map only — oil/gas facility name + field name)
 - **Kommune data:** Marker maps load from `geonorge.no/kommuneinfo/v1/kommuner`; choropleth maps use GeoJSON properties they already have
 - **Kommune center:** Marker maps resolve via `geonorge.no/stedsnavn` API; choropleth maps use GeoJSON layer bounds
 - **Dropdown:** `onMouseDown` for selection (fires before `onBlur`), 150ms blur delay, keyboard nav (↑↓ Enter Escape)
@@ -131,6 +134,18 @@ All maps use a **compact floating card + expandable bottom Sheet** pattern:
 - Optional "Bakgrunnskart" toggle (gråtone base layer)
 - Skeleton shimmer loading on initial data fetch
 
+### Energy map specifics:
+- **Sjøkart overlay:** Optional Kartverket nautical chart layer (sjokartraster), toggled in tile switcher, off by default
+- **Oil/gas search:** Facilities searchable by name and field name (Sodir data)
+- **Production data:** Yearly oil/gas production per field joined by `fieldName`, shown as sparkline + totals in detail sheet
+- **Pipeline hit areas:** Invisible 16px-wide polyline underneath visible line for easier clicking
+- **URL deep linking:** Selection synced to URL hash (`#kraft-{id}`, `#anlegg-{id}`, `#havvind-{id}`). Shared links auto-select + expand detail sheet
+- **Formatted labels:** Sodir kind/functions translated to Norwegian with title-casing
+
+### Shared components:
+- **DataDisclaimer:** Shared disclaimer component in map-utils.tsx, shown after every Kilde attribution in all detail sheets
+- **Navigation:** Grouped dropdown nav (Energi/Natur/Samfunn) with matching landing page structure
+
 ## Design References
 - **UX Laws** — https://uxlaws.com — Consult when making UX/design decisions. Key principles to keep in mind: Fitts's Law (touch targets), Hick's Law (limit choices), Miller's Law (chunk info), Jakob's Law (familiar patterns), aesthetic-usability effect.
 
@@ -149,6 +164,8 @@ All maps use a **compact floating card + expandable bottom Sheet** pattern:
 | Charging stations | OpenStreetMap (Overpass) | Build-time static JSON + client fallback |
 | Cabins | OpenStreetMap (Overpass) | Build-time static JSON + client fallback |
 | Wind + hydro power | NVE ArcGIS (Vindkraft2 layers 0/1/2/4/8, Vannkraft1 layer 0) | 1h server cache via API route |
+| Oil/gas facilities | Sodir FactMaps (layer 307 + pipelines 311) | 1h server cache via API route |
+| Oil/gas production | Sodir FactPages (yearly field production CSV) | Build-time static JSON |
 | Reservoirs | NVE ArcGIS (Vannkraft1 layer 6 — Magasin) | 1h server cache via API route |
 | River observations | NVE HydAPI (discharge, water level, percentiles) | Per-request (requires NVE_API_KEY) |
 | Income | SSB InntektStruk13 | Loaded once on mount |

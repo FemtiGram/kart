@@ -79,6 +79,18 @@ interface OilGasFacility {
   lon: number;
 }
 
+interface ProductionYear {
+  year: number;
+  oil: number;
+  gas: number;
+  ngl: number;
+  condensate: number;
+  oe: number;
+  water: number;
+}
+
+type ProductionByField = Record<string, ProductionYear[]>;
+
 interface Pipeline {
   id: number;
   name: string;
@@ -104,6 +116,60 @@ interface HavvindZone {
 
 const HAVVIND_COLOR = "#7c3aed";
 const OILGAS_COLOR = "#d97706";
+
+function titleCase(s: string): string {
+  return s.toLowerCase().replace(/(?:^|\s)\S/g, (c) => c.toUpperCase());
+}
+
+const FUNCTION_NO: Record<string, string> = {
+  "oil producer": "Oljeprodusent",
+  "gas producer": "Gassprodusent",
+  "oil/gas producer": "Olje-/gassprodusent",
+  "gas injection": "Gassinjeksjon",
+  "water injection": "Vanninjeksjon",
+  "processing": "Prosessering",
+  "storage": "Lagring",
+  "loading": "Lasting",
+  "quarters": "Boligkvarter",
+  "wellhead": "Brønnhode",
+  "drilling": "Boring",
+  "riser": "Stigerør",
+  "flare": "Fakkel",
+  "compression": "Kompresjon",
+  "metering": "Måling",
+};
+
+function formatFunctions(raw: string): string {
+  return raw.split(" - ").map((f) => {
+    const key = f.trim().toLowerCase();
+    return FUNCTION_NO[key] ?? titleCase(f.trim());
+  }).join(", ");
+}
+
+function formatKind(raw: string): string {
+  const map: Record<string, string> = {
+    "MULTI WELL TEMPLATE": "Flerbrønnmal",
+    "FIXED": "Fast plattform",
+    "JACKET 4 LEGS": "Jacket (4 ben)",
+    "JACKET 6 LEGS": "Jacket (6 ben)",
+    "JACKET 8 LEGS": "Jacket (8 ben)",
+    "CONDEEP 3 SHAFTS": "Condeep (3 skaft)",
+    "CONDEEP 4 SHAFTS": "Condeep (4 skaft)",
+    "SEMI SUBMERSIBLE": "Halvt nedsenkbar",
+    "FPSO": "FPSO",
+    "FSO": "FSO",
+    "FSU": "FSU",
+    "JACK-UP": "Jack-up",
+    "TLP": "TLP",
+    "SPAR": "Spar",
+    "SUBSEA TEMPLATE": "Undervannsmal",
+    "SINGLE WELL TEMPLATE": "Enkeltbrønnmal",
+    "TENSION LEG": "Strekkstag",
+    "DRILL SHIP": "Boreskip",
+    "LOADING SYSTEM": "Lastesystem",
+  };
+  return map[raw] ?? titleCase(raw);
+}
 
 const TYPE_META: Record<EnergyType, { label: string; color: string; icon: typeof Wind }> = {
   vind: { label: "Vindkraft", color: "#0369a1", icon: Wind },
@@ -266,6 +332,8 @@ export function EnergyMap() {
   const [havvindZones, setHavvindZones] = useState<HavvindZone[]>([]);
   const [oilGasFacilities, setOilGasFacilities] = useState<OilGasFacility[]>([]);
   const [pipelines, setPipelines] = useState<Pipeline[]>([]);
+  const [productionData, setProductionData] = useState<ProductionByField>({});
+  const [productionFetchedAt, setProductionFetchedAt] = useState<string | null>(null);
   const [selectedOilGas, setSelectedOilGas] = useState<OilGasFacility | null>(null);
   const [selectedPipeline, setSelectedPipeline] = useState<Pipeline | null>(null);
   const [zoomLevel, setZoomLevel] = useState(5);
@@ -296,6 +364,7 @@ export function EnergyMap() {
   } | null>(null);
   const [tileLayer, setTileLayer] = useState<TileLayerKey>("gråtone");
   const [showSjokart, setShowSjokart] = useState(false);
+  const [showProdInfo, setShowProdInfo] = useState(false);
 
   const [query, setQuery] = useState("");
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
@@ -332,7 +401,48 @@ export function EnergyMap() {
 
   useEffect(() => {
     loadPlants();
+    fetch("/data/production.json")
+      .then((r) => r.json())
+      .then((d) => {
+        setProductionData(d.fields ?? d);
+        if (d.fetchedAt) setProductionFetchedAt(d.fetchedAt);
+      })
+      .catch(() => {});
   }, [loadPlants]);
+
+  // Sync selection → URL hash
+  useEffect(() => {
+    if (selected) {
+      history.replaceState(null, "", `#kraft-${selected.id}`);
+    } else if (selectedOilGas) {
+      history.replaceState(null, "", `#anlegg-${selectedOilGas.id}`);
+    } else if (selectedHavvind) {
+      history.replaceState(null, "", `#havvind-${selectedHavvind.id}`);
+    } else {
+      history.replaceState(null, "", window.location.pathname);
+    }
+  }, [selected, selectedOilGas, selectedHavvind]);
+
+  // Read URL hash on data load → auto-select
+  useEffect(() => {
+    if (loading) return;
+    const hash = window.location.hash;
+    if (!hash) return;
+    const match = hash.match(/^#(kraft|anlegg|havvind)-(\d+)$/);
+    if (!match) return;
+    const [, type, idStr] = match;
+    const id = parseInt(idStr, 10);
+    if (type === "kraft") {
+      const plant = plants.find((p) => p.id === id);
+      if (plant) { setSelected(plant); setShowInfoSheet(true); setCenter({ lat: plant.lat, lon: plant.lon, zoom: 12 }); }
+    } else if (type === "anlegg") {
+      const fac = oilGasFacilities.find((f) => f.id === id);
+      if (fac) { setSelectedOilGas(fac); setShowInfoSheet(true); setCenter({ lat: fac.lat, lon: fac.lon, zoom: 12 }); }
+    } else if (type === "havvind") {
+      const zone = havvindZones.find((z) => z.id === id);
+      if (zone) { setSelectedHavvind(zone); setShowInfoSheet(true); setCenter({ lat: zone.center.lat, lon: zone.center.lon, zoom: 9 }); }
+    }
+  }, [loading, plants, oilGasFacilities, havvindZones]);
 
   useEffect(() => {
     fetch("https://ws.geonorge.no/kommuneinfo/v1/kommuner")
@@ -1227,18 +1337,18 @@ export function EnergyMap() {
                 <div className="mt-4 pt-4 border-t flex flex-col gap-2">
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">Type</span>
-                    <span className="font-medium">{selectedOilGas.kind}</span>
+                    <span className="font-medium">{formatKind(selectedOilGas.kind)}</span>
                   </div>
                   {selectedOilGas.fieldName && (
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-muted-foreground">Felt</span>
-                      <span className="font-medium">{selectedOilGas.fieldName}</span>
+                      <span className="font-medium">{titleCase(selectedOilGas.fieldName)}</span>
                     </div>
                   )}
                   {selectedOilGas.functions && (
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-muted-foreground">Funksjoner</span>
-                      <span className="font-medium text-right max-w-[200px]">{selectedOilGas.functions.toLowerCase().replace(/ - /g, ", ")}</span>
+                      <span className="font-medium text-right max-w-[200px]">{formatFunctions(selectedOilGas.functions)}</span>
                     </div>
                   )}
                   <div className="flex items-center justify-between text-sm">
@@ -1246,6 +1356,76 @@ export function EnergyMap() {
                     <span className="font-medium">{selectedOilGas.phase === "IN SERVICE" ? "I drift" : selectedOilGas.phase === "REMOVED" ? "Fjernet" : selectedOilGas.phase === "DECOMMISSIONED" ? "Nedlagt" : selectedOilGas.phase}</span>
                   </div>
                 </div>
+
+                {/* Production data */}
+                {(() => {
+                  const fieldProd = selectedOilGas.fieldName ? productionData[selectedOilGas.fieldName] : null;
+                  if (!fieldProd || fieldProd.length === 0) return null;
+                  const totalOe = fieldProd.reduce((s, y) => s + y.oe, 0);
+                  const totalOil = fieldProd.reduce((s, y) => s + y.oil, 0);
+                  const totalGas = fieldProd.reduce((s, y) => s + y.gas, 0);
+                  const latest = fieldProd[fieldProd.length - 1];
+                  const maxOe = Math.max(...fieldProd.map((y) => y.oe));
+                  return (
+                    <div className="mt-4 pt-4 border-t">
+                      <button
+                        onClick={() => setShowProdInfo((v) => !v)}
+                        className="flex items-center gap-1.5 mb-3 group"
+                      >
+                        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/60">Produksjon — {selectedOilGas.fieldName}</p>
+                        <Info className="h-3.5 w-3.5 text-muted-foreground/40 group-hover:text-muted-foreground transition-colors" />
+                      </button>
+                      {showProdInfo && (
+                        <div className="bg-muted/50 border rounded-xl p-3 mb-3">
+                          <ul className="text-[11px] text-muted-foreground space-y-1">
+                            <li><strong>Sm³</strong> — Standardkubikkmeter, målt ved 15°C og 1 atm</li>
+                            <li><strong>o.e.</strong> — Oljeekvivalenter, samlet mål for olje + gass + NGL + kondensat</li>
+                            <li><strong>Olje</strong> — Netto salgbar råolje (mill Sm³)</li>
+                            <li><strong>Gass</strong> — Netto salgbar naturgass (mrd Sm³)</li>
+                          </ul>
+                          <p className="text-[10px] text-muted-foreground/60 mt-2">Kilde: Sokkeldirektoratet, årlig feltproduksjon{productionFetchedAt && ` · Hentet ${new Date(productionFetchedAt).toLocaleDateString("nb-NO")}`}</p>
+                        </div>
+                      )}
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <span className="text-2xl font-extrabold" style={{ color: OILGAS_COLOR }}>{totalOe.toFixed(1)}</span>
+                          <p className="text-[10px] text-muted-foreground">mill Sm³ o.e. totalt</p>
+                        </div>
+                        <div>
+                          <span className="text-2xl font-extrabold" style={{ color: OILGAS_COLOR }}>{latest.oe.toFixed(2)}</span>
+                          <p className="text-[10px] text-muted-foreground">mill Sm³ o.e. ({latest.year})</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between text-sm mt-2">
+                        <span className="text-muted-foreground">Olje</span>
+                        <span className="font-medium">{totalOil.toFixed(1)} mill Sm³</span>
+                      </div>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">Gass</span>
+                        <span className="font-medium">{totalGas.toFixed(1)} mrd Sm³</span>
+                      </div>
+                      {/* Sparkline */}
+                      <div className="mt-3 flex items-end gap-[2px] h-10">
+                        {fieldProd.map((y) => (
+                          <div
+                            key={y.year}
+                            className="flex-1 rounded-sm min-w-[2px] transition-all"
+                            style={{
+                              height: `${Math.max(4, (y.oe / maxOe) * 100)}%`,
+                              background: OILGAS_COLOR,
+                              opacity: y.year === latest.year ? 1 : 0.4,
+                            }}
+                            title={`${y.year}: ${y.oe.toFixed(3)} mill Sm³ o.e.`}
+                          />
+                        ))}
+                      </div>
+                      <div className="flex justify-between mt-0.5">
+                        <span className="text-[10px] text-muted-foreground">{fieldProd[0].year}</span>
+                        <span className="text-[10px] text-muted-foreground">{latest.year}</span>
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 <div className="mt-4 pt-4 border-t flex flex-col gap-3">
                   {selectedOilGas.factPageUrl && (
