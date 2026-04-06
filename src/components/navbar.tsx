@@ -66,7 +66,7 @@ export function Navbar() {
                   <NavigationMenuLink
                     href={link.href}
                     data-active={active ? "" : undefined}
-                    className="inline-flex h-9 w-max items-center justify-center rounded-lg px-2.5 py-1.5 text-sm font-medium transition-all text-white/70 hover:text-white hover:bg-white/10 data-[active]:text-[#24374c] data-[active]:bg-white"
+                    className="inline-flex h-9 w-max items-center justify-center rounded-lg px-2.5 py-1.5 text-sm font-medium transition-all text-white/70 hover:text-white hover:bg-white/10 focus:text-[#24374c] focus:bg-white/90 data-[active]:text-[#24374c] data-[active]:bg-white"
                     render={<Link href={link.href} />}
                   >
                     {link.label}
@@ -79,7 +79,7 @@ export function Navbar() {
             <NavigationMenuItem>
               <NavigationMenuTrigger
                 data-active={isSecondaryActive ? "" : undefined}
-                className="text-white/70 hover:text-white hover:bg-white/10 data-[active]:text-[#24374c] data-[active]:bg-white"
+                className="text-white/70 hover:text-white hover:bg-white/10 focus:text-[#24374c] focus:bg-white/90 data-[active]:text-[#24374c] data-[active]:bg-white data-popup-open:text-[#24374c] data-popup-open:bg-white/90"
               >
                 Mer
               </NavigationMenuTrigger>

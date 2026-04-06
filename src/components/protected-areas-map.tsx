@@ -463,7 +463,7 @@ export function ProtectedAreasMap() {
                       <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
                         <div
                           className="h-full rounded-full"
-                          style={{ width: `${pct}%`, background: "linear-gradient(to right, #ef4444, #facc15, #16a34a)" }}
+                          style={{ width: `${pct}%`, background: interpolateColor(pct / 100) }}
                         />
                       </div>
                       <div className="flex justify-between mt-0.5">
