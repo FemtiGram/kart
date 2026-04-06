@@ -410,8 +410,14 @@ export function EnergyMap() {
       .catch(() => {});
   }, [loadPlants]);
 
-  // Sync selection → URL hash
+  // Sync selection → URL hash (skip during initial load to preserve deep link)
+  const hasInitialized = useRef(false);
   useEffect(() => {
+    if (loading) return;
+    if (!hasInitialized.current) {
+      hasInitialized.current = true;
+      return;
+    }
     if (selected) {
       history.replaceState(null, "", `#kraft-${selected.id}`);
     } else if (selectedOilGas) {
@@ -421,7 +427,7 @@ export function EnergyMap() {
     } else {
       history.replaceState(null, "", window.location.pathname);
     }
-  }, [selected, selectedOilGas, selectedHavvind]);
+  }, [selected, selectedOilGas, selectedHavvind, loading]);
 
   // Read URL hash on data load → auto-select
   useEffect(() => {
