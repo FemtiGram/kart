@@ -295,6 +295,7 @@ export function EnergyMap() {
     _t?: number;
   } | null>(null);
   const [tileLayer, setTileLayer] = useState<TileLayerKey>("gråtone");
+  const [showSjokart, setShowSjokart] = useState(false);
 
   const [query, setQuery] = useState("");
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
@@ -603,7 +604,7 @@ export function EnergyMap() {
                   setTimeout(() => setShowDropdown(false), 150)
                 }
                 onKeyDown={handleKeyDown}
-                placeholder="Søk etter adresse eller sted..."
+                placeholder="Søk etter anlegg, felt, sted..."
                 className="flex-1 bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground text-[16px] sm:text-sm"
               />
             </div>
@@ -837,6 +838,15 @@ export function EnergyMap() {
             attribution={TILE_LAYERS[tileLayer].attribution}
             maxZoom={17}
           />
+          {showSjokart && (
+            <TileLayer
+              key="sjokart"
+              url="https://cache.kartverket.no/v1/wmts/1.0.0/sjokartraster/default/webmercator/{z}/{y}/{x}.png"
+              attribution='&copy; <a href="https://www.kartverket.no/">Kartverket</a>'
+              maxZoom={17}
+              opacity={0.7}
+            />
+          )}
           <MarkerClusterGroup
             chunkedLoading
             maxClusterRadius={50}
@@ -1012,6 +1022,14 @@ export function EnergyMap() {
               {TILE_LAYERS[key].label}
             </button>
           ))}
+          <button
+            onClick={() => setShowSjokart(!showSjokart)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold transition-colors border-l ${showSjokart ? "text-white" : "text-muted-foreground hover:bg-muted"}`}
+            style={showSjokart ? { background: "var(--kv-blue)" } : {}}
+          >
+            <Anchor className="h-3.5 w-3.5" />
+            Sjøkart
+          </button>
         </div>
 
         {/* Compact info card */}

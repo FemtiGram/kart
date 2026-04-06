@@ -15,6 +15,13 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { Toggle } from "@/components/ui/toggle";
 import { FYLKER, isInNorway } from "@/lib/fylker";
 
+function isInNorwayApprox(lat: number, lon: number): boolean {
+  if (lat < 57.5 || lat > 71.5 || lon < 4.0 || lon > 31.5) return false;
+  if (lat > 68) return true;
+  if (lat > 63) return lon < 16;
+  return lon < 12.5;
+}
+
 interface WeatherResult {
   temperature: number;
   windSpeed: number;
@@ -329,11 +336,15 @@ export function CabinMap() {
       .catch(() => setLoadingWeather(false));
   }, [selected?.id]);
 
-  const dntCount = cabins.filter((c) => c.isDNT).length;
+  const norwayCabins = useMemo(() => {
+    return cabins.filter((c) => isInNorwayApprox(c.lat, c.lon));
+  }, [cabins]);
+
+  const dntCount = norwayCabins.filter((c) => c.isDNT).length;
 
   const filteredCabins = useMemo(() => {
-    return cabins.filter((c) => filterTypes.has(c.cabinType) && (!filterDNT || c.isDNT));
-  }, [cabins, filterTypes, filterDNT]);
+    return norwayCabins.filter((c) => filterTypes.has(c.cabinType) && (!filterDNT || c.isDNT));
+  }, [norwayCabins, filterTypes, filterDNT]);
 
   const activeFilterCount = (2 - filterTypes.size) + (filterDNT ? 1 : 0);
 
@@ -403,7 +414,7 @@ export function CabinMap() {
                               </div>
                               <div className="h-3 w-3 rounded-full shrink-0" style={{ background: CABIN_COLORS[type] }} />
                               <span className="font-medium flex-1 text-left">{CABIN_LABELS[type]}</span>
-                              <span className="text-xs text-muted-foreground tabular-nums">{cabins.filter((c) => c.cabinType === type).length}</span>
+                              <span className="text-xs text-muted-foreground tabular-nums">{norwayCabins.filter((c) => c.cabinType === type).length}</span>
                             </button>
                           );
                         })}
@@ -478,7 +489,7 @@ export function CabinMap() {
         </div>
         <div className="flex items-center justify-between mt-2">
           <p className="text-xs text-muted-foreground">
-            {loading ? "Henter hytter..." : cabins.length > 0 ? `${filteredCabins.length} av ${cabins.length} hytter — Kilde: OpenStreetMap` : "Ingen hytter funnet"}
+            {loading ? "Henter hytter..." : norwayCabins.length > 0 ? `${filteredCabins.length} av ${norwayCabins.length} hytter — Kilde: OpenStreetMap` : "Ingen hytter funnet"}
           </p>
         </div>
       </div>
