@@ -54,7 +54,7 @@ export default function OgImage() {
             marginTop: 40,
           }}
         >
-          {["Høydekart", "Inntektskart", "Verneområder", "Ladestasjoner"].map(
+          {["Energikart", "Magasinkart", "Ladestasjoner", "Turisthytter", "Inntektskart"].map(
             (label) => (
               <div
                 key={label}

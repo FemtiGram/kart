@@ -20,7 +20,7 @@ export default function OgImage() {
         }}
       >
         <span style={{ fontSize: 24, fontWeight: 700, color: "rgba(255,255,255,0.5)", letterSpacing: 1 }}>
-          MAPGRAM
+          DATAKART
         </span>
         <span style={{ fontSize: 64, fontWeight: 800, color: "white", marginTop: 8 }}>
           Verneområder

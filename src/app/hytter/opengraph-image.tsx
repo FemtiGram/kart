@@ -1,6 +1,6 @@
 import { ImageResponse } from "next/og";
 
-export const alt = "Inntektskart — Datakart";
+export const alt = "Turisthytter — Datakart";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -23,10 +23,10 @@ export default function OgImage() {
           DATAKART
         </span>
         <span style={{ fontSize: 64, fontWeight: 800, color: "white", marginTop: 8 }}>
-          Inntektskart
+          Turisthytter
         </span>
         <p style={{ fontSize: 28, color: "rgba(255,255,255,0.7)", marginTop: 16 }}>
-          Utforsk median inntekt etter skatt i alle norske kommuner
+          DNT-hytter og fjellhytter i hele Norge med sengeplasser, høyde og vær
         </p>
         <div
           style={{
@@ -35,7 +35,7 @@ export default function OgImage() {
             marginTop: 40,
           }}
         >
-          {["Kommunedata", "SSB-statistikk", "Rangering", "Choropleth"].map((label) => (
+          {["DNT-hytter", "Fjellhytter", "Sengeplasser", "Vær"].map((label) => (
             <div
               key={label}
               style={{

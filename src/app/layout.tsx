@@ -11,8 +11,20 @@ const nunitoSans = Nunito_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Datakart",
-  description: "Explore Norwegian geography, maps, and open geodata",
+  title: {
+    default: "Datakart",
+    template: "%s — Datakart",
+  },
+  description: "Utforsk norske geodata — energi, hytter, lading, inntekt og verneområder på interaktive kart.",
+  metadataBase: new URL("https://maps.andersgram.no"),
+  openGraph: {
+    type: "website",
+    locale: "nb_NO",
+    siteName: "Datakart",
+  },
+  twitter: {
+    card: "summary_large_image",
+  },
 };
 
 export default function RootLayout({
