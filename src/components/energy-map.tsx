@@ -902,7 +902,7 @@ export function EnergyMap() {
             {loading
               ? "Henter kraftverk..."
               : plants.length > 0
-                ? `${filteredPlants.length} kraftverk${filteredOilGas.length > 0 ? ` + ${filteredOilGas.length} anlegg` : ""}${filteredHavvindZones.length > 0 ? ` + ${filteredHavvindZones.length} havvind` : ""} — Kilde: NVE / Sodir`
+                ? `${filteredPlants.length} kraftverk${filteredOilGas.length > 0 ? ` + ${filteredOilGas.length} anlegg` : ""}${filteredHavvindZones.length > 0 ? ` + ${filteredHavvindZones.length} havvind` : ""} · Kilde: NVE / Sodir`
                 : "Ingen kraftverk funnet"}
           </p>
           <button
@@ -951,7 +951,7 @@ export function EnergyMap() {
         )}
         {locateError && (
           <div className="absolute bottom-20 sm:top-3 sm:bottom-auto left-1/2 -translate-x-1/2 z-[1000] bg-background/90 backdrop-blur-sm border rounded-full px-4 py-2 shadow-lg">
-            <p className="text-sm text-muted-foreground">Kunne ikke finne posisjon — viser Oslo i stedet.</p>
+            <p className="text-sm text-muted-foreground">Kunne ikke finne posisjon, viser Oslo i stedet.</p>
           </div>
         )}
         {error && (
@@ -1413,16 +1413,16 @@ export function EnergyMap() {
                         onClick={() => setShowProdInfo((v) => !v)}
                         className="flex items-center gap-1.5 mb-3 group"
                       >
-                        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/60">Produksjon — {selectedOilGas.fieldName}</p>
+                        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/60">Produksjon, {selectedOilGas.fieldName}</p>
                         <Info className="h-3.5 w-3.5 text-muted-foreground/40 group-hover:text-muted-foreground transition-colors" />
                       </button>
                       {showProdInfo && (
                         <div className="bg-muted/50 border rounded-xl p-3 mb-3">
                           <ul className="text-[11px] text-muted-foreground space-y-1">
-                            <li><strong>Sm³</strong> — Standardkubikkmeter, målt ved 15°C og 1 atm</li>
-                            <li><strong>o.e.</strong> — Oljeekvivalenter, samlet mål for olje + gass + NGL + kondensat</li>
-                            <li><strong>Olje</strong> — Netto salgbar råolje (mill Sm³)</li>
-                            <li><strong>Gass</strong> — Netto salgbar naturgass (mrd Sm³)</li>
+                            <li><strong>Sm³</strong> – Standardkubikkmeter, målt ved 15°C og 1 atm</li>
+                            <li><strong>o.e.</strong> – Oljeekvivalenter, samlet mål for olje + gass + NGL + kondensat</li>
+                            <li><strong>Olje</strong> – Netto salgbar råolje (mill Sm³)</li>
+                            <li><strong>Gass</strong> – Netto salgbar naturgass (mrd Sm³)</li>
                           </ul>
                           <p className="text-[10px] text-muted-foreground/60 mt-2">Kilde: Sokkeldirektoratet, årlig feltproduksjon{productionFetchedAt && ` · Hentet ${new Date(productionFetchedAt).toLocaleDateString("nb-NO")}`}</p>
                         </div>
@@ -1506,7 +1506,7 @@ export function EnergyMap() {
                   </span>
                 </div>
                 <p className="font-bold text-base truncate leading-snug">{selectedHavvind.name}</p>
-                <p className="text-xs text-muted-foreground">Planlagt område — ikke bygget ennå</p>
+                <p className="text-xs text-muted-foreground">Planlagt område, ikke bygget ennå</p>
               </div>
               <button
                 onClick={() => setSelectedHavvind(null)}
@@ -1563,7 +1563,7 @@ export function EnergyMap() {
                   </span>
                 </div>
                 <p className="font-bold text-lg leading-snug">{selectedHavvind.name}</p>
-                <p className="text-sm text-muted-foreground">Planlagt utredningsområde — ingen turbiner er bygget ennå</p>
+                <p className="text-sm text-muted-foreground">Planlagt utredningsområde, ingen turbiner er bygget ennå</p>
 
                 <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t">
                   {selectedHavvind.arealKm2 != null && (

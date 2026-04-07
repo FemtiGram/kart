@@ -42,7 +42,7 @@ export function Footer() {
             </Link>
             <p className="text-sm text-muted-foreground max-w-xs leading-relaxed">
               Et åpent utforskningsverktøy for Norges geografi, kart og
-              stedsnavn — bygd på offentlige APIer.
+              stedsnavn, bygd på offentlige APIer.
             </p>
           </div>
 

@@ -307,7 +307,7 @@ export function ReservoirMap() {
           )}
         </div>
         <p className="text-xs text-muted-foreground mt-2 max-w-xl mx-auto">
-          {loading ? "Henter magasindata..." : `${stats.total} magasiner${stats.totalVolume > 0 ? ` · ${stats.totalVolume.toLocaleString("nb-NO")} Mm³ total kapasitet` : ""} — Kilde: NVE`}
+          {loading ? "Henter magasindata..." : `${stats.total} magasiner${stats.totalVolume > 0 ? ` · ${stats.totalVolume.toLocaleString("nb-NO")} Mm³ total kapasitet` : ""} · Kilde: NVE`}
         </p>
       </div>
 
@@ -631,7 +631,7 @@ export function ReservoirMap() {
               <p>Kartet viser regulerte vannmagasiner i Norge. Disse samler vann for kraftproduksjon og er en viktig del av Norges energisystem.</p>
               <div className="bg-muted/50 rounded-xl p-3">
                 <p className="font-semibold mb-1">Hva betyr «m regulering»?</p>
-                <p className="text-muted-foreground">Regulering er forskjellen mellom <strong>HRV</strong> (høyeste regulerte vannstand) og <strong>LRV</strong> (laveste regulerte vannstand), målt i meter. Det viser hvor mye vannstanden i magasinet kan varieres — jo høyere tall, desto mer vann kan lagres og tappes for kraftproduksjon.</p>
+                <p className="text-muted-foreground">Regulering er forskjellen mellom <strong>HRV</strong> (høyeste regulerte vannstand) og <strong>LRV</strong> (laveste regulerte vannstand), målt i meter. Det viser hvor mye vannstanden i magasinet kan varieres, jo høyere tall, desto mer vann kan lagres og tappes for kraftproduksjon.</p>
               </div>
               <div className="bg-muted/50 rounded-xl p-3">
                 <p className="font-semibold mb-1">Volum (Mm³)</p>

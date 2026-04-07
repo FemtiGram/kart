@@ -427,7 +427,7 @@ export function WindPowerMap() {
             {loading
               ? "Henter vindkraftverk..."
               : farms.length > 0
-                ? `${farms.length} vindkraftverk — ${Math.round(totalCapacity)} MW totalt — Kilde: NVE`
+                ? `${farms.length} vindkraftverk · ${Math.round(totalCapacity)} MW totalt · Kilde: NVE`
                 : "Ingen vindkraftverk funnet"}
           </p>
           <button

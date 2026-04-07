@@ -3,7 +3,7 @@ import { ArrowRight, Mountain, DollarSign, Shield, Zap, Home as HomeIcon, Batter
 
 const featured = {
   title: "Energikart",
-  description: "Norges komplette energibilde. Vindkraft, vannkraft, planlagt havvind og over 1200 olje- og gassanlegg med rørledninger — alt på ett kart.",
+  description: "Norges komplette energibilde. Vindkraft, vannkraft, planlagt havvind og over 1200 olje- og gassanlegg med produksjonsdata og rørledninger.",
   href: "/energi",
   icon: BatteryCharging,
 };
@@ -136,7 +136,7 @@ export default function Home() {
           <h2 className="text-2xl font-extrabold tracking-tight" style={{ color: "#24374c" }}>Om prosjektet</h2>
           <p className="mt-3 text-muted-foreground leading-relaxed max-w-2xl">
             Datakart er et prosjekt der jeg utforsker hva som er mulig med åpne norske geodata. Alle kartene er bygget
-            utelukkende på gratis, offentlige datakilder — uten betalte API-er eller autentisering.
+            utelukkende på gratis, offentlige datakilder, uten betalte API-er eller autentisering.
           </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-8">

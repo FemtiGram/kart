@@ -363,7 +363,7 @@ export function ElevationMap() {
       {/* API health banner */}
       {apiDown && !apiBannerDismissed && (
         <div className="shrink-0 flex items-center justify-between gap-3 px-4 py-2.5 bg-yellow-50 border-b border-yellow-200 text-yellow-800 text-sm">
-          <p>Eksterne APIer svarer ikke — søk og høydedata kan være utilgjengelig. Prøv igjen senere.</p>
+          <p>Eksterne APIer svarer ikke, søk og høydedata kan være utilgjengelig. Prøv igjen senere.</p>
           <button
             onClick={() => setApiBannerDismissed(true)}
             className="shrink-0 p-1 rounded hover:bg-yellow-100 transition-colors"
@@ -427,7 +427,7 @@ export function ElevationMap() {
       <div className="relative grow [&_.leaflet-grab]:cursor-pointer [&_.leaflet-dragging_.leaflet-grab]:cursor-grabbing">
         {locateError && (
           <div className="absolute bottom-20 sm:top-3 sm:bottom-auto left-1/2 -translate-x-1/2 z-[1000] bg-background/90 backdrop-blur-sm border rounded-full px-4 py-2 shadow-lg">
-            <p className="text-sm text-muted-foreground">Kunne ikke finne posisjon — viser Oslo i stedet.</p>
+            <p className="text-sm text-muted-foreground">Kunne ikke finne posisjon, viser Oslo i stedet.</p>
           </div>
         )}
         <MapContainer
@@ -671,7 +671,7 @@ export function ElevationMap() {
               <div className="max-h-56 overflow-y-auto divide-y" style={{ borderColor: "#1e293b" }}>
                 {devLog.length === 0 ? (
                   <p className="px-3 py-4 text-center" style={{ color: "#475569" }}>
-                    Ingen kall ennå — søk etter en adresse
+                    Ingen kall ennå, søk etter en adresse
                   </p>
                 ) : (
                   devLog.map((entry) => (

@@ -447,11 +447,11 @@ export function ChargingMap() {
         </div>
         <div className="flex items-center justify-between mt-2">
           <p className="text-xs text-muted-foreground">
-            {loading ? loadingMessage : norwayStations.length > 0 ? `${filteredStations.length}${filterConnectors.size > 0 ? ` av ${norwayStations.length}` : ""} ladestasjoner i Norge — Kilde: OpenStreetMap` : "Ingen ladestasjoner funnet"}
+            {loading ? loadingMessage : norwayStations.length > 0 ? `${filteredStations.length}${filterConnectors.size > 0 ? ` av ${norwayStations.length}` : ""} ladestasjoner i Norge · Kilde: OpenStreetMap` : "Ingen ladestasjoner funnet"}
           </p>
           <button
             disabled
-            title="Krever sanntidsdata — kommer snart"
+            title="Krever sanntidsdata, kommer snart"
             className="relative inline-flex items-center gap-1.5 text-xs px-3 py-1 rounded-full border bg-muted text-muted-foreground opacity-50 cursor-not-allowed shrink-0"
           >
             <Zap className="h-3 w-3" />
@@ -495,7 +495,7 @@ export function ChargingMap() {
         )}
         {locateError && (
           <div className="absolute bottom-20 sm:top-3 sm:bottom-auto left-1/2 -translate-x-1/2 z-[1000] bg-background/90 backdrop-blur-sm border rounded-full px-4 py-2 shadow-lg">
-            <p className="text-sm text-muted-foreground">Kunne ikke finne posisjon — viser Oslo i stedet.</p>
+            <p className="text-sm text-muted-foreground">Kunne ikke finne posisjon, viser Oslo i stedet.</p>
           </div>
         )}
         {error && (
