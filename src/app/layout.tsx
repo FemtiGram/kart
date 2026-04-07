@@ -5,7 +5,7 @@ import "./globals.css";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 
-const GA_ID = "G-LYJPQ0LMBN";
+const GA_ID = "G-T8XDP59WNK";
 
 const nunitoSans = Nunito_Sans({
   variable: "--font-nunito-sans",
