@@ -645,7 +645,7 @@ export function CabinMap() {
                     {CABIN_LABELS[selected.cabinType]}
                   </span>
                   {selected.isDNT && (
-                    <span className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">DNT</span>
+                    <span className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-muted text-foreground">DNT</span>
                   )}
                   {selected.fee === false && (
                     <span className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-green-100 text-green-800">Gratis</span>
@@ -723,7 +723,7 @@ export function CabinMap() {
                     {CABIN_LABELS[selected.cabinType]}
                   </span>
                   {selected.isDNT && (
-                    <span className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">DNT</span>
+                    <span className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-muted text-foreground">DNT</span>
                   )}
                   {selected.fee === false && (
                     <span className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-green-100 text-green-800">Gratis</span>

@@ -137,14 +137,22 @@ All maps use a **compact floating card + expandable bottom Sheet** pattern:
 ### Energy map specifics:
 - **Sjøkart overlay:** Optional Kartverket nautical chart layer (sjokartraster), toggled in tile switcher, off by default
 - **Oil/gas search:** Facilities searchable by name and field name (Sodir data)
+- **Oil/gas detail sections:** "Anleggsdetaljer" (type, felt, funksjoner, status) and "Produksjon" sections, each with toggleable info icon explaining the metrics
 - **Production data:** Yearly oil/gas production per field joined by `fieldName`, shown as sparkline + totals in detail sheet
 - **Pipeline hit areas:** Invisible 16px-wide polyline underneath visible line for easier clicking
 - **URL deep linking:** Selection synced to URL hash (`#kraft-{id}`, `#anlegg-{id}`, `#havvind-{id}`). Shared links auto-select + expand detail sheet
 - **Formatted labels:** Sodir kind/functions translated to Norwegian with title-casing
+- **Animated loading counter:** All maps show a count-up animation after data loads (AnimatedCount component)
 
 ### Shared components:
 - **DataDisclaimer:** Shared disclaimer component in map-utils.tsx, shown after every Kilde attribution in all detail sheets
+- **MapError:** Shared error toast with retry button, used across all maps
 - **Navigation:** Grouped dropdown nav (Energi/Natur/Samfunn) with matching landing page structure
+
+### WCAG contrast:
+- No `/60` or `/40` opacity modifiers on text elements
+- Metric numbers use `#0e7490` (cyan-700, 4.6:1) not `#0891b2` (cyan-600, 2.1:1)
+- Badges use `text-foreground` on `bg-muted`, not `text-muted-foreground`
 
 ## Design References
 - **UX Laws** — https://uxlaws.com — Consult when making UX/design decisions. Key principles to keep in mind: Fitts's Law (touch targets), Hick's Law (limit choices), Miller's Law (chunk info), Jakob's Law (familiar patterns), aesthetic-usability effect.

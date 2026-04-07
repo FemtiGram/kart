@@ -190,7 +190,7 @@ function formatKind(raw: string): string {
 
 const TYPE_META: Record<EnergyType, { label: string; color: string; icon: typeof Wind }> = {
   vind: { label: "Vindkraft", color: "#0369a1", icon: Wind },
-  vann: { label: "Vannkraft", color: "#0891b2", icon: Droplets },
+  vann: { label: "Vannkraft", color: "#0e7490", icon: Droplets },
   havvind: { label: "Havvind (planlagt)", color: HAVVIND_COLOR, icon: Wind },
   oilgas: { label: "Olje & gass", color: OILGAS_COLOR, icon: Fuel },
 };
@@ -384,6 +384,7 @@ export function EnergyMap() {
   const [tileLayer, setTileLayer] = useState<TileLayerKey>("gråtone");
   const [showSjokart, setShowSjokart] = useState(false);
   const [showProdInfo, setShowProdInfo] = useState(false);
+  const [showFacilityInfo, setShowFacilityInfo] = useState(false);
 
   const [query, setQuery] = useState("");
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
@@ -1264,7 +1265,7 @@ export function EnergyMap() {
                   <span className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full text-white" style={{ background: OILGAS_COLOR }}>
                     Olje & gass
                   </span>
-                  <span className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">
+                  <span className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-muted text-foreground">
                     {selectedOilGas.isSurface ? "Overflate" : "Undervanns"}
                   </span>
                 </div>
@@ -1323,7 +1324,7 @@ export function EnergyMap() {
                   <span className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full text-white" style={{ background: OILGAS_COLOR }}>
                     Olje & gass
                   </span>
-                  <span className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">
+                  <span className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-muted text-foreground">
                     {selectedOilGas.isSurface ? "Overflate" : "Undervanns"}
                   </span>
                   {selectedOilGas.phase === "IN SERVICE" && (
@@ -1357,26 +1358,46 @@ export function EnergyMap() {
                   )}
                 </div>
 
-                <div className="mt-4 pt-4 border-t flex flex-col gap-2">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Type</span>
-                    <span className="font-medium">{formatKind(selectedOilGas.kind)}</span>
-                  </div>
-                  {selectedOilGas.fieldName && (
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Felt</span>
-                      <span className="font-medium">{titleCase(selectedOilGas.fieldName)}</span>
+                <div className="mt-4 pt-4 border-t">
+                  <button
+                    onClick={() => setShowFacilityInfo((v) => !v)}
+                    className="flex items-center gap-1.5 mb-3 group"
+                  >
+                    <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Anleggsdetaljer</p>
+                    <Info className="h-3.5 w-3.5 text-muted-foreground/70 group-hover:text-muted-foreground transition-colors" />
+                  </button>
+                  {showFacilityInfo && (
+                    <div className="bg-muted/50 border rounded-xl p-3 mb-3">
+                      <ul className="text-[11px] text-muted-foreground space-y-1">
+                        <li><strong>Type</strong> – Fysisk konstruksjon, f.eks. fast plattform, FPSO eller undervannsmal</li>
+                        <li><strong>Felt</strong> – Petroleumsfeltet anlegget tilhører. Flere anlegg kan dele samme felt</li>
+                        <li><strong>Funksjoner</strong> – Hva anlegget gjør: produksjon, injeksjon, prosessering, boring osv.</li>
+                        <li><strong>Status</strong> – Om anlegget er i aktiv drift, fjernet eller nedlagt</li>
+                      </ul>
+                      <p className="text-[10px] text-muted-foreground mt-2">Kilde: Sokkeldirektoratet (Sodir)</p>
                     </div>
                   )}
-                  {selectedOilGas.functions && (
+                  <div className="flex flex-col gap-2">
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Funksjoner</span>
-                      <span className="font-medium text-right max-w-[200px]">{formatFunctions(selectedOilGas.functions)}</span>
+                      <span className="text-muted-foreground">Type</span>
+                      <span className="font-medium">{formatKind(selectedOilGas.kind)}</span>
                     </div>
-                  )}
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Status</span>
-                    <span className="font-medium">{selectedOilGas.phase === "IN SERVICE" ? "I drift" : selectedOilGas.phase === "REMOVED" ? "Fjernet" : selectedOilGas.phase === "DECOMMISSIONED" ? "Nedlagt" : selectedOilGas.phase}</span>
+                    {selectedOilGas.fieldName && (
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">Felt</span>
+                        <span className="font-medium">{titleCase(selectedOilGas.fieldName)}</span>
+                      </div>
+                    )}
+                    {selectedOilGas.functions && (
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">Funksjoner</span>
+                        <span className="font-medium text-right max-w-[200px]">{formatFunctions(selectedOilGas.functions)}</span>
+                      </div>
+                    )}
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">Status</span>
+                      <span className="font-medium">{selectedOilGas.phase === "IN SERVICE" ? "I drift" : selectedOilGas.phase === "REMOVED" ? "Fjernet" : selectedOilGas.phase === "DECOMMISSIONED" ? "Nedlagt" : selectedOilGas.phase}</span>
+                    </div>
                   </div>
                 </div>
 
@@ -1395,8 +1416,8 @@ export function EnergyMap() {
                         onClick={() => setShowProdInfo((v) => !v)}
                         className="flex items-center gap-1.5 mb-3 group"
                       >
-                        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/60">Produksjon, {selectedOilGas.fieldName}</p>
-                        <Info className="h-3.5 w-3.5 text-muted-foreground/40 group-hover:text-muted-foreground transition-colors" />
+                        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Produksjon, {selectedOilGas.fieldName}</p>
+                        <Info className="h-3.5 w-3.5 text-muted-foreground/70 group-hover:text-muted-foreground transition-colors" />
                       </button>
                       {showProdInfo && (
                         <div className="bg-muted/50 border rounded-xl p-3 mb-3">
@@ -1406,7 +1427,7 @@ export function EnergyMap() {
                             <li><strong>Olje</strong> – Netto salgbar råolje (mill Sm³)</li>
                             <li><strong>Gass</strong> – Netto salgbar naturgass (mrd Sm³)</li>
                           </ul>
-                          <p className="text-[10px] text-muted-foreground/60 mt-2">Kilde: Sokkeldirektoratet, årlig feltproduksjon{productionFetchedAt && ` · Hentet ${new Date(productionFetchedAt).toLocaleDateString("nb-NO")}`}</p>
+                          <p className="text-[10px] text-muted-foreground mt-2">Kilde: Sokkeldirektoratet, årlig feltproduksjon{productionFetchedAt && ` · Hentet ${new Date(productionFetchedAt).toLocaleDateString("nb-NO")}`}</p>
                         </div>
                       )}
                       <div className="grid grid-cols-2 gap-4">
@@ -1483,7 +1504,7 @@ export function EnergyMap() {
                   <span className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full text-white" style={{ background: HAVVIND_COLOR }}>
                     Havvind · Utredning
                   </span>
-                  <span className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">
+                  <span className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-muted text-foreground">
                     {selectedHavvind.typeAnlegg}
                   </span>
                 </div>
@@ -1540,7 +1561,7 @@ export function EnergyMap() {
                   <span className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full text-white" style={{ background: HAVVIND_COLOR }}>
                     Havvind · Utredning
                   </span>
-                  <span className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">
+                  <span className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-muted text-foreground">
                     {selectedHavvind.typeAnlegg}
                   </span>
                 </div>
@@ -1699,14 +1720,14 @@ export function EnergyMap() {
                           <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                             Målestasjon: {hydroStation.station.name}
                           </span>
-                          <span className="text-[10px] text-muted-foreground/60">
+                          <span className="text-[10px] text-muted-foreground">
                             ({hydroStation.station.distanceKm} km unna)
                           </span>
                         </div>
                         <div className="grid grid-cols-2 gap-3">
                           {hydroStation.discharge != null && (
                             <div className="flex items-baseline gap-1.5">
-                              <span className="text-2xl font-extrabold" style={{ color: "#0891b2" }}>
+                              <span className="text-2xl font-extrabold" style={{ color: "#0e7490" }}>
                                 {hydroStation.discharge.toFixed(1)}
                               </span>
                               <span className="text-xs text-muted-foreground">m³/s vannføring</span>
@@ -1714,7 +1735,7 @@ export function EnergyMap() {
                           )}
                           {hydroStation.waterLevel != null && (
                             <div className="flex items-baseline gap-1.5">
-                              <span className="text-2xl font-extrabold" style={{ color: "#0891b2" }}>
+                              <span className="text-2xl font-extrabold" style={{ color: "#0e7490" }}>
                                 {hydroStation.waterLevel.toFixed(2)}
                               </span>
                               <span className="text-xs text-muted-foreground">m vannstand</span>
@@ -1803,7 +1824,7 @@ export function EnergyMap() {
                       {selectedPipeline.medium ?? "Ukjent"}
                     </span>
                     {selectedPipeline.phase && (
-                      <span className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">
+                      <span className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-muted text-foreground">
                         {selectedPipeline.phase === "IN SERVICE" ? "I drift" : selectedPipeline.phase === "DECOMMISSIONED" ? "Nedlagt" : selectedPipeline.phase}
                       </span>
                     )}

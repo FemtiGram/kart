@@ -145,7 +145,7 @@ export function Navbar() {
             <nav className="mt-2 flex flex-col">
               {navGroups.map((group) => (
                 <div key={group.label}>
-                  <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/60 px-3 pt-4 pb-2">
+                  <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground px-3 pt-4 pb-2">
                     {group.label}
                   </p>
                   {group.links.map((link) => {

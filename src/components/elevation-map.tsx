@@ -554,7 +554,7 @@ export function ElevationMap() {
                     {selected.address.poststed}, {selected.address.kommunenavn}
                   </p>
                 )}
-                <p className="text-xs text-muted-foreground/60 font-mono mt-0.5">
+                <p className="text-xs text-muted-foreground font-mono mt-0.5">
                   {selected.address.representasjonspunkt.lat.toFixed(5)}, {selected.address.representasjonspunkt.lon.toFixed(5)}
                 </p>
 

@@ -54,7 +54,7 @@ const TILE_LAYERS = {
 
 type TileLayerKey = keyof typeof TILE_LAYERS;
 
-const RESERVOIR_COLOR = "#0891b2";
+const RESERVOIR_COLOR = "#0e7490";
 
 const reservoirIconCache = new Map<string, L.DivIcon>();
 function reservoirIcon(isSelected: boolean, inverted: boolean): L.DivIcon {
@@ -457,7 +457,7 @@ export function ReservoirMap() {
             <div className="mt-3 flex gap-4">
               {selected.volumeMm3 != null && (
                 <div className="flex items-baseline gap-1.5">
-                  <span className="text-2xl font-extrabold" style={{ color: "#0891b2" }}>
+                  <span className="text-2xl font-extrabold" style={{ color: "#0e7490" }}>
                     {selected.volumeMm3.toFixed(1)}
                   </span>
                   <span className="text-xs text-muted-foreground">Mm³</span>
@@ -465,7 +465,7 @@ export function ReservoirMap() {
               )}
               {selected.areaKm2 != null && (
                 <div className="flex items-baseline gap-1.5">
-                  <span className="text-2xl font-extrabold" style={{ color: "#0891b2" }}>
+                  <span className="text-2xl font-extrabold" style={{ color: "#0e7490" }}>
                     {selected.areaKm2.toFixed(2)}
                   </span>
                   <span className="text-xs text-muted-foreground">km²</span>
@@ -517,13 +517,13 @@ export function ReservoirMap() {
                 <div className="mt-4 pt-4 border-t flex flex-wrap gap-x-6 gap-y-2">
                   {selected.volumeMm3 != null && (
                     <div className="flex items-baseline gap-1.5">
-                      <span className="text-3xl font-extrabold" style={{ color: "#0891b2" }}>{selected.volumeMm3.toFixed(1)}</span>
+                      <span className="text-3xl font-extrabold" style={{ color: "#0e7490" }}>{selected.volumeMm3.toFixed(1)}</span>
                       <span className="text-xs text-muted-foreground">Mm³ volum</span>
                     </div>
                   )}
                   {selected.areaKm2 != null && (
                     <div className="flex items-baseline gap-1.5">
-                      <span className="text-3xl font-extrabold" style={{ color: "#0891b2" }}>{selected.areaKm2.toFixed(2)}</span>
+                      <span className="text-3xl font-extrabold" style={{ color: "#0e7490" }}>{selected.areaKm2.toFixed(2)}</span>
                       <span className="text-xs text-muted-foreground">km² areal</span>
                     </div>
                   )}

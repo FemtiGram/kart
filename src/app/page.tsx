@@ -119,7 +119,7 @@ export default function Home() {
         <div className="mt-8 space-y-8">
           {groups.map((group) => (
             <div key={group.label}>
-              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/60 mb-3">
+              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">
                 {group.label}
               </p>
               <div className={`grid grid-cols-1 gap-4 ${group.items.length >= 3 ? "sm:grid-cols-3" : "sm:grid-cols-2"}`}>
