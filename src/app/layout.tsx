@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
 import { Nunito_Sans } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
+
+const GA_ID = "G-LYJPQ0LMBN";
 
 const nunitoSans = Nunito_Sans({
   variable: "--font-nunito-sans",
@@ -34,6 +37,15 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="no" className={`${nunitoSans.variable} h-full antialiased`}>
+      <head>
+        <Script src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`} strategy="afterInteractive" />
+        <Script id="gtag-init" strategy="afterInteractive">
+          {`window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', '${GA_ID}');`}
+        </Script>
+      </head>
       <body className="min-h-full flex flex-col">
         <Navbar />
         <main className="flex-1">{children}</main>
