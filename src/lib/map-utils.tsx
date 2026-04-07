@@ -84,6 +84,25 @@ export function useSearchAbort() {
   };
 }
 
+// ─── Error toast ────────────────────────────────────────────
+
+export function MapError({ message, onRetry }: { message: string; onRetry: () => void }) {
+  return (
+    <div className="absolute bottom-20 sm:top-3 sm:bottom-auto left-1/2 -translate-x-1/2 z-[1000] w-[calc(100%-2rem)] max-w-sm">
+      <div className="bg-red-700 rounded-2xl px-5 py-4 shadow-xl">
+        <p className="text-sm font-semibold text-white">{message}</p>
+        <button
+          onClick={onRetry}
+          className="mt-3 inline-flex items-center gap-2 text-sm font-semibold text-white bg-white/20 hover:bg-white/30 transition-colors rounded-xl px-4 py-2"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4.5 w-4.5"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
+          Prøv igjen
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ─── Disclaimer ─────────────────────────────────────────────
 
 export function DataDisclaimer() {

@@ -6,11 +6,11 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import type { GeoJsonObject, Feature } from "geojson";
 import type { Layer } from "leaflet";
-import { Search, MapPin, Loader2, X, Info, LocateFixed, Map as MapIcon, ChevronUp, Navigation, ExternalLink, RotateCw } from "lucide-react";
+import { Search, MapPin, Loader2, X, Info, LocateFixed, Map as MapIcon, ChevronUp, Navigation, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { FYLKER } from "@/lib/fylker";
-import { FlyTo, DataDisclaimer, interpolateColor, useDebounceRef, useSearchAbort } from "@/lib/map-utils";
+import { FlyTo, DataDisclaimer, MapError, interpolateColor, useDebounceRef, useSearchAbort } from "@/lib/map-utils";
 
 interface IncomeAddress {
   adressetekst: string;
@@ -375,16 +375,7 @@ export function IncomeMap() {
             </div>
           </div>
         )}
-        {error && (
-          <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[1000] rounded-full px-4 py-2 shadow-lg" style={{ background: "#b91c1c" }}>
-            <div className="flex items-center gap-3">
-              <p className="text-sm font-medium text-white">Kunne ikke laste data.</p>
-              <button onClick={loadData} className="inline-flex items-center gap-1 text-sm font-semibold text-white/90 hover:text-white transition-colors">
-                <RotateCw className="h-3.5 w-3.5" /> Prøv igjen
-              </button>
-            </div>
-          </div>
-        )}
+        {error && <MapError message="Kunne ikke laste data." onRetry={loadData} />}
 
         {!loading && !error && geoData && (
           <MapContainer

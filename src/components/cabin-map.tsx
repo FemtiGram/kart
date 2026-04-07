@@ -7,8 +7,8 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "react-leaflet-cluster/dist/assets/MarkerCluster.css";
 import "react-leaflet-cluster/dist/assets/MarkerCluster.Default.css";
-import { Loader2, X, Search, MapPin, ExternalLink, Info, Map as MapIcon, Layers, LocateFixed, Mountain, Wind, Droplets, Sun, Cloud, CloudSun, CloudRain, CloudSnow, CloudLightning, CloudFog, CloudHail, CloudDrizzle, Moon, RotateCw, SlidersHorizontal, Check, ChevronUp, Navigation } from "lucide-react";
-import { FlyTo, DataDisclaimer, useDebounceRef, useSearchAbort } from "@/lib/map-utils";
+import { Loader2, X, Search, MapPin, ExternalLink, Info, Map as MapIcon, Layers, LocateFixed, Mountain, Wind, Droplets, Sun, Cloud, CloudSun, CloudRain, CloudSnow, CloudLightning, CloudFog, CloudHail, CloudDrizzle, Moon, SlidersHorizontal, Check, ChevronUp, Navigation } from "lucide-react";
+import { FlyTo, DataDisclaimer, MapError, useDebounceRef, useSearchAbort } from "@/lib/map-utils";
 import type { LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -561,16 +561,7 @@ export function CabinMap() {
             <p className="text-sm text-muted-foreground">Kunne ikke finne posisjon — viser Jotunheimen i stedet.</p>
           </div>
         )}
-        {error && (
-          <div className="absolute bottom-20 sm:top-3 sm:bottom-auto left-1/2 -translate-x-1/2 z-[1000] rounded-full px-4 py-2 shadow-lg" style={{ background: "#b91c1c" }}>
-            <div className="flex items-center gap-3">
-              <p className="text-sm font-medium text-white">Kunne ikke hente hytter.</p>
-              <button onClick={loadCabins} className="inline-flex items-center gap-1 text-sm font-semibold text-white/90 hover:text-white transition-colors">
-                <RotateCw className="h-3.5 w-3.5" /> Prøv igjen
-              </button>
-            </div>
-          </div>
-        )}
+        {error && <MapError message="Kunne ikke hente hytter." onRetry={loadCabins} />}
 
         <MapContainer
           center={[65, 14]}
