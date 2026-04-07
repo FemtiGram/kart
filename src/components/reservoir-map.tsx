@@ -85,6 +85,24 @@ function fillColor(hrv: number | null, lrv: number | null): string {
   return "#22d3ee";
 }
 
+function AnimatedCount({ target, duration = 600 }: { target: number; duration?: number }) {
+  const [count, setCount] = useState(0);
+  useEffect(() => {
+    if (target === 0) return;
+    const start = performance.now();
+    let raf: number;
+    const tick = (now: number) => {
+      const t = Math.min((now - start) / duration, 1);
+      const eased = 1 - Math.pow(1 - t, 3);
+      setCount(Math.round(eased * target));
+      if (t < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [target, duration]);
+  return <>{count.toLocaleString("nb-NO")}</>;
+}
+
 function ZoomTracker({ onZoom }: { onZoom: (z: number) => void }) {
   const map = useMap();
   useEffect(() => {
@@ -107,6 +125,8 @@ function PanToSelected({ reservoir }: { reservoir: Reservoir | null }) {
 export function ReservoirMap() {
   const [reservoirs, setReservoirs] = useState<Reservoir[]>([]);
   const [loading, setLoading] = useState(true);
+  const [counting, setCounting] = useState(false);
+  const [loadedCount, setLoadedCount] = useState(0);
   const [error, setError] = useState(false);
   const [showInfo, setShowInfo] = useState(false);
   const [showInfoSheet, setShowInfoSheet] = useState(false);
@@ -137,7 +157,10 @@ export function ReservoirMap() {
       }
       setReservoirs(data.reservoirs);
       setNationalFill(data.nationalFill ?? null);
+      setLoadedCount(data.reservoirs.length);
+      setCounting(true);
       setLoading(false);
+      setTimeout(() => setCounting(false), 800);
     } catch {
       setError(true);
       setLoading(false);
@@ -290,11 +313,25 @@ export function ReservoirMap() {
 
       {/* Map */}
       <div className="relative grow">
-        {loading && (
+        {(loading || counting) && (
           <div className="absolute inset-0 z-[1000] bg-background flex items-center justify-center">
             <div className="flex flex-col items-center gap-3 text-center px-6">
-              <Loader2 className="h-8 w-8 animate-spin" style={{ color: "var(--kv-blue)" }} />
-              <p className="text-sm text-muted-foreground">Henter magasindata...</p>
+              <Loader2
+                className="h-8 w-8 animate-spin"
+                style={{ color: "var(--kv-blue)" }}
+              />
+              {counting ? (
+                <>
+                  <p className="text-2xl font-extrabold tabular-nums" style={{ color: "var(--kv-blue)" }}>
+                    <AnimatedCount target={loadedCount} duration={700} />
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    datapunkter lastet
+                  </p>
+                </>
+              ) : (
+                <p className="text-sm text-muted-foreground">Henter magasindata...</p>
+              )}
             </div>
           </div>
         )}

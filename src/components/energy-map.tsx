@@ -115,6 +115,24 @@ interface HavvindZone {
 }
 
 const HAVVIND_COLOR = "#7c3aed";
+function AnimatedCount({ target, duration = 600 }: { target: number; duration?: number }) {
+  const [count, setCount] = useState(0);
+  useEffect(() => {
+    if (target === 0) return;
+    const start = performance.now();
+    let raf: number;
+    const tick = (now: number) => {
+      const t = Math.min((now - start) / duration, 1);
+      const eased = 1 - Math.pow(1 - t, 3); // ease-out cubic
+      setCount(Math.round(eased * target));
+      if (t < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [target, duration]);
+  return <>{count.toLocaleString("nb-NO")}</>;
+}
+
 const OILGAS_COLOR = "#d97706";
 
 function titleCase(s: string): string {
@@ -338,6 +356,8 @@ export function EnergyMap() {
   const [selectedPipeline, setSelectedPipeline] = useState<Pipeline | null>(null);
   const [zoomLevel, setZoomLevel] = useState(5);
   const [loading, setLoading] = useState(true);
+  const [counting, setCounting] = useState(false);
+  const [loadedCount, setLoadedCount] = useState(0);
   const [error, setError] = useState(false);
   const [locating, setLocating] = useState(false);
   const [locateError, setLocateError] = useState(false);
@@ -392,7 +412,11 @@ export function EnergyMap() {
       setHavvindZones(data.havvindZones ?? []);
       setOilGasFacilities(data.oilGasFacilities ?? []);
       setPipelines(data.pipelines ?? []);
+      const total = (data.plants?.length ?? 0) + (data.oilGasFacilities?.length ?? 0) + (data.havvindZones?.length ?? 0);
+      setLoadedCount(total);
+      setCounting(true);
       setLoading(false);
+      setTimeout(() => setCounting(false), 800);
     } catch {
       setError(true);
       setLoading(false);
@@ -893,16 +917,27 @@ export function EnergyMap() {
 
       {/* Map */}
       <div className="relative grow">
-        {loading && (
+        {(loading || counting) && (
           <div className="absolute inset-0 z-[1000] bg-background flex items-center justify-center">
             <div className="flex flex-col items-center gap-3 text-center px-6">
               <Loader2
                 className="h-8 w-8 animate-spin"
                 style={{ color: "var(--kv-blue)" }}
               />
-              <p className="text-sm text-muted-foreground">
-                Henter kraftverk...
-              </p>
+              {counting ? (
+                <>
+                  <p className="text-2xl font-extrabold tabular-nums" style={{ color: "var(--kv-blue)" }}>
+                    <AnimatedCount target={loadedCount} duration={700} />
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    datapunkter lastet
+                  </p>
+                </>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  Henter kraftverk...
+                </p>
+              )}
             </div>
           </div>
         )}

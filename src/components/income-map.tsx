@@ -34,6 +34,24 @@ interface SelectedKommune {
 }
 
 
+function AnimatedCount({ target, duration = 600 }: { target: number; duration?: number }) {
+  const [count, setCount] = useState(0);
+  useEffect(() => {
+    if (target === 0) return;
+    const start = performance.now();
+    let raf: number;
+    const tick = (now: number) => {
+      const t = Math.min((now - start) / duration, 1);
+      const eased = 1 - Math.pow(1 - t, 3);
+      setCount(Math.round(eased * target));
+      if (t < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [target, duration]);
+  return <>{count.toLocaleString("nb-NO")}</>;
+}
+
 function incomeColor(income: number | undefined, min: number, max: number): string {
   if (income == null || income === 0) return "#e3ddd4";
   if (max === min) return "#16a34a";
@@ -64,6 +82,8 @@ export function IncomeMap() {
   const [geoData, setGeoData] = useState<GeoJsonObject | null>(null);
   const [incomeData, setIncomeData] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
+  const [counting, setCounting] = useState(false);
+  const [loadedCount, setLoadedCount] = useState(0);
   const [error, setError] = useState(false);
 
   const [query, setQuery] = useState("");
@@ -100,7 +120,11 @@ export function IncomeMap() {
       }));
       setGeoData(geo);
       setIncomeData(income);
+      const kommuneCount = Object.keys(income).filter((k) => income[k] > 0).length;
+      setLoadedCount(kommuneCount);
+      setCounting(true);
       setLoading(false);
+      setTimeout(() => setCounting(false), 800);
     } catch {
       setError(true);
       setLoading(false);
@@ -329,16 +353,25 @@ export function IncomeMap() {
 
       {/* Map */}
       <div className="relative grow">
-        {loading && (
-          <div className="absolute inset-0 z-[1000] bg-background p-4 flex flex-col gap-3">
-            <div className="flex gap-3">
-              <div className="h-8 w-32 rounded-lg skeleton-shimmer" />
-              <div className="h-8 w-24 rounded-lg skeleton-shimmer" />
-            </div>
-            <div className="flex-1 rounded-xl skeleton-shimmer" />
-            <div className="flex gap-3 justify-center">
-              <div className="h-6 w-20 rounded-md skeleton-shimmer" />
-              <div className="h-6 w-28 rounded-md skeleton-shimmer" />
+        {(loading || counting) && (
+          <div className="absolute inset-0 z-[1000] bg-background flex items-center justify-center">
+            <div className="flex flex-col items-center gap-3 text-center px-6">
+              <Loader2
+                className="h-8 w-8 animate-spin"
+                style={{ color: "var(--kv-blue)" }}
+              />
+              {counting ? (
+                <>
+                  <p className="text-2xl font-extrabold tabular-nums" style={{ color: "var(--kv-blue)" }}>
+                    <AnimatedCount target={loadedCount} duration={700} />
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    datapunkter lastet
+                  </p>
+                </>
+              ) : (
+                <p className="text-sm text-muted-foreground">Henter inntektsdata...</p>
+              )}
             </div>
           </div>
         )}

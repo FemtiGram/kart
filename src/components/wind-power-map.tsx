@@ -94,6 +94,24 @@ function windFarmIcon(
   });
 }
 
+function AnimatedCount({ target, duration = 600 }: { target: number; duration?: number }) {
+  const [count, setCount] = useState(0);
+  useEffect(() => {
+    if (target === 0) return;
+    const start = performance.now();
+    let raf: number;
+    const tick = (now: number) => {
+      const t = Math.min((now - start) / duration, 1);
+      const eased = 1 - Math.pow(1 - t, 3);
+      setCount(Math.round(eased * target));
+      if (t < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [target, duration]);
+  return <>{count.toLocaleString("nb-NO")}</>;
+}
+
 function PanToSelected({ farm }: { farm: WindFarm | null }) {
   const map = useMap();
   useEffect(() => {
@@ -106,6 +124,8 @@ function PanToSelected({ farm }: { farm: WindFarm | null }) {
 export function WindPowerMap() {
   const [farms, setFarms] = useState<WindFarm[]>([]);
   const [loading, setLoading] = useState(true);
+  const [counting, setCounting] = useState(false);
+  const [loadedCount, setLoadedCount] = useState(0);
   const [error, setError] = useState(false);
   const [locating, setLocating] = useState(false);
   const [showInfo, setShowInfo] = useState(false);
@@ -144,7 +164,10 @@ export function WindPowerMap() {
       const elapsed = Date.now() - t0;
       if (elapsed < 3000)
         await new Promise((r) => setTimeout(r, 3000 - elapsed));
+      setLoadedCount(data.windFarms.length);
+      setCounting(true);
       setLoading(false);
+      setTimeout(() => setCounting(false), 800);
 
       // Fly to user location or Oslo
       const pref = localStorage.getItem("mapgram-use-location");
@@ -419,16 +442,27 @@ export function WindPowerMap() {
 
       {/* Map */}
       <div className="relative grow">
-        {loading && (
+        {(loading || counting) && (
           <div className="absolute inset-0 z-[1000] bg-background flex items-center justify-center">
             <div className="flex flex-col items-center gap-3 text-center px-6">
               <Loader2
                 className="h-8 w-8 animate-spin"
                 style={{ color: "var(--kv-blue)" }}
               />
-              <p className="text-sm text-muted-foreground">
-                Henter vindkraftverk...
-              </p>
+              {counting ? (
+                <>
+                  <p className="text-2xl font-extrabold tabular-nums" style={{ color: "var(--kv-blue)" }}>
+                    <AnimatedCount target={loadedCount} duration={700} />
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    datapunkter lastet
+                  </p>
+                </>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  Henter vindkraftverk...
+                </p>
+              )}
             </div>
           </div>
         )}

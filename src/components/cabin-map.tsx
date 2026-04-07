@@ -120,6 +120,24 @@ const TILE_LAYERS = {
 
 type TileLayerKey = keyof typeof TILE_LAYERS;
 
+function AnimatedCount({ target, duration = 600 }: { target: number; duration?: number }) {
+  const [count, setCount] = useState(0);
+  useEffect(() => {
+    if (target === 0) return;
+    const start = performance.now();
+    let raf: number;
+    const tick = (now: number) => {
+      const t = Math.min((now - start) / duration, 1);
+      const eased = 1 - Math.pow(1 - t, 3);
+      setCount(Math.round(eased * target));
+      if (t < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [target, duration]);
+  return <>{count.toLocaleString("nb-NO")}</>;
+}
+
 function PanToSelected({ cabin }: { cabin: Cabin | null }) {
   const map = useMap();
   useEffect(() => {
@@ -132,6 +150,8 @@ function PanToSelected({ cabin }: { cabin: Cabin | null }) {
 export function CabinMap() {
   const [cabins, setCabins] = useState<Cabin[]>([]);
   const [loading, setLoading] = useState(true);
+  const [counting, setCounting] = useState(false);
+  const [loadedCount, setLoadedCount] = useState(0);
   const [locating, setLocating] = useState(false);
   const [locateError, setLocateError] = useState(false);
   const [error, setError] = useState(false);
@@ -289,11 +309,13 @@ export function CabinMap() {
       }).filter((c) => c.lat !== 0 && c.lon !== 0);
     }
 
+    let loadedCabinCount = 0;
     try {
       const r = await fetch("/data/cabins.json");
       const data = await r.json();
       if (Array.isArray(data) && data.length > 0) {
         setCabins(data);
+        loadedCabinCount = data.length;
       } else {
         try {
           const res = await fetch("https://overpass-api.de/api/interpreter", {
@@ -307,6 +329,7 @@ export function CabinMap() {
             const parsed = parseCabins(osm.elements ?? []);
             if (parsed.length > 0) {
               setCabins(parsed);
+              loadedCabinCount = parsed.length;
             } else {
               setError(true);
             }
@@ -317,7 +340,14 @@ export function CabinMap() {
           setError(true);
         }
       }
+      if (loadedCabinCount > 0) {
+        setLoadedCount(loadedCabinCount);
+        setCounting(true);
+      }
       setLoading(false);
+      if (loadedCabinCount > 0) {
+        setTimeout(() => setCounting(false), 800);
+      }
     } catch {
       setError(true);
       setLoading(false);
@@ -496,13 +526,26 @@ export function CabinMap() {
 
       {/* Map */}
       <div className="relative grow">
-        {loading && (
-          <div className="absolute inset-0 z-[1000] bg-background p-4 flex flex-col gap-3">
-            <div className="flex gap-3">
-              <div className="h-8 w-32 rounded-lg skeleton-shimmer" />
-              <div className="h-8 w-24 rounded-lg skeleton-shimmer" />
+        {(loading || counting) && (
+          <div className="absolute inset-0 z-[1000] bg-background flex items-center justify-center">
+            <div className="flex flex-col items-center gap-3 text-center px-6">
+              <Loader2
+                className="h-8 w-8 animate-spin"
+                style={{ color: "var(--kv-blue)" }}
+              />
+              {counting ? (
+                <>
+                  <p className="text-2xl font-extrabold tabular-nums" style={{ color: "var(--kv-blue)" }}>
+                    <AnimatedCount target={loadedCount} duration={700} />
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    datapunkter lastet
+                  </p>
+                </>
+              ) : (
+                <p className="text-sm text-muted-foreground">Henter hytter...</p>
+              )}
             </div>
-            <div className="flex-1 rounded-xl skeleton-shimmer" />
           </div>
         )}
         {locating && (
