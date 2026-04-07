@@ -147,19 +147,29 @@ export function ReservoirMap() {
     setError(false);
     setLoading(true);
     try {
-      const res = await fetch("/api/reservoirs");
-      const data = await res.json();
-      if (data.error || !data.reservoirs) {
+      // Static data (build-time) + live fill level in parallel
+      const [staticRes, fillRes] = await Promise.all([
+        fetch("/data/reservoirs.json"),
+        fetch("/api/reservoirs").catch(() => null),
+      ]);
+      const staticData = await staticRes.json();
+      const items: Reservoir[] = staticData.reservoirs ?? [];
+      if (items.length === 0) {
         setError(true);
         setLoading(false);
         return;
       }
-      setReservoirs(data.reservoirs);
-      setNationalFill(data.nationalFill ?? null);
-      setLoadedCount(data.reservoirs.length);
+      setReservoirs(items);
+      setLoadedCount(items.length);
       setCounting(true);
       setLoading(false);
       setTimeout(() => setCounting(false), 800);
+
+      // Fill level is non-critical — update when ready
+      if (fillRes?.ok) {
+        const fillData = await fillRes.json();
+        setNationalFill(fillData.nationalFill ?? null);
+      }
     } catch {
       setError(true);
       setLoading(false);
