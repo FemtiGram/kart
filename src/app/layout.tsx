@@ -30,6 +30,19 @@ export const metadata: Metadata = {
   },
 };
 
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  name: "Datakart",
+  url: "https://datakart.no",
+  description: "Interaktive kart over norske geodata. Energi, lading, hytter, inntekt, verneområder og mer.",
+  inLanguage: "nb",
+  author: {
+    "@type": "Person",
+    name: "Anders Gram",
+  },
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -38,6 +51,10 @@ export default function RootLayout({
   return (
     <html lang="no" className={`${nunitoSans.variable} h-full antialiased`}>
       <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
         <Script src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`} strategy="afterInteractive" />
         <Script id="gtag-init" strategy="afterInteractive">
           {`window.dataLayer = window.dataLayer || [];
