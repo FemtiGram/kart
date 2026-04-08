@@ -110,6 +110,12 @@ export function ChargingMap() {
   const kommunerRef = useRef<KommuneEntry[]>([]);
   const setQueryRef = useRef<(q: string) => void>(() => {});
 
+  // Real-time status: nobilId → Map<evseUId, status>
+  const realtimeRef = useRef<Map<string, Map<string, string>>>(new Map());
+  const [realtimeConnected, setRealtimeConnected] = useState(false);
+  const [realtimeCount, setRealtimeCount] = useState(0);
+  const wsRef = useRef<WebSocket | null>(null);
+
   const loadStations = useCallback(async () => {
     setError(false);
     setLoading(true);
@@ -134,6 +140,68 @@ export function ChargingMap() {
   }, []);
 
   useEffect(() => { loadStations(); }, [loadStations]);
+
+  // Real-time WebSocket connection
+  useEffect(() => {
+    if (loading || stations.length === 0) return;
+    let cancelled = false;
+    let ws: WebSocket | null = null;
+    let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+
+    async function connect() {
+      try {
+        const res = await fetch("/api/charging-status", { method: "POST" });
+        if (!res.ok) return;
+        const { url } = await res.json();
+        if (cancelled || !url) return;
+
+        ws = new WebSocket(url);
+        wsRef.current = ws;
+
+        ws.onopen = () => {
+          if (!cancelled) setRealtimeConnected(true);
+        };
+
+        ws.onmessage = (event) => {
+          try {
+            const msg = JSON.parse(event.data);
+            const { nobilId, evseUId, status } = msg;
+            if (!nobilId || !status) return;
+            // nobilId is like "NOR_23314" — matches our station.id
+            let stationMap = realtimeRef.current.get(nobilId);
+            if (!stationMap) {
+              stationMap = new Map();
+              realtimeRef.current.set(nobilId, stationMap);
+            }
+            stationMap.set(evseUId, status);
+            setRealtimeCount((c) => c + 1);
+          } catch { /* ignore malformed messages */ }
+        };
+
+        ws.onclose = () => {
+          if (!cancelled) {
+            setRealtimeConnected(false);
+            wsRef.current = null;
+            // Reconnect after 30s (token expires after ~60s)
+            reconnectTimer = setTimeout(connect, 30000);
+          }
+        };
+
+        ws.onerror = () => {
+          ws?.close();
+        };
+      } catch { /* token fetch failed — silently skip real-time */ }
+    }
+
+    connect();
+
+    return () => {
+      cancelled = true;
+      if (reconnectTimer) clearTimeout(reconnectTimer);
+      if (ws) { ws.onclose = null; ws.close(); }
+      wsRef.current = null;
+    };
+  }, [loading, stations.length]);
 
   useEffect(() => {
     fetch("https://ws.geonorge.no/kommuneinfo/v1/kommuner")
@@ -195,6 +263,21 @@ export function ChargingMap() {
       { timeout: 15000, maximumAge: 60000 }
     );
   };
+
+  // Real-time status helper — reads from realtimeRef (triggered by realtimeCount changes)
+  const getStationStatus = useCallback((stationId: string) => {
+    const evseMap = realtimeRef.current.get(stationId);
+    if (!evseMap || evseMap.size === 0) return null;
+    let available = 0, charging = 0, outOfOrder = 0, total = 0;
+    for (const status of evseMap.values()) {
+      total++;
+      if (status === "AVAILABLE") available++;
+      else if (status === "CHARGING") charging++;
+      else if (status === "OUTOFORDER" || status === "INOPERATIVE") outOfOrder++;
+    }
+    return { available, charging, outOfOrder, total };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [realtimeCount]);
 
   // All unique connector types across loaded stations
   const allConnectors = useMemo(() => {
@@ -290,7 +373,12 @@ export function ChargingMap() {
         </div>
         <div className="flex items-center justify-between mt-2">
           <p className="text-xs text-muted-foreground">
-            {loading ? loadingMessage : stations.length > 0 ? `${filteredStations.length}${filterConnectors.size > 0 ? ` av ${stations.length}` : ""} ladestasjoner i Norge · Kilde: NOBIL / Enova` : "Ingen ladestasjoner funnet"}
+            {loading ? loadingMessage : stations.length > 0 ? (
+              <>
+                {filteredStations.length}{filterConnectors.size > 0 ? ` av ${stations.length}` : ""} ladestasjoner i Norge · Kilde: NOBIL / Enova
+                {realtimeConnected && <span className="ml-1.5 inline-flex items-center gap-1 text-green-600"><span className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" />Live</span>}
+              </>
+            ) : "Ingen ladestasjoner funnet"}
           </p>
           <button
             disabled
@@ -452,6 +540,26 @@ export function ChargingMap() {
               )}
             </div>
 
+            {/* Live status */}
+            {(() => {
+              const status = getStationStatus(selected.id);
+              if (!status) return null;
+              return (
+                <div className="mt-2 flex items-center gap-2">
+                  <span className="inline-flex items-center gap-1.5 rounded-lg bg-green-50 px-2.5 py-1 text-xs font-semibold text-green-700">
+                    <span className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" />
+                    {status.available} ledig{status.available !== 1 ? "e" : ""}
+                  </span>
+                  {status.charging > 0 && (
+                    <span className="text-xs text-muted-foreground">{status.charging} lader</span>
+                  )}
+                  {status.outOfOrder > 0 && (
+                    <span className="text-xs text-red-500">{status.outOfOrder} ute av drift</span>
+                  )}
+                </div>
+              );
+            })()}
+
             {/* Action row */}
             <div className="flex gap-2 mt-3">
               <button
@@ -522,6 +630,34 @@ export function ChargingMap() {
                     </div>
                   </div>
                 </div>
+
+                {/* Live status */}
+                {(() => {
+                  const status = getStationStatus(selected.id);
+                  if (!status) return null;
+                  return (
+                    <div className="mt-4 pt-4 border-t">
+                      <p className="text-xs font-semibold text-muted-foreground mb-2">
+                        Sanntidsstatus
+                        <span className="ml-1.5 inline-flex h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" />
+                      </p>
+                      <div className="grid grid-cols-3 gap-2">
+                        <div className="rounded-xl bg-green-50 px-3 py-2 text-center">
+                          <span className="text-xl font-extrabold text-green-700">{status.available}</span>
+                          <p className="text-[10px] text-green-600">Ledig</p>
+                        </div>
+                        <div className="rounded-xl bg-blue-50 px-3 py-2 text-center">
+                          <span className="text-xl font-extrabold text-blue-700">{status.charging}</span>
+                          <p className="text-[10px] text-blue-600">Lader</p>
+                        </div>
+                        <div className="rounded-xl bg-muted px-3 py-2 text-center">
+                          <span className="text-xl font-extrabold text-muted-foreground">{status.outOfOrder}</span>
+                          <p className="text-[10px] text-muted-foreground">Feil</p>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 {/* Layer 3 — Connectors breakdown */}
                 {selected.connectors.length > 0 && (
