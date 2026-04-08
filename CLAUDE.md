@@ -169,6 +169,32 @@ All maps use a **compact floating card + expandable bottom Sheet** pattern:
 - Metric numbers use `#0e7490` (cyan-700, 4.6:1) not `#0891b2` (cyan-600, 2.1:1)
 - Badges use `text-foreground` on `bg-muted`, not `text-muted-foreground`
 
+## SEO & AI Discoverability
+
+Every new page MUST be rigged for Google Search and AI search (ChatGPT, Perplexity, Google AI Overviews). This is a hard requirement — not optional polish.
+
+### Checklist for every new page:
+1. **`export const metadata`** — unique `title` (uses layout template `%s — Datakart`) and `description` (specific, keyword-rich, Norwegian). Description should answer "what does this page show?" in one sentence.
+2. **`opengraph-image.tsx`** — dynamic OG image (Next.js ImageResponse). Shows page title + key stat on branded background. Required for social sharing and rich previews.
+3. **`sitemap.ts`** — add the route with appropriate `priority` and `changeFrequency`.
+4. **JSON-LD** — the root layout has WebSite schema. Add page-specific schema (e.g., `Dataset`, `Map`) if the page has structured data that search engines can index.
+5. **Semantic HTML** — use proper heading hierarchy (h1 → h2 → h3). Screen readers and crawlers use this.
+6. **Norwegian language** — all user-facing text in Norwegian (bokmål). `<html lang="no">` is set in layout. Descriptions, labels, and error messages should be Norwegian.
+
+### What exists today:
+- `src/app/layout.tsx` — global metadata (title template, description, metadataBase, openGraph, twitter card), JSON-LD WebSite schema
+- `src/app/sitemap.ts` — all pages with priority/frequency
+- `src/app/robots.ts` — allows all crawlers, points to sitemap
+- `src/app/*/opengraph-image.tsx` — dynamic OG images per page
+- Google Analytics (G-T8XDP59WNK) — dedicated property for datakart.no
+- Google Search Console — site verified, sitemap submitted
+
+### AI search optimization:
+- **Structured data matters** — AI systems extract facts from JSON-LD and meta descriptions. Make descriptions factual and specific ("Gjennomsnittlig kvadratmeterpris for 264 kommuner") not vague ("Utforsk boligdata").
+- **Content in HTML** — map data rendered client-side is invisible to crawlers. The page `description` and any static text (info modals, about sections) IS crawlable — make it count.
+- **Answer the query** — think about what someone would search for ("boligpriser norge kart", "kvadratmeterpris oslo") and make sure the description and title contain those terms naturally.
+- **Attribution page** — `/kilder` lists all data sources with links. This builds trust signals for both users and AI systems.
+
 ## Design References
 - **UX Laws** — https://uxlaws.com — Consult when making UX/design decisions. Key principles to keep in mind: Fitts's Law (touch targets), Hick's Law (limit choices), Miller's Law (chunk info), Jakob's Law (familiar patterns), aesthetic-usability effect.
 
