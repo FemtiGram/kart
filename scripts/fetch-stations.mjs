@@ -1,95 +1,122 @@
-// Fetches all Norwegian charging stations from Overpass API
+// Fetches all Norwegian charging stations from NOBIL (official database)
 // and saves them as a static JSON file for the frontend.
+// Requires NOBIL_API_KEY in environment.
 // Run with: node scripts/fetch-stations.mjs
 
-const QUERY = `
-[out:json][timeout:60];
-node["amenity"="charging_station"](57.5,4.0,71.5,31.5);
-out body;
-`;
+import { writeFileSync, existsSync } from "fs";
+import { join } from "path";
 
-const ENDPOINTS = [
-  "https://overpass-api.de/api/interpreter",
-  "https://overpass.kumi.systems/api/interpreter",
-  "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
-];
+const OUT_PATH = join(process.cwd(), "public", "data", "stations.json");
+const API_KEY = process.env.NOBIL_API_KEY;
 
-async function fetchWithRetry() {
-  for (let attempt = 0; attempt < 3; attempt++) {
-    const endpoint = ENDPOINTS[attempt % ENDPOINTS.length];
-    console.log(`Attempt ${attempt + 1}: ${endpoint}`);
-    try {
-      const res = await fetch(endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: `data=${encodeURIComponent(QUERY)}`,
-        signal: AbortSignal.timeout(90000),
-      });
-      if (res.ok) return res;
-      console.warn(`  → ${res.status}, trying next...`);
-    } catch (err) {
-      console.warn(`  → ${err.message}, trying next...`);
-    }
-    // Wait before retry
-    if (attempt < 2) await new Promise((r) => setTimeout(r, 3000));
+// Parse kW from NOBIL capacity string like "150 kW DC", "22 kW - 400V 3-phase max 32A"
+function parseKw(capacityStr) {
+  if (!capacityStr) return null;
+  const match = capacityStr.match(/([\d,.]+)\s*kW/i);
+  if (match) return parseFloat(match[1].replace(",", "."));
+  // "230V 1-phase max 16A" → ~3.6 kW
+  const ampMatch = capacityStr.match(/(\d+)V.*?(\d+)A/);
+  if (ampMatch) {
+    const v = parseInt(ampMatch[1]);
+    const a = parseInt(ampMatch[2]);
+    const phases = capacityStr.includes("3-phase") ? 3 : 1;
+    return Math.round((v * a * phases) / 1000 * 10) / 10;
   }
   return null;
 }
 
+// Parse "(lat,lon)" position string
+function parsePosition(pos) {
+  if (!pos) return null;
+  const match = pos.match(/\(([-\d.]+),([-\d.]+)\)/);
+  if (!match) return null;
+  return { lat: parseFloat(match[1]), lon: parseFloat(match[2]) };
+}
+
 async function main() {
-  console.log("Fetching all charging stations from Overpass API...");
-  const start = Date.now();
-
-  const res = await fetchWithRetry();
-
-  if (!res) {
-    console.warn("All Overpass endpoints failed — keeping existing stations.json");
+  if (!API_KEY) {
+    console.warn("NOBIL_API_KEY not set — keeping existing stations.json");
     return;
   }
 
-  const data = await res.json();
+  console.log("Fetching all charging stations from NOBIL...");
+  const start = Date.now();
 
-  const stations = data.elements.map((el) => {
-    const t = el.tags || {};
-    const connectors = ["type2", "chademo", "type2_combo", "type1", "schuko", "type3c"]
-      .filter((s) => t[`socket:${s}`] && t[`socket:${s}`] !== "no")
-      .map((s) =>
-        s.replace("type2_combo", "CCS")
-          .replace("type2", "Type 2")
-          .replace("chademo", "CHAdeMO")
-          .replace("type1", "Type 1")
-          .replace("schuko", "Schuko")
-          .replace("type3c", "Type 3C")
-      );
+  try {
+    const res = await fetch(
+      `https://nobil.no/api/server/datadump.php?apikey=${API_KEY}&countrycode=NOR&format=json&file=false`,
+      { signal: AbortSignal.timeout(60000) }
+    );
 
-    const address = [t["addr:street"], t["addr:housenumber"], t["addr:city"]]
-      .filter(Boolean)
-      .join(" ");
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
-    return {
-      id: el.id,
-      lat: el.lat,
-      lon: el.lon,
-      name: t.name ?? t.operator ?? "Ladestasjon",
-      operator: t.operator ?? null,
-      capacity: t.capacity ? parseInt(t.capacity) : null,
-      connectors,
-      address: address || null,
-    };
-  });
+    const data = await res.json();
+    const raw = data.chargerstations ?? [];
 
-  const fs = await import("fs");
-  const path = await import("path");
-  const outPath = path.join(process.cwd(), "public", "data", "stations.json");
-  fs.writeFileSync(outPath, JSON.stringify(stations));
+    const stations = [];
+    for (const s of raw) {
+      const csmd = s.csmd;
+      if (csmd.Station_status !== 1) continue; // Only active stations
+      const pos = parsePosition(csmd.Position);
+      if (!pos) continue;
 
-  const sizeKB = (Buffer.byteLength(JSON.stringify(stations)) / 1024).toFixed(0);
-  const elapsed = ((Date.now() - start) / 1000).toFixed(1);
+      // Group connectors by type, aggregate count and max kW
+      const connMap = new Map();
+      for (const conn of Object.values(s.attr.conn)) {
+        const type = conn["4"]?.trans;
+        if (!type) continue;
+        const kw = parseKw(conn["5"]?.trans);
+        const existing = connMap.get(type);
+        if (existing) {
+          existing.count++;
+          if (kw && (!existing.kw || kw > existing.kw)) existing.kw = kw;
+        } else {
+          connMap.set(type, { type, count: 1, kw });
+        }
+      }
+      const connectors = [...connMap.values()];
 
-  console.log(`Done! ${stations.length} stations, ${sizeKB}KB, ${elapsed}s`);
+      // Max kW across all connectors
+      const maxKw = connectors.reduce((max, c) => Math.max(max, c.kw ?? 0), 0) || null;
+
+      // Station attributes
+      const st = s.attr.st;
+
+      stations.push({
+        id: csmd.International_id,
+        lat: pos.lat,
+        lon: pos.lon,
+        name: csmd.name || "Ladestasjon",
+        operator: csmd.Operator || null,
+        owner: csmd.Owned_by !== csmd.Operator ? csmd.Owned_by || null : null,
+        address: [csmd.Street, csmd.House_number].filter(Boolean).join(" ") || null,
+        city: csmd.City || null,
+        zipcode: csmd.Zipcode || null,
+        municipality: csmd.Municipality || null,
+        municipalityId: csmd.Municipality_ID || null,
+        county: csmd.County || null,
+        numPoints: csmd.Number_charging_points ?? null,
+        maxKw,
+        connectors,
+        open24h: st["24"]?.trans === "Yes",
+        parkingFee: st["7"]?.trans === "Yes",
+        locationType: st["3"]?.trans || null,
+        availability: st["2"]?.trans || null,
+        nobilId: csmd.id,
+      });
+    }
+
+    writeFileSync(OUT_PATH, JSON.stringify(stations));
+
+    const sizeKB = (Buffer.byteLength(JSON.stringify(stations)) / 1024).toFixed(0);
+    const elapsed = ((Date.now() - start) / 1000).toFixed(1);
+    console.log(`  ✓ ${stations.length} stations (${sizeKB} KB) → ${OUT_PATH} [${elapsed}s]`);
+  } catch (err) {
+    console.error(`  ✗ Failed: ${err.message}`);
+    if (existsSync(OUT_PATH)) {
+      console.log("  → Keeping existing file");
+    }
+  }
 }
 
-main().catch((err) => {
-  console.error("Failed to fetch stations:", err.message);
-  console.log("Continuing build with existing stations.json");
-});
+main();

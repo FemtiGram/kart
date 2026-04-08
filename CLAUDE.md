@@ -210,7 +210,7 @@ Every new page MUST be rigged for Google Search and AI search (ChatGPT, Perplexi
 ## Data Sources
 | Data | Source | Cache |
 |------|--------|-------|
-| Charging stations | OpenStreetMap (Overpass) | Build-time static JSON + client fallback |
+| Charging stations | NOBIL / Enova (datadump API) | Build-time static JSON (requires NOBIL_API_KEY) |
 | Cabins | OpenStreetMap (Overpass) | Build-time static JSON + client fallback |
 | Wind + hydro power | NVE ArcGIS (Vindkraft2 layers 0/1/2/4/8, Vannkraft1 layer 0) | 1h server cache via API route |
 | Oil/gas facilities | Sodir FactMaps (layer 307 + pipelines 311) | 1h server cache via API route |

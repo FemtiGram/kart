@@ -35,6 +35,7 @@ Live at: [datakart.no](https://datakart.no)
 
 | Variable | Required | Description |
 |----------|----------|-------------|
+| `NOBIL_API_KEY` | Required | API key from [NOBIL](https://nobil.no) — charging station data for the build-time fetch script |
 | `NVE_API_KEY` | Optional | API key from [NVE HydAPI](https://hydapi.nve.no/Users) — enables live river discharge and water level data on hydro plant and reservoir cards |
 | `NEXT_PUBLIC_DEV` | Optional | Set to `true` to enable the API call log panel on `/map` |
 
@@ -67,7 +68,7 @@ The seed scripts are also run automatically as a `prebuild` hook when deploying.
 
 | Data | Source | Refresh |
 |------|--------|---------|
-| Charging stations | OpenStreetMap (Overpass API) | Build-time static JSON |
+| Charging stations | NOBIL / Enova (datadump API) | Build-time static JSON |
 | Tourist cabins | OpenStreetMap (Overpass API) | Build-time static JSON |
 | Wind and hydro power | NVE ArcGIS (Vindkraft2, Vannkraft1) | 1-hour server cache |
 | Reservoirs | NVE ArcGIS (Vannkraft1 layer 6) | 1-hour server cache |

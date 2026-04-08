@@ -15,27 +15,32 @@ import { isInNorway, OSLO } from "@/lib/fylker";
 import { FlyTo, DataDisclaimer, MapError, AnimatedCount } from "@/lib/map-utils";
 import type { KommuneEntry, Suggestion } from "@/lib/map-utils";
 
+interface Connector {
+  type: string;
+  count: number;
+  kw: number | null;
+}
+
 interface Station {
-  id: number;
+  id: string;
   lat: number;
   lon: number;
   name: string;
   operator: string | null;
-  capacity: number | null;
-  connectors: string[];
+  owner: string | null;
   address: string | null;
-}
-
-// Rough Norway boundary — excludes Swedish stations east of the border
-// Uses a simple longitude limit that varies by latitude
-function isInNorwayApprox(lat: number, lon: number): boolean {
-  if (lat < 57.5 || lat > 71.5 || lon < 4.0 || lon > 31.5) return false;
-  // Northern Norway extends far east (Finnmark)
-  if (lat > 68) return true;
-  // Mid Norway: border runs roughly lon 14–16
-  if (lat > 63) return lon < 16;
-  // Southern Norway: border runs roughly lon 12.5
-  return lon < 12.5;
+  city: string | null;
+  zipcode: string | null;
+  municipality: string | null;
+  county: string | null;
+  numPoints: number | null;
+  maxKw: number | null;
+  connectors: Connector[];
+  open24h: boolean;
+  parkingFee: boolean;
+  locationType: string | null;
+  availability: string | null;
+  nobilId: number;
 }
 
 const TILE_LAYERS = {
@@ -105,39 +110,10 @@ export function ChargingMap() {
   const kommunerRef = useRef<KommuneEntry[]>([]);
   const setQueryRef = useRef<(q: string) => void>(() => {});
 
-  // Load stations from pre-built static JSON, fallback to local-area Overpass
   const loadStations = useCallback(async () => {
     setError(false);
     setLoading(true);
     setLoadingMessage("Henter ladestasjoner...");
-
-    function parseStations(elements: Array<{ id: number; lat: number; lon: number; tags: Record<string, string> }>) {
-      return elements.map((el) => {
-        const t = el.tags;
-        const connectors = ["type2", "chademo", "type2_combo", "type1", "schuko", "type3c"]
-          .filter((s) => t[`socket:${s}`] && t[`socket:${s}`] !== "no")
-          .map((s) => s.replace("type2_combo", "CCS").replace("type2", "Type 2").replace("chademo", "CHAdeMO").replace("type1", "Type 1").replace("schuko", "Schuko").replace("type3c", "Type 3C"));
-        const address = [t["addr:street"], t["addr:housenumber"], t["addr:city"]].filter(Boolean).join(" ");
-        return { id: el.id, lat: el.lat, lon: el.lon, name: t.name ?? t.operator ?? "Ladestasjon", operator: t.operator ?? null, capacity: t.capacity ? parseInt(t.capacity) : null, connectors, address: address || null };
-      });
-    }
-
-    async function fetchArea(lat: number, lon: number) {
-      const dlat = 0.45;
-      const dlon = 0.45 / Math.cos((lat * Math.PI) / 180);
-      const bbox = `${lat - dlat},${lon - dlon},${lat + dlat},${lon + dlon}`;
-      const query = `[out:json][timeout:8];node["amenity"="charging_station"](${bbox});out body;`;
-      const res = await fetch("https://overpass-api.de/api/interpreter", {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: `data=${encodeURIComponent(query)}`,
-        signal: AbortSignal.timeout(10000),
-      });
-      if (!res.ok) return [];
-      const data = await res.json();
-      return parseStations(data.elements ?? []);
-    }
-
     try {
       const r = await fetch("/data/stations.json");
       const data = await r.json();
@@ -148,18 +124,8 @@ export function ChargingMap() {
         setLoading(false);
         setTimeout(() => setCounting(false), 800);
       } else {
-        setLoadingMessage("Dataen er ikke ferdig cachet ennå. Henter fra OpenStreetMap...");
+        setError(true);
         setLoading(false);
-        try {
-          const nearby = await fetchArea(OSLO.lat, OSLO.lon);
-          if (nearby.length > 0) {
-            setStations(nearby);
-          } else {
-            setError(true);
-          }
-        } catch {
-          setError(true);
-        }
       }
     } catch {
       setError(true);
@@ -230,22 +196,17 @@ export function ChargingMap() {
     );
   };
 
-  // Filter to Norway-only stations
-  const norwayStations = useMemo(() => {
-    return stations.filter((s) => isInNorwayApprox(s.lat, s.lon));
-  }, [stations]);
-
   // All unique connector types across loaded stations
   const allConnectors = useMemo(() => {
     const set = new Set<string>();
-    norwayStations.forEach((s) => s.connectors.forEach((c) => set.add(c)));
+    stations.forEach((s) => s.connectors.forEach((c) => set.add(c.type)));
     return [...set].sort();
-  }, [norwayStations]);
+  }, [stations]);
 
   const filteredStations = useMemo(() => {
-    if (filterConnectors.size === 0) return norwayStations;
-    return norwayStations.filter((s) => s.connectors.some((c) => filterConnectors.has(c)));
-  }, [norwayStations, filterConnectors]);
+    if (filterConnectors.size === 0) return stations;
+    return stations.filter((s) => s.connectors.some((c) => filterConnectors.has(c.type)));
+  }, [stations, filterConnectors]);
 
   const activeFilterCount = filterConnectors.size;
 
@@ -288,7 +249,7 @@ export function ChargingMap() {
                       <div className="rounded-xl border overflow-hidden">
                         {allConnectors.map((c) => {
                           const active = filterConnectors.has(c);
-                          const count = norwayStations.filter((s) => s.connectors.includes(c)).length;
+                          const count = stations.filter((s) => s.connectors.some((cn) => cn.type === c)).length;
                           return (
                             <button
                               key={c}
@@ -329,7 +290,7 @@ export function ChargingMap() {
         </div>
         <div className="flex items-center justify-between mt-2">
           <p className="text-xs text-muted-foreground">
-            {loading ? loadingMessage : norwayStations.length > 0 ? `${filteredStations.length}${filterConnectors.size > 0 ? ` av ${norwayStations.length}` : ""} ladestasjoner i Norge · Kilde: OpenStreetMap` : "Ingen ladestasjoner funnet"}
+            {loading ? loadingMessage : stations.length > 0 ? `${filteredStations.length}${filterConnectors.size > 0 ? ` av ${stations.length}` : ""} ladestasjoner i Norge · Kilde: NOBIL / Enova` : "Ingen ladestasjoner funnet"}
           </p>
           <button
             disabled
@@ -453,9 +414,17 @@ export function ChargingMap() {
             {/* Layer 1 — Identity */}
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
+                <div className="flex items-center gap-1.5 mb-1">
+                  {selected.open24h && (
+                    <span className="inline-flex items-center rounded-md bg-muted px-2 py-0.5 text-[10px] font-semibold text-foreground">24t</span>
+                  )}
+                  {selected.availability && selected.availability !== "Public" && (
+                    <span className="inline-flex items-center rounded-md bg-muted px-2 py-0.5 text-[10px] font-semibold text-foreground">{selected.availability}</span>
+                  )}
+                </div>
                 <p className="font-bold text-base truncate leading-snug">{selected.name}</p>
                 <p className="text-xs text-muted-foreground truncate">
-                  {[selected.operator !== selected.name ? selected.operator : null, selected.address].filter(Boolean).join(" · ")}
+                  {[selected.operator !== selected.name ? selected.operator : null, selected.address ? `${selected.address}, ${selected.city}` : selected.city].filter(Boolean).join(" · ")}
                 </p>
               </div>
               <button
@@ -467,17 +436,19 @@ export function ChargingMap() {
               </button>
             </div>
 
-            {/* Layer 2 — Key metric */}
-            <div className="mt-3">
-              {selected.capacity != null ? (
-                <div className="flex items-baseline gap-2">
-                  <span className="text-2xl font-extrabold" style={{ color: "var(--kv-blue)" }}>
-                    {selected.capacity}
-                  </span>
-                  <span className="text-sm font-medium text-muted-foreground">ladepunkter</span>
+            {/* Layer 2 — Key metrics */}
+            <div className="mt-3 flex items-baseline gap-4">
+              {selected.maxKw != null && (
+                <div>
+                  <span className="text-2xl font-extrabold" style={{ color: "var(--kv-blue)" }}>{selected.maxKw}</span>
+                  <span className="text-sm font-medium text-muted-foreground ml-1">kW</span>
                 </div>
-              ) : (
-                <p className="text-sm text-muted-foreground">Kapasitet ukjent</p>
+              )}
+              {selected.numPoints != null && (
+                <div>
+                  <span className="text-2xl font-extrabold" style={{ color: "var(--kv-blue)" }}>{selected.numPoints}</span>
+                  <span className="text-sm font-medium text-muted-foreground ml-1">punkt</span>
+                </div>
               )}
             </div>
 
@@ -511,48 +482,90 @@ export function ChargingMap() {
                 </SheetHeader>
 
                 {/* Layer 1 — Identity */}
+                <div className="flex items-center gap-1.5 mb-1">
+                  {selected.open24h && (
+                    <span className="inline-flex items-center rounded-md bg-muted px-2 py-0.5 text-[10px] font-semibold text-foreground">Åpent 24t</span>
+                  )}
+                  {!selected.parkingFee && (
+                    <span className="inline-flex items-center rounded-md bg-muted px-2 py-0.5 text-[10px] font-semibold text-foreground">Gratis parkering</span>
+                  )}
+                  {selected.parkingFee && (
+                    <span className="inline-flex items-center rounded-md bg-muted px-2 py-0.5 text-[10px] font-semibold text-foreground">Parkeringsavgift</span>
+                  )}
+                  {selected.locationType && (
+                    <span className="inline-flex items-center rounded-md bg-muted px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">{selected.locationType}</span>
+                  )}
+                </div>
                 <p className="font-bold text-lg leading-snug">{selected.name}</p>
                 {selected.operator && selected.operator !== selected.name && (
                   <p className="text-sm text-muted-foreground">{selected.operator}</p>
                 )}
-                {selected.address && (
-                  <p className="text-sm text-muted-foreground">{selected.address}</p>
-                )}
+                <p className="text-sm text-muted-foreground">
+                  {[selected.address, selected.zipcode, selected.city].filter(Boolean).join(" ")}
+                  {selected.municipality && selected.municipality !== selected.city && ` · ${selected.municipality}`}
+                </p>
 
-                {/* Layer 2 — Key metric */}
+                {/* Layer 2 — Key metrics */}
                 <div className="mt-4 pt-4 border-t">
-                  {selected.capacity != null ? (
-                    <div className="flex items-baseline gap-2">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
                       <span className="text-3xl font-extrabold" style={{ color: "var(--kv-blue)" }}>
-                        {selected.capacity}
+                        {selected.maxKw ?? "–"}
                       </span>
-                      <span className="text-sm font-medium text-muted-foreground">ladepunkter</span>
+                      <p className="text-[10px] text-muted-foreground">maks kW</p>
                     </div>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">Kapasitet ukjent</p>
-                  )}
-                  <p className="text-xs text-muted-foreground/50 mt-1 italic">Sanntidsdata tilgjengelig snart</p>
+                    <div>
+                      <span className="text-3xl font-extrabold" style={{ color: "var(--kv-blue)" }}>
+                        {selected.numPoints ?? "–"}
+                      </span>
+                      <p className="text-[10px] text-muted-foreground">ladepunkter</p>
+                    </div>
+                  </div>
                 </div>
 
-                {/* Layer 3 — Details (connectors) */}
+                {/* Layer 3 — Connectors breakdown */}
                 {selected.connectors.length > 0 && (
                   <div className="mt-4 pt-4 border-t">
-                    <p className="text-xs text-muted-foreground font-medium mb-2">Kontakttyper</p>
-                    <div className="flex flex-wrap gap-1.5">
+                    <p className="text-xs font-semibold text-muted-foreground mb-2">Kontakter</p>
+                    <div className="space-y-2">
                       {selected.connectors.map((c) => (
-                        <button
-                          key={c}
-                          onClick={() => setShowConnectorInfo(true)}
-                          className="text-xs px-2.5 py-1 rounded-full bg-muted text-muted-foreground font-medium hover:bg-muted-foreground/20 transition-colors"
-                        >
-                          {c}
-                        </button>
+                        <div key={c.type} className="flex items-center justify-between rounded-xl bg-muted/50 px-3 py-2">
+                          <div className="flex items-center gap-2">
+                            <Zap className="h-3.5 w-3.5 text-muted-foreground" />
+                            <span className="text-sm font-medium">{c.type}</span>
+                          </div>
+                          <div className="flex items-center gap-3 text-sm">
+                            <span className="text-muted-foreground">{c.count}×</span>
+                            {c.kw && <span className="font-semibold" style={{ color: "var(--kv-blue)" }}>{c.kw} kW</span>}
+                          </div>
+                        </div>
                       ))}
                     </div>
                   </div>
                 )}
 
-                {/* Layer 4 — Links & source */}
+                {/* Layer 4 — Station details */}
+                {(selected.owner || selected.availability) && (
+                  <div className="mt-4 pt-4 border-t">
+                    <p className="text-xs font-semibold text-muted-foreground mb-2">Detaljer</p>
+                    <div className="space-y-1">
+                      {selected.owner && (
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-muted-foreground">Eier</span>
+                          <span className="font-medium">{selected.owner}</span>
+                        </div>
+                      )}
+                      {selected.availability && (
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-muted-foreground">Tilgjengelighet</span>
+                          <span className="font-medium">{selected.availability}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Layer 5 — Links & source */}
                 <div className="mt-4 pt-4 border-t flex flex-col gap-3">
                   <a
                     href={`https://www.google.com/maps/dir/?api=1&destination=${selected.lat},${selected.lon}`}
@@ -563,7 +576,7 @@ export function ChargingMap() {
                     <Navigation className="h-4 w-4" /> Kjør hit
                   </a>
                   <p className="text-xs text-muted-foreground text-center">
-                    Kilde: OpenStreetMap
+                    Kilde: <a href="https://nobil.no" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">NOBIL</a> / Enova
                   </p>
                   <DataDisclaimer />
                 </div>
