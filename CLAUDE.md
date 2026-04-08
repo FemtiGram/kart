@@ -37,6 +37,7 @@ src/app/
     wind-power/route.ts — NVE wind power proxy (1h cache)
     energy/route.ts     — NVE wind + hydro proxy (1h cache)
     reservoirs/route.ts — NVE reservoir polygons (1h cache)
+    charging-status/route.ts — Enova real-time WebSocket token (requires ENOVA_RT_API_KEY)
     hydro-station/route.ts — NVE HydAPI live river data (requires API key)
 
 src/components/
@@ -68,10 +69,11 @@ public/data/
 
 ## Map Architecture Patterns
 
-### Three data loading patterns:
+### Four data loading patterns:
 1. **Build-time static** (charging, cabins, production, reservoirs, kommuner) — Data fetched at build time, saved as static JSON/GeoJSON, loaded on mount
 2. **Preload on mount** (income, vern, bolig) — API call loads ALL data, renders everything client-side
 3. **Per-request** (elevation, weather) — Fetch on user interaction
+4. **Real-time WebSocket** (charging status) — API route fetches temporary WSS URL from Enova, client connects and receives live updates. Status stored in ref (not state) to avoid re-rendering all markers. Auto-reconnects every 30s (JWT expires ~60s).
 
 ### Build-time data pipeline:
 - `scripts/fetch-stations.mjs`, `scripts/fetch-cabins.mjs`, `scripts/fetch-production.mjs`, `scripts/fetch-reservoirs.mjs`, and `scripts/fetch-kommuner.mjs` run as `prebuild` hook
@@ -211,6 +213,7 @@ Every new page MUST be rigged for Google Search and AI search (ChatGPT, Perplexi
 | Data | Source | Cache |
 |------|--------|-------|
 | Charging stations | NOBIL / Enova (datadump API) | Build-time static JSON (requires NOBIL_API_KEY) |
+| Charging status | NOBIL Real-time (Enova WebSocket) | Live via WebSocket (requires ENOVA_RT_API_KEY) |
 | Cabins | OpenStreetMap (Overpass) | Build-time static JSON + client fallback |
 | Wind + hydro power | NVE ArcGIS (Vindkraft2 layers 0/1/2/4/8, Vannkraft1 layer 0) | 1h server cache via API route |
 | Oil/gas facilities | Sodir FactMaps (layer 307 + pipelines 311) | 1h server cache via API route |

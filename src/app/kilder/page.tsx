@@ -52,9 +52,9 @@ const sources = [
     usedIn: ["Hoydekart", "Turisthytter"],
   },
   {
-    name: "NOBIL",
-    description: "Norges offisielle database for ladestasjoner, driftet av Enova. Inneholder kontakttyper, kapasitet, tilgjengelighet og operatør.",
-    license: "CC BY 3.0",
+    name: "NOBIL / Enova",
+    description: "Norges offisielle database for ladestasjoner. Inneholder kontakttyper, kapasitet, tilgjengelighet, operatør og sanntidsstatus.",
+    license: "NLOD + CC BY 3.0",
     licenseUrl: "https://creativecommons.org/licenses/by/3.0/",
     attribution: "\u00a9 NOBIL / Enova",
     url: "https://nobil.no",
