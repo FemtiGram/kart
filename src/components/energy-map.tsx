@@ -394,6 +394,7 @@ export function EnergyMap() {
   const debounceRef = useDebounceRef();
   const searchAbort = useSearchAbort();
   const kommunerRef = useRef<KommuneEntry[]>([]);
+  const initialHash = useRef(window.location.hash);
 
   const loadPlants = useCallback(async () => {
     setError(false);
@@ -434,21 +435,16 @@ export function EnergyMap() {
       .catch(() => {});
   }, [loadPlants]);
 
-  // Sync selection → URL hash (skip during initial load to preserve deep link)
-  const hasInitialized = useRef(false);
+  // Sync selection → URL hash
   useEffect(() => {
     if (loading) return;
-    if (!hasInitialized.current) {
-      hasInitialized.current = true;
-      return;
-    }
     if (selected) {
       history.replaceState(null, "", `#kraft-${selected.id}`);
     } else if (selectedOilGas) {
       history.replaceState(null, "", `#anlegg-${selectedOilGas.id}`);
     } else if (selectedHavvind) {
       history.replaceState(null, "", `#havvind-${selectedHavvind.id}`);
-    } else {
+    } else if (!initialHash.current) {
       history.replaceState(null, "", window.location.pathname);
     }
   }, [selected, selectedOilGas, selectedHavvind, loading]);
@@ -456,7 +452,8 @@ export function EnergyMap() {
   // Read URL hash on data load → auto-select
   useEffect(() => {
     if (loading) return;
-    const hash = window.location.hash;
+    const hash = initialHash.current || window.location.hash;
+    initialHash.current = "";
     if (!hash) return;
     const match = hash.match(/^#(kraft|anlegg|havvind)-(\d+)$/);
     if (!match) return;
