@@ -543,21 +543,31 @@ export function ChargingMap() {
             {/* Live status */}
             {(() => {
               const status = getStationStatus(selected.id);
-              if (!status) return null;
-              return (
-                <div className="mt-2 flex items-center gap-2">
-                  <span className="inline-flex items-center gap-1.5 rounded-lg bg-green-50 px-2.5 py-1 text-xs font-semibold text-green-700">
+              if (status) {
+                return (
+                  <div className="mt-2 flex items-center gap-2">
+                    <span className="inline-flex items-center gap-1.5 rounded-lg bg-green-50 px-2.5 py-1 text-xs font-semibold text-green-700">
+                      <span className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" />
+                      {status.available} ledig{status.available !== 1 ? "e" : ""}
+                    </span>
+                    {status.charging > 0 && (
+                      <span className="text-xs text-muted-foreground">{status.charging} lader</span>
+                    )}
+                    {status.outOfOrder > 0 && (
+                      <span className="text-xs text-red-500">{status.outOfOrder} ute av drift</span>
+                    )}
+                  </div>
+                );
+              }
+              if (realtimeConnected) {
+                return (
+                  <p className="mt-2 text-[10px] text-muted-foreground flex items-center gap-1">
                     <span className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" />
-                    {status.available} ledig{status.available !== 1 ? "e" : ""}
-                  </span>
-                  {status.charging > 0 && (
-                    <span className="text-xs text-muted-foreground">{status.charging} lader</span>
-                  )}
-                  {status.outOfOrder > 0 && (
-                    <span className="text-xs text-red-500">{status.outOfOrder} ute av drift</span>
-                  )}
-                </div>
-              );
+                    Sanntid tilkoblet — venter på statusoppdatering
+                  </p>
+                );
+              }
+              return null;
             })()}
 
             {/* Action row */}
@@ -634,29 +644,41 @@ export function ChargingMap() {
                 {/* Live status */}
                 {(() => {
                   const status = getStationStatus(selected.id);
-                  if (!status) return null;
-                  return (
-                    <div className="mt-4 pt-4 border-t">
-                      <p className="text-xs font-semibold text-muted-foreground mb-2">
-                        Sanntidsstatus
-                        <span className="ml-1.5 inline-flex h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" />
-                      </p>
-                      <div className="grid grid-cols-3 gap-2">
-                        <div className="rounded-xl bg-green-50 px-3 py-2 text-center">
-                          <span className="text-xl font-extrabold text-green-700">{status.available}</span>
-                          <p className="text-[10px] text-green-600">Ledig</p>
-                        </div>
-                        <div className="rounded-xl bg-blue-50 px-3 py-2 text-center">
-                          <span className="text-xl font-extrabold text-blue-700">{status.charging}</span>
-                          <p className="text-[10px] text-blue-600">Lader</p>
-                        </div>
-                        <div className="rounded-xl bg-muted px-3 py-2 text-center">
-                          <span className="text-xl font-extrabold text-muted-foreground">{status.outOfOrder}</span>
-                          <p className="text-[10px] text-muted-foreground">Feil</p>
+                  if (status) {
+                    return (
+                      <div className="mt-4 pt-4 border-t">
+                        <p className="text-xs font-semibold text-muted-foreground mb-2">
+                          Sanntidsstatus
+                          <span className="ml-1.5 inline-flex h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" />
+                        </p>
+                        <div className="grid grid-cols-3 gap-2">
+                          <div className="rounded-xl bg-green-50 px-3 py-2 text-center">
+                            <span className="text-xl font-extrabold text-green-700">{status.available}</span>
+                            <p className="text-[10px] text-green-600">Ledig</p>
+                          </div>
+                          <div className="rounded-xl bg-blue-50 px-3 py-2 text-center">
+                            <span className="text-xl font-extrabold text-blue-700">{status.charging}</span>
+                            <p className="text-[10px] text-blue-600">Lader</p>
+                          </div>
+                          <div className="rounded-xl bg-muted px-3 py-2 text-center">
+                            <span className="text-xl font-extrabold text-muted-foreground">{status.outOfOrder}</span>
+                            <p className="text-[10px] text-muted-foreground">Feil</p>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  );
+                    );
+                  }
+                  if (realtimeConnected) {
+                    return (
+                      <div className="mt-4 pt-4 border-t">
+                        <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                          <span className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse shrink-0" />
+                          Sanntid tilkoblet — venter på statusoppdatering for denne stasjonen
+                        </p>
+                      </div>
+                    );
+                  }
+                  return null;
                 })()}
 
                 {/* Layer 3 — Connectors breakdown */}
