@@ -6,24 +6,13 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import type { GeoJsonObject, Feature } from "geojson";
 import type { Layer } from "leaflet";
-import { Search, MapPin, Loader2, X, Info, LocateFixed, Map as MapIcon, ChevronUp, Navigation, ExternalLink } from "lucide-react";
+import { Loader2, X, Info, LocateFixed, Map as MapIcon, ChevronUp, Navigation, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { FYLKER } from "@/lib/fylker";
-import { FlyTo, DataDisclaimer, MapError, AnimatedCount, interpolateColor, useDebounceRef, useSearchAbort } from "@/lib/map-utils";
+import { useMapSearch, MapSearchBar } from "@/components/map-search";
+import { FlyTo, DataDisclaimer, MapError, AnimatedCount, interpolateColor } from "@/lib/map-utils";
 
-interface IncomeAddress {
-  adressetekst: string;
-  poststed: string;
-  kommunenavn: string;
-  kommunenummer: string;
-  representasjonspunkt: { lat: number; lon: number };
-}
-
-type Suggestion =
-  | { type: "fylke"; fylkesnavn: string; lat: number; lon: number; zoom: number }
-  | { type: "kommune"; kommunenummer: string; kommunenavn: string }
-  | { type: "adresse"; addr: IncomeAddress };
+import type { Suggestion } from "@/lib/map-utils";
 
 interface SelectedKommune {
   kommunenummer: string;
@@ -69,11 +58,6 @@ export function IncomeMap() {
   const [loadedCount, setLoadedCount] = useState(0);
   const [error, setError] = useState(false);
 
-  const [query, setQuery] = useState("");
-  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
-  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
-  const [showDropdown, setShowDropdown] = useState(false);
-  const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const [selected, setSelected] = useState<SelectedKommune | null>(null);
   const [flyTarget, setFlyTarget] = useState<{ lat: number; lon: number; zoom?: number } | null>(null);
   const [showInfo, setShowInfo] = useState(false);
@@ -84,9 +68,7 @@ export function IncomeMap() {
   const geoFeaturesRef = useRef<Array<{ kommunenummer: string; kommunenavn: string }>>([]);
   const layerRefs = useRef<Map<string, L.Path>>(new Map());
   const selectedKommuneRef = useRef<string | null>(null);
-  const debounceRef = useDebounceRef();
-  const searchAbort = useSearchAbort();
-  const inputRef = useRef<HTMLInputElement>(null);
+  const setQueryRef = useRef<(q: string) => void>(() => {});
 
   const loadData = useCallback(async () => {
     setError(false);
@@ -150,89 +132,38 @@ export function IncomeMap() {
       selectedKommuneRef.current = null;
     }
     setSelected(null);
-    setQuery("");
+    setQueryRef.current("");
   }, []);
 
 
-  const search = useCallback(async (q: string) => {
-    if (q.length < 2) { setSuggestions([]); return; }
-    setLoadingSuggestions(true);
-
-    const fylkeMatches: Suggestion[] = FYLKER
-      .filter((f) => f.fylkesnavn.toLowerCase().includes(q.toLowerCase()))
-      .slice(0, 3)
-      .map((f) => ({ type: "fylke", fylkesnavn: f.fylkesnavn, lat: f.lat, lon: f.lon, zoom: f.zoom }));
-
-    const kommuneMatches: Suggestion[] = geoFeaturesRef.current
-      .filter((f) => f.kommunenavn.toLowerCase().includes(q.toLowerCase()))
-      .slice(0, 5)
-      .map((f) => ({ type: "kommune", kommunenummer: f.kommunenummer, kommunenavn: f.kommunenavn }));
-
-    let adresseMatches: Suggestion[] = [];
-    try {
-      const signal = searchAbort.renew();
-      const res = await fetch(
-        `https://ws.geonorge.no/adresser/v1/sok?sok=${encodeURIComponent(q)}&treffPerSide=2&utkoordsys=4326`,
-        { signal }
-      );
-      const data = await res.json();
-      adresseMatches = (data.adresser ?? []).map((a: IncomeAddress) => ({ type: "adresse" as const, addr: a }));
-    } catch { /* ignore — aborted or network error */ }
-
-    setSuggestions([...fylkeMatches, ...kommuneMatches, ...adresseMatches]);
-    setShowDropdown(true);
-    setLoadingSuggestions(false);
-  }, []);
-
-  const handleInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value;
-    setQuery(val);
-    setHighlightedIndex(-1);
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => search(val), 300);
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (!showDropdown || suggestions.length === 0) return;
-    if (e.key === "ArrowDown") {
-      e.preventDefault();
-      setHighlightedIndex((i) => Math.min(i + 1, suggestions.length - 1));
-    } else if (e.key === "ArrowUp") {
-      e.preventDefault();
-      setHighlightedIndex((i) => Math.max(i - 1, 0));
-    } else if (e.key === "Enter" && highlightedIndex >= 0) {
-      e.preventDefault();
-      handleSelect(suggestions[highlightedIndex]);
-      setHighlightedIndex(-1);
-    } else if (e.key === "Escape") {
-      setShowDropdown(false);
-      setHighlightedIndex(-1);
-    }
-  };
-
-  const handleSelect = (s: Suggestion) => {
-    setShowDropdown(false);
-    setSuggestions([]);
+  const handleSearchSelect = useCallback((s: Suggestion) => {
     if (s.type === "fylke") {
-      setQuery(s.fylkesnavn);
+      setQueryRef.current(s.fylkesnavn);
       setFlyTarget({ lat: s.lat, lon: s.lon, zoom: s.zoom });
       return;
     }
     if (s.type === "kommune") {
-      setQuery(s.kommunenavn);
+      setQueryRef.current(s.kommunenavn);
       highlightKommune(s.kommunenummer);
       setSelected({ kommunenummer: s.kommunenummer, kommunenavn: s.kommunenavn, income: incomeRef.current[s.kommunenummer] ?? null, coords: { lat: 0, lon: 0 } });
       const layer = layerRefs.current.get(s.kommunenummer) as L.Polygon | undefined;
       const center = layer?.getBounds().getCenter();
       if (center) setFlyTarget({ lat: center.lat, lon: center.lng });
-    } else {
+    } else if (s.type === "adresse") {
       const addr = s.addr;
-      setQuery(addr.kommunenavn);
-      highlightKommune(addr.kommunenummer);
-      setSelected({ kommunenummer: addr.kommunenummer, kommunenavn: addr.kommunenavn, income: incomeRef.current[addr.kommunenummer] ?? null, coords: addr.representasjonspunkt });
+      const nr = addr.kommunenummer ?? "";
+      setQueryRef.current(addr.kommunenavn);
+      if (nr) highlightKommune(nr);
+      setSelected({ kommunenummer: nr, kommunenavn: addr.kommunenavn, income: incomeRef.current[nr] ?? null, coords: addr.representasjonspunkt });
       setFlyTarget(addr.representasjonspunkt);
     }
-  };
+  }, [highlightKommune]);
+
+  const searchProps = useMapSearch({
+    kommuneList: geoFeaturesRef.current,
+    onSelect: handleSearchSelect,
+  });
+  setQueryRef.current = searchProps.setQuery;
 
   const geoStyle = (feature?: Feature) => {
     const nr = feature?.properties?.kommunenummer;
@@ -280,56 +211,8 @@ export function IncomeMap() {
     <div className="flex flex-col" style={{ height: "calc(100svh - 57px)" }}>
       {/* Search bar */}
       <div className="relative z-[1000] px-4 py-4 md:px-8 shrink-0 bg-background border-b">
-        <div className="max-w-xl mx-auto relative flex items-center gap-2">
-          <div className="flex flex-1 items-center gap-2 bg-background border rounded-xl px-4 py-3">
-            {loadingSuggestions ? (
-              <Loader2 className="h-4 w-4 shrink-0 animate-spin text-muted-foreground" />
-            ) : (
-              <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
-            )}
-            <input
-              ref={inputRef}
-              value={query}
-              onChange={handleInput}
-              autoFocus
-              onFocus={() => suggestions.length > 0 && setShowDropdown(true)}
-              onBlur={() => setTimeout(() => setShowDropdown(false), 150)}
-              onKeyDown={handleKeyDown}
-              placeholder="Søk etter en adresse for å finne kommunen..."
-              className="flex-1 bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground text-[16px] sm:text-sm"
-            />
-          </div>
-
-          {showDropdown && suggestions.length > 0 && (
-            <ul className="absolute top-full mt-1 left-0 right-0 bg-background rounded-xl shadow-xl border overflow-hidden">
-              {suggestions.map((s, i) => (
-                <li key={i}>
-                  <button
-                    onMouseDown={() => handleSelect(s)}
-                    className={`w-full text-left px-4 py-3 text-sm flex items-start gap-3 transition-colors border-b last:border-0 ${highlightedIndex === i ? "bg-muted" : "hover:bg-muted"}`}
-                  >
-                    <MapPin className="h-4 w-4 mt-0.5 shrink-0 text-muted-foreground" />
-                    {s.type === "fylke" ? (
-                      <div>
-                        <p className="font-medium">{s.fylkesnavn}</p>
-                        <p className="text-xs text-muted-foreground">Fylke</p>
-                      </div>
-                    ) : s.type === "kommune" ? (
-                      <div>
-                        <p className="font-medium">{s.kommunenavn}</p>
-                        <p className="text-xs text-muted-foreground">Kommune</p>
-                      </div>
-                    ) : s.type === "adresse" ? (
-                      <div>
-                        <p className="font-medium">{s.addr.adressetekst}</p>
-                        <p className="text-xs text-muted-foreground">{s.addr.poststed}, {s.addr.kommunenavn}</p>
-                      </div>
-                    ) : null}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
+        <div className="max-w-xl mx-auto relative">
+          <MapSearchBar search={searchProps} placeholder="Søk etter en adresse for å finne kommunen..." />
         </div>
 
       </div>

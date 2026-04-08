@@ -9,6 +9,7 @@ export interface Address {
   adressetekst: string;
   poststed: string;
   kommunenavn: string;
+  kommunenummer?: string;
   representasjonspunkt: { lat: number; lon: number };
 }
 

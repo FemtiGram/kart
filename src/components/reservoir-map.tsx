@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { MapContainer, TileLayer, Polygon, Marker, useMap } from "react-leaflet";
 import MarkerClusterGroup from "react-leaflet-cluster";
 import L from "leaflet";
@@ -10,8 +10,6 @@ import "react-leaflet-cluster/dist/assets/MarkerCluster.Default.css";
 import {
   Loader2,
   X,
-  Search,
-  MapPin,
   Info,
   Map as MapIcon,
   Layers,
@@ -20,8 +18,8 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { FYLKER } from "@/lib/fylker";
-import { FlyTo, DataDisclaimer, MapError, AnimatedCount, useDebounceRef, useSearchAbort } from "@/lib/map-utils";
+import { useMapSearch, MapSearchBar } from "@/components/map-search";
+import { FlyTo, DataDisclaimer, MapError, AnimatedCount } from "@/lib/map-utils";
 import type { Suggestion } from "@/lib/map-utils";
 
 interface Reservoir {
@@ -118,13 +116,7 @@ export function ReservoirMap() {
   const [tileLayer, setTileLayer] = useState<TileLayerKey>("gråtone");
   const [zoomLevel, setZoomLevel] = useState(5);
 
-  const [query, setQuery] = useState("");
-  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
-  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
-  const [showDropdown, setShowDropdown] = useState(false);
-  const [highlightedIndex, setHighlightedIndex] = useState(-1);
-  const debounceRef = useDebounceRef();
-  const searchAbort = useSearchAbort();
+  const setQueryRef = useRef<(q: string) => void>(() => {});
 
   const loadReservoirs = useCallback(async () => {
     setError(false);
@@ -161,80 +153,36 @@ export function ReservoirMap() {
 
   useEffect(() => { loadReservoirs(); }, [loadReservoirs]);
 
-  // Search
-  const search = useCallback(async (q: string) => {
-    if (q.length < 2) { setSuggestions([]); return; }
-    setLoadingSuggestions(true);
-
-    const fylkeMatches: Suggestion[] = FYLKER
-      .filter((f) => f.fylkesnavn.toLowerCase().includes(q.toLowerCase()))
-      .slice(0, 3)
-      .map((f) => ({ type: "fylke", fylkesnavn: f.fylkesnavn, lat: f.lat, lon: f.lon, zoom: f.zoom }));
-
-    // Search reservoir names locally
-    const reservoirMatches = reservoirs
+  // Search — reservoir names as extra suggestions (using fylke type for coordinates)
+  const extraSuggestions = useCallback((q: string): Suggestion[] => {
+    return reservoirs
       .filter((r) => r.name.toLowerCase().includes(q.toLowerCase()) || (r.plantName?.toLowerCase().includes(q.toLowerCase())))
-      .slice(0, 5);
+      .slice(0, 5)
+      .map((r) => ({
+        type: "fylke" as const,
+        fylkesnavn: `${r.name} (magasin)`,
+        lat: r.center.lat,
+        lon: r.center.lon,
+        zoom: 13,
+      }));
+  }, [reservoirs]);
 
-    let adresseMatches: Suggestion[] = [];
-    try {
-      const signal = searchAbort.renew();
-      const res = await fetch(`https://ws.geonorge.no/adresser/v1/sok?sok=${encodeURIComponent(q)}&treffPerSide=2&utkoordsys=4326`, { signal });
-      const data = await res.json();
-      adresseMatches = (data.adresser ?? []).map((a: { adressetekst: string; poststed: string; kommunenavn: string; representasjonspunkt: { lat: number; lon: number } }) => ({ type: "adresse" as const, addr: a }));
-    } catch { /* aborted or network error */ }
-
-    // Convert reservoir matches to suggestion-like entries using fylke type
-    const resSuggestions: Suggestion[] = reservoirMatches.map((r) => ({
-      type: "fylke" as const,
-      fylkesnavn: `${r.name} (magasin)`,
-      lat: r.center.lat,
-      lon: r.center.lon,
-      zoom: 13,
-    }));
-
-    setSuggestions([...fylkeMatches, ...resSuggestions, ...adresseMatches]);
-    setShowDropdown(true);
-    setLoadingSuggestions(false);
-  }, [reservoirs, searchAbort]);
-
-  const handleInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value;
-    setQuery(val);
-    setHighlightedIndex(-1);
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => search(val), 300);
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (!showDropdown || suggestions.length === 0) return;
-    if (e.key === "ArrowDown") {
-      e.preventDefault();
-      setHighlightedIndex((i) => Math.min(i + 1, suggestions.length - 1));
-    } else if (e.key === "ArrowUp") {
-      e.preventDefault();
-      setHighlightedIndex((i) => Math.max(i - 1, 0));
-    } else if (e.key === "Enter" && highlightedIndex >= 0) {
-      e.preventDefault();
-      handleSelect(suggestions[highlightedIndex]);
-      setHighlightedIndex(-1);
-    } else if (e.key === "Escape") {
-      setShowDropdown(false);
-      setHighlightedIndex(-1);
-    }
-  };
-
-  const handleSelect = (s: Suggestion) => {
-    setShowDropdown(false);
-    setSuggestions([]);
+  const handleSearchSelect = useCallback((s: Suggestion) => {
     if (s.type === "fylke") {
-      setQuery(s.fylkesnavn);
+      setQueryRef.current(s.fylkesnavn);
       setCenter({ lat: s.lat, lon: s.lon, zoom: s.zoom, _t: Date.now() });
     } else if (s.type === "adresse") {
-      setQuery(`${s.addr.adressetekst}, ${s.addr.poststed}`);
+      setQueryRef.current(`${s.addr.adressetekst}, ${s.addr.poststed}`);
       setCenter({ lat: s.addr.representasjonspunkt.lat, lon: s.addr.representasjonspunkt.lon, _t: Date.now() });
     }
-  };
+  }, []);
+
+  const searchProps = useMapSearch({
+    kommuneList: [],
+    extraSuggestions,
+    onSelect: handleSearchSelect,
+  });
+  setQueryRef.current = searchProps.setQuery;
 
   const stats = useMemo(() => {
     const total = reservoirs.length;
@@ -248,55 +196,7 @@ export function ReservoirMap() {
       {/* Search bar */}
       <div className="relative z-[1000] px-4 py-4 md:px-8 shrink-0 bg-background border-b">
         <div className="max-w-xl mx-auto relative flex flex-col gap-2">
-          <div className="flex items-center gap-2">
-            <div className="flex flex-1 items-center gap-2 bg-background border rounded-xl px-4 py-3">
-              {loadingSuggestions ? (
-                <Loader2 className="h-4 w-4 shrink-0 animate-spin text-muted-foreground" />
-              ) : (
-                <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
-              )}
-              <input
-                value={query}
-                onChange={handleInput}
-                onFocus={() => suggestions.length > 0 && setShowDropdown(true)}
-                onBlur={() => setTimeout(() => setShowDropdown(false), 150)}
-                onKeyDown={handleKeyDown}
-                placeholder="Søk etter magasin eller sted..."
-                className="flex-1 bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground text-[16px] sm:text-sm"
-              />
-            </div>
-          </div>
-
-          {showDropdown && suggestions.length > 0 && (
-            <ul className="absolute top-full mt-1 left-0 right-0 bg-background rounded-xl shadow-xl border overflow-hidden">
-              {suggestions.map((s, i) => (
-                <li key={i}>
-                  <button
-                    onMouseDown={() => handleSelect(s)}
-                    className={`w-full text-left px-4 py-3 text-sm flex items-start gap-3 transition-colors border-b last:border-0 ${highlightedIndex === i ? "bg-muted" : "hover:bg-muted"}`}
-                  >
-                    <MapPin className="h-4 w-4 mt-0.5 shrink-0 text-muted-foreground" />
-                    {s.type === "fylke" ? (
-                      <div>
-                        <p className="font-medium">{s.fylkesnavn}</p>
-                        <p className="text-xs text-muted-foreground">{s.fylkesnavn.includes("magasin") ? "Magasin" : "Fylke"}</p>
-                      </div>
-                    ) : s.type === "adresse" ? (
-                      <div>
-                        <p className="font-medium">{s.addr.adressetekst}</p>
-                        <p className="text-xs text-muted-foreground">{s.addr.poststed}, {s.addr.kommunenavn}</p>
-                      </div>
-                    ) : s.type === "kommune" ? (
-                      <div>
-                        <p className="font-medium">{s.kommunenavn}</p>
-                        <p className="text-xs text-muted-foreground">Kommune</p>
-                      </div>
-                    ) : null}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
+          <MapSearchBar search={searchProps} placeholder="Søk etter magasin eller sted..." />
         </div>
         <p className="text-xs text-muted-foreground mt-2 max-w-xl mx-auto">
           {loading ? "Henter magasindata..." : `${stats.total} magasiner${stats.totalVolume > 0 ? ` · ${stats.totalVolume.toLocaleString("nb-NO")} Mm³ total kapasitet` : ""} · Kilde: NVE`}
