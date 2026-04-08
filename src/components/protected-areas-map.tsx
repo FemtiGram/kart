@@ -9,7 +9,7 @@ import type { Layer } from "leaflet";
 import { Search, MapPin, Loader2, X, Map as MapIcon, ChevronUp, Info, ExternalLink } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { FYLKER } from "@/lib/fylker";
-import { FlyTo, DataDisclaimer, MapError, interpolateColor, useDebounceRef, useSearchAbort } from "@/lib/map-utils";
+import { FlyTo, DataDisclaimer, MapError, AnimatedCount, interpolateColor, useDebounceRef, useSearchAbort } from "@/lib/map-utils";
 
 // ─── Geodesic area from GeoJSON coordinates ────────────────
 
@@ -100,23 +100,6 @@ const VERNE_LABELS: Record<string, string> = {
   nm: "Andre vernekategorier",
 };
 
-function AnimatedCount({ target, duration = 600 }: { target: number; duration?: number }) {
-  const [count, setCount] = useState(0);
-  useEffect(() => {
-    if (target === 0) return;
-    const start = performance.now();
-    let raf: number;
-    const tick = (now: number) => {
-      const t = Math.min((now - start) / duration, 1);
-      const eased = 1 - Math.pow(1 - t, 3);
-      setCount(Math.round(eased * target));
-      if (t < 1) raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [target, duration]);
-  return <>{count.toLocaleString("nb-NO")}</>;
-}
 
 /** Color by percentage of kommune that is protected. Caps at 60% for color scale. */
 function vernePctColor(pct: number): string {

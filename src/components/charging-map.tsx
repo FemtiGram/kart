@@ -11,7 +11,7 @@ import { Loader2, X, Zap, LocateFixed, ExternalLink, Search, MapPin, Info, Map a
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { FYLKER, isInNorway, OSLO } from "@/lib/fylker";
-import { FlyTo, DataDisclaimer, MapError, useDebounceRef, useSearchAbort } from "@/lib/map-utils";
+import { FlyTo, DataDisclaimer, MapError, AnimatedCount, useDebounceRef, useSearchAbort } from "@/lib/map-utils";
 import type { Address, KommuneEntry, Suggestion } from "@/lib/map-utils";
 
 interface Station {
@@ -74,23 +74,6 @@ function chargingIcon(isSelected: boolean, inverted: boolean): L.DivIcon {
   return icon;
 }
 
-function AnimatedCount({ target, duration = 600 }: { target: number; duration?: number }) {
-  const [count, setCount] = useState(0);
-  useEffect(() => {
-    if (target === 0) return;
-    const start = performance.now();
-    let raf: number;
-    const tick = (now: number) => {
-      const t = Math.min((now - start) / duration, 1);
-      const eased = 1 - Math.pow(1 - t, 3);
-      setCount(Math.round(eased * target));
-      if (t < 1) raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [target, duration]);
-  return <>{count.toLocaleString("nb-NO")}</>;
-}
 
 function PanToSelected({ station }: { station: Station | null }) {
   const map = useMap();

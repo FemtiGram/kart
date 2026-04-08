@@ -5,11 +5,12 @@ import { MapContainer, TileLayer, Marker, useMap } from "react-leaflet";
 import MarkerClusterGroup from "react-leaflet-cluster";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { Search, MapPin, Loader2, X, Info, ChevronUp, Navigation, Home, Building2, Building } from "lucide-react";
+import { X, Info, ChevronUp, Navigation, Home, Building2, Building, Loader2 } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { useMapSearch, MapSearchBar } from "@/components/map-search";
 import { FYLKER } from "@/lib/fylker";
-import { FlyTo, DataDisclaimer, MapError, useDebounceRef, useSearchAbort } from "@/lib/map-utils";
-import type { Address, KommuneEntry, Suggestion } from "@/lib/map-utils";
+import { FlyTo, DataDisclaimer, MapError, AnimatedCount } from "@/lib/map-utils";
+import type { Suggestion } from "@/lib/map-utils";
 
 // ─── Types ──────────────────────────────────────────────────
 interface BoligEntry {
@@ -160,25 +161,6 @@ function fylkeRank(data: BoligData, type: string, year: string, kommunenummer: s
   return { rank, total: entries.length };
 }
 
-// ─── Animated count ─────────────────────────────────────────
-function AnimatedCount({ target, duration = 600 }: { target: number; duration?: number }) {
-  const [count, setCount] = useState(0);
-  useEffect(() => {
-    if (target === 0) return;
-    const start = performance.now();
-    let raf: number;
-    const tick = (now: number) => {
-      const t = Math.min((now - start) / duration, 1);
-      const eased = 1 - Math.pow(1 - t, 3);
-      setCount(Math.round(eased * target));
-      if (t < 1) raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [target, duration]);
-  return <>{count.toLocaleString("nb-NO")}</>;
-}
-
 // ─── Zoom tracker ───────────────────────────────────────────
 function ZoomTracker({ onZoom }: { onZoom: (z: number) => void }) {
   const map = useMap();
@@ -218,16 +200,42 @@ export function BoligMap() {
   const [zoomLevel, setZoomLevel] = useState(5);
 
   // Search
-  const [query, setQuery] = useState("");
-  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
-  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
-  const [showDropdown, setShowDropdown] = useState(false);
-  const [highlightedIndex, setHighlightedIndex] = useState(-1);
-  const debounceRef = useDebounceRef();
-  const searchAbort = useSearchAbort();
-  const kommunerRef = useRef<KommuneEntry[]>([]);
   const geoFeaturesRef = useRef<Array<{ kommunenummer: string; kommunenavn: string }>>([]);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const setQueryRef = useRef<(q: string) => void>(() => {});
+
+  const handleSearchSelect = useCallback((s: Suggestion) => {
+    setSelected(null);
+    setShowInfoSheet(false);
+    if (s.type === "fylke") {
+      setQueryRef.current(s.fylkesnavn);
+      setCenter({ lat: s.lat, lon: s.lon, zoom: s.zoom });
+    } else if (s.type === "kommune") {
+      setQueryRef.current(s.kommunenavn);
+      const c = centroids.get(s.kommunenummer);
+      if (c) {
+        setCenter({ lat: c.lat, lon: c.lon, zoom: 10 });
+        setSelected({ kommunenummer: s.kommunenummer, kommunenavn: s.kommunenavn, lat: c.lat, lon: c.lon });
+      }
+    } else if (s.type === "adresse") {
+      const addr = s.addr;
+      setQueryRef.current(addr.kommunenavn);
+      const match = geoFeaturesRef.current.find((f) => f.kommunenavn.toLowerCase() === addr.kommunenavn.toLowerCase());
+      const nr = match?.kommunenummer;
+      if (nr) {
+        const c = centroids.get(nr);
+        if (c) {
+          setCenter({ lat: addr.representasjonspunkt.lat, lon: addr.representasjonspunkt.lon, zoom: 11 });
+          setSelected({ kommunenummer: nr, kommunenavn: addr.kommunenavn, lat: c.lat, lon: c.lon });
+        }
+      }
+    }
+  }, [centroids]);
+
+  const searchProps = useMapSearch({
+    kommuneList: geoFeaturesRef.current,
+    onSelect: handleSearchSelect,
+  });
+  setQueryRef.current = searchProps.setQuery;
 
   // ─── Data loading ───────────────────────────────────────
   const loadData = useCallback(async () => {
@@ -261,13 +269,7 @@ export function BoligMap() {
     }
   }, []);
 
-  useEffect(() => {
-    loadData();
-    fetch("https://ws.geonorge.no/kommuneinfo/v1/kommuner")
-      .then((r) => r.json())
-      .then((data: KommuneEntry[]) => { kommunerRef.current = data; })
-      .catch(() => {});
-  }, [loadData]);
+  useEffect(() => { loadData(); }, [loadData]);
 
   // ─── Derived data ───────────────────────────────────────
   const markers = useMemo(() => {
@@ -294,89 +296,11 @@ export function BoligMap() {
 
   const visibleMarkers = useMemo(() => markers.filter((m) => m.price != null && m.price > 0), [markers]);
 
-  // ─── Search ─────────────────────────────────────────────
-  const search = useCallback(async (q: string) => {
-    if (q.length < 2) { setSuggestions([]); return; }
-    setLoadingSuggestions(true);
-
-    const fylkeMatches: Suggestion[] = FYLKER
-      .filter((f) => f.fylkesnavn.toLowerCase().includes(q.toLowerCase()))
-      .slice(0, 3)
-      .map((f) => ({ type: "fylke", fylkesnavn: f.fylkesnavn, lat: f.lat, lon: f.lon, zoom: f.zoom }));
-
-    const kommuneMatches: Suggestion[] = geoFeaturesRef.current
-      .filter((f) => f.kommunenavn.toLowerCase().includes(q.toLowerCase()))
-      .slice(0, 5)
-      .map((f) => ({ type: "kommune", kommunenummer: f.kommunenummer, kommunenavn: f.kommunenavn }));
-
-    let adresseMatches: Suggestion[] = [];
-    try {
-      const signal = searchAbort.renew();
-      const res = await fetch(
-        `https://ws.geonorge.no/adresser/v1/sok?sok=${encodeURIComponent(q)}&treffPerSide=2&utkoordsys=4326`,
-        { signal }
-      );
-      const data = await res.json();
-      adresseMatches = (data.adresser ?? []).map((a: Address & { kommunenummer?: string }) => ({ type: "adresse" as const, addr: a }));
-    } catch { /* aborted */ }
-
-    setSuggestions([...fylkeMatches, ...kommuneMatches, ...adresseMatches]);
-    setShowDropdown(true);
-    setLoadingSuggestions(false);
-  }, [searchAbort]);
-
-  const handleInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value;
-    setQuery(val);
-    setHighlightedIndex(-1);
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => search(val), 300);
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (!showDropdown || suggestions.length === 0) return;
-    if (e.key === "ArrowDown") { e.preventDefault(); setHighlightedIndex((i) => Math.min(i + 1, suggestions.length - 1)); }
-    else if (e.key === "ArrowUp") { e.preventDefault(); setHighlightedIndex((i) => Math.max(i - 1, 0)); }
-    else if (e.key === "Enter" && highlightedIndex >= 0) { e.preventDefault(); handleSelect(suggestions[highlightedIndex]); setHighlightedIndex(-1); }
-    else if (e.key === "Escape") { setShowDropdown(false); setHighlightedIndex(-1); }
-  };
-
-  const handleSelect = (s: Suggestion) => {
-    setShowDropdown(false);
-    setSuggestions([]);
-    setSelected(null);
-    setShowInfoSheet(false);
-    if (s.type === "fylke") {
-      setQuery(s.fylkesnavn);
-      setCenter({ lat: s.lat, lon: s.lon, zoom: s.zoom });
-    } else if (s.type === "kommune") {
-      setQuery(s.kommunenavn);
-      const c = centroids.get(s.kommunenummer);
-      if (c) {
-        setCenter({ lat: c.lat, lon: c.lon, zoom: 10 });
-        setSelected({ kommunenummer: s.kommunenummer, kommunenavn: s.kommunenavn, lat: c.lat, lon: c.lon });
-      }
-    } else if (s.type === "adresse") {
-      const addr = s.addr;
-      setQuery(addr.kommunenavn);
-      // Look up kommunenummer from features list by name
-      const match = geoFeaturesRef.current.find((f) => f.kommunenavn.toLowerCase() === addr.kommunenavn.toLowerCase());
-      const nr = match?.kommunenummer;
-      if (nr) {
-        const c = centroids.get(nr);
-        if (c) {
-          setCenter({ lat: addr.representasjonspunkt.lat, lon: addr.representasjonspunkt.lon, zoom: 11 });
-          setSelected({ kommunenummer: nr, kommunenavn: addr.kommunenavn, lat: c.lat, lon: c.lon });
-        }
-      }
-    }
-  };
-
   const clearSelection = useCallback(() => {
     setSelected(null);
     setShowInfoSheet(false);
-    setQuery("");
-  }, []);
+    searchProps.setQuery("");
+  }, [searchProps]);
 
   // ─── Card data helpers ──────────────────────────────────
   const getPrice = (nr: string, type: string, yr: string) => boligData[nr]?.[type]?.[yr]?.price ?? null;
@@ -395,47 +319,7 @@ export function BoligMap() {
       {/* Search bar + filters */}
       <div className="relative z-[1000] px-4 py-3 md:px-8 shrink-0 bg-background border-b">
         <div className="max-w-xl mx-auto">
-          <div className="relative flex items-center gap-2">
-            <div className="flex flex-1 items-center gap-2 bg-background border rounded-xl px-4 py-3">
-              {loadingSuggestions ? (
-                <Loader2 className="h-4 w-4 shrink-0 animate-spin text-muted-foreground" />
-              ) : (
-                <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
-              )}
-              <input
-                ref={inputRef}
-                value={query}
-                onChange={handleInput}
-                autoFocus
-                onFocus={() => suggestions.length > 0 && setShowDropdown(true)}
-                onBlur={() => setTimeout(() => setShowDropdown(false), 150)}
-                onKeyDown={handleKeyDown}
-                placeholder="Søk etter kommune eller adresse..."
-                className="flex-1 bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground text-[16px] sm:text-sm"
-              />
-            </div>
-            {showDropdown && suggestions.length > 0 && (
-              <ul className="absolute top-full mt-1 left-0 right-0 bg-background rounded-xl shadow-xl border overflow-hidden z-50">
-                {suggestions.map((s, i) => (
-                  <li key={i}>
-                    <button
-                      onMouseDown={() => handleSelect(s)}
-                      className={`w-full text-left px-4 py-3 text-sm flex items-start gap-3 transition-colors border-b last:border-0 ${highlightedIndex === i ? "bg-muted" : "hover:bg-muted"}`}
-                    >
-                      <MapPin className="h-4 w-4 mt-0.5 shrink-0 text-muted-foreground" />
-                      {s.type === "fylke" ? (
-                        <div><p className="font-medium">{s.fylkesnavn}</p><p className="text-xs text-muted-foreground">Fylke</p></div>
-                      ) : s.type === "kommune" ? (
-                        <div><p className="font-medium">{s.kommunenavn}</p><p className="text-xs text-muted-foreground">Kommune</p></div>
-                      ) : s.type === "adresse" ? (
-                        <div><p className="font-medium">{s.addr.adressetekst}</p><p className="text-xs text-muted-foreground">{s.addr.poststed}, {s.addr.kommunenavn}</p></div>
-                      ) : null}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
+          <MapSearchBar search={searchProps} placeholder="Søk etter kommune eller adresse..." />
 
           {/* Filter row */}
           <div className="flex items-center gap-3 mt-2">
