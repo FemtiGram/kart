@@ -18,7 +18,7 @@ export const metadata: Metadata = {
     default: "Datakart",
     template: "%s — Datakart",
   },
-  description: "Utforsk norske geodata, energi, hytter, lading, inntekt og verneområder på interaktive kart.",
+  description: "Utforsk norske geodata, energi, boligpriser, hytter, lading, inntekt og verneområder på interaktive kart.",
   metadataBase: new URL("https://datakart.no"),
   openGraph: {
     type: "website",

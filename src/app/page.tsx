@@ -1,12 +1,20 @@
 import Link from "next/link";
-import { ArrowRight, Mountain, DollarSign, Shield, Zap, Home as HomeIcon, BatteryCharging, Waves, Database, Globe, Code } from "lucide-react";
+import { ArrowRight, Mountain, DollarSign, Shield, Zap, Home as HomeIcon, BatteryCharging, Waves, Database, Globe, Code, TrendingUp } from "lucide-react";
 
-const featured = {
-  title: "Energikart",
-  description: "Norges komplette energibilde. Vindkraft, vannkraft, planlagt havvind og over 1200 olje- og gassanlegg med produksjonsdata og rørledninger.",
-  href: "/energi",
-  icon: BatteryCharging,
-};
+const featured = [
+  {
+    title: "Boligpriser",
+    description: "Kvadratmeterpris for eneboliger, småhus og blokkleiligheter i alle kommuner.",
+    href: "/bolig",
+    icon: TrendingUp,
+  },
+  {
+    title: "Energikart",
+    description: "Vindkraft, vannkraft, havvind og olje- og gassanlegg med produksjonsdata.",
+    href: "/energi",
+    icon: BatteryCharging,
+  },
+];
 
 const groups = [
   {
@@ -62,26 +70,24 @@ const groups = [
   },
 ];
 
-function CardLink({ href, icon: Icon, title, description, large }: {
-  href: string; icon: typeof Mountain; title: string; description: string; large?: boolean;
+function CardLink({ href, icon: Icon, title, description }: {
+  href: string; icon: typeof Mountain; title: string; description: string;
 }) {
   return (
     <Link
       href={href}
-      className={`group flex flex-col justify-between rounded-2xl border border-border bg-card shadow-sm hover:shadow-md transition-all ${
-        large ? "p-6" : "p-5"
-      }`}
+      className="group flex flex-col justify-between rounded-2xl border border-border bg-card shadow-sm hover:shadow-md transition-all p-5"
     >
       <div>
         <div className="flex items-center gap-2.5 mb-2">
-          <div className={`flex items-center justify-center rounded-lg ${large ? "h-10 w-10" : "h-8 w-8"}`} style={{ background: "#24374c" }}>
-            <Icon className={`${large ? "h-5 w-5" : "h-4 w-4"} text-white`} />
+          <div className="flex items-center justify-center rounded-lg h-8 w-8" style={{ background: "#24374c" }}>
+            <Icon className="h-4 w-4 text-white" />
           </div>
-          <h2 className={`font-bold ${large ? "text-lg" : "text-base"}`}>{title}</h2>
+          <h2 className="font-bold text-base">{title}</h2>
         </div>
-        <p className={`text-muted-foreground leading-relaxed ${large ? "text-base" : "text-sm"}`}>{description}</p>
+        <p className="text-sm text-muted-foreground leading-relaxed">{description}</p>
       </div>
-      <div className={`flex items-center gap-1.5 mt-4 font-medium text-muted-foreground group-hover:text-foreground transition-colors ${large ? "text-sm" : "text-xs"}`}>
+      <div className="flex items-center gap-1.5 mt-4 font-medium text-muted-foreground group-hover:text-foreground transition-colors text-xs">
         Åpne kart
         <ArrowRight className="h-3.5 w-3.5 -translate-x-1 group-hover:translate-x-0 transition-transform" />
       </div>
@@ -110,13 +116,19 @@ export default function Home() {
           Prosjekter hvor jeg ser hva som er mulig med åpne geodata.
         </p>
 
-        {/* Featured card */}
-        <div className="mt-12">
-          <CardLink {...featured} large />
-        </div>
-
-        {/* Grouped cards */}
-        <div className="mt-8 space-y-8">
+        {/* All card groups */}
+        <div className="mt-12 space-y-8">
+          {/* Featured */}
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">
+              Aktuelt
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {featured.map((item) => (
+                <CardLink key={item.href} {...item} />
+              ))}
+            </div>
+          </div>
           {groups.map((group) => (
             <div key={group.label}>
               <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">
@@ -156,9 +168,9 @@ export default function Home() {
                 <Globe className="h-4 w-4 text-white" />
               </div>
               <div>
-                <p className="font-semibold text-sm">7 interaktive kart</p>
+                <p className="font-semibold text-sm">8 interaktive kart</p>
                 <p className="text-xs text-muted-foreground leading-relaxed mt-0.5">
-                  Energi, lading, magasin, hytter, høyde, inntekt og verneområder
+                  Energi, boligpriser, lading, magasin, hytter, høyde, inntekt og verneområder
                 </p>
               </div>
             </div>

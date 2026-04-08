@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { Menu, X, Mountain, DollarSign, Shield, Zap, Home, BatteryCharging, Waves } from "lucide-react";
+import { Menu, X, Mountain, DollarSign, Shield, Zap, Home, BatteryCharging, Waves, TrendingUp } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -53,6 +53,7 @@ const navGroups: NavGroup[] = [
     label: "Samfunn",
     links: [
       { href: "/lonn", label: "Inntektskart", icon: DollarSign, description: "Median inntekt per kommune" },
+      { href: "/bolig", label: "Boligpriser", icon: TrendingUp, description: "Kvadratmeterpris per kommune" },
     ],
   },
 ];

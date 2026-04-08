@@ -23,13 +23,15 @@ src/app/
   hytter/page.tsx       — Tourist cabins map
   lonn/page.tsx         — Income choropleth
   vern/page.tsx         — Protected areas choropleth
+  bolig/page.tsx        — Housing prices bubble map
   map/page.tsx          — Elevation + weather map
   energi/page.tsx       — Energy (wind + hydro) map
   magasin/page.tsx      — Reservoir monitor map
   vindkraft/page.tsx    — Wind power plants map (standalone)
   api/
+    bolig/route.ts      — SSB housing price data (table 06035)
     income/route.ts     — SSB income data
-    kommuner/route.ts   — GeoJSON kommune boundaries
+    kommuner/route.ts   — GeoJSON kommune boundaries (static file)
     protected-areas/    — SSB verne data
     weather/route.ts    — MET.no proxy (30min cache)
     wind-power/route.ts — NVE wind power proxy (1h cache)
@@ -53,27 +55,31 @@ scripts/
   fetch-stations.mjs    — Build-time: fetches ALL charging stations → public/data/stations.json
   fetch-cabins.mjs      — Build-time: fetches ALL cabins → public/data/cabins.json
   fetch-production.mjs  — Build-time: fetches yearly oil/gas production from Sodir → public/data/production.json
+  fetch-reservoirs.mjs  — Build-time: fetches reservoir polygons from NVE → public/data/reservoirs.json
+  fetch-kommuner.mjs    — Build-time: fetches kommune boundaries GeoJSON → public/data/kommuner.geojson
 
 public/data/
   stations.json         — Pre-built charging station data (committed to repo)
   cabins.json           — Pre-built cabin data (committed to repo)
   production.json       — Pre-built Sodir yearly field production data (committed to repo)
+  reservoirs.json       — Pre-built NVE reservoir polygons (committed to repo)
+  kommuner.geojson      — Pre-built kommune boundary GeoJSON (committed to repo)
 ```
 
 ## Map Architecture Patterns
 
 ### Three data loading patterns:
-1. **Build-time static** (charging, cabins, production) — Data fetched at build time via Overpass/Sodir, saved as static JSON, loaded on mount
-2. **Preload on mount** (income, vern) — Single API call loads ALL data, renders everything client-side
+1. **Build-time static** (charging, cabins, production, reservoirs, kommuner) — Data fetched at build time, saved as static JSON/GeoJSON, loaded on mount
+2. **Preload on mount** (income, vern, bolig) — API call loads ALL data, renders everything client-side
 3. **Per-request** (elevation, weather) — Fetch on user interaction
 
 ### Build-time data pipeline:
-- `scripts/fetch-stations.mjs`, `scripts/fetch-cabins.mjs`, and `scripts/fetch-production.mjs` run as `prebuild` hook
+- `scripts/fetch-stations.mjs`, `scripts/fetch-cabins.mjs`, `scripts/fetch-production.mjs`, `scripts/fetch-reservoirs.mjs`, and `scripts/fetch-kommuner.mjs` run as `prebuild` hook
 - Overpass scripts try 3 mirrors with retry; if all fail, keeps existing data
 - Frontend has client-side Overpass fallback if static file is empty
 - Production script fetches yearly CSV from Sodir FactPages (~205 KB, 130 fields)
 - **Vercel's 10s timeout prevents runtime Overpass calls for large bbox queries**
-- **To seed data locally:** `node scripts/fetch-stations.mjs && node scripts/fetch-cabins.mjs && node scripts/fetch-production.mjs`
+- **To seed data locally:** `node scripts/fetch-stations.mjs && node scripts/fetch-cabins.mjs && node scripts/fetch-production.mjs && node scripts/fetch-reservoirs.mjs && node scripts/fetch-kommuner.mjs`
 
 ### Each map component has:
 - Search bar (Fylke → Kommune → Adresse, limits: 3/5/2)
@@ -113,7 +119,7 @@ All maps use a **compact floating card + expandable bottom Sheet** pattern:
 - **Kommune data:** Marker maps load from `geonorge.no/kommuneinfo/v1/kommuner`; choropleth maps use GeoJSON properties they already have
 - **Kommune center:** Marker maps resolve via `geonorge.no/stedsnavn` API; choropleth maps use GeoJSON layer bounds
 - **Dropdown:** `onMouseDown` for selection (fires before `onBlur`), 150ms blur delay, keyboard nav (↑↓ Enter Escape)
-- **Icon caching:** All icon functions (`chargingIcon`, `cabinIcon`, `energyIcon`) cache `L.divIcon` instances by args to avoid recreating 15,000 icons per re-render
+- **Icon caching:** All icon functions (`chargingIcon`, `cabinIcon`, `energyIcon`, `bubbleIcon`) cache `L.divIcon` instances by args to avoid recreating 15,000 icons per re-render
 - **Future refactor:** Split search bar + map markers into separate React components to avoid keystroke re-renders propagating to marker layer
 
 ### Markers (charging, cabin, energy maps):
@@ -127,6 +133,15 @@ All maps use a **compact floating card + expandable bottom Sheet** pattern:
 - Charging: green ⚡ bolt (28px)
 - Cabins: colored house icon — filled for fjellhytte, outline for ubetjent (26-30px)
 - Energy: blue wind icon or cyan water droplet, sized by capacity (26-32px)
+
+### Bubble map (bolig):
+- Blue → Orange → Red color scale based on **percentile** rank (not linear min/max)
+- Bubble size encodes transaction volume: 10px (<50 sales) → 28px (500+)
+- `react-leaflet-cluster` with price-colored cluster icons
+- Filters: dwelling type (Enebolig/Småhus/Blokk) + year selector (2015–2024)
+- MarkerClusterGroup uses `key={type+year}` to force re-cluster on filter change
+- Kommune centers computed as centroids from GeoJSON polygon geometry
+- Detail sheet: all types comparison, bar chart trend, national/fylke rankings
 
 ### Choropleth maps (income, vern):
 - Red → Yellow → Green 3-stop diverging color scale
@@ -176,11 +191,12 @@ All maps use a **compact floating card + expandable bottom Sheet** pattern:
 | Oil/gas production | Sodir FactPages (yearly field production CSV) | Build-time static JSON |
 | Reservoirs | NVE ArcGIS (Vannkraft1 layer 6 — Magasin) | 1h server cache via API route |
 | River observations | NVE HydAPI (discharge, water level, percentiles) | Per-request (requires NVE_API_KEY) |
+| Housing prices | SSB tabell 06035 (Selveierboliger) | 24h server cache via API route |
 | Income | SSB InntektStruk13 | Loaded once on mount |
 | Protected areas | SSB tabell 08936 | Loaded once on mount |
 | Weather | MET.no locationforecast | 30min server cache |
 | Elevation | Kartverket høyde-API | Per-request |
-| Kommune boundaries | Kartverket GeoJSON | Loaded once on mount |
+| Kommune boundaries | GitHub (robhop/fylker-og-kommuner) | Build-time static GeoJSON |
 | Address search | Geonorge adresser API | Per-query |
 | Kommune list | Geonorge kommuneinfo API | Loaded once on mount |
 | Fylker | Hardcoded in fylker.ts | Static (15 counties) |
