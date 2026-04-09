@@ -359,7 +359,7 @@ export function ElevationMap() {
   const lon = selected?.address.representasjonspunkt.lon ?? 14;
 
   return (
-    <div className="flex flex-col" style={{ height: "calc(100svh - 57px)" }}>
+    <div className="flex flex-col" style={{ height: "calc(100svh - 57px - 56px)" }}>
       {/* API health banner */}
       {apiDown && !apiBannerDismissed && (
         <div className="shrink-0 flex items-center justify-between gap-3 px-4 py-2.5 bg-yellow-50 border-b border-yellow-200 text-yellow-800 text-sm">

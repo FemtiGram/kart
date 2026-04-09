@@ -222,7 +222,7 @@ export function ChargingMap() {
   };
 
   return (
-    <div className="flex flex-col" style={{ height: "calc(100svh - 57px)" }}>
+    <div className="flex flex-col" style={{ height: "calc(100svh - 57px - 56px)" }}>
       {/* Search bar */}
       <div className="relative z-[1000] px-4 py-4 md:px-8 shrink-0 bg-background border-b">
         <div className="max-w-xl mx-auto relative flex flex-col gap-2">

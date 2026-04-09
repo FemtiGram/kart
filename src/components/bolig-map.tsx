@@ -315,7 +315,7 @@ export function BoligMap() {
   const yoyChange = selectedPrice && prevPrice ? ((selectedPrice - prevPrice) / prevPrice) * 100 : null;
 
   return (
-    <div className="flex flex-col" style={{ height: "calc(100svh - 57px)" }}>
+    <div className="flex flex-col" style={{ height: "calc(100svh - 57px - 56px)" }}>
       {/* Search bar + filters */}
       <div className="relative z-[1000] px-4 py-3 md:px-8 shrink-0 bg-background border-b">
         <div className="max-w-xl mx-auto">
