@@ -49,7 +49,7 @@ export default function HytterPage() {
     <>
       <CabinMapLoader />
       <section className="bg-background border-t">
-        <div className="container mx-auto px-6 md:px-16 py-12 md:py-16 max-w-3xl">
+        <div className="container mx-auto px-6 md:px-16 pt-5 pb-12 md:pb-16 max-w-3xl">
           <h2 className="text-2xl font-extrabold tracking-tight mb-6" style={{ color: "#24374c" }}>
             Ofte stilte spørsmål om turisthytter
           </h2>
