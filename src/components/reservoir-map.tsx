@@ -52,7 +52,7 @@ const TILE_LAYERS = {
 
 type TileLayerKey = keyof typeof TILE_LAYERS;
 
-const RESERVOIR_COLOR = "#0e7490";
+const RESERVOIR_COLOR = "var(--kv-metric)";
 
 const reservoirIconCache = new Map<string, L.DivIcon>();
 function reservoirIcon(isSelected: boolean, inverted: boolean): L.DivIcon {
@@ -350,7 +350,7 @@ export function ReservoirMap() {
             <div className="mt-3 flex gap-4">
               {selected.volumeMm3 != null && (
                 <div className="flex items-baseline gap-1.5">
-                  <span className="text-2xl font-extrabold" style={{ color: "#0e7490" }}>
+                  <span className="text-2xl font-extrabold" style={{ color: "var(--kv-metric)" }}>
                     {selected.volumeMm3.toFixed(1)}
                   </span>
                   <span className="text-xs text-muted-foreground">Mm³</span>
@@ -358,7 +358,7 @@ export function ReservoirMap() {
               )}
               {selected.areaKm2 != null && (
                 <div className="flex items-baseline gap-1.5">
-                  <span className="text-2xl font-extrabold" style={{ color: "#0e7490" }}>
+                  <span className="text-2xl font-extrabold" style={{ color: "var(--kv-metric)" }}>
                     {selected.areaKm2.toFixed(2)}
                   </span>
                   <span className="text-xs text-muted-foreground">km²</span>
@@ -411,13 +411,13 @@ export function ReservoirMap() {
                 <div className="mt-4 pt-4 border-t flex flex-wrap gap-x-6 gap-y-2">
                   {selected.volumeMm3 != null && (
                     <div className="flex items-baseline gap-1.5">
-                      <span className="text-3xl font-extrabold" style={{ color: "#0e7490" }}>{selected.volumeMm3.toFixed(1)}</span>
+                      <span className="text-3xl font-extrabold" style={{ color: "var(--kv-metric)" }}>{selected.volumeMm3.toFixed(1)}</span>
                       <span className="text-xs text-muted-foreground">Mm³ volum</span>
                     </div>
                   )}
                   {selected.areaKm2 != null && (
                     <div className="flex items-baseline gap-1.5">
-                      <span className="text-3xl font-extrabold" style={{ color: "#0e7490" }}>{selected.areaKm2.toFixed(2)}</span>
+                      <span className="text-3xl font-extrabold" style={{ color: "var(--kv-metric)" }}>{selected.areaKm2.toFixed(2)}</span>
                       <span className="text-xs text-muted-foreground">km² areal</span>
                     </div>
                   )}
@@ -456,10 +456,10 @@ export function ReservoirMap() {
                   <div className="mt-4 pt-4 border-t">
                     <div className="flex items-center justify-between mb-1.5">
                       <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Norges magasiner · uke {nationalFill.iso_uke}</span>
-                      <span className="text-sm font-bold" style={{ color: nationalFill.fyllingsgrad > 0.5 ? "#0369a1" : nationalFill.fyllingsgrad > 0.3 ? "#ca8a04" : "#dc2626" }}>
+                      <span className="text-sm font-bold" style={{ color: nationalFill.fyllingsgrad > 0.5 ? "#0369a1" : nationalFill.fyllingsgrad > 0.3 ? "var(--kv-warning)" : "var(--kv-negative)" }}>
                         {(nationalFill.fyllingsgrad * 100).toFixed(1)}%
                         {nationalFill.endring !== 0 && (
-                          <span className="text-xs font-normal ml-1" style={{ color: nationalFill.endring > 0 ? "#16a34a" : "#dc2626" }}>
+                          <span className="text-xs font-normal ml-1" style={{ color: nationalFill.endring > 0 ? "var(--kv-positive)" : "var(--kv-negative)" }}>
                             {nationalFill.endring > 0 ? "▲" : "▼"} {Math.abs(nationalFill.endring * 100).toFixed(1)}%
                           </span>
                         )}
@@ -470,7 +470,7 @@ export function ReservoirMap() {
                         className="absolute inset-y-0 left-0 rounded-full"
                         style={{
                           width: `${nationalFill.fyllingsgrad * 100}%`,
-                          background: nationalFill.fyllingsgrad > 0.5 ? "#0369a1" : nationalFill.fyllingsgrad > 0.3 ? "#ca8a04" : "#dc2626",
+                          background: nationalFill.fyllingsgrad > 0.5 ? "#0369a1" : nationalFill.fyllingsgrad > 0.3 ? "var(--kv-warning)" : "var(--kv-negative)",
                         }}
                       />
                     </div>

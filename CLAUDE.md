@@ -202,13 +202,35 @@ Every new page MUST be rigged for Google Search and AI search (ChatGPT, Perplexi
 - **UX Laws** — https://uxlaws.com — Consult when making UX/design decisions. Key principles to keep in mind: Fitts's Law (touch targets), Hick's Law (limit choices), Miller's Law (chunk info), Jakob's Law (familiar patterns), aesthetic-usability effect.
 
 ## Design Tokens (CSS Variables)
-- `--kv-blue: #003da5` — primary brand, selected states, metric numbers
-- `--kv-green: #00b140` — secondary brand, positive values
-- `--kv-green-light: #b3e6c8` — card borders (ALL cards use this)
-- Card style: `bg-white rounded-2xl shadow-xl px-4 py-4`
+
+### Brand colors (one primary blue — use everywhere)
+- `--kv-blue: #24374c` — THE brand color. Headers, icons, metric numbers, selected states, buttons
+- `--kv-blue-dark: #0f1923` — dark variant (OG image backgrounds)
+- `--kv-blue-light: #eae8e3` — warm off-white (page backgrounds)
+
+### Semantic colors (use these, NOT hardcoded Tailwind colors)
+- `--kv-positive: #16a34a` — good/up/available (green)
+- `--kv-positive-light: #f0fdf4` — positive badge background
+- `--kv-negative: #dc2626` — bad/down/error (red)
+- `--kv-negative-light: #fef2f2` — negative badge background
+- `--kv-warning: #d97706` — caution/moderate (amber)
+- `--kv-warning-light: #fffbeb` — warning badge background
+- `--kv-metric: #24374c` — hero numbers (same as brand blue)
+- `--kv-muted-fill: #e3ddd4` — empty/no-data fills on maps
+
+### Rules
+- **DO NOT** use hardcoded hex for positive/negative — use `var(--kv-positive)` and `var(--kv-negative)`
+- **DO NOT** mix multiple greens/reds — one green (#16a34a), one red (#dc2626)
+- **DO NOT** use `#003da5` — this was the old brand blue, replaced by `#24374c`
+- **Tailwind semantic classes OK** for backgrounds: `bg-green-50`, `bg-red-50` (these are light tints, not brand colors)
+- **Metric numbers** always use `style={{ color: "var(--kv-blue)" }}` or `var(--kv-metric)`
+
+### Component patterns
+- Card style: `bg-card rounded-2xl shadow-sm border px-4 py-4` (hover: `shadow-md`)
 - Modal style: `bg-background rounded-2xl shadow-xl border w-full max-w-sm p-5`
 - Floating pill: `bg-background/90 backdrop-blur-sm border rounded-full px-4 py-2 shadow-lg`
-- Skeleton: `.skeleton-shimmer` class (sliding gradient, #e5e7eb → #d1d5db)
+- Primary CTA button: `text-white rounded-xl` with `style={{ background: "var(--kv-blue)" }}`
+- Secondary button: `border bg-muted/50 hover:bg-muted rounded-xl`
 
 ## Data Sources
 | Data | Source | Cache |

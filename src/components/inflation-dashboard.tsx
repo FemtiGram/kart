@@ -342,7 +342,7 @@ export function InflationDashboard() {
                         className="h-full rounded-full transition-all"
                         style={{
                           width: `${barWidth}%`,
-                          background: (cat.change12m ?? 0) > 0 ? "#ef4444" : "#16a34a",
+                          background: (cat.change12m ?? 0) > 0 ? "var(--kv-negative)" : "var(--kv-positive)",
                           opacity: 0.6,
                         }}
                       />
@@ -410,7 +410,7 @@ export function InflationDashboard() {
                   className="flex-1 rounded-sm min-w-[3px] transition-all"
                   style={{
                     height: val != null ? `${Math.max(4, pct)}%` : "0%",
-                    background: val != null && val > 2.5 ? "#ef4444" : val != null && val > 0 ? "#f97316" : "#16a34a",
+                    background: val != null && val > 2.5 ? "var(--kv-negative)" : val != null && val > 0 ? "var(--kv-warning)" : "var(--kv-positive)",
                     opacity: isLatest ? 1 : 0.4,
                   }}
                   title={`${formatMonth(t.month)}: ${val?.toFixed(1) ?? "–"}%`}
@@ -440,7 +440,7 @@ export function InflationDashboard() {
                     className="flex-1 rounded-sm min-w-[3px] transition-all"
                     style={{
                       height: y.change != null ? `${Math.max(4, pct)}%` : "0%",
-                      background: (y.change ?? 0) > 2.5 ? "#ef4444" : (y.change ?? 0) > 0 ? "#f97316" : "#16a34a",
+                      background: (y.change ?? 0) > 2.5 ? "var(--kv-negative)" : (y.change ?? 0) > 0 ? "var(--kv-warning)" : "var(--kv-positive)",
                       opacity: isLatest ? 1 : 0.4,
                     }}
                     title={`${y.year}: ${y.change?.toFixed(1) ?? "–"}%`}

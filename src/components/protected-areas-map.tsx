@@ -55,11 +55,11 @@ function getFylke(kommunenummer: string): string | null {
 
 function vernLabel(pct: number): { text: string; color: string } {
   if (pct === 0) return { text: "Ingen vernet natur", color: "#6b7280" };
-  if (pct < 5) return { text: "Lav andel vernet natur", color: "#ef4444" };
-  if (pct < 15) return { text: "Under landsgjennomsnittet", color: "#f59e0b" };
-  if (pct < 25) return { text: "Rundt landsgjennomsnittet", color: "#16a34a" };
-  if (pct < 50) return { text: "Godt over landsgjennomsnittet", color: "#16a34a" };
-  return { text: "Blant de mest vernede i Norge", color: "#16a34a" };
+  if (pct < 5) return { text: "Lav andel vernet natur", color: "var(--kv-negative)" };
+  if (pct < 15) return { text: "Under landsgjennomsnittet", color: "var(--kv-warning)" };
+  if (pct < 25) return { text: "Rundt landsgjennomsnittet", color: "var(--kv-positive)" };
+  if (pct < 50) return { text: "Godt over landsgjennomsnittet", color: "var(--kv-positive)" };
+  return { text: "Blant de mest vernede i Norge", color: "var(--kv-positive)" };
 }
 
 // ─── Types ──────────────────────────────────────────────────
@@ -93,7 +93,7 @@ const VERNE_LABELS: Record<string, string> = {
 
 /** Color by percentage of kommune that is protected. Caps at 60% for color scale. */
 function vernePctColor(pct: number): string {
-  if (pct <= 0) return "#e3ddd4";
+  if (pct <= 0) return "var(--kv-muted-fill)";
   const t = Math.max(0, Math.min(1, pct / 60));
   return interpolateColor(t);
 }
@@ -351,7 +351,7 @@ export function ProtectedAreasMap() {
           <div className="bg-card/90 rounded-xl border px-3 py-2 shadow text-xs">
             <p className="font-semibold text-muted-foreground mb-1.5">Andel vernet (%)</p>
             <div className="flex items-center gap-1.5">
-              <div className="h-2.5 w-24 rounded-full" style={{ background: "linear-gradient(to right, #ef4444, #facc15, #16a34a)" }} />
+              <div className="h-2.5 w-24 rounded-full" style={{ background: "linear-gradient(to right, var(--kv-negative), #facc15, var(--kv-positive))" }} />
             </div>
             <div className="flex justify-between mt-0.5 text-muted-foreground/70">
               <span>0%</span>
@@ -474,8 +474,8 @@ export function ProtectedAreasMap() {
                         <span
                           className="inline-flex items-center text-xs font-semibold px-2.5 py-1 rounded-lg"
                           style={{
-                            background: aboveNational ? "#dcfce7" : "#fef2f2",
-                            color: aboveNational ? "#16a34a" : "#ef4444",
+                            background: aboveNational ? "var(--kv-positive-light)" : "var(--kv-negative-light)",
+                            color: aboveNational ? "var(--kv-positive)" : "var(--kv-negative)",
                           }}
                         >
                           {aboveNational ? "↑" : "↓"} {Math.abs(pct - stats.nationalPct).toFixed(1).replace(".", ",")} prosentpoeng {aboveNational ? "over" : "under"} landsgjennomsnittet

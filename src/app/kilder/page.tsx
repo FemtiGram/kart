@@ -131,7 +131,7 @@ export default function KilderPage() {
                     target="_blank"
                     rel="noopener noreferrer"
                     className="font-medium text-right hover:underline"
-                    style={{ color: "#003da5" }}
+                    style={{ color: "var(--kv-blue)" }}
                   >
                     {source.license}
                   </a>

@@ -181,8 +181,8 @@ const TYPE_META: Record<EnergyType, { label: string; color: string; icon: typeof
 const WIND_STATUS_META: Record<WindStatus, { label: string; color: string }> = {
   operational: { label: "I drift", color: "#0369a1" },
   construction: { label: "Under bygging", color: "#ca8a04" },
-  approved: { label: "Godkjent", color: "#16a34a" },
-  rejected: { label: "Avslått", color: "#dc2626" },
+  approved: { label: "Godkjent", color: "var(--kv-positive)" },
+  rejected: { label: "Avslått", color: "var(--kv-negative)" },
 };
 
 const MW_THRESHOLD = 10; // Default: only show plants >= 10 MW
@@ -1710,7 +1710,7 @@ export function EnergyMap() {
                         <div className="grid grid-cols-2 gap-3">
                           {hydroStation.discharge != null && (
                             <div className="flex items-baseline gap-1.5">
-                              <span className="text-2xl font-extrabold" style={{ color: "#0e7490" }}>
+                              <span className="text-2xl font-extrabold" style={{ color: "var(--kv-metric)" }}>
                                 {hydroStation.discharge.toFixed(1)}
                               </span>
                               <span className="text-xs text-muted-foreground">m³/s vannføring</span>
@@ -1718,7 +1718,7 @@ export function EnergyMap() {
                           )}
                           {hydroStation.waterLevel != null && (
                             <div className="flex items-baseline gap-1.5">
-                              <span className="text-2xl font-extrabold" style={{ color: "#0e7490" }}>
+                              <span className="text-2xl font-extrabold" style={{ color: "var(--kv-metric)" }}>
                                 {hydroStation.waterLevel.toFixed(2)}
                               </span>
                               <span className="text-xs text-muted-foreground">m vannstand</span>
@@ -1737,10 +1737,10 @@ export function EnergyMap() {
                                 style={{
                                   width: `${Math.min(100, Math.max(0, hydroStation.percentile.max ? (hydroStation.discharge / hydroStation.percentile.max) * 100 : 50))}%`,
                                   background: hydroStation.percentile.p75 && hydroStation.discharge > hydroStation.percentile.p75
-                                    ? "#dc2626"
+                                    ? "var(--kv-negative)"
                                     : hydroStation.percentile.p50 && hydroStation.discharge > hydroStation.percentile.p50
-                                      ? "#ca8a04"
-                                      : "#16a34a",
+                                      ? "var(--kv-warning)"
+                                      : "var(--kv-positive)",
                                 }}
                               />
                             </div>

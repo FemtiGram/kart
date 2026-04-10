@@ -108,7 +108,7 @@ export default function Home() {
       {/* Subtle background accents */}
       <div
         className="pointer-events-none absolute -top-32 -right-32 h-[500px] w-[500px] rounded-full opacity-[0.07]"
-        style={{ background: "radial-gradient(circle, #003da5 0%, transparent 70%)" }}
+        style={{ background: "radial-gradient(circle, var(--kv-blue) 0%, transparent 70%)" }}
       />
       <div
         className="pointer-events-none absolute top-1/2 -left-48 h-[400px] w-[400px] rounded-full opacity-[0.04]"

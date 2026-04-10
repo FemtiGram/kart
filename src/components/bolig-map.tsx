@@ -470,7 +470,7 @@ export function BoligMap() {
                 const price = nr ? getPrice(nr, boligtype, year) : null;
                 const t = price != null ? pricePercentile(price, sortedPrices) : -1;
                 return {
-                  fillColor: t >= 0 ? priceColor(t) : "#e3ddd4",
+                  fillColor: t >= 0 ? priceColor(t) : "var(--kv-muted-fill)",
                   fillOpacity: t >= 0 ? 0.7 : 0.15,
                   weight: selected?.kommunenummer === nr ? 2.5 : 0.5,
                   color: selected?.kommunenummer === nr ? "#24374c" : "white",

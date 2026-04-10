@@ -25,8 +25,8 @@ interface SelectedKommune {
 
 
 function incomeColor(income: number | undefined, min: number, max: number): string {
-  if (income == null || income === 0) return "#e3ddd4";
-  if (max === min) return "#16a34a";
+  if (income == null || income === 0) return "var(--kv-muted-fill)";
+  if (max === min) return "var(--kv-positive)";
   const t = Math.max(0, Math.min(1, (income - min) / (max - min)));
   return interpolateColor(t);
 }
@@ -353,7 +353,7 @@ export function IncomeMap() {
                       </div>
                       <div className="mt-3 flex items-center justify-between gap-2">
                         <span className="text-xs text-muted-foreground">#{rank} av {total} kommuner</span>
-                        <span className="text-xs font-semibold" style={{ color: above ? "#16a34a" : "#ef4444" }}>
+                        <span className="text-xs font-semibold" style={{ color: above ? "var(--kv-positive)" : "var(--kv-negative)" }}>
                           {above ? "+" : ""}{vsMedian.toFixed(1)}% vs. medianen
                         </span>
                       </div>
@@ -378,12 +378,12 @@ export function IncomeMap() {
           <div className="absolute top-3 right-3 z-[999] flex flex-col gap-2 items-end">
             <div
               className="bg-card rounded-xl shadow-md px-3 py-2.5"
-              style={{ border: "1px solid #e3ddd4" }}
+              style={{ border: "1px solid var(--kv-muted-fill)" }}
             >
               <p className="text-xs font-semibold text-muted-foreground mb-1.5">Inntekt etter skatt</p>
               <div
                 className="h-3 w-24 rounded-sm"
-                style={{ background: "linear-gradient(to right, #ef4444, #facc15, #16a34a)" }}
+                style={{ background: "linear-gradient(to right, var(--kv-negative), #facc15, var(--kv-positive))" }}
               />
               <div className="flex justify-between mt-0.5">
                 <span className="text-[10px] text-muted-foreground">{formatKr(min)}</span>

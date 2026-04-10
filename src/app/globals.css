@@ -51,11 +51,18 @@
 
   /* Brand colors */
   --kv-blue: #24374c;
-  --kv-green: #15803d;
   --kv-blue-dark: #0f1923;
   --kv-blue-light: #eae8e3;
-  --kv-green-dark: #166534;
-  --kv-green-light: #e6f7ec;
+
+  /* Semantic colors — use these instead of hardcoded hex */
+  --kv-positive: #16a34a;
+  --kv-positive-light: #f0fdf4;
+  --kv-negative: #dc2626;
+  --kv-negative-light: #fef2f2;
+  --kv-warning: #d97706;
+  --kv-warning-light: #fffbeb;
+  --kv-metric: #24374c;
+  --kv-muted-fill: #e3ddd4;
 }
 
 :root {
