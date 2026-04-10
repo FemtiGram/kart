@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, Mountain, DollarSign, Shield, Zap, Home as HomeIcon, BatteryCharging, Waves, Database, Globe, Code, TrendingUp } from "lucide-react";
+import { ArrowRight, Mountain, DollarSign, Shield, Zap, Home as HomeIcon, BatteryCharging, Waves, Database, Globe, Code, TrendingUp, BarChart3 } from "lucide-react";
 
 const featured = [
   {
@@ -66,12 +66,19 @@ const groups = [
         href: "/lonn",
         icon: DollarSign,
       },
+      {
+        title: "Prisvekst",
+        description: "Konsumprisindeksen med kategorifordeling og nordisk sammenligning.",
+        href: "/prisvekst",
+        icon: BarChart3,
+        cta: "Åpne oversikt",
+      },
     ],
   },
 ];
 
-function CardLink({ href, icon: Icon, title, description }: {
-  href: string; icon: typeof Mountain; title: string; description: string;
+function CardLink({ href, icon: Icon, title, description, cta = "Åpne kart" }: {
+  href: string; icon: typeof Mountain; title: string; description: string; cta?: string;
 }) {
   return (
     <Link
@@ -88,7 +95,7 @@ function CardLink({ href, icon: Icon, title, description }: {
         <p className="text-sm text-muted-foreground leading-relaxed">{description}</p>
       </div>
       <div className="flex items-center gap-1.5 mt-4 font-medium text-muted-foreground group-hover:text-foreground transition-colors text-xs">
-        Åpne kart
+        {cta}
         <ArrowRight className="h-3.5 w-3.5 -translate-x-1 group-hover:translate-x-0 transition-transform" />
       </div>
     </Link>
@@ -168,7 +175,7 @@ export default function Home() {
                 <Globe className="h-4 w-4 text-white" />
               </div>
               <div>
-                <p className="font-semibold text-sm">8 interaktive kart</p>
+                <p className="font-semibold text-sm">9 interaktive visualiseringer</p>
                 <p className="text-xs text-muted-foreground leading-relaxed mt-0.5">
                   Energi, boligpriser, lading, magasin, hytter, høyde, inntekt og verneområder
                 </p>
