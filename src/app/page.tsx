@@ -114,7 +114,7 @@ export default function Home() {
       {/* Hero section */}
       <section className="relative h-[75svh] min-h-[500px] overflow-hidden">
         <Image
-          src="/img/banner.jpg"
+          src="/img/banner_1920.webp"
           alt="Lofoten, Norge"
           fill
           priority
