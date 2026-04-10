@@ -57,7 +57,7 @@ export async function GET() {
         const base = rI * rStride + bI * bStride + tI * tStride;
         const price = values[base + priceIdx * cStride] ?? null;
         const count = values[base + countIdx * cStride] ?? null;
-        if (price !== null || count !== null) {
+        if (price !== null) {
           years[year] = { price, count };
           hasAny = true;
         }
