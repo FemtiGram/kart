@@ -89,9 +89,25 @@ const sources = [
   },
 ];
 
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "DataCatalog",
+  name: "Datakilder brukt i Datakart",
+  description: "Oversikt over alle offentlige datakilder, lisenser og attribusjon brukt i Datakart.",
+  url: "https://datakart.no/kilder",
+  dataset: sources.map((s) => ({
+    "@type": "Dataset",
+    name: s.name,
+    description: s.description,
+    license: s.licenseUrl,
+    url: s.url,
+  })),
+};
+
 export default function KilderPage() {
   return (
     <div className="min-h-[calc(100svh-57px)] bg-background">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <div className="container mx-auto px-6 md:px-16 py-12 md:py-20 max-w-3xl">
         <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight" style={{ color: "#24374c" }}>
           Datakilder og lisenser
