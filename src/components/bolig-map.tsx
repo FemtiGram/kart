@@ -200,6 +200,7 @@ export function BoligMap() {
   // Comparison
   const [compareMode, setCompareMode] = useState(false);
   const [compareQuery, setCompareQuery] = useState("");
+  const [compareHighlight, setCompareHighlight] = useState(-1);
   const [compareTarget, setCompareTarget] = useState<SelectedKommune | null>(null);
   const [showCompare, setShowCompare] = useState(false);
 
@@ -623,13 +624,31 @@ export function BoligMap() {
                   <input
                     autoFocus
                     value={compareQuery}
-                    onChange={(e) => setCompareQuery(e.target.value)}
+                    onChange={(e) => { setCompareQuery(e.target.value); setCompareHighlight(-1); }}
+                    onKeyDown={(e) => {
+                      if (compareResults.length === 0) return;
+                      if (e.key === "ArrowDown") { e.preventDefault(); setCompareHighlight((i) => Math.min(i + 1, compareResults.length - 1)); }
+                      else if (e.key === "ArrowUp") { e.preventDefault(); setCompareHighlight((i) => Math.max(i - 1, 0)); }
+                      else if (e.key === "Enter" && compareHighlight >= 0) {
+                        e.preventDefault();
+                        const k = compareResults[compareHighlight];
+                        const c = centroids.get(k.kommunenummer);
+                        if (c) {
+                          setCompareTarget({ kommunenummer: k.kommunenummer, kommunenavn: k.kommunenavn, lat: c.lat, lon: c.lon });
+                          setShowCompare(true);
+                          setCompareMode(false);
+                          setCompareQuery("");
+                          setCompareHighlight(-1);
+                        }
+                      }
+                      else if (e.key === "Escape") { setCompareMode(false); setCompareQuery(""); setCompareHighlight(-1); }
+                    }}
                     placeholder="Sammenlign med..."
                     className="w-full bg-muted border rounded-xl px-3 py-2.5 text-sm outline-none placeholder:text-muted-foreground text-[16px] sm:text-sm"
                   />
                   {compareResults.length > 0 && (
                     <ul className="absolute top-full mt-1 left-0 right-0 bg-background rounded-xl shadow-xl border overflow-hidden z-50">
-                      {compareResults.map((k) => (
+                      {compareResults.map((k, i) => (
                         <li key={k.kommunenummer}>
                           <button
                             onMouseDown={() => {
@@ -639,9 +658,10 @@ export function BoligMap() {
                                 setShowCompare(true);
                                 setCompareMode(false);
                                 setCompareQuery("");
+                                setCompareHighlight(-1);
                               }
                             }}
-                            className="w-full text-left px-3 py-2.5 text-sm hover:bg-muted transition-colors border-b last:border-0"
+                            className={`w-full text-left px-3 py-2.5 text-sm transition-colors border-b last:border-0 ${compareHighlight === i ? "bg-muted" : "hover:bg-muted"}`}
                           >
                             <p className="font-medium">{k.kommunenavn}</p>
                             <p className="text-[10px] text-muted-foreground">{getFylke(k.kommunenummer)}</p>
