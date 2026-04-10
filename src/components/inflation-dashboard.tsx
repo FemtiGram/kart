@@ -8,6 +8,8 @@ import {
   Info, ChevronDown, ChevronUp,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { Area, AreaChart, Bar, BarChart, CartesianGrid, XAxis, YAxis, ReferenceLine, Cell } from "recharts";
+import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
 
 // ─── Types ──────────────────────────────────────────────────
 
@@ -90,6 +92,16 @@ const NORDIC_FLAGS: Record<string, string> = {
 
 // ─── Helpers ────────────────────────────────────────────────
 
+function targetBadge(val: number | null, target: number): { text: string; className: string } {
+  if (val == null) return { text: "–", className: "bg-muted text-muted-foreground" };
+  const diff = val - target;
+  if (Math.abs(diff) <= 0.3) return { text: `Nær målet (${target} %)`, className: "bg-green-50 text-green-700" };
+  if (diff > 1.5) return { text: `Godt over målet (${target} %)`, className: "bg-red-50 text-red-700" };
+  if (diff > 0) return { text: `Over målet (${target} %)`, className: "bg-orange-50 text-orange-700" };
+  if (diff < -1.5) return { text: `Godt under målet (${target} %)`, className: "bg-blue-50 text-blue-700" };
+  return { text: `Under målet (${target} %)`, className: "bg-blue-50 text-blue-700" };
+}
+
 function changeColor(val: number | null): string {
   if (val == null) return "text-muted-foreground";
   if (val > 4) return "text-red-600";
@@ -111,6 +123,16 @@ function formatMonth(code: string): string {
   const months = ["jan", "feb", "mar", "apr", "mai", "jun", "jul", "aug", "sep", "okt", "nov", "des"];
   return `${months[parseInt(m) - 1]} ${y.slice(2)}`;
 }
+
+// ─── Chart configs ──────────────────────────────────────────
+
+const trendChartConfig = {
+  value: { label: "Verdi", color: "var(--kv-blue)" },
+} satisfies ChartConfig;
+
+const yearlyChartConfig = {
+  change: { label: "Prisvekst", color: "var(--kv-warning)" },
+} satisfies ChartConfig;
 
 // ─── Main component ─────────────────────────────────────────
 
@@ -164,25 +186,13 @@ export function InflationDashboard() {
 
   const { current, categories, trend, nordic, yearly } = data;
 
-  // Trend chart data
-  const trendValues = trend.map((t) =>
-    trendView === "kpi" ? t.total : trendView === "jae" ? t.jae : t.rate
-  );
-  const trendMax = Math.max(...trendValues.filter((v): v is number => v != null), 1);
-  const trendMin = Math.min(...trendValues.filter((v): v is number => v != null), 0);
-  const trendRange = trendMax - trendMin || 1;
-
-  // Yearly chart
-  const yearlyMax = Math.max(...yearly.map((y) => y.change ?? 0), 1);
-  const yearlyMin = Math.min(...yearly.map((y) => y.change ?? 0), 0);
-  const yearlyRange = yearlyMax - yearlyMin || 1;
 
   return (
     <div className="space-y-8">
       {/* Hero stat cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {/* KPI */}
-        <div className="rounded-2xl border bg-card p-5 shadow-sm">
+        <div className="rounded-2xl border bg-card p-5 shadow-sm flex flex-col">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <div className="flex items-center justify-center h-8 w-8 rounded-lg" style={{ background: "#24374c" }}>
@@ -194,21 +204,26 @@ export function InflationDashboard() {
               <Info className="h-3.5 w-3.5" />
             </button>
           </div>
-          <p className={`text-3xl font-extrabold ${changeColor(current.total)}`}>
+          <p className="text-3xl font-extrabold" style={{ color: "var(--kv-blue)" }}>
             {current.total != null ? `${current.total.toFixed(1)}%` : "–"}
+            {current.total1m != null && (
+              <span className={`text-sm font-semibold ml-1.5 ${current.total1m >= 0 ? "text-red-600" : "text-green-600"}`}>
+                ({current.total1m >= 0 ? "+" : ""}{current.total1m.toFixed(1)}%)
+              </span>
+            )}
           </p>
           <p className="text-xs text-muted-foreground mt-1">
             12-månedersendring, {current.month}
           </p>
-          {current.total1m != null && (
-            <span className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-semibold mt-2 ${current.total1m >= 0 ? "bg-red-50 text-red-600" : "bg-green-50 text-green-600"}`}>
-              {current.total1m >= 0 ? "+" : ""}{current.total1m.toFixed(1)}% siste måned
-            </span>
-          )}
+          <div className="mt-auto pt-2">
+            {(() => { const b = targetBadge(current.total, 2); return (
+              <span className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-semibold ${b.className}`}>{b.text}</span>
+            ); })()}
+          </div>
         </div>
 
         {/* KPI-JAE */}
-        <div className="rounded-2xl border bg-card p-5 shadow-sm">
+        <div className="rounded-2xl border bg-card p-5 shadow-sm flex flex-col">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <div className="flex items-center justify-center h-8 w-8 rounded-lg" style={{ background: "#24374c" }}>
@@ -220,19 +235,24 @@ export function InflationDashboard() {
               <Info className="h-3.5 w-3.5" />
             </button>
           </div>
-          <p className={`text-3xl font-extrabold ${changeColor(current.jae)}`}>
+          <p className="text-3xl font-extrabold" style={{ color: "var(--kv-blue)" }}>
             {current.jae != null ? `${current.jae.toFixed(1)}%` : "–"}
           </p>
           <p className="text-xs text-muted-foreground mt-1">
             Justert for avgifter og energi
           </p>
-          <span className="inline-flex items-center rounded-md bg-muted px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground mt-2">
-            Norges Banks målestokk
-          </span>
+          <div className="flex items-center gap-1.5 mt-auto pt-2">
+            {(() => { const b = targetBadge(current.jae, 2); return (
+              <span className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-semibold ${b.className}`}>{b.text}</span>
+            ); })()}
+            <span className="inline-flex items-center rounded-md bg-muted px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground">
+              Norges Bank
+            </span>
+          </div>
         </div>
 
         {/* Styringsrente */}
-        <div className="rounded-2xl border bg-card p-5 shadow-sm">
+        <div className="rounded-2xl border bg-card p-5 shadow-sm flex flex-col">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <div className="flex items-center justify-center h-8 w-8 rounded-lg" style={{ background: "#24374c" }}>
@@ -250,6 +270,13 @@ export function InflationDashboard() {
           <p className="text-xs text-muted-foreground mt-1">
             Norges Bank
           </p>
+          <div className="mt-auto pt-2">
+            {current.rate != null && current.jae != null && (
+              <span className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-semibold ${current.jae > 2.5 ? "bg-orange-50 text-orange-700" : "bg-green-50 text-green-700"}`}>
+                {current.jae > 2.5 ? "Holder igjen prisvekst" : "Prisveksten er under kontroll"}
+              </span>
+            )}
+          </div>
         </div>
       </div>
 
@@ -398,30 +425,22 @@ export function InflationDashboard() {
           </div>
         </div>
         <div className="rounded-2xl border bg-card p-4 shadow-sm">
-          <div className="flex items-end gap-[3px] h-32">
-            {trend.map((t, i) => {
-              const val = trendView === "kpi" ? t.total : trendView === "jae" ? t.jae : t.rate;
-              // Normalize: 0% maps to bottom, max maps to top
-              const pct = val != null ? ((val - trendMin) / trendRange) * 100 : 0;
-              const isLatest = i === trend.length - 1;
-              return (
-                <div
-                  key={t.month}
-                  className="flex-1 rounded-sm min-w-[3px] transition-all"
-                  style={{
-                    height: val != null ? `${Math.max(4, pct)}%` : "0%",
-                    background: val != null && val > 2.5 ? "var(--kv-negative)" : val != null && val > 0 ? "var(--kv-warning)" : "var(--kv-positive)",
-                    opacity: isLatest ? 1 : 0.4,
-                  }}
-                  title={`${formatMonth(t.month)}: ${val?.toFixed(1) ?? "–"}%`}
-                />
-              );
-            })}
-          </div>
-          <div className="flex justify-between mt-1">
-            <span className="text-[10px] text-muted-foreground">{trend.length > 0 ? formatMonth(trend[0].month) : ""}</span>
-            <span className="text-[10px] text-muted-foreground">{trend.length > 0 ? formatMonth(trend[trend.length - 1].month) : ""}</span>
-          </div>
+          <ChartContainer config={trendChartConfig} className="aspect-auto h-40 w-full">
+            <AreaChart data={trend.map((t) => ({ month: formatMonth(t.month), value: trendView === "kpi" ? t.total : trendView === "jae" ? t.jae : t.rate }))} margin={{ top: 4, right: 4, bottom: 0, left: -12 }}>
+              <defs>
+                <linearGradient id="trendFill" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="var(--kv-blue)" stopOpacity={0.3} />
+                  <stop offset="100%" stopColor="var(--kv-blue)" stopOpacity={0.02} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid vertical={false} strokeDasharray="3 3" />
+              <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={8} interval="preserveStartEnd" minTickGap={40} />
+              <YAxis tickLine={false} axisLine={false} tickMargin={4} tickFormatter={(v: number) => `${v}%`} domain={["dataMin - 0.5", "dataMax + 0.5"]} />
+              {trendView !== "rente" && <ReferenceLine y={2.5} stroke="var(--kv-negative)" strokeDasharray="4 4" strokeOpacity={0.5} label={{ value: "2,5 %", position: "right", fontSize: 10, fill: "var(--kv-negative)" }} />}
+              <ChartTooltip content={<ChartTooltipContent labelFormatter={(label) => label as string} formatter={(value) => [`${(value as number)?.toFixed(1)}%`, trendView === "kpi" ? "KPI" : trendView === "jae" ? "KPI-JAE" : "Rente"]} />} />
+              <Area dataKey="value" type="monotone" stroke="var(--kv-blue)" strokeWidth={2} fill="url(#trendFill)" dot={false} activeDot={{ r: 4, fill: "var(--kv-blue)", stroke: "white", strokeWidth: 2 }} />
+            </AreaChart>
+          </ChartContainer>
         </div>
       </div>
 
@@ -430,28 +449,20 @@ export function InflationDashboard() {
         <div>
           <h2 className="text-lg font-bold mb-3" style={{ color: "#24374c" }}>Årlig prisvekst ({yearly[0].year}–{yearly[yearly.length - 1].year})</h2>
           <div className="rounded-2xl border bg-card p-4 shadow-sm">
-            <div className="flex items-end gap-[3px] h-24">
-              {yearly.map((y, i) => {
-                const pct = y.change != null ? ((y.change - yearlyMin) / yearlyRange) * 100 : 0;
-                const isLatest = i === yearly.length - 1;
-                return (
-                  <div
-                    key={y.year}
-                    className="flex-1 rounded-sm min-w-[3px] transition-all"
-                    style={{
-                      height: y.change != null ? `${Math.max(4, pct)}%` : "0%",
-                      background: (y.change ?? 0) > 2.5 ? "var(--kv-negative)" : (y.change ?? 0) > 0 ? "var(--kv-warning)" : "var(--kv-positive)",
-                      opacity: isLatest ? 1 : 0.4,
-                    }}
-                    title={`${y.year}: ${y.change?.toFixed(1) ?? "–"}%`}
-                  />
-                );
-              })}
-            </div>
-            <div className="flex justify-between mt-1">
-              <span className="text-[10px] text-muted-foreground">{yearly[0].year}</span>
-              <span className="text-[10px] text-muted-foreground">{yearly[yearly.length - 1].year}</span>
-            </div>
+            <ChartContainer config={yearlyChartConfig} className="aspect-auto h-36 w-full">
+              <BarChart data={yearly.map((y) => ({ year: y.year, change: y.change }))} margin={{ top: 4, right: 4, bottom: 0, left: -12 }}>
+                <CartesianGrid vertical={false} strokeDasharray="3 3" />
+                <XAxis dataKey="year" tickLine={false} axisLine={false} tickMargin={8} interval="preserveStartEnd" minTickGap={30} />
+                <YAxis tickLine={false} axisLine={false} tickMargin={4} tickFormatter={(v: number) => `${v}%`} />
+                <ReferenceLine y={2.5} stroke="var(--kv-negative)" strokeDasharray="4 4" strokeOpacity={0.5} label={{ value: "2,5 %", position: "right", fontSize: 10, fill: "var(--kv-negative)" }} />
+                <ChartTooltip content={<ChartTooltipContent labelFormatter={(label) => `${label}`} formatter={(value) => [`${(value as number)?.toFixed(1)}%`, "Prisvekst"]} />} />
+                <Bar dataKey="change" radius={[4, 4, 0, 0]}>
+                  {yearly.map((y) => (
+                    <Cell key={y.year} fill={(y.change ?? 0) > 2.5 ? "var(--kv-negative)" : (y.change ?? 0) > 0 ? "var(--kv-warning)" : "var(--kv-positive)"} fillOpacity={0.8} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ChartContainer>
           </div>
         </div>
       )}
