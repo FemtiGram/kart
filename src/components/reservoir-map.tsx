@@ -385,7 +385,7 @@ export function ReservoirMap() {
                 </SheetHeader>
 
                 {/* Layer 1 — Identity */}
-                <span className="text-xs font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full text-white bg-cyan-700">
+                <span className="text-xs font-semibold px-1.5 py-0.5 rounded-full text-white bg-cyan-700">
                   Magasin
                 </span>
                 <p className="font-bold text-lg leading-snug mt-1">{selected.name}</p>

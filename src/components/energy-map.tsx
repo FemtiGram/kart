@@ -1180,14 +1180,14 @@ export function EnergyMap() {
                 </p>
                 <div className="flex items-center gap-1.5 shrink-0">
                   <span
-                    className="text-xs font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full text-white"
+                    className="text-xs font-semibold px-1.5 py-0.5 rounded-full text-white"
                     style={{ background: selected.type === "vind" && selected.windStatus ? WIND_STATUS_META[selected.windStatus].color : TYPE_META[selected.type].color }}
                   >
                     {TYPE_META[selected.type].label}
                   </span>
                   {selected.type === "vind" && selected.windStatus && selected.windStatus !== "operational" && (
                     <span
-                      className="text-xs font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full text-white"
+                      className="text-xs font-semibold px-1.5 py-0.5 rounded-full text-white"
                       style={{ background: WIND_STATUS_META[selected.windStatus].color }}
                     >
                       {WIND_STATUS_META[selected.windStatus].label}
@@ -1231,10 +1231,10 @@ export function EnergyMap() {
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
                 <div className="flex items-center gap-1.5 mb-0.5">
-                  <span className="text-xs font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full text-white" style={{ background: OILGAS_COLOR }}>
+                  <span className="text-xs font-semibold px-1.5 py-0.5 rounded-full text-white" style={{ background: OILGAS_COLOR }}>
                     Olje & gass
                   </span>
-                  <span className="text-xs font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-muted text-foreground">
+                  <span className="text-xs font-semibold px-1.5 py-0.5 rounded-full bg-muted text-foreground">
                     {selectedOilGas.isSurface ? "Overflate" : "Undervanns"}
                   </span>
                 </div>
@@ -1291,17 +1291,17 @@ export function EnergyMap() {
                 </SheetHeader>
 
                 <div className="flex items-center gap-1.5 mb-1">
-                  <span className="text-xs font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full text-white" style={{ background: OILGAS_COLOR }}>
+                  <span className="text-xs font-semibold px-1.5 py-0.5 rounded-full text-white" style={{ background: OILGAS_COLOR }}>
                     Olje & gass
                   </span>
-                  <span className="text-xs font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-muted text-foreground">
+                  <span className="text-xs font-semibold px-1.5 py-0.5 rounded-full bg-muted text-foreground">
                     {selectedOilGas.isSurface ? "Overflate" : "Undervanns"}
                   </span>
                   {selectedOilGas.phase === "IN SERVICE" && (
-                    <span className="text-xs font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-green-100 text-green-800">I drift</span>
+                    <span className="text-xs font-semibold px-1.5 py-0.5 rounded-full bg-green-100 text-green-800">I drift</span>
                   )}
                   {selectedOilGas.phase === "REMOVED" && (
-                    <span className="text-xs font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-red-100 text-red-800">Fjernet</span>
+                    <span className="text-xs font-semibold px-1.5 py-0.5 rounded-full bg-red-100 text-red-800">Fjernet</span>
                   )}
                 </div>
                 <p className="font-bold text-lg leading-snug">{selectedOilGas.name}</p>
@@ -1471,10 +1471,10 @@ export function EnergyMap() {
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
                 <div className="flex items-center gap-1.5 mb-0.5">
-                  <span className="text-xs font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full text-white" style={{ background: HAVVIND_COLOR }}>
+                  <span className="text-xs font-semibold px-1.5 py-0.5 rounded-full text-white" style={{ background: HAVVIND_COLOR }}>
                     Havvind · Utredning
                   </span>
-                  <span className="text-xs font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-muted text-foreground">
+                  <span className="text-xs font-semibold px-1.5 py-0.5 rounded-full bg-muted text-foreground">
                     {selectedHavvind.typeAnlegg}
                   </span>
                 </div>
@@ -1529,10 +1529,10 @@ export function EnergyMap() {
                 </SheetHeader>
 
                 <div className="flex items-center gap-1.5 mb-1">
-                  <span className="text-xs font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full text-white" style={{ background: HAVVIND_COLOR }}>
+                  <span className="text-xs font-semibold px-1.5 py-0.5 rounded-full text-white" style={{ background: HAVVIND_COLOR }}>
                     Havvind · Utredning
                   </span>
-                  <span className="text-xs font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-muted text-foreground">
+                  <span className="text-xs font-semibold px-1.5 py-0.5 rounded-full bg-muted text-foreground">
                     {selectedHavvind.typeAnlegg}
                   </span>
                 </div>
@@ -1610,14 +1610,14 @@ export function EnergyMap() {
                 {/* Layer 1 — Identity */}
                 <div className="flex items-center gap-1.5 mb-1">
                   <span
-                    className="text-xs font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full text-white"
+                    className="text-xs font-semibold px-1.5 py-0.5 rounded-full text-white"
                     style={{ background: selected.type === "vind" && selected.windStatus ? WIND_STATUS_META[selected.windStatus].color : TYPE_META[selected.type].color }}
                   >
                     {TYPE_META[selected.type].label}
                   </span>
                   {selected.windStatus && selected.windStatus !== "operational" && (
                     <span
-                      className="text-xs font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full text-white"
+                      className="text-xs font-semibold px-1.5 py-0.5 rounded-full text-white"
                       style={{ background: WIND_STATUS_META[selected.windStatus].color }}
                     >
                       {WIND_STATUS_META[selected.windStatus].label}
@@ -1791,11 +1791,11 @@ export function EnergyMap() {
                 {/* Pipeline detail */}
                 <div>
                   <div className="flex items-center gap-1.5 mb-1">
-                    <span className="text-xs font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full text-white" style={{ background: selectedPipeline.medium === "Gas" ? "#ca8a04" : OILGAS_COLOR }}>
+                    <span className="text-xs font-semibold px-1.5 py-0.5 rounded-full text-white" style={{ background: selectedPipeline.medium === "Gas" ? "#ca8a04" : OILGAS_COLOR }}>
                       {selectedPipeline.medium ?? "Ukjent"}
                     </span>
                     {selectedPipeline.phase && (
-                      <span className="text-xs font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-muted text-foreground">
+                      <span className="text-xs font-semibold px-1.5 py-0.5 rounded-full bg-muted text-foreground">
                         {selectedPipeline.phase === "IN SERVICE" ? "I drift" : selectedPipeline.phase === "DECOMMISSIONED" ? "Nedlagt" : selectedPipeline.phase}
                       </span>
                     )}

@@ -820,7 +820,7 @@ export function BoligMap() {
                         <div className="flex items-center justify-between mb-2">
                           <p className="text-xs font-semibold text-muted-foreground">Prisutvikling ({years[0]}–{years[years.length - 1]})</p>
                           {totalChange != null && (
-                            <span className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-semibold ${totalChange >= 0 ? "bg-green-50 text-green-700" : "bg-red-50 text-red-600"}`}>
+                            <span className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-xs font-semibold ${totalChange >= 0 ? "bg-green-50 text-green-700" : "bg-red-50 text-red-600"}`}>
                               {totalChange >= 0 ? "+" : ""}{totalChange.toFixed(0)}%
                             </span>
                           )}
@@ -966,7 +966,7 @@ export function BoligMap() {
                   <div className="mt-4 pt-4 border-t">
                     <p className="text-xs font-semibold text-muted-foreground mb-2">Alle boligtyper</p>
                     <div className="space-y-1">
-                      <div className="grid grid-cols-[1fr_auto_auto_auto] gap-2 text-[10px] font-semibold text-muted-foreground px-1 mb-1">
+                      <div className="grid grid-cols-[1fr_auto_auto_auto] gap-2 text-xs font-semibold text-muted-foreground px-1 mb-1">
                         <span />
                         <span className="text-right w-20">{a.kommunenavn}</span>
                         <span className="text-right w-20">{b.kommunenavn}</span>
@@ -989,7 +989,7 @@ export function BoligMap() {
                             <span className="text-xs font-bold tabular-nums text-right w-20" style={{ color: pB ? "var(--kv-blue)" : undefined }}>
                               {pB?.toLocaleString("nb-NO") ?? "–"}
                             </span>
-                            <span className={`text-[10px] font-semibold tabular-nums text-right w-16 ${d != null ? (d > 0 ? "text-orange-600" : d < 0 ? "text-green-600" : "text-muted-foreground") : "text-muted-foreground"}`}>
+                            <span className={`text-xs font-semibold tabular-nums text-right w-16 ${d != null ? (d > 0 ? "text-orange-600" : d < 0 ? "text-green-600" : "text-muted-foreground") : "text-muted-foreground"}`}>
                               {d != null ? `${d > 0 ? "+" : ""}${d.toLocaleString("nb-NO")}` : "–"}
                             </span>
                           </button>
@@ -1012,7 +1012,7 @@ export function BoligMap() {
                               <div className="flex items-center justify-between mb-1">
                                 <span className="text-[10px] font-medium truncate">{item.name}</span>
                                 {change != null && (
-                                  <span className={`text-[10px] font-semibold ${change >= 0 ? "text-green-600" : "text-red-500"}`}>
+                                  <span className={`text-xs font-semibold ${change >= 0 ? "text-green-600" : "text-red-500"}`}>
                                     {change >= 0 ? "+" : ""}{change.toFixed(0)}%
                                   </span>
                                 )}
@@ -1063,16 +1063,16 @@ export function BoligMap() {
                             <p className="text-xs font-medium mb-1">{item.name}</p>
                             <div className="flex items-center justify-between">
                               <span className="text-[10px] text-muted-foreground">Nasjonalt</span>
-                              <span className="text-[10px] font-semibold">#{item.rank.rank} av {item.rank.total}</span>
+                              <span className="text-xs font-semibold">#{item.rank.rank} av {item.rank.total}</span>
                             </div>
                             <div className="flex items-center justify-between">
                               <span className="text-[10px] text-muted-foreground">Dyrere enn</span>
-                              <span className="text-[10px] font-semibold">{pct}%</span>
+                              <span className="text-xs font-semibold">{pct}%</span>
                             </div>
                             {fy && fR.total > 1 && (
                               <div className="flex items-center justify-between">
                                 <span className="text-[10px] text-muted-foreground">{fy}</span>
-                                <span className="text-[10px] font-semibold">#{fR.rank} av {fR.total}</span>
+                                <span className="text-xs font-semibold">#{fR.rank} av {fR.total}</span>
                               </div>
                             )}
                           </div>

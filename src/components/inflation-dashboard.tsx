@@ -217,7 +217,7 @@ export function InflationDashboard() {
           </p>
           <div className="mt-auto pt-2">
             {(() => { const b = targetBadge(current.total, 2); return (
-              <span className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-semibold ${b.className}`}>{b.text}</span>
+              <span className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-xs font-semibold ${b.className}`}>{b.text}</span>
             ); })()}
           </div>
         </div>
@@ -243,7 +243,7 @@ export function InflationDashboard() {
           </p>
           <div className="flex items-center gap-1.5 mt-auto pt-2">
             {(() => { const b = targetBadge(current.jae, 2); return (
-              <span className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-semibold ${b.className}`}>{b.text}</span>
+              <span className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-xs font-semibold ${b.className}`}>{b.text}</span>
             ); })()}
             <span className="inline-flex items-center rounded-md bg-muted px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground">
               Norges Bank
@@ -272,7 +272,7 @@ export function InflationDashboard() {
           </p>
           <div className="mt-auto pt-2">
             {current.rate != null && current.jae != null && (
-              <span className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-semibold ${current.jae > 2.5 ? "bg-orange-50 text-orange-700" : "bg-green-50 text-green-700"}`}>
+              <span className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-xs font-semibold ${current.jae > 2.5 ? "bg-orange-50 text-orange-700" : "bg-green-50 text-green-700"}`}>
                 {current.jae > 2.5 ? "Holder igjen prisvekst" : "Prisveksten er under kontroll"}
               </span>
             )}
