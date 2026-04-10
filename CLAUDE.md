@@ -10,6 +10,7 @@ A portfolio project showcasing Norwegian open geodata on interactive maps. Built
 - **React:** 19.2.4
 - **Maps:** Leaflet 1.9.4 + react-leaflet 5.0.0 + react-leaflet-cluster
 - **Styling:** Tailwind CSS 4 + shadcn/ui (base-ui)
+- **Charts:** Recharts (via shadcn/ui chart components)
 - **Tiles:** Kartverket WMTS (topo + topograatone + sjokartraster) + OpenTopoMap (terreng)
 - **Icons:** lucide-react
 
@@ -27,6 +28,7 @@ src/app/
   map/page.tsx          — Elevation + weather map
   energi/page.tsx       — Energy (wind + hydro) map
   magasin/page.tsx      — Reservoir monitor map
+  prisvekst/page.tsx    — Inflation dashboard (KPI, categories, trends)
   vindkraft/page.tsx    — Wind power plants map (standalone)
   api/
     bolig/route.ts      — SSB housing price data (table 06035)
@@ -39,12 +41,14 @@ src/app/
     reservoirs/route.ts — NVE reservoir polygons (1h cache)
     charging-status/route.ts — Enova real-time WebSocket token (requires ENOVA_RT_API_KEY)
     hydro-station/route.ts — NVE HydAPI live river data (requires API key)
+    inflation/route.ts  — SSB KPI + KPI-JAE + Norges Bank rate + Eurostat HICP
 
 src/components/
   navbar.tsx            — Shared nav with grouped dropdowns (Energi/Natur/Samfunn) + mobile sheet
   *-map.tsx             — Map components (one per page)
   *-map-loader.tsx      — Dynamic import wrappers (ssr: false)
-  ui/                   — shadcn/ui primitives
+  inflation-dashboard.tsx — Prisvekst dashboard (Recharts charts, target badges, category breakdown)
+  ui/                   — shadcn/ui primitives (includes chart.tsx for Recharts wrappers)
 
 src/lib/
   fylker.ts             — Hardcoded 15 counties with coords + zoom, isInNorway(), OSLO default
@@ -151,6 +155,16 @@ All maps use a **compact floating card + expandable bottom Sheet** pattern:
 - Red = low/bad, green = high/good
 - Optional "Bakgrunnskart" toggle (gråtone base layer)
 - Skeleton shimmer loading on initial data fetch
+- **Income comparison:** "Sammenlign" button on compact card opens inline search or accepts map click for second kommune. Two-column comparison sheet shows income diff, percentile bars, and vs-median stats (same pattern as bolig comparison). Uses refs (`compareModeRef`, `selectedRef`) for GeoJSON click handlers to avoid stale closures.
+
+### Inflation dashboard (prisvekst):
+- **Not a map** — standalone dashboard page at `/prisvekst`
+- Hero stat cards: KPI, KPI-JAE, Styringsrente with contextual target badges ("Over målet", "Nær målet") relative to Norges Bank's 2% target
+- Category breakdown: 12 KPI categories with expandable detail rows
+- Trend chart: Recharts `AreaChart` with gradient fill, 2.5% reference line, KPI/KPI-JAE/Rente toggle
+- Yearly chart: Recharts `BarChart` with color-coded bars (green/amber/red by threshold)
+- Nordic comparison: horizontal bars for NO/SE/DK/FI/EU (Eurostat HICP)
+- FAQ section with JSON-LD FAQPage schema
 
 ### Energy map specifics:
 - **Sjøkart overlay:** Optional Kartverket nautical chart layer (sjokartraster), toggled in tile switcher, off by default
@@ -251,6 +265,9 @@ Every new page MUST be rigged for Google Search and AI search (ChatGPT, Perplexi
 | Kommune boundaries | GitHub (robhop/fylker-og-kommuner) | Build-time static GeoJSON |
 | Address search | Geonorge adresser API | Per-query |
 | Kommune list | Geonorge kommuneinfo API | Loaded once on mount |
+| Inflation (KPI) | SSB tabell 03013 + 05327 | Loaded once on mount |
+| Policy rate | Norges Bank API | Loaded once on mount |
+| Nordic HICP | Eurostat | Loaded once on mount |
 | Fylker | Hardcoded in fylker.ts | Static (15 counties) |
 
 ## Working Efficiently

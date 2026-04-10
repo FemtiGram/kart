@@ -16,8 +16,9 @@ Live at: [datakart.no](https://datakart.no)
 | Ladestasjoner | `/lading` | All EV charging stations in Norway | [docs/maps/lading.md](docs/maps/lading.md) |
 | Turisthytter | `/hytter` | Mountain huts and wilderness cabins | [docs/maps/hytter.md](docs/maps/hytter.md) |
 | Høydekart | `/map` | Click anywhere for elevation (m.o.h.) and live weather | [docs/maps/hoyde.md](docs/maps/hoyde.md) |
-| Inntektskart | `/lonn` | Choropleth: median household income per municipality (2024) | [docs/maps/inntekt.md](docs/maps/inntekt.md) |
+| Inntektskart | `/lonn` | Choropleth: median household income per municipality with kommune comparison | [docs/maps/inntekt.md](docs/maps/inntekt.md) |
 | Verneområder | `/vern` | Choropleth: protected nature area per municipality (km²) | [docs/maps/vern.md](docs/maps/vern.md) |
+| Prisvekst | `/prisvekst` | Inflation dashboard: KPI, categories, trends, Nordic comparison | |
 
 ---
 
@@ -25,6 +26,7 @@ Live at: [datakart.no](https://datakart.no)
 
 - **Next.js 16** (Turbopack) + **React 19** + **TypeScript**
 - **Leaflet 1.9** + **react-leaflet 5** + **react-leaflet-cluster** — interactive maps with clustering
+- **Recharts** (via shadcn/ui chart components) — charts
 - **Tailwind CSS 4** + **shadcn/ui** (Base UI) — styling
 - **Lucide React** — icons
 - **Vercel** — hosting (free tier, 10-second serverless timeout)
@@ -79,6 +81,9 @@ The seed scripts are also run automatically as a `prebuild` hook when deploying.
 | River observations | NVE HydAPI | Per-request |
 | Housing prices | SSB table 06035 (Selveierboliger) | 24-hour server cache |
 | Income | SSB InntektStruk13 | 24-hour server cache |
+| Inflation (KPI) | SSB tables 03013 + 05327 | Loaded once on mount |
+| Policy rate | Norges Bank API | Loaded once on mount |
+| Nordic inflation | Eurostat HICP | Loaded once on mount |
 | Protected areas | SSB table 08936 | 24-hour server cache |
 | Weather | MET.no locationforecast | 30-minute server cache |
 | Elevation | Kartverket høyde-API | Per-request |

@@ -1,16 +1,17 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { MapContainer, GeoJSON, TileLayer } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import type { GeoJsonObject, Feature } from "geojson";
 import type { Layer } from "leaflet";
-import { Loader2, X, Info, LocateFixed, Map as MapIcon, ChevronUp, Navigation, ExternalLink } from "lucide-react";
+import { Loader2, X, Info, LocateFixed, Map as MapIcon, ChevronUp, Navigation, ExternalLink, ArrowLeftRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useMapSearch, MapSearchBar } from "@/components/map-search";
 import { FlyTo, DataDisclaimer, MapError, AnimatedCount, interpolateColor } from "@/lib/map-utils";
+import { FYLKER } from "@/lib/fylker";
 
 import type { Suggestion } from "@/lib/map-utils";
 
@@ -50,6 +51,11 @@ function computeStats(incomeData: Record<string, number>, kommunenummer: string)
   return { rank, total, medianIncome, vsMedian };
 }
 
+function getFylke(kommunenummer: string): string | null {
+  const prefix = kommunenummer.slice(0, 2);
+  return FYLKER.find((f) => f.fylkesnummer === prefix)?.fylkesnavn ?? null;
+}
+
 export function IncomeMap() {
   const [geoData, setGeoData] = useState<GeoJsonObject | null>(null);
   const [incomeData, setIncomeData] = useState<Record<string, number>>({});
@@ -63,6 +69,19 @@ export function IncomeMap() {
   const [showInfo, setShowInfo] = useState(false);
   const [showBase, setShowBase] = useState(false);
   const [showInfoSheet, setShowInfoSheet] = useState(false);
+
+  // Comparison
+  const [compareMode, setCompareMode] = useState(false);
+  const [compareQuery, setCompareQuery] = useState("");
+  const [compareHighlight, setCompareHighlight] = useState(-1);
+  const [compareTarget, setCompareTarget] = useState<SelectedKommune | null>(null);
+  const [showCompare, setShowCompare] = useState(false);
+
+  // Refs for GeoJSON click handlers (closures capture stale state otherwise)
+  const compareModeRef = useRef(false);
+  const selectedRef = useRef<SelectedKommune | null>(null);
+  compareModeRef.current = compareMode;
+  selectedRef.current = selected;
 
   const incomeRef = useRef<Record<string, number>>({});
   const geoFeaturesRef = useRef<Array<{ kommunenummer: string; kommunenavn: string }>>([]);
@@ -122,6 +141,14 @@ export function IncomeMap() {
     selectedKommuneRef.current = kommunenummer;
   }, []);
 
+  const compareResults = useMemo(() => {
+    if (!compareMode || compareQuery.length < 1) return [];
+    const q = compareQuery.toLowerCase();
+    return geoFeaturesRef.current
+      .filter((f) => f.kommunenavn.toLowerCase().includes(q) && f.kommunenummer !== selected?.kommunenummer && incomeRef.current[f.kommunenummer] > 0)
+      .slice(0, 6);
+  }, [compareMode, compareQuery, selected?.kommunenummer]);
+
   const clearSelection = useCallback(() => {
     if (selectedKommuneRef.current) {
       const layer = layerRefs.current.get(selectedKommuneRef.current);
@@ -132,6 +159,10 @@ export function IncomeMap() {
       selectedKommuneRef.current = null;
     }
     setSelected(null);
+    setCompareMode(false);
+    setCompareQuery("");
+    setCompareTarget(null);
+    setShowCompare(false);
     setQueryRef.current("");
   }, []);
 
@@ -195,6 +226,13 @@ export function IncomeMap() {
         }
       },
       click() {
+        if (compareModeRef.current && selectedRef.current && selectedRef.current.kommunenummer !== nr && incomeRef.current[nr] > 0) {
+          setCompareTarget({ kommunenummer: nr, kommunenavn: navn, income: incomeRef.current[nr] ?? null, coords: { lat: 0, lon: 0 } });
+          setShowCompare(true);
+          setCompareMode(false);
+          setCompareQuery("");
+          return;
+        }
         highlightKommune(nr);
         setSelected({
           kommunenummer: nr,
@@ -267,7 +305,7 @@ export function IncomeMap() {
         )}
 
         {/* Compact info card */}
-        {selected && !showInfoSheet && (
+        {selected && !showInfoSheet && !showCompare && (
           <div
             className="absolute bottom-4 left-3 right-3 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 sm:w-96 z-[999] bg-card rounded-2xl shadow-xl px-4 py-4"
             style={{ border: "1.5px solid var(--border)" }}
@@ -275,6 +313,7 @@ export function IncomeMap() {
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
                 <p className="font-bold text-base leading-snug">{selected.kommunenavn}</p>
+                <p className="text-xs text-muted-foreground">{getFylke(selected.kommunenummer)}</p>
                 {selected.income != null && (
                   <p className="text-sm mt-0.5">
                     <span className="font-semibold" style={{ color: "var(--kv-blue)" }}>{formatKr(selected.income)}</span>
@@ -291,15 +330,80 @@ export function IncomeMap() {
               </button>
             </div>
 
-            <div className="flex gap-2 mt-3">
-              <button
-                onClick={() => setShowInfoSheet(true)}
-                className="flex-1 inline-flex items-center justify-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl text-white transition-colors hover:opacity-90"
-                style={{ background: "var(--kv-blue)" }}
-              >
-                <ChevronUp className="h-3.5 w-3.5" /> Vis mer
-              </button>
-            </div>
+            {compareMode ? (
+              <div className="mt-3">
+                <p className="text-[10px] text-muted-foreground mb-1.5">Velg en kommune å sammenligne med, eller klikk på kartet.</p>
+                <div className="relative">
+                  <input
+                    autoFocus
+                    value={compareQuery}
+                    onChange={(e) => { setCompareQuery(e.target.value); setCompareHighlight(-1); }}
+                    onKeyDown={(e) => {
+                      if (compareResults.length === 0) return;
+                      if (e.key === "ArrowDown") { e.preventDefault(); setCompareHighlight((i) => Math.min(i + 1, compareResults.length - 1)); }
+                      else if (e.key === "ArrowUp") { e.preventDefault(); setCompareHighlight((i) => Math.max(i - 1, 0)); }
+                      else if (e.key === "Enter" && compareHighlight >= 0) {
+                        e.preventDefault();
+                        const k = compareResults[compareHighlight];
+                        setCompareTarget({ kommunenummer: k.kommunenummer, kommunenavn: k.kommunenavn, income: incomeRef.current[k.kommunenummer] ?? null, coords: { lat: 0, lon: 0 } });
+                        setShowCompare(true);
+                        setCompareMode(false);
+                        setCompareQuery("");
+                        setCompareHighlight(-1);
+                      }
+                      else if (e.key === "Escape") { setCompareMode(false); setCompareQuery(""); setCompareHighlight(-1); }
+                    }}
+                    placeholder="Sammenlign med..."
+                    className="w-full bg-muted border rounded-xl px-3 py-2.5 text-sm outline-none placeholder:text-muted-foreground text-[16px] sm:text-sm"
+                  />
+                  {compareResults.length > 0 && (
+                    <ul className="absolute top-full mt-1 left-0 right-0 bg-background rounded-xl shadow-xl border overflow-hidden z-50">
+                      {compareResults.map((k, i) => (
+                        <li key={k.kommunenummer}>
+                          <button
+                            onMouseDown={() => {
+                              setCompareTarget({ kommunenummer: k.kommunenummer, kommunenavn: k.kommunenavn, income: incomeRef.current[k.kommunenummer] ?? null, coords: { lat: 0, lon: 0 } });
+                              setShowCompare(true);
+                              setCompareMode(false);
+                              setCompareQuery("");
+                              setCompareHighlight(-1);
+                            }}
+                            className={`w-full text-left px-3 py-2.5 text-sm transition-colors border-b last:border-0 ${compareHighlight === i ? "bg-muted" : "hover:bg-muted"}`}
+                          >
+                            <p className="font-medium">{k.kommunenavn}</p>
+                            <p className="text-[10px] text-muted-foreground">{getFylke(k.kommunenummer)}</p>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+                <button
+                  onClick={() => { setCompareMode(false); setCompareQuery(""); }}
+                  className="mt-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Avbryt
+                </button>
+              </div>
+            ) : (
+              <div className="flex gap-2 mt-3">
+                <button
+                  onClick={() => setShowInfoSheet(true)}
+                  className="flex-1 inline-flex items-center justify-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl text-white transition-colors hover:opacity-90"
+                  style={{ background: "var(--kv-blue)" }}
+                >
+                  <ChevronUp className="h-3.5 w-3.5" /> Vis mer
+                </button>
+                {selected.income != null && (
+                  <button
+                    onClick={() => setCompareMode(true)}
+                    className="inline-flex items-center justify-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl border bg-muted/50 hover:bg-muted transition-colors"
+                  >
+                    <ArrowLeftRight className="h-3.5 w-3.5" /> Sammenlign
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         )}
 
@@ -370,6 +474,127 @@ export function IncomeMap() {
                 </div>
               </div>
             )}
+          </SheetContent>
+        </Sheet>
+
+        {/* Comparison sheet */}
+        <Sheet open={showCompare && !!selected && !!compareTarget} onOpenChange={(open) => { if (!open) { setShowCompare(false); setCompareTarget(null); } }}>
+          <SheetContent side="bottom" className="rounded-t-2xl max-h-[85svh] overflow-y-auto">
+            {selected && compareTarget && (() => {
+              const a = selected;
+              const b = compareTarget;
+              const statsA = computeStats(incomeData, a.kommunenummer);
+              const statsB = computeStats(incomeData, b.kommunenummer);
+              const incomeA = incomeData[a.kommunenummer];
+              const incomeB = incomeData[b.kommunenummer];
+              const diff = incomeA && incomeB ? incomeA - incomeB : null;
+              const allValues = Object.values(incomeData).filter((v) => v > 0);
+              const minVal = allValues.length ? Math.min(...allValues) : 0;
+              const maxVal = allValues.length ? Math.max(...allValues) : 1;
+              const pctA = incomeA ? Math.max(0, Math.min(100, ((incomeA - minVal) / (maxVal - minVal)) * 100)) : 0;
+              const pctB = incomeB ? Math.max(0, Math.min(100, ((incomeB - minVal) / (maxVal - minVal)) * 100)) : 0;
+
+              return (
+                <div className="mx-auto w-full max-w-lg px-4 pb-6">
+                  <SheetHeader>
+                    <SheetTitle className="text-left sr-only">Sammenligning</SheetTitle>
+                  </SheetHeader>
+
+                  <div className="flex items-center gap-1.5 mb-3">
+                    <ArrowLeftRight className="h-4 w-4" style={{ color: "var(--kv-blue)" }} />
+                    <p className="text-xs font-semibold text-muted-foreground">Sammenligning · Median inntekt 2024</p>
+                  </div>
+
+                  {/* Header: two kommune names */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="font-bold text-base leading-snug">{a.kommunenavn}</p>
+                      <p className="text-xs text-muted-foreground">{getFylke(a.kommunenummer)}</p>
+                    </div>
+                    <div>
+                      <p className="font-bold text-base leading-snug">{b.kommunenavn}</p>
+                      <p className="text-xs text-muted-foreground">{getFylke(b.kommunenummer)}</p>
+                    </div>
+                  </div>
+
+                  {/* Hero: income side by side */}
+                  <div className="mt-4 pt-4 border-t">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <span className="text-2xl font-extrabold" style={{ color: "var(--kv-blue)" }}>
+                          {incomeA ? formatKr(incomeA) : "–"}
+                        </span>
+                        <p className="text-[10px] text-muted-foreground">median inntekt</p>
+                      </div>
+                      <div>
+                        <span className="text-2xl font-extrabold" style={{ color: "var(--kv-blue)" }}>
+                          {incomeB ? formatKr(incomeB) : "–"}
+                        </span>
+                        <p className="text-[10px] text-muted-foreground">median inntekt</p>
+                      </div>
+                    </div>
+                    {diff != null && (
+                      <div className="mt-2">
+                        <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-semibold ${diff > 0 ? "bg-green-50 text-green-700" : diff < 0 ? "bg-orange-50 text-orange-700" : "bg-muted text-muted-foreground"}`}>
+                          {a.kommunenavn} tjener {diff > 0 ? `${formatKr(diff)} mer` : diff < 0 ? `${formatKr(Math.abs(diff))} mindre` : "likt"}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Percentile bars */}
+                  <div className="mt-4 pt-4 border-t">
+                    <p className="text-xs font-semibold text-muted-foreground mb-3">Plassering blant alle kommuner</p>
+                    <div className="space-y-3">
+                      {[
+                        { name: a.kommunenavn, stats: statsA, pct: pctA, income: incomeA },
+                        { name: b.kommunenavn, stats: statsB, pct: pctB, income: incomeB },
+                      ].map((item) => (
+                        <div key={item.name}>
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-xs font-medium">{item.name}</span>
+                            <span className="text-xs text-muted-foreground">#{item.stats.rank} av {item.stats.total}</span>
+                          </div>
+                          <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+                            <div
+                              className="h-full rounded-full transition-all"
+                              style={{ width: `${item.pct}%`, background: interpolateColor(item.pct / 100) }}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* vs median comparison */}
+                  <div className="mt-4 pt-4 border-t">
+                    <p className="text-xs font-semibold text-muted-foreground mb-2">Sammenlignet med mediankommunen</p>
+                    <div className="grid grid-cols-2 gap-4">
+                      {[
+                        { name: a.kommunenavn, stats: statsA },
+                        { name: b.kommunenavn, stats: statsB },
+                      ].map((item) => (
+                        <div key={item.name}>
+                          <p className="text-xs font-medium mb-0.5">{item.name}</p>
+                          <span className="text-sm font-bold" style={{ color: item.stats.vsMedian >= 0 ? "var(--kv-positive)" : "var(--kv-negative)" }}>
+                            {item.stats.vsMedian >= 0 ? "+" : ""}{item.stats.vsMedian.toFixed(1)}%
+                          </span>
+                          <p className="text-[10px] text-muted-foreground">vs. medianen ({formatKr(item.stats.medianIncome)})</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Source */}
+                  <div className="mt-4 pt-4 border-t">
+                    <p className="text-xs text-muted-foreground text-center">
+                      Kilde: <a href="https://www.ssb.no/inntekt-og-forbruk/inntekt-og-formue/statistikk/inntekts-og-formuesstatistikk-for-husholdninger" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">SSB InntektStruk13</a>, 2024
+                    </p>
+                    <DataDisclaimer />
+                  </div>
+                </div>
+              );
+            })()}
           </SheetContent>
         </Sheet>
 
