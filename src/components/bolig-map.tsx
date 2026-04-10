@@ -5,7 +5,7 @@ import { MapContainer, TileLayer, Marker, useMap } from "react-leaflet";
 import MarkerClusterGroup from "react-leaflet-cluster";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { X, Info, ChevronUp, Navigation, Home, Building2, Building, Loader2 } from "lucide-react";
+import { X, Info, ChevronUp, Navigation, Home, Building2, Building, Loader2, ArrowLeftRight } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useMapSearch, MapSearchBar } from "@/components/map-search";
 import { FYLKER } from "@/lib/fylker";
@@ -194,6 +194,12 @@ export function BoligMap() {
   const [showInfoSheet, setShowInfoSheet] = useState(false);
   const [showInfo, setShowInfo] = useState(false);
 
+  // Comparison
+  const [compareMode, setCompareMode] = useState(false);
+  const [compareQuery, setCompareQuery] = useState("");
+  const [compareTarget, setCompareTarget] = useState<SelectedKommune | null>(null);
+  const [showCompare, setShowCompare] = useState(false);
+
   // Map
   const [tileLayer, setTileLayer] = useState<"kart" | "gråtone">("gråtone");
   const [center, setCenter] = useState<{ lat: number; lon: number; zoom?: number; _t?: number } | null>(null);
@@ -296,9 +302,20 @@ export function BoligMap() {
 
   const visibleMarkers = useMemo(() => markers.filter((m) => m.price != null && m.price > 0), [markers]);
 
+  // Compare search results
+  const compareResults = useMemo(() => {
+    if (!compareMode || compareQuery.length < 1) return [];
+    const q = compareQuery.toLowerCase();
+    return geoFeaturesRef.current
+      .filter((f) => f.kommunenavn.toLowerCase().includes(q) && f.kommunenummer !== selected?.kommunenummer && boligData[f.kommunenummer])
+      .slice(0, 6);
+  }, [compareMode, compareQuery, selected?.kommunenummer, boligData]);
+
   const clearSelection = useCallback(() => {
     setSelected(null);
     setShowInfoSheet(false);
+    setCompareMode(false);
+    setCompareQuery("");
     searchProps.setQuery("");
   }, [searchProps]);
 
@@ -433,8 +450,19 @@ export function BoligMap() {
                 icon={bubbleIcon(m.price, m.count, sortedPrices, selected?.kommunenummer === m.nr)}
                 eventHandlers={{
                   click() {
-                    setSelected((prev) => prev?.kommunenummer === m.nr ? null : { kommunenummer: m.nr, kommunenavn: m.name, lat: m.lat, lon: m.lon });
-                    setShowInfoSheet(false);
+                    const kommun = { kommunenummer: m.nr, kommunenavn: m.name, lat: m.lat, lon: m.lon };
+                    if (compareMode && selected && selected.kommunenummer !== m.nr) {
+                      // In compare mode — clicking a second bubble opens comparison
+                      setCompareTarget(kommun);
+                      setShowCompare(true);
+                      setCompareMode(false);
+                      setCompareQuery("");
+                    } else {
+                      setSelected((prev) => prev?.kommunenummer === m.nr ? null : kommun);
+                      setShowInfoSheet(false);
+                      setCompareMode(false);
+                      setCompareQuery("");
+                    }
                   },
                 }}
                 {...{ price: m.price } as Record<string, unknown>}
@@ -472,7 +500,7 @@ export function BoligMap() {
         </div>
 
         {/* Compact card */}
-        {selected && !showInfoSheet && (
+        {selected && !showInfoSheet && !showCompare && (
           <div
             className="absolute bottom-4 left-3 right-3 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 sm:w-96 z-[999] bg-card rounded-2xl shadow-xl px-4 py-4"
             style={{ border: "1.5px solid var(--border)" }}
@@ -521,23 +549,64 @@ export function BoligMap() {
               <p className="text-sm text-muted-foreground mt-2">Ingen prisdata for {TYPE_LABELS[boligtype].toLowerCase()} i {year}</p>
             )}
 
-            <div className="flex gap-2 mt-3">
-              <button
-                onClick={() => setShowInfoSheet(true)}
-                className="flex-1 inline-flex items-center justify-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl text-white transition-colors hover:opacity-90"
-                style={{ background: "var(--kv-blue)" }}
-              >
-                <ChevronUp className="h-3.5 w-3.5" /> Vis mer
-              </button>
-              <a
-                href={`https://www.google.com/maps/dir/?api=1&destination=${selected.lat},${selected.lon}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center justify-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl border bg-muted/50 hover:bg-muted transition-colors"
-              >
-                <Navigation className="h-3.5 w-3.5" /> Kjør hit
-              </a>
-            </div>
+            {compareMode ? (
+              <div className="mt-3">
+                <div className="relative">
+                  <input
+                    autoFocus
+                    value={compareQuery}
+                    onChange={(e) => setCompareQuery(e.target.value)}
+                    placeholder="Sammenlign med..."
+                    className="w-full bg-muted border rounded-xl px-3 py-2.5 text-sm outline-none placeholder:text-muted-foreground text-[16px] sm:text-sm"
+                  />
+                  {compareResults.length > 0 && (
+                    <ul className="absolute top-full mt-1 left-0 right-0 bg-background rounded-xl shadow-xl border overflow-hidden z-50">
+                      {compareResults.map((k) => (
+                        <li key={k.kommunenummer}>
+                          <button
+                            onMouseDown={() => {
+                              const c = centroids.get(k.kommunenummer);
+                              if (c) {
+                                setCompareTarget({ kommunenummer: k.kommunenummer, kommunenavn: k.kommunenavn, lat: c.lat, lon: c.lon });
+                                setShowCompare(true);
+                                setCompareMode(false);
+                                setCompareQuery("");
+                              }
+                            }}
+                            className="w-full text-left px-3 py-2.5 text-sm hover:bg-muted transition-colors border-b last:border-0"
+                          >
+                            <p className="font-medium">{k.kommunenavn}</p>
+                            <p className="text-[10px] text-muted-foreground">{getFylke(k.kommunenummer)}</p>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+                <button
+                  onClick={() => { setCompareMode(false); setCompareQuery(""); }}
+                  className="mt-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Avbryt
+                </button>
+              </div>
+            ) : (
+              <div className="flex gap-2 mt-3">
+                <button
+                  onClick={() => setShowInfoSheet(true)}
+                  className="flex-1 inline-flex items-center justify-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl text-white transition-colors hover:opacity-90"
+                  style={{ background: "var(--kv-blue)" }}
+                >
+                  <ChevronUp className="h-3.5 w-3.5" /> Vis mer
+                </button>
+                <button
+                  onClick={() => setCompareMode(true)}
+                  className="inline-flex items-center justify-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl border bg-muted/50 hover:bg-muted transition-colors"
+                >
+                  <ArrowLeftRight className="h-3.5 w-3.5" /> Sammenlign
+                </button>
+              </div>
+            )}
           </div>
         )}
 
@@ -700,6 +769,199 @@ export function BoligMap() {
                       </div>
                     </div>
                   )}
+
+                  {/* Source */}
+                  <div className="mt-4 pt-4 border-t">
+                    <p className="text-xs text-muted-foreground text-center">
+                      Kilde: <a href="https://www.ssb.no/statbank/table/06035/" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">SSB Tabell 06035</a>, {year}
+                    </p>
+                    <DataDisclaimer />
+                  </div>
+                </div>
+              );
+            })()}
+          </SheetContent>
+        </Sheet>
+
+        {/* Comparison sheet */}
+        <Sheet open={showCompare && !!selected && !!compareTarget} onOpenChange={(open) => { if (!open) { setShowCompare(false); setCompareTarget(null); } }}>
+          <SheetContent side="bottom" className="rounded-t-2xl max-h-[85svh] overflow-y-auto">
+            {selected && compareTarget && (() => {
+              const a = selected;
+              const b = compareTarget;
+              const priceA = getPrice(a.kommunenummer, boligtype, year);
+              const priceB = getPrice(b.kommunenummer, boligtype, year);
+              const countA = getCount(a.kommunenummer, boligtype, year);
+              const countB = getCount(b.kommunenummer, boligtype, year);
+              const rankA = computeRank(boligData, boligtype, year, a.kommunenummer);
+              const rankB = computeRank(boligData, boligtype, year, b.kommunenummer);
+              const diff = priceA != null && priceB != null ? priceA - priceB : null;
+              const sparkA = years.map((y) => getPrice(a.kommunenummer, boligtype, y));
+              const sparkB = years.map((y) => getPrice(b.kommunenummer, boligtype, y));
+              const allSparkValues = [...sparkA, ...sparkB].filter((v): v is number => v != null);
+              const maxSpark = allSparkValues.length > 0 ? Math.max(...allSparkValues) : 1;
+
+              return (
+                <div className="mx-auto w-full max-w-lg px-4 pb-6">
+                  <SheetHeader>
+                    <SheetTitle className="text-left sr-only">Sammenligning</SheetTitle>
+                  </SheetHeader>
+
+                  <div className="flex items-center gap-1.5 mb-3">
+                    <ArrowLeftRight className="h-4 w-4" style={{ color: "var(--kv-blue)" }} />
+                    <p className="text-xs font-semibold text-muted-foreground">Sammenligning · {TYPE_LABELS[boligtype]} · {year}</p>
+                  </div>
+
+                  {/* Header: two kommune names */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="font-bold text-base leading-snug">{a.kommunenavn}</p>
+                      <p className="text-xs text-muted-foreground">{getFylke(a.kommunenummer)}</p>
+                    </div>
+                    <div>
+                      <p className="font-bold text-base leading-snug">{b.kommunenavn}</p>
+                      <p className="text-xs text-muted-foreground">{getFylke(b.kommunenummer)}</p>
+                    </div>
+                  </div>
+
+                  {/* Hero: kr/m² side by side */}
+                  <div className="mt-4 pt-4 border-t">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <span className="text-2xl font-extrabold" style={{ color: "var(--kv-blue)" }}>
+                          {priceA?.toLocaleString("nb-NO") ?? "–"}
+                        </span>
+                        <p className="text-[10px] text-muted-foreground">kr/m²</p>
+                      </div>
+                      <div>
+                        <span className="text-2xl font-extrabold" style={{ color: "var(--kv-blue)" }}>
+                          {priceB?.toLocaleString("nb-NO") ?? "–"}
+                        </span>
+                        <p className="text-[10px] text-muted-foreground">kr/m²</p>
+                      </div>
+                    </div>
+                    {diff != null && (
+                      <div className="mt-2">
+                        <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-semibold ${diff > 0 ? "bg-orange-50 text-orange-700" : diff < 0 ? "bg-green-50 text-green-700" : "bg-muted text-muted-foreground"}`}>
+                          {a.kommunenavn} er {diff > 0 ? `${diff.toLocaleString("nb-NO")} kr dyrere` : diff < 0 ? `${Math.abs(diff).toLocaleString("nb-NO")} kr rimeligere` : "lik pris"}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* All types comparison table */}
+                  <div className="mt-4 pt-4 border-t">
+                    <p className="text-xs font-semibold text-muted-foreground mb-2">Alle boligtyper</p>
+                    <div className="space-y-1">
+                      <div className="grid grid-cols-[1fr_auto_auto_auto] gap-2 text-[10px] font-semibold text-muted-foreground px-1 mb-1">
+                        <span />
+                        <span className="text-right w-20">{a.kommunenavn}</span>
+                        <span className="text-right w-20">{b.kommunenavn}</span>
+                        <span className="text-right w-16">Forskjell</span>
+                      </div>
+                      {TYPE_KEYS.map((t) => {
+                        const pA = getPrice(a.kommunenummer, t, year);
+                        const pB = getPrice(b.kommunenummer, t, year);
+                        const d = pA != null && pB != null ? pA - pB : null;
+                        const Icon = TYPE_ICONS[t];
+                        return (
+                          <div key={t} className={`grid grid-cols-[1fr_auto_auto_auto] gap-2 items-center rounded-lg px-1 py-1.5 ${t === boligtype ? "bg-muted" : ""}`}>
+                            <span className="flex items-center gap-1.5 text-xs font-medium">
+                              <Icon className="h-3.5 w-3.5 text-muted-foreground" />
+                              {TYPE_LABELS[t]}
+                            </span>
+                            <span className="text-xs font-bold tabular-nums text-right w-20" style={{ color: pA ? "var(--kv-blue)" : undefined }}>
+                              {pA?.toLocaleString("nb-NO") ?? "–"}
+                            </span>
+                            <span className="text-xs font-bold tabular-nums text-right w-20" style={{ color: pB ? "var(--kv-blue)" : undefined }}>
+                              {pB?.toLocaleString("nb-NO") ?? "–"}
+                            </span>
+                            <span className={`text-[10px] font-semibold tabular-nums text-right w-16 ${d != null ? (d > 0 ? "text-orange-600" : d < 0 ? "text-green-600" : "text-muted-foreground") : "text-muted-foreground"}`}>
+                              {d != null ? `${d > 0 ? "+" : ""}${d.toLocaleString("nb-NO")}` : "–"}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Trend comparison */}
+                  {(sparkA.some((v) => v != null) || sparkB.some((v) => v != null)) && (
+                    <div className="mt-4 pt-4 border-t">
+                      <p className="text-xs font-semibold text-muted-foreground mb-2">Prisutvikling ({years[0]}–{years[years.length - 1]})</p>
+                      <div className="grid grid-cols-2 gap-4">
+                        {[{ name: a.kommunenavn, values: sparkA }, { name: b.kommunenavn, values: sparkB }].map((item) => {
+                          const first = item.values.find((v) => v != null);
+                          const last = [...item.values].reverse().find((v) => v != null);
+                          const change = first && last ? ((last - first) / first) * 100 : null;
+                          return (
+                            <div key={item.name}>
+                              <div className="flex items-center justify-between mb-1">
+                                <span className="text-[10px] font-medium truncate">{item.name}</span>
+                                {change != null && (
+                                  <span className={`text-[10px] font-semibold ${change >= 0 ? "text-green-600" : "text-red-500"}`}>
+                                    {change >= 0 ? "+" : ""}{change.toFixed(0)}%
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex items-end gap-[2px] h-10">
+                                {item.values.map((v, i) => (
+                                  <div
+                                    key={years[i]}
+                                    className="flex-1 rounded-sm min-w-[2px]"
+                                    style={{
+                                      height: v != null ? `${Math.max(4, (v / maxSpark) * 100)}%` : "0%",
+                                      background: "var(--kv-blue)",
+                                      opacity: years[i] === year ? 1 : 0.3,
+                                    }}
+                                    title={v != null ? `${years[i]}: ${v.toLocaleString("nb-NO")} kr/m²` : `${years[i]}: Ingen data`}
+                                  />
+                                ))}
+                              </div>
+                              <div className="flex justify-between mt-0.5">
+                                <span className="text-[10px] text-muted-foreground">{years[0]}</span>
+                                <span className="text-[10px] text-muted-foreground">{years[years.length - 1]}</span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Rankings side by side */}
+                  <div className="mt-4 pt-4 border-t">
+                    <p className="text-xs font-semibold text-muted-foreground mb-2">Rangering</p>
+                    <div className="grid grid-cols-2 gap-4">
+                      {[
+                        { name: a.kommunenavn, rank: rankA, nr: a.kommunenummer },
+                        { name: b.kommunenavn, rank: rankB, nr: b.kommunenummer },
+                      ].map((item) => {
+                        const pct = item.rank.total > 0 ? Math.round(((item.rank.total - item.rank.rank) / item.rank.total) * 100) : 0;
+                        const fR = fylkeRank(boligData, boligtype, year, item.nr);
+                        const fy = getFylke(item.nr);
+                        return (
+                          <div key={item.nr} className="space-y-1">
+                            <p className="text-xs font-medium mb-1">{item.name}</p>
+                            <div className="flex items-center justify-between">
+                              <span className="text-[10px] text-muted-foreground">Nasjonalt</span>
+                              <span className="text-[10px] font-semibold">#{item.rank.rank} av {item.rank.total}</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-[10px] text-muted-foreground">Dyrere enn</span>
+                              <span className="text-[10px] font-semibold">{pct}%</span>
+                            </div>
+                            {fy && fR.total > 1 && (
+                              <div className="flex items-center justify-between">
+                                <span className="text-[10px] text-muted-foreground">{fy}</span>
+                                <span className="text-[10px] font-semibold">#{fR.rank} av {fR.total}</span>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
 
                   {/* Source */}
                   <div className="mt-4 pt-4 border-t">

@@ -144,6 +144,7 @@ All maps use a **compact floating card + expandable bottom Sheet** pattern:
 - MarkerClusterGroup uses `key={type+year}` to force re-cluster on filter change
 - Kommune centers computed as centroids from GeoJSON polygon geometry
 - Detail sheet: all types comparison, bar chart trend, national/fylke rankings
+- **Comparison feature:** "Sammenlign" button on compact card opens inline search or accepts map click for second kommune. Two-column comparison sheet shows kr/m² diff, all types table, side-by-side trends, and rankings
 
 ### Choropleth maps (income, vern):
 - Red → Yellow → Green 3-stop diverging color scale

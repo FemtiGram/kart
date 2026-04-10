@@ -10,7 +10,7 @@ Live at: [datakart.no](https://datakart.no)
 
 | Map | Route | Description | Docs |
 |-----|-------|-------------|------|
-| Boligpriser | `/bolig` | Housing prices (kr/m²) per municipality — bubble map | |
+| Boligpriser | `/bolig` | Housing prices (kr/m²) per municipality — bubble map with kommune comparison | |
 | Energikart | `/energi` | Wind, hydro, offshore wind, oil and gas | [docs/maps/energi.md](docs/maps/energi.md) |
 | Magasinkart | `/magasin` | Regulated water reservoirs with live fill levels | [docs/maps/magasin.md](docs/maps/magasin.md) |
 | Ladestasjoner | `/lading` | All EV charging stations in Norway | [docs/maps/lading.md](docs/maps/lading.md) |
