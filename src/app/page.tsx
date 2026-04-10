@@ -10,10 +10,11 @@ const featured = [
     icon: TrendingUp,
   },
   {
-    title: "Energikart",
-    description: "Vindkraft, vannkraft, havvind og olje- og gassanlegg med produksjonsdata.",
-    href: "/energi",
-    icon: BatteryCharging,
+    title: "Prisvekst",
+    description: "Konsumprisindeksen med kategorifordeling og nordisk sammenligning.",
+    href: "/prisvekst",
+    icon: BarChart3,
+    cta: "Åpne oversikt",
   },
 ];
 
@@ -21,6 +22,12 @@ const groups = [
   {
     label: "Energi",
     items: [
+      {
+        title: "Energikart",
+        description: "Vindkraft, vannkraft, havvind og olje- og gassanlegg med produksjonsdata.",
+        href: "/energi",
+        icon: BatteryCharging,
+      },
       {
         title: "Magasinkart",
         description: "Regulerte vannmagasiner med nasjonal fyllingsgrad og polygon-visning.",
@@ -66,13 +73,6 @@ const groups = [
         description: "Median inntekt etter skatt per husholdning i alle kommuner.",
         href: "/lonn",
         icon: DollarSign,
-      },
-      {
-        title: "Prisvekst",
-        description: "Konsumprisindeksen med kategorifordeling og nordisk sammenligning.",
-        href: "/prisvekst",
-        icon: BarChart3,
-        cta: "Åpne oversikt",
       },
     ],
   },
