@@ -36,7 +36,7 @@ const navGroups: NavGroup[] = [
   {
     label: "Energi",
     links: [
-      { href: "/energi", label: "Energikart", icon: BatteryCharging, description: "Vind- og vannkraftverk" },
+      { href: "/energi", label: "Energikart", icon: BatteryCharging, description: "Vind, vann, olje og gass" },
       { href: "/magasin", label: "Magasinkart", icon: Waves, description: "Vannmagasiner og fyllingsgrad" },
       { href: "/lading", label: "Ladestasjoner", icon: Zap, description: "Elbil-lading i hele Norge" },
     ],

@@ -3,12 +3,14 @@ import { Separator } from "@/components/ui/separator";
 
 const footerLinks = {
   Utforsk: [
-    { label: "Høydekart", href: "/map" },
+    { label: "Boligpriser", href: "/bolig" },
     { label: "Energikart", href: "/energi" },
     { label: "Magasinkart", href: "/magasin" },
     { label: "Ladestasjoner", href: "/lading" },
-    { label: "Turisthytter", href: "/hytter" },
+    { label: "Prisvekst", href: "/prisvekst" },
     { label: "Inntektskart", href: "/lonn" },
+    { label: "Turisthytter", href: "/hytter" },
+    { label: "Høydekart", href: "/map" },
     { label: "Verneområder", href: "/vern" },
   ],
   Ressurser: [
@@ -41,8 +43,7 @@ export function Footer() {
               Datakart
             </Link>
             <p className="text-sm text-muted-foreground max-w-xs leading-relaxed">
-              Et åpent utforskningsverktøy for Norges geografi, kart og
-              stedsnavn, bygd på offentlige APIer.
+              Interaktive kart og visualiseringer bygget på åpne norske data fra SSB, NVE, Kartverket og flere.
             </p>
           </div>
 

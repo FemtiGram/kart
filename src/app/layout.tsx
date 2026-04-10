@@ -18,7 +18,7 @@ export const metadata: Metadata = {
     default: "Datakart",
     template: "%s — Datakart",
   },
-  description: "Utforsk norske geodata, energi, boligpriser, hytter, lading, inntekt og verneområder på interaktive kart.",
+  description: "Utforsk Norge gjennom åpne geodata. Boligpriser, energikart, prisvekst, ladestasjoner, inntekt, hytter og verneområder på interaktive kart.",
   metadataBase: new URL("https://datakart.no"),
   openGraph: {
     type: "website",
@@ -35,7 +35,7 @@ const jsonLd = {
   "@type": "WebSite",
   name: "Datakart",
   url: "https://datakart.no",
-  description: "Interaktive kart over norske geodata. Energi, lading, hytter, inntekt, verneområder og mer.",
+  description: "Utforsk Norge gjennom åpne geodata. Boligpriser, energikart, prisvekst, ladestasjoner, inntekt, hytter og verneområder.",
   inLanguage: "nb",
   author: {
     "@type": "Person",
