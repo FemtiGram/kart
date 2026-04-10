@@ -74,25 +74,27 @@ export async function GET() {
   }
 
   // Merge old kommune codes into new codes (2020 municipal reform)
-  // Old codes have labels like "Asker (-2019)" or "Songdalen (1964-2019)"
+  // Old codes have labels like "Asker (-2019)", "Songdalen (1964-2019)", "Holmestrand (2018-2019)"
   const regionLabels = data.dimension.Region.category.label as Record<string, string>;
+  const isOldCode = (label: string) => /\(\d{0,4}-?\d{4}\)/.test(label);
   const newCodeByName = new Map<string, string>();
   for (const [code, label] of Object.entries(regionLabels)) {
     if (!/^\d{4}$/.test(code)) continue;
     const str = String(label);
-    if (!str.includes("(-") && !str.match(/\(\d{4}-\d{4}\)/)) {
-      // Current code — index by clean name
-      const name = str.replace(/\s*-\s.*$/, "").trim(); // "Oslo - Oslove" → "Oslo"
-      newCodeByName.set(name, code);
-    }
+    if (isOldCode(str)) continue; // Skip old codes
+    // Current code — index by clean name
+    // Use " - " (space-dash-space) to strip Sami suffixes: "Oslo - Oslove" → "Oslo"
+    // But preserve hyphens in names: "Aurskog-Høland" stays "Aurskog-Høland"
+    const name = str.replace(/\s+-\s+.*$/, "").trim();
+    newCodeByName.set(name, code);
   }
 
   const merged: string[] = []; // kommuner with data from old boundaries
   for (const [oldCode, label] of Object.entries(regionLabels)) {
     if (!/^\d{4}$/.test(oldCode)) continue;
     const str = String(label);
-    if (!str.includes("(-") && !str.match(/\(\d{4}-\d{4}\)/)) continue;
-    // Extract base name: "Asker (-2019)" → "Asker"
+    if (!isOldCode(str)) continue;
+    // Extract base name: "Asker (-2019)" → "Asker", "Aurskog-Høland (1966-2019)" → "Aurskog-Høland"
     const baseName = str.replace(/\s*\(.*\)/, "").trim();
     const newCode = newCodeByName.get(baseName);
     if (!newCode || !result[oldCode]) continue;
