@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { ArrowRight, Mountain, DollarSign, Shield, Zap, Home as HomeIcon, BatteryCharging, Waves, Database, Globe, Code, TrendingUp, BarChart3 } from "lucide-react";
+import Image from "next/image";
+import { ArrowRight, ChevronDown, Mountain, DollarSign, Shield, Zap, Home as HomeIcon, BatteryCharging, Waves, Database, Globe, Code, TrendingUp, BarChart3 } from "lucide-react";
 import { FadeIn, FadeInView, HoverLift } from "@/components/motion";
 
 const featured = [
@@ -109,31 +110,44 @@ function CardLink({ href, icon: Icon, title, description, cta = "Åpne kart", in
 
 export default function Home() {
   return (
-    <div className="relative min-h-[calc(100svh-57px)] bg-background overflow-hidden">
-      {/* Subtle background accents */}
-      <div
-        className="pointer-events-none absolute -top-32 -right-32 h-[500px] w-[500px] rounded-full opacity-[0.07]"
-        style={{ background: "radial-gradient(circle, var(--kv-blue) 0%, transparent 70%)" }}
-      />
-      <div
-        className="pointer-events-none absolute top-1/2 -left-48 h-[400px] w-[400px] rounded-full opacity-[0.04]"
-        style={{ background: "radial-gradient(circle, #24374c 0%, transparent 70%)" }}
-      />
-      {/* Content */}
-      <div className="relative container mx-auto px-6 md:px-16 py-16 md:py-24 max-w-5xl">
-        <FadeIn>
-          <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight" style={{ color: "#24374c" }}>
-            Datakart
-          </h1>
-        </FadeIn>
-        <FadeIn delay={0.1}>
-          <p className="mt-3 text-muted-foreground text-lg md:text-xl max-w-md">
-            Prosjekter hvor jeg ser hva som er mulig med åpne geodata.
-          </p>
-        </FadeIn>
+    <div className="bg-background">
+      {/* Hero section */}
+      <section className="relative h-[75svh] min-h-[500px] overflow-hidden">
+        <Image
+          src="/img/banner.jpg"
+          alt="Lofoten, Norge"
+          fill
+          priority
+          className="object-cover object-[center_30%]"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+        <div className="relative h-full flex flex-col justify-end px-6 md:px-16 pb-16 md:pb-24 max-w-5xl mx-auto">
+          <FadeIn>
+            <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight text-white drop-shadow-lg">
+              Datakart
+            </h1>
+          </FadeIn>
+          <FadeIn delay={0.1}>
+            <p className="mt-4 text-white/90 text-lg md:text-2xl max-w-lg drop-shadow-md">
+              Utforsk Norge gjennom åpne geodata
+            </p>
+          </FadeIn>
+          <FadeIn delay={0.2}>
+            <a
+              href="#utforsk"
+              className="inline-flex items-center gap-2 mt-8 rounded-full bg-white text-[#24374c] font-semibold text-sm px-7 py-3 hover:bg-white/90 transition-colors w-fit shadow-xl"
+            >
+              Utforsk kartene
+              <ChevronDown className="h-4 w-4" />
+            </a>
+          </FadeIn>
+        </div>
+      </section>
 
+      {/* Content */}
+      <div id="utforsk" className="relative container mx-auto px-6 md:px-16 py-16 md:py-24 max-w-5xl">
         {/* All card groups */}
-        <div className="mt-12 space-y-8">
+        <div className="space-y-8">
           {/* Featured */}
           <div>
             <FadeInView>

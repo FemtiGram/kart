@@ -62,7 +62,7 @@ const navGroups: NavGroup[] = [
 const allLinks = navGroups.flatMap((g) => g.links);
 
 const triggerClass =
-  "text-white/70 hover:text-white hover:bg-white/10 focus:text-[#24374c] focus:bg-white/90 data-[active]:text-[#24374c] data-[active]:bg-white data-popup-open:text-[#24374c] data-popup-open:bg-white/90";
+  "text-white hover:text-white hover:bg-white/10 focus:text-[#24374c] focus:bg-white/90 data-[active]:text-[#24374c] data-[active]:bg-white data-popup-open:text-[#24374c] data-popup-open:bg-white/90";
 
 export function Navbar() {
   const [open, setOpen] = useState(false);
