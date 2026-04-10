@@ -181,6 +181,7 @@ export function BoligMap() {
   // Data
   const [boligData, setBoligData] = useState<BoligData>({});
   const [years, setYears] = useState<string[]>([]);
+  const [mergedKommuner, setMergedKommuner] = useState<Set<string>>(new Set());
   const [centroids, setCentroids] = useState<Map<string, { lat: number; lon: number }>>(new Map());
   const [geoData, setGeoData] = useState<GeoJsonObject | null>(null);
   const [loading, setLoading] = useState(true);
@@ -270,6 +271,7 @@ export function BoligMap() {
       setGeoData(geoRes);
       setBoligData(boligRes.data);
       setYears(boligRes.years ?? []);
+      setMergedKommuner(new Set(boligRes.merged ?? []));
       geoFeaturesRef.current = (geoRes.features ?? []).map((f: { properties: { kommunenummer: string; kommunenavn: string } }) => ({
         kommunenummer: f.properties.kommunenummer,
         kommunenavn: f.properties.kommunenavn,
@@ -823,6 +825,11 @@ export function BoligMap() {
                           <span className="text-[10px] text-muted-foreground">{years[0]}</span>
                           <span className="text-[10px] text-muted-foreground">{years[years.length - 1]}</span>
                         </div>
+                        {mergedKommuner.has(nr) && (
+                          <p className="text-[10px] text-muted-foreground mt-2 italic">
+                            * Kommunen endret grenser i 2020. Data før 2020 gjelder tidligere kommuneinndeling og er ikke direkte sammenlignbar.
+                          </p>
+                        )}
                       </div>
                     );
                   })()}
@@ -1014,6 +1021,11 @@ export function BoligMap() {
                           );
                         })}
                       </div>
+                      {(mergedKommuner.has(a.kommunenummer) || mergedKommuner.has(b.kommunenummer)) && (
+                        <p className="col-span-2 text-[10px] text-muted-foreground mt-1 italic">
+                          * {[mergedKommuner.has(a.kommunenummer) ? a.kommunenavn : null, mergedKommuner.has(b.kommunenummer) ? b.kommunenavn : null].filter(Boolean).join(" og ")} endret grenser i 2020. Data før 2020 gjelder tidligere kommuneinndeling.
+                        </p>
+                      )}
                     </div>
                   )}
 

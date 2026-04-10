@@ -73,6 +73,43 @@ export async function GET() {
     }
   }
 
+  // Merge old kommune codes into new codes (2020 municipal reform)
+  // Old codes have labels like "Asker (-2019)" or "Songdalen (1964-2019)"
+  const regionLabels = data.dimension.Region.category.label as Record<string, string>;
+  const newCodeByName = new Map<string, string>();
+  for (const [code, label] of Object.entries(regionLabels)) {
+    if (!/^\d{4}$/.test(code)) continue;
+    const str = String(label);
+    if (!str.includes("(-") && !str.match(/\(\d{4}-\d{4}\)/)) {
+      // Current code — index by clean name
+      const name = str.replace(/\s*-\s.*$/, "").trim(); // "Oslo - Oslove" → "Oslo"
+      newCodeByName.set(name, code);
+    }
+  }
+
+  const merged: string[] = []; // kommuner with data from old boundaries
+  for (const [oldCode, label] of Object.entries(regionLabels)) {
+    if (!/^\d{4}$/.test(oldCode)) continue;
+    const str = String(label);
+    if (!str.includes("(-") && !str.match(/\(\d{4}-\d{4}\)/)) continue;
+    // Extract base name: "Asker (-2019)" → "Asker"
+    const baseName = str.replace(/\s*\(.*\)/, "").trim();
+    const newCode = newCodeByName.get(baseName);
+    if (!newCode || !result[oldCode]) continue;
+    // Merge old data into new code (old years only — don't overwrite new data)
+    if (!result[newCode]) result[newCode] = {};
+    for (const [typeCode, years] of Object.entries(result[oldCode])) {
+      if (!result[newCode][typeCode]) result[newCode][typeCode] = {};
+      for (const [year, entry] of Object.entries(years)) {
+        if (!result[newCode][typeCode][year]) {
+          result[newCode][typeCode][year] = entry;
+        }
+      }
+    }
+    merged.push(newCode);
+    delete result[oldCode]; // Remove old code from output
+  }
+
   // Also return the years and type labels for the client
   const typeLabels: Record<string, string> = {};
   const typeLabel = data.dimension.Boligtype.category.label as Record<string, string>;
@@ -82,5 +119,5 @@ export async function GET() {
 
   const years = Object.keys(tidIndex).sort();
 
-  return Response.json({ data: result, years, typeLabels });
+  return Response.json({ data: result, years, typeLabels, merged: [...new Set(merged)] });
 }
