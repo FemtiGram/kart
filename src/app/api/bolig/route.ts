@@ -11,7 +11,7 @@ export async function GET() {
       ],
       response: { format: "json-stat2" },
     }),
-    cache: "no-store",
+    next: { revalidate: 86400 },
   });
 
   if (!res.ok) return Response.json({ error: "SSB fetch failed" }, { status: res.status });
