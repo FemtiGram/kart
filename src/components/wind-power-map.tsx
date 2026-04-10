@@ -379,7 +379,7 @@ export function WindPowerMap() {
             <div className="flex items-start justify-between gap-2 mb-3">
               <div className="min-w-0">
                 <div className="flex items-center gap-2 mb-0.5">
-                  <span className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700">
+                  <span className="text-xs font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700">
                     {selected.status}
                   </span>
                 </div>

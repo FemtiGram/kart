@@ -516,55 +516,47 @@ export function CabinMap() {
             className="absolute bottom-4 left-3 right-3 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 sm:w-96 z-[999] bg-card rounded-2xl shadow-xl px-4 py-4"
             style={{ border: "1.5px solid var(--border)" }}
           >
-            {/* Layer 1 — Identity */}
-            <div className="flex items-start justify-between gap-2">
-              <div className="min-w-0">
-                <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
+            <div className="relative">
+              <button
+                onClick={() => setSelected(null)}
+                className="absolute -top-1 -right-1 shrink-0 p-2.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                aria-label="Lukk"
+              >
+                <X className="h-4 w-4" />
+              </button>
+              <div className="flex items-baseline justify-between gap-2 pr-7">
+                <div className="flex items-baseline gap-1.5 min-w-0">
+                  <p className="text-xl font-extrabold leading-snug truncate" style={{ color: "var(--kv-blue)" }}>{selected.name}</p>
+                  {selected.beds != null && (
+                    <span className="text-xs text-muted-foreground shrink-0">{selected.beds} senger</span>
+                  )}
+                </div>
+                {selected.elevation != null && (
+                  <div className="flex items-baseline gap-1 shrink-0">
+                    <span className="text-xl font-extrabold" style={{ color: "var(--kv-blue)" }}>{selected.elevation}</span>
+                    <span className="text-xs text-muted-foreground">moh.</span>
+                  </div>
+                )}
+              </div>
+              <div className="flex items-center justify-between gap-2 mt-1 pr-7">
+                <p className="text-xs text-muted-foreground truncate">
+                  {selected.operator !== selected.name ? selected.operator : null}
+                </p>
+                <div className="flex items-center gap-1.5 shrink-0">
                   <span
-                    className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full text-white"
+                    className="text-xs font-semibold px-1.5 py-0.5 rounded-full text-white"
                     style={{ background: CABIN_COLORS[selected.cabinType] }}
                   >
                     {CABIN_LABELS[selected.cabinType]}
                   </span>
                   {selected.isDNT && (
-                    <span className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-muted text-foreground">DNT</span>
+                    <span className="text-xs font-semibold px-1.5 py-0.5 rounded-full bg-muted text-foreground">DNT</span>
                   )}
                   {selected.fee === false && (
-                    <span className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-green-100 text-green-800">Gratis</span>
+                    <span className="text-xs font-semibold px-1.5 py-0.5 rounded-full bg-green-100 text-green-800">Gratis</span>
                   )}
                 </div>
-                <p className="font-bold text-base truncate leading-snug">{selected.name}</p>
-                <p className="text-xs text-muted-foreground truncate">
-                  {selected.operator !== selected.name ? selected.operator : null}
-                </p>
               </div>
-              <button
-                onClick={() => setSelected(null)}
-                className="shrink-0 p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                aria-label="Lukk"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-
-            {/* Layer 2 — Key metrics */}
-            <div className="mt-3 flex items-center gap-6">
-              {selected.elevation != null && (
-                <div className="flex items-baseline gap-1.5">
-                  <Mountain className="h-3.5 w-3.5 text-muted-foreground self-center" />
-                  <span className="text-2xl font-extrabold" style={{ color: "var(--kv-blue)" }}>{selected.elevation}</span>
-                  <span className="text-xs font-medium text-muted-foreground">moh.</span>
-                </div>
-              )}
-              {selected.beds != null && (
-                <div className="flex items-baseline gap-1.5">
-                  <span className="text-2xl font-extrabold" style={{ color: "var(--kv-blue)" }}>{selected.beds}</span>
-                  <span className="text-xs font-medium text-muted-foreground">senger</span>
-                </div>
-              )}
-              {selected.elevation == null && selected.beds == null && (
-                <p className="text-sm text-muted-foreground">Ingen tilleggsdata</p>
-              )}
             </div>
 
             {/* Action row */}
@@ -600,22 +592,22 @@ export function CabinMap() {
                 {/* Layer 1 — Identity */}
                 <div className="flex items-center gap-1.5 flex-wrap mb-1">
                   <span
-                    className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full text-white"
+                    className="text-xs font-semibold px-1.5 py-0.5 rounded-full text-white"
                     style={{ background: CABIN_COLORS[selected.cabinType] }}
                   >
                     {CABIN_LABELS[selected.cabinType]}
                   </span>
                   {selected.isDNT && (
-                    <span className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-muted text-foreground">DNT</span>
+                    <span className="text-xs font-semibold px-1.5 py-0.5 rounded-full bg-muted text-foreground">DNT</span>
                   )}
                   {selected.fee === false && (
-                    <span className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-green-100 text-green-800">Gratis</span>
+                    <span className="text-xs font-semibold px-1.5 py-0.5 rounded-full bg-green-100 text-green-800">Gratis</span>
                   )}
                   {selected.fee === true && (
-                    <span className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-800">Betalt</span>
+                    <span className="text-xs font-semibold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-800">Betalt</span>
                   )}
                   {selected.season && (
-                    <span className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-800">{selected.season}</span>
+                    <span className="text-xs font-semibold px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-800">{selected.season}</span>
                   )}
                 </div>
                 <p className="font-bold text-lg leading-snug">{selected.name}</p>

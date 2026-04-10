@@ -4,11 +4,11 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { Search, MapPin, Mountain, Loader2, X, ChevronDown, ChevronUp, LocateFixed, Wind, Droplets, Sun, Cloud, CloudSun, CloudRain, CloudSnow, CloudLightning, CloudFog, CloudHail, CloudDrizzle, Moon, ExternalLink, Map as MapIcon, Info, Navigation } from "lucide-react";
+import { Search, MapPin, Mountain, Loader2, X, ChevronUp, LocateFixed, Wind, Droplets, Sun, Cloud, CloudSun, CloudRain, CloudSnow, CloudLightning, CloudFog, CloudHail, CloudDrizzle, Moon, ExternalLink, Map as MapIcon, Info, Navigation } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import type { LucideIcon } from "lucide-react";
-import { FlyTo, DataDisclaimer, useDebounceRef, isDevMode } from "@/lib/map-utils";
+import { FlyTo, DataDisclaimer, useDebounceRef } from "@/lib/map-utils";
 
 function weatherIcon(symbolCode: string): LucideIcon {
   const c = symbolCode.toLowerCase();
@@ -74,14 +74,6 @@ interface SelectedLocation {
   mapsCoords?: { lat: number; lon: number };
 }
 
-interface DevLogEntry {
-  id: number;
-  time: string;
-  url: string;
-  duration: number;
-  summary: string;
-  ok: boolean;
-}
 
 
 function MapClickHandler({ onMapClick }: { onMapClick: (lat: number, lon: number) => void }) {
@@ -107,34 +99,15 @@ export function ElevationMap() {
   const [locateError, setLocateError] = useState(false);
   const [showInfoSheet, setShowInfoSheet] = useState(false);
 
-  const [devLog, setDevLog] = useState<DevLogEntry[]>([]);
-  const logIdRef = useRef(0);
-  const [devOpen, setDevOpen] = useState(true);
   const debounceRef = useDebounceRef();
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const inputRef = useRef<HTMLInputElement>(null);
   const [apiDown, setApiDown] = useState(false);
   const [apiBannerDismissed, setApiBannerDismissed] = useState(false);
 
-  const devFetch = useCallback(async (url: string, summary: (data: unknown) => string) => {
-    const t0 = performance.now();
+  const devFetch = useCallback(async (url: string, _summary?: (data: unknown) => string) => {
     const res = await fetch(url);
-    const data = await res.json();
-    const duration = Math.round(performance.now() - t0);
-    if (isDevMode()) {
-      setDevLog((prev) => [
-        {
-          id: ++logIdRef.current,
-          time: new Date().toLocaleTimeString("no-NO"),
-          url,
-          duration,
-          summary: summary(data),
-          ok: res.ok,
-        },
-        ...prev.slice(0, 19),
-      ]);
-    }
-    return data;
+    return res.json();
   }, []);
 
   useEffect(() => {
@@ -652,55 +625,6 @@ export function ElevationMap() {
           </div>
         )}
 
-        {/* Dev panel */}
-        {isDevMode() && (
-          <div className="absolute bottom-3 right-3 z-[1000] w-80 rounded-xl border shadow-xl overflow-hidden font-mono text-[11px]"
-            style={{ background: "#0f172a", color: "#94a3b8", borderColor: "#1e293b" }}
-          >
-            <div
-              className="flex items-center justify-between px-3 py-2 cursor-pointer select-none"
-              style={{ background: "#1e293b", color: "#e2e8f0" }}
-              onClick={() => setDevOpen((o) => !o)}
-            >
-              <span className="font-semibold tracking-wide">DEV · API Log</span>
-              <div className="flex items-center gap-2">
-                <span style={{ color: "#64748b" }}>{devLog.length} kall</span>
-                {devOpen ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronUp className="h-3.5 w-3.5" />}
-              </div>
-            </div>
-            {devOpen && (
-              <div className="max-h-56 overflow-y-auto divide-y" style={{ borderColor: "#1e293b" }}>
-                {devLog.length === 0 ? (
-                  <p className="px-3 py-4 text-center" style={{ color: "#475569" }}>
-                    Ingen kall ennå, søk etter en adresse
-                  </p>
-                ) : (
-                  devLog.map((entry) => (
-                    <div key={entry.id} className="px-3 py-2 flex flex-col gap-0.5">
-                      <div className="flex items-center justify-between">
-                        <span style={{ color: entry.ok ? "#4ade80" : "#f87171" }}>
-                          {entry.ok ? "200 OK" : "ERR"}
-                        </span>
-                        <span style={{ color: "#475569" }}>{entry.time} · {entry.duration}ms</span>
-                      </div>
-                      <span className="truncate" style={{ color: "#7dd3fc" }}>{entry.url}</span>
-                      <span style={{ color: "#cbd5e1" }}>{entry.summary}</span>
-                    </div>
-                  ))
-                )}
-              </div>
-            )}
-            {devOpen && devLog.length > 0 && (
-              <button
-                onClick={() => setDevLog([])}
-                className="flex items-center gap-1 w-full justify-center py-1.5 text-[10px] transition-colors hover:opacity-80"
-                style={{ background: "#1e293b", color: "#64748b" }}
-              >
-                <X className="h-3 w-3" /> Tøm logg
-              </button>
-            )}
-          </div>
-        )}
       </div>
 
       {/* Info modal */}

@@ -348,7 +348,7 @@ export function ProtectedAreasMap() {
 
         {/* Legend + base layer toggle */}
         <div className="absolute top-3 right-3 z-[999] flex flex-col gap-2 items-end">
-          <div className="bg-card/90 rounded-xl border px-3 py-2 shadow text-xs">
+          <div className="hidden sm:block bg-card/90 rounded-xl border px-3 py-2 shadow text-xs">
             <p className="font-semibold text-muted-foreground mb-1.5">Andel vernet (%)</p>
             <div className="flex items-center gap-1.5">
               <div className="h-2.5 w-24 rounded-full" style={{ background: "linear-gradient(to right, var(--kv-negative), #facc15, var(--kv-positive))" }} />
@@ -378,30 +378,34 @@ export function ProtectedAreasMap() {
               className="absolute bottom-4 left-3 right-3 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 sm:w-96 z-[999] bg-card rounded-2xl shadow-xl px-4 py-4"
               style={{ border: "1.5px solid var(--border)" }}
             >
-              <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0">
-                  <p className="font-bold text-base leading-snug">{selected.kommunenavn}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">{selected.fylke ?? ""}</p>
-                </div>
+              <div className="relative">
                 <button
                   onClick={clearSelection}
-                  className="shrink-0 p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                  className="absolute -top-1 -right-1 shrink-0 p-2.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
                   aria-label="Lukk"
                 >
                   <X className="h-4 w-4" />
                 </button>
-              </div>
-
-              {vernTotal > 0 ? (
-                <div className="mt-3">
-                  <p className="text-2xl font-extrabold tabular-nums" style={{ color: label.color }}>
-                    {pct.toFixed(1).replace(".", ",")}%
-                  </p>
-                  <p className="text-xs text-muted-foreground">{label.text}</p>
+                <div className="flex items-baseline justify-between gap-2 pr-7">
+                  <p className="text-xl font-extrabold leading-snug truncate min-w-0" style={{ color: "var(--kv-blue)" }}>{selected.kommunenavn}</p>
+                  {vernTotal > 0 ? (
+                    <div className="flex items-baseline gap-1 shrink-0">
+                      <span className="text-xl font-extrabold tabular-nums" style={{ color: label.color }}>
+                        {pct.toFixed(1).replace(".", ",")}%
+                      </span>
+                      <span className="text-xs text-muted-foreground">vernet</span>
+                    </div>
+                  ) : (
+                    <span className="text-xs text-muted-foreground shrink-0">Ingen data</span>
+                  )}
                 </div>
-              ) : (
-                <p className="mt-3 text-sm text-muted-foreground">Ingen registrerte verneområder</p>
-              )}
+                <div className="flex items-center justify-between gap-2 mt-1 pr-7">
+                  <p className="text-xs text-muted-foreground">{selected.fylke ?? ""}</p>
+                  {vernTotal > 0 && (
+                    <span className="text-xs text-muted-foreground shrink-0">{label.text}</span>
+                  )}
+                </div>
+              </div>
 
               <div className="flex gap-2 mt-3">
                 <button

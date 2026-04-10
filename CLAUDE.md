@@ -11,6 +11,7 @@ A portfolio project showcasing Norwegian open geodata on interactive maps. Built
 - **Maps:** Leaflet 1.9.4 + react-leaflet 5.0.0 + react-leaflet-cluster
 - **Styling:** Tailwind CSS 4 + shadcn/ui (base-ui)
 - **Charts:** Recharts (via shadcn/ui chart components)
+- **Animation:** motion.dev (~3KB) — subtle entrance/scroll/hover animations on landing page (src/components/motion.tsx)
 - **Tiles:** Kartverket WMTS (topo + topograatone + sjokartraster) + OpenTopoMap (terreng)
 - **Icons:** lucide-react
 
@@ -101,22 +102,30 @@ public/data/
 ### Info card pattern (standard for all maps):
 All maps use a **compact floating card + expandable bottom Sheet** pattern:
 
-**Compact card** (floating, bottom-center):
-- Layer 1: Identity (badges, name, subtitle)
-- Layer 2: Key metric (big number + label)
-- Action row: "Vis mer" button + "Kjør hit" directions link
+**Compact card** (floating, bottom-center) — horizontal Z-pattern layout:
+- Row 1 left: Name (`text-xl font-extrabold`, brand blue) + supporting stat (e.g. "312 salg", "4 punkt")
+- Row 1 right: Key metric (`text-xl font-extrabold`, brand blue) + unit (e.g. "kr/m²", "kW", "moh.")
+- Row 2 left: Context (fylke, operator, type · year) in `text-xs text-muted-foreground`
+- Row 2 right: Badge or secondary stat (yoy change, "Idriftsatt 1987", type badge) in `text-xs`
+- Row 2 spacing: `mt-1` (4px) from row 1
+- X button: absolute top-right, `p-2.5` for WCAG touch target (36px)
+- Action row: buttons with `flex-1` for equal width, `mt-3` spacing
+- Name and metric share the same font size for visual balance
 
 **Detail sheet** (bottom Sheet, opened by "Vis mer"):
-- Layer 1: Full identity (badges, name, owner/operator, location)
-- Layer 2: Key metrics (bigger numbers, more detail)
-- Layer 3: Details (weather, connectors, category breakdown, etc.)
-- Layer 4: Links + source attribution
+- Header follows same Z-pattern as compact card (name+stat left, metric right)
+- Remaining sections: details, charts, rankings, source attribution
 
 **Interaction rules:**
 - Filter sheet and info sheet auto-close each other
 - Closing the detail sheet returns to the compact card
 - Closing the compact card deselects the item
 - Choropleth maps use `clearSelection()` which also resets polygon styling
+
+**Mobile optimizations:**
+- Legends (kr/m², inntekt, vern) hidden on mobile (`hidden sm:block`) to save map space
+- Badges use `text-xs` (12px) minimum — no `text-[10px]` on compact cards
+- Cabin badges use sentence case ("Ubetjent hytte") not uppercase
 
 ### Search architecture:
 - **Debounce:** 300ms after last keystroke before triggering search

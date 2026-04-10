@@ -413,45 +413,31 @@ export function ChargingMap() {
             className="absolute bottom-4 left-3 right-3 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 sm:w-96 z-[999] bg-card rounded-2xl shadow-xl px-4 py-4"
             style={{ border: "1.5px solid var(--border)" }}
           >
-            {/* Layer 1 — Identity */}
-            <div className="flex items-start justify-between gap-2">
-              <div className="min-w-0">
-                <div className="flex items-center gap-1.5 mb-1">
-                  {selected.open24h && (
-                    <span className="inline-flex items-center rounded-md bg-muted px-2 py-0.5 text-[10px] font-semibold text-foreground">24t</span>
-                  )}
-                  {selected.availability && selected.availability !== "Public" && (
-                    <span className="inline-flex items-center rounded-md bg-muted px-2 py-0.5 text-[10px] font-semibold text-foreground">{selected.availability}</span>
-                  )}
-                </div>
-                <p className="font-bold text-base truncate leading-snug">{selected.name}</p>
-                <p className="text-xs text-muted-foreground truncate">
-                  {[selected.operator !== selected.name ? selected.operator : null, selected.address ? `${selected.address}, ${selected.city}` : selected.city].filter(Boolean).join(" · ")}
-                </p>
-              </div>
+            <div className="relative">
               <button
                 onClick={() => setSelected(null)}
-                className="shrink-0 p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                className="absolute -top-1 -right-1 shrink-0 p-2.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
                 aria-label="Lukk"
               >
                 <X className="h-4 w-4" />
               </button>
-            </div>
-
-            {/* Layer 2 — Key metrics */}
-            <div className="mt-3 flex items-baseline gap-4">
-              {selected.maxKw != null && (
-                <div>
-                  <span className="text-2xl font-extrabold" style={{ color: "var(--kv-blue)" }}>{selected.maxKw}</span>
-                  <span className="text-sm font-medium text-muted-foreground ml-1">kW</span>
-                </div>
-              )}
-              {selected.numPoints != null && (
-                <div>
-                  <span className="text-2xl font-extrabold" style={{ color: "var(--kv-blue)" }}>{selected.numPoints}</span>
-                  <span className="text-sm font-medium text-muted-foreground ml-1">punkt</span>
-                </div>
-              )}
+              <div className="flex items-baseline justify-between gap-2 pr-7">
+                <p className="text-xl font-extrabold leading-snug truncate min-w-0" style={{ color: "var(--kv-blue)" }}>{selected.name}</p>
+                {selected.maxKw != null && (
+                  <div className="flex items-baseline gap-1 shrink-0">
+                    <span className="text-xl font-extrabold" style={{ color: "var(--kv-blue)" }}>{selected.maxKw}</span>
+                    <span className="text-xs text-muted-foreground">kW</span>
+                  </div>
+                )}
+              </div>
+              <div className="flex items-center justify-between gap-2 mt-1 pr-7">
+                <p className="text-xs text-muted-foreground truncate">
+                  {[selected.operator !== selected.name ? selected.operator : null, selected.open24h ? "Åpent: 24t" : null].filter(Boolean).join(" · ")}
+                </p>
+                <span className="text-xs text-muted-foreground shrink-0">
+                  {selected.numPoints != null ? `${selected.numPoints} punkt` : ""}
+                </span>
+              </div>
             </div>
 
             {/* Action row */}
@@ -487,16 +473,13 @@ export function ChargingMap() {
                 {/* Layer 1 — Identity */}
                 <div className="flex items-center gap-1.5 mb-1">
                   {selected.open24h && (
-                    <span className="inline-flex items-center rounded-md bg-muted px-2 py-0.5 text-[10px] font-semibold text-foreground">Åpent 24t</span>
+                    <span className="inline-flex items-center rounded-md bg-muted px-2 py-0.5 text-xs font-semibold text-foreground">Åpent 24t</span>
                   )}
                   {!selected.parkingFee && (
-                    <span className="inline-flex items-center rounded-md bg-muted px-2 py-0.5 text-[10px] font-semibold text-foreground">Gratis parkering</span>
+                    <span className="inline-flex items-center rounded-md bg-muted px-2 py-0.5 text-xs font-semibold text-foreground">Gratis parkering</span>
                   )}
                   {selected.parkingFee && (
-                    <span className="inline-flex items-center rounded-md bg-muted px-2 py-0.5 text-[10px] font-semibold text-foreground">Parkeringsavgift</span>
-                  )}
-                  {selected.locationType && (
-                    <span className="inline-flex items-center rounded-md bg-muted px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">{selected.locationType}</span>
+                    <span className="inline-flex items-center rounded-md bg-muted px-2 py-0.5 text-xs font-semibold text-foreground">Parkeringsavgift</span>
                   )}
                 </div>
                 <p className="font-bold text-lg leading-snug">{selected.name}</p>

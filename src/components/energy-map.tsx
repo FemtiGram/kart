@@ -1152,64 +1152,52 @@ export function EnergyMap() {
             className="absolute bottom-4 left-3 right-3 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 sm:w-96 z-[999] bg-card rounded-2xl shadow-xl px-4 py-4"
             style={{ border: "1.5px solid var(--border)" }}
           >
-            {/* Layer 1 — Identity */}
-            <div className="flex items-start justify-between gap-2">
-              <div className="min-w-0">
-                <div className="flex items-center gap-1.5 mb-0.5">
+            <div className="relative">
+              <button
+                onClick={() => setSelected(null)}
+                className="absolute -top-1 -right-1 shrink-0 p-2.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                aria-label="Lukk"
+              >
+                <X className="h-4 w-4" />
+              </button>
+              <div className="flex items-baseline justify-between gap-2 pr-7">
+                <div className="flex items-baseline gap-1.5 min-w-0">
+                  <p className="text-xl font-extrabold leading-snug truncate" style={{ color: "var(--kv-blue)" }}>{selected.name}</p>
+                  {selected.type === "vind" && selected.turbineCount != null && (
+                    <span className="text-xs text-muted-foreground shrink-0">{selected.turbineCount} turbiner</span>
+                  )}
+                </div>
+                <div className="flex items-baseline gap-1 shrink-0">
+                  <span className="text-xl font-extrabold" style={{ color: TYPE_META[selected.type].color }}>
+                    {selected.capacityMW != null ? Math.round(selected.capacityMW) : "—"}
+                  </span>
+                  <span className="text-xs text-muted-foreground">MW</span>
+                </div>
+              </div>
+              <div className="flex items-center justify-between gap-2 mt-1 pr-7">
+                <p className="text-xs text-muted-foreground truncate">
+                  {[selected.owner !== selected.name ? selected.owner : null, selected.municipality].filter(Boolean).join(" · ")}
+                </p>
+                <div className="flex items-center gap-1.5 shrink-0">
                   <span
-                    className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full text-white"
+                    className="text-xs font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full text-white"
                     style={{ background: selected.type === "vind" && selected.windStatus ? WIND_STATUS_META[selected.windStatus].color : TYPE_META[selected.type].color }}
                   >
                     {TYPE_META[selected.type].label}
                   </span>
-                  {selected.windStatus && selected.windStatus !== "operational" && (
+                  {selected.type === "vind" && selected.windStatus && selected.windStatus !== "operational" && (
                     <span
-                      className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full text-white"
+                      className="text-xs font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full text-white"
                       style={{ background: WIND_STATUS_META[selected.windStatus].color }}
                     >
                       {WIND_STATUS_META[selected.windStatus].label}
                     </span>
                   )}
-                </div>
-                <p className="font-bold text-base truncate leading-snug">{selected.name}</p>
-                <p className="text-xs text-muted-foreground truncate">
-                  {[selected.owner !== selected.name ? selected.owner : null, selected.municipality].filter(Boolean).join(" · ")}
-                </p>
-              </div>
-              <button
-                onClick={() => setSelected(null)}
-                className="shrink-0 p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                aria-label="Lukk"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-
-            {/* Layer 2 — Key metrics */}
-            <div className={`grid gap-3 mt-3 ${selected.type === "vind" ? "grid-cols-3" : "grid-cols-2"}`}>
-              <div className="flex items-baseline gap-1.5">
-                <span className="text-2xl font-extrabold" style={{ color: TYPE_META[selected.type].color }}>
-                  {selected.capacityMW != null ? Math.round(selected.capacityMW) : "—"}
-                </span>
-                <span className="text-xs text-muted-foreground">MW</span>
-              </div>
-              {selected.type === "vind" && (
-                <div className="flex items-baseline gap-1.5">
-                  <span className="text-2xl font-extrabold" style={{ color: TYPE_META[selected.type].color }}>
-                    {selected.turbineCount ?? "—"}
-                  </span>
-                  <span className="text-xs text-muted-foreground">turbiner</span>
-                </div>
-              )}
-              <div className="flex items-baseline gap-1.5">
-                <span className="text-2xl font-extrabold" style={{ color: TYPE_META[selected.type].color }}>
                   {selected.type === "vind"
-                    ? (selected.productionGWh != null ? Math.round(selected.productionGWh) : "—")
-                    : (selected.fallHeight != null ? Math.round(selected.fallHeight) : "—")}
-                </span>
-                <span className="text-xs text-muted-foreground">
-                  {selected.type === "vind" ? "GWh/år" : "m fallhøyde"}
-                </span>
+                    ? selected.productionGWh != null && <span className="text-xs text-muted-foreground">{Math.round(selected.productionGWh)} GWh/år</span>
+                    : selected.fallHeight != null && <span className="text-xs text-muted-foreground">{Math.round(selected.fallHeight)} m fall</span>
+                  }
+                </div>
               </div>
             </div>
 
@@ -1243,10 +1231,10 @@ export function EnergyMap() {
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
                 <div className="flex items-center gap-1.5 mb-0.5">
-                  <span className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full text-white" style={{ background: OILGAS_COLOR }}>
+                  <span className="text-xs font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full text-white" style={{ background: OILGAS_COLOR }}>
                     Olje & gass
                   </span>
-                  <span className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-muted text-foreground">
+                  <span className="text-xs font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-muted text-foreground">
                     {selectedOilGas.isSurface ? "Overflate" : "Undervanns"}
                   </span>
                 </div>
@@ -1303,17 +1291,17 @@ export function EnergyMap() {
                 </SheetHeader>
 
                 <div className="flex items-center gap-1.5 mb-1">
-                  <span className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full text-white" style={{ background: OILGAS_COLOR }}>
+                  <span className="text-xs font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full text-white" style={{ background: OILGAS_COLOR }}>
                     Olje & gass
                   </span>
-                  <span className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-muted text-foreground">
+                  <span className="text-xs font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-muted text-foreground">
                     {selectedOilGas.isSurface ? "Overflate" : "Undervanns"}
                   </span>
                   {selectedOilGas.phase === "IN SERVICE" && (
-                    <span className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-green-100 text-green-800">I drift</span>
+                    <span className="text-xs font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-green-100 text-green-800">I drift</span>
                   )}
                   {selectedOilGas.phase === "REMOVED" && (
-                    <span className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-red-100 text-red-800">Fjernet</span>
+                    <span className="text-xs font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-red-100 text-red-800">Fjernet</span>
                   )}
                 </div>
                 <p className="font-bold text-lg leading-snug">{selectedOilGas.name}</p>
@@ -1483,10 +1471,10 @@ export function EnergyMap() {
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
                 <div className="flex items-center gap-1.5 mb-0.5">
-                  <span className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full text-white" style={{ background: HAVVIND_COLOR }}>
+                  <span className="text-xs font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full text-white" style={{ background: HAVVIND_COLOR }}>
                     Havvind · Utredning
                   </span>
-                  <span className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-muted text-foreground">
+                  <span className="text-xs font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-muted text-foreground">
                     {selectedHavvind.typeAnlegg}
                   </span>
                 </div>
@@ -1541,10 +1529,10 @@ export function EnergyMap() {
                 </SheetHeader>
 
                 <div className="flex items-center gap-1.5 mb-1">
-                  <span className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full text-white" style={{ background: HAVVIND_COLOR }}>
+                  <span className="text-xs font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full text-white" style={{ background: HAVVIND_COLOR }}>
                     Havvind · Utredning
                   </span>
-                  <span className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-muted text-foreground">
+                  <span className="text-xs font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-muted text-foreground">
                     {selectedHavvind.typeAnlegg}
                   </span>
                 </div>
@@ -1622,14 +1610,14 @@ export function EnergyMap() {
                 {/* Layer 1 — Identity */}
                 <div className="flex items-center gap-1.5 mb-1">
                   <span
-                    className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full text-white"
+                    className="text-xs font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full text-white"
                     style={{ background: selected.type === "vind" && selected.windStatus ? WIND_STATUS_META[selected.windStatus].color : TYPE_META[selected.type].color }}
                   >
                     {TYPE_META[selected.type].label}
                   </span>
                   {selected.windStatus && selected.windStatus !== "operational" && (
                     <span
-                      className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full text-white"
+                      className="text-xs font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full text-white"
                       style={{ background: WIND_STATUS_META[selected.windStatus].color }}
                     >
                       {WIND_STATUS_META[selected.windStatus].label}
@@ -1803,11 +1791,11 @@ export function EnergyMap() {
                 {/* Pipeline detail */}
                 <div>
                   <div className="flex items-center gap-1.5 mb-1">
-                    <span className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full text-white" style={{ background: selectedPipeline.medium === "Gas" ? "#ca8a04" : OILGAS_COLOR }}>
+                    <span className="text-xs font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full text-white" style={{ background: selectedPipeline.medium === "Gas" ? "#ca8a04" : OILGAS_COLOR }}>
                       {selectedPipeline.medium ?? "Ukjent"}
                     </span>
                     {selectedPipeline.phase && (
-                      <span className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-muted text-foreground">
+                      <span className="text-xs font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-muted text-foreground">
                         {selectedPipeline.phase === "IN SERVICE" ? "I drift" : selectedPipeline.phase === "DECOMMISSIONED" ? "Nedlagt" : selectedPipeline.phase}
                       </span>
                     )}

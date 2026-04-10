@@ -326,44 +326,33 @@ export function ReservoirMap() {
             className="absolute bottom-4 left-3 right-3 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 sm:w-96 z-[999] bg-card rounded-2xl shadow-xl px-4 py-4"
             style={{ border: "1.5px solid var(--border)" }}
           >
-            <div className="flex items-start justify-between gap-2">
-              <div className="min-w-0">
-                <span className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full text-white bg-cyan-700">
-                  Magasin
-                </span>
-                <p className="font-bold text-base truncate leading-snug mt-1">{selected.name}</p>
+            <div className="relative">
+              <button
+                onClick={() => { setSelected(null); setShowInfoSheet(false); }}
+                className="absolute -top-1 -right-1 shrink-0 p-2.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                aria-label="Lukk"
+              >
+                <X className="h-4 w-4" />
+              </button>
+              <div className="flex items-baseline justify-between gap-2 pr-7">
+                <p className="text-xl font-extrabold leading-snug truncate min-w-0" style={{ color: "var(--kv-blue)" }}>{selected.name}</p>
+                {selected.volumeMm3 != null && (
+                  <div className="flex items-baseline gap-1 shrink-0">
+                    <span className="text-xl font-extrabold" style={{ color: "var(--kv-metric)" }}>
+                      {selected.volumeMm3.toFixed(1)}
+                    </span>
+                    <span className="text-xs text-muted-foreground">Mm³</span>
+                  </div>
+                )}
+              </div>
+              <div className="flex items-center justify-between gap-2 mt-1 pr-7">
                 <p className="text-xs text-muted-foreground truncate">
                   {selected.plantName ?? selected.river}
                 </p>
+                {selected.yearBuilt != null && (
+                  <span className="text-xs text-muted-foreground shrink-0">Idriftsatt {selected.yearBuilt}</span>
+                )}
               </div>
-              <div className="flex items-center gap-1 shrink-0">
-                <button
-                  onClick={() => { setSelected(null); setShowInfoSheet(false); }}
-                  className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                  aria-label="Lukk"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
-
-            <div className="mt-3 flex gap-4">
-              {selected.volumeMm3 != null && (
-                <div className="flex items-baseline gap-1.5">
-                  <span className="text-2xl font-extrabold" style={{ color: "var(--kv-metric)" }}>
-                    {selected.volumeMm3.toFixed(1)}
-                  </span>
-                  <span className="text-xs text-muted-foreground">Mm³</span>
-                </div>
-              )}
-              {selected.areaKm2 != null && (
-                <div className="flex items-baseline gap-1.5">
-                  <span className="text-2xl font-extrabold" style={{ color: "var(--kv-metric)" }}>
-                    {selected.areaKm2.toFixed(2)}
-                  </span>
-                  <span className="text-xs text-muted-foreground">km²</span>
-                </div>
-              )}
             </div>
 
             <div className="flex gap-2 mt-3">
@@ -396,7 +385,7 @@ export function ReservoirMap() {
                 </SheetHeader>
 
                 {/* Layer 1 — Identity */}
-                <span className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full text-white bg-cyan-700">
+                <span className="text-xs font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full text-white bg-cyan-700">
                   Magasin
                 </span>
                 <p className="font-bold text-lg leading-snug mt-1">{selected.name}</p>

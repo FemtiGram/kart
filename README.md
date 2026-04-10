@@ -27,6 +27,7 @@ Live at: [datakart.no](https://datakart.no)
 - **Next.js 16** (Turbopack) + **React 19** + **TypeScript**
 - **Leaflet 1.9** + **react-leaflet 5** + **react-leaflet-cluster** — interactive maps with clustering
 - **Recharts** (via shadcn/ui chart components) — charts
+- **Motion** (motion.dev) — subtle page animations
 - **Tailwind CSS 4** + **shadcn/ui** (Base UI) — styling
 - **Lucide React** — icons
 - **Vercel** — hosting (free tier, 10-second serverless timeout)
@@ -40,8 +41,6 @@ Live at: [datakart.no](https://datakart.no)
 | `NOBIL_API_KEY` | Required | API key from [NOBIL](https://nobil.no) — charging station data for the build-time fetch script |
 | `ENOVA_RT_API_KEY` | Optional | API key from [data.enova.no](https://data.enova.no) (NOBIL Real-time product) — enables live charging station availability |
 | `NVE_API_KEY` | Optional | API key from [NVE HydAPI](https://hydapi.nve.no/Users) — enables live river discharge and water level data on hydro plant and reservoir cards |
-| `NEXT_PUBLIC_DEV` | Optional | Set to `true` to enable the API call log panel on `/map` |
-
 Set in Vercel under Project Settings → Environment Variables, or locally in `.env.local`.
 
 ---

@@ -310,24 +310,33 @@ export function IncomeMap() {
             className="absolute bottom-4 left-3 right-3 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 sm:w-96 z-[999] bg-card rounded-2xl shadow-xl px-4 py-4"
             style={{ border: "1.5px solid var(--border)" }}
           >
-            <div className="flex items-start justify-between gap-2">
-              <div className="min-w-0">
-                <p className="font-bold text-base leading-snug">{selected.kommunenavn}</p>
-                <p className="text-xs text-muted-foreground">{getFylke(selected.kommunenummer)}</p>
-                {selected.income != null && (
-                  <p className="text-sm mt-0.5">
-                    <span className="font-semibold" style={{ color: "var(--kv-blue)" }}>{formatKr(selected.income)}</span>
-                    <span className="text-muted-foreground text-xs ml-1">median inntekt</span>
-                  </p>
-                )}
-              </div>
+            <div className="relative">
               <button
                 onClick={clearSelection}
-                className="shrink-0 p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                className="absolute -top-1 -right-1 shrink-0 p-2.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
                 aria-label="Lukk"
               >
                 <X className="h-4 w-4" />
               </button>
+              <div className="flex items-baseline justify-between gap-2 pr-7">
+                <p className="text-xl font-extrabold leading-snug truncate min-w-0" style={{ color: "var(--kv-blue)" }}>{selected.kommunenavn}</p>
+                {selected.income != null && (
+                  <div className="flex items-baseline gap-1 shrink-0">
+                    <span className="text-xl font-extrabold" style={{ color: "var(--kv-blue)" }}>{formatKr(selected.income)}</span>
+                  </div>
+                )}
+              </div>
+              <div className="flex items-center justify-between gap-2 mt-1 pr-7">
+                <p className="text-xs text-muted-foreground">{getFylke(selected.kommunenummer)}</p>
+                {selected.income != null && (() => {
+                  const { vsMedian } = computeStats(incomeData, selected.kommunenummer);
+                  return (
+                    <span className={`text-xs font-semibold shrink-0 ${vsMedian >= 0 ? "text-green-600" : "text-red-500"}`}>
+                      {vsMedian >= 0 ? "+" : ""}{vsMedian.toFixed(1)}% vs medianen
+                    </span>
+                  );
+                })()}
+              </div>
             </div>
 
             {compareMode ? (
@@ -397,7 +406,7 @@ export function IncomeMap() {
                 {selected.income != null && (
                   <button
                     onClick={() => setCompareMode(true)}
-                    className="inline-flex items-center justify-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl border bg-muted/50 hover:bg-muted transition-colors"
+                    className="flex-1 inline-flex items-center justify-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl border bg-muted/50 hover:bg-muted transition-colors"
                   >
                     <ArrowLeftRight className="h-3.5 w-3.5" /> Sammenlign
                   </button>
@@ -602,7 +611,7 @@ export function IncomeMap() {
         {!loading && values.length > 0 && (
           <div className="absolute top-3 right-3 z-[999] flex flex-col gap-2 items-end">
             <div
-              className="bg-card rounded-xl shadow-md px-3 py-2.5"
+              className="hidden sm:block bg-card rounded-xl shadow-md px-3 py-2.5"
               style={{ border: "1px solid var(--kv-muted-fill)" }}
             >
               <p className="text-xs font-semibold text-muted-foreground mb-1.5">Inntekt etter skatt</p>
