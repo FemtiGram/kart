@@ -649,7 +649,7 @@ export function BoligMap() {
               <div className="mt-3">
                 <div className="relative">
                   <input
-                    autoFocus
+                    autoFocus={typeof window !== "undefined" && window.innerWidth >= 640}
                     value={compareQuery}
                     onChange={(e) => { setCompareQuery(e.target.value); setCompareHighlight(-1); }}
                     onKeyDown={(e) => {

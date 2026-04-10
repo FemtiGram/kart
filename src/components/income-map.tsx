@@ -344,7 +344,7 @@ export function IncomeMap() {
                 <p className="text-[10px] text-foreground/70 mb-1.5">Velg en kommune å sammenligne med, eller klikk på kartet.</p>
                 <div className="relative">
                   <input
-                    autoFocus
+                    autoFocus={typeof window !== "undefined" && window.innerWidth >= 640}
                     value={compareQuery}
                     onChange={(e) => { setCompareQuery(e.target.value); setCompareHighlight(-1); }}
                     onKeyDown={(e) => {
