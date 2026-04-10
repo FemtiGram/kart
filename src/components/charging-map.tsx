@@ -247,7 +247,7 @@ export function ChargingMap() {
                   </SheetHeader>
                   <div className="flex flex-col gap-4 py-4">
                     <div>
-                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Kontakttype</p>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-foreground/70 mb-2">Kontakttype</p>
                       <div className="rounded-xl border overflow-hidden">
                         {allConnectors.map((c) => {
                           const active = filterConnectors.has(c);
@@ -262,12 +262,12 @@ export function ChargingMap() {
                                 {active && <Check className="h-3.5 w-3.5 text-primary-foreground" />}
                               </div>
                               <span className="font-medium flex-1 text-left">{c}</span>
-                              <span className="text-xs text-muted-foreground tabular-nums">{count}</span>
+                              <span className="text-xs text-foreground/70 tabular-nums">{count}</span>
                             </button>
                           );
                         })}
                       </div>
-                      <p className="text-xs text-muted-foreground mt-2">Ingen valgt = vis alle. Velg én eller flere for å filtrere.</p>
+                      <p className="text-xs text-foreground/70 mt-2">Ingen valgt = vis alle. Velg én eller flere for å filtrere.</p>
                     </div>
                     <div className="flex gap-2 pt-1">
                       <Button
@@ -291,13 +291,13 @@ export function ChargingMap() {
             </MapSearchBar>
         </div>
         <div className="flex items-center justify-between mt-2">
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-foreground/70">
             {loading ? loadingMessage : stations.length > 0 ? `${filteredStations.length}${filterConnectors.size > 0 ? ` av ${stations.length}` : ""} ladestasjoner i Norge · Kilde: NOBIL / Enova` : "Ingen ladestasjoner funnet"}
           </p>
           <button
             disabled
             title="Krever sanntidsdata, kommer snart"
-            className="relative inline-flex items-center gap-1.5 text-xs px-3 py-1 rounded-full border bg-muted text-muted-foreground opacity-50 cursor-not-allowed shrink-0"
+            className="relative inline-flex items-center gap-1.5 text-xs px-3 py-1 rounded-full border bg-muted text-foreground/70 opacity-50 cursor-not-allowed shrink-0"
           >
             <Zap className="h-3 w-3" />
             Kun ledige
@@ -426,15 +426,15 @@ export function ChargingMap() {
                 {selected.maxKw != null && (
                   <div className="flex items-baseline gap-1 shrink-0">
                     <span className="text-xl font-extrabold" style={{ color: "var(--kv-blue)" }}>{selected.maxKw}</span>
-                    <span className="text-xs text-muted-foreground">kW</span>
+                    <span className="text-xs text-foreground/70">kW</span>
                   </div>
                 )}
               </div>
               <div className="flex items-center justify-between gap-2 mt-1 pr-7">
-                <p className="text-xs text-muted-foreground truncate">
+                <p className="text-xs text-foreground/70 truncate">
                   {[selected.operator !== selected.name ? selected.operator : null, selected.open24h ? "Åpent: 24t" : null].filter(Boolean).join(" · ")}
                 </p>
-                <span className="text-xs text-muted-foreground shrink-0">
+                <span className="text-xs text-foreground/70 shrink-0">
                   {selected.numPoints != null ? `${selected.numPoints} punkt` : ""}
                 </span>
               </div>
@@ -498,13 +498,13 @@ export function ChargingMap() {
                       <span className="text-3xl font-extrabold" style={{ color: "var(--kv-blue)" }}>
                         {selected.maxKw ?? "–"}
                       </span>
-                      <p className="text-[10px] text-muted-foreground">maks kW</p>
+                      <p className="text-[10px] text-foreground/70">maks kW</p>
                     </div>
                     <div>
                       <span className="text-3xl font-extrabold" style={{ color: "var(--kv-blue)" }}>
                         {selected.numPoints ?? "–"}
                       </span>
-                      <p className="text-[10px] text-muted-foreground">ladepunkter</p>
+                      <p className="text-[10px] text-foreground/70">ladepunkter</p>
                     </div>
                   </div>
                 </div>
@@ -512,7 +512,7 @@ export function ChargingMap() {
                 {/* Layer 3 — Connectors breakdown */}
                 {selected.connectors.length > 0 && (
                   <div className="mt-4 pt-4 border-t">
-                    <p className="text-xs font-semibold text-muted-foreground mb-2">Kontakter</p>
+                    <p className="text-xs font-semibold text-foreground/70 mb-2">Kontakter</p>
                     <div className="space-y-2">
                       {selected.connectors.map((c) => (
                         <div key={c.type} className="flex items-center justify-between rounded-xl bg-muted/50 px-3 py-2">
@@ -533,7 +533,7 @@ export function ChargingMap() {
                 {/* Layer 4 — Station details */}
                 {(selected.owner || selected.availability) && (
                   <div className="mt-4 pt-4 border-t">
-                    <p className="text-xs font-semibold text-muted-foreground mb-2">Detaljer</p>
+                    <p className="text-xs font-semibold text-foreground/70 mb-2">Detaljer</p>
                     <div className="space-y-1">
                       {selected.owner && (
                         <div className="flex items-center justify-between text-sm">
@@ -561,7 +561,7 @@ export function ChargingMap() {
                   >
                     <Navigation className="h-4 w-4" /> Kjør hit
                   </a>
-                  <p className="text-xs text-muted-foreground text-center">
+                  <p className="text-xs text-foreground/70 text-center">
                     Kilde: <a href="https://nobil.no" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">NOBIL</a> / Enova
                   </p>
                   <DataDisclaimer />
@@ -624,11 +624,11 @@ export function ChargingMap() {
                 },
               ].map((c) => (
                 <div key={c.name} className="flex gap-3">
-                  <span className="mt-0.5 text-xs font-bold px-2 py-0.5 rounded-full bg-muted text-muted-foreground h-fit shrink-0">{c.name}</span>
+                  <span className="mt-0.5 text-xs font-bold px-2 py-0.5 rounded-full bg-muted text-foreground/70 h-fit shrink-0">{c.name}</span>
                   <div>
-                    <p className="text-xs font-semibold text-muted-foreground">{c.tag}</p>
+                    <p className="text-xs font-semibold text-foreground/70">{c.tag}</p>
                     <p className="text-sm mt-0.5">{c.desc}</p>
-                    <p className="text-xs text-muted-foreground mt-1">{c.speed} · {c.time}</p>
+                    <p className="text-xs text-foreground/70 mt-1">{c.speed} · {c.time}</p>
                   </div>
                 </div>
               ))}

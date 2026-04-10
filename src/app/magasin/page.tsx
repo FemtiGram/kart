@@ -63,7 +63,7 @@ export default function MagasinPage() {
               </AccordionItem>
             ))}
           </Accordion>
-          <p className="text-xs text-muted-foreground mt-8">
+          <p className="text-xs text-foreground/70 mt-8">
             Data fra <a href="https://www.nve.no" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">NVE</a>. Magasindata oppdateres med 1 times mellomlagring, fyllingsgrad ukentlig.
           </p>
         </div>

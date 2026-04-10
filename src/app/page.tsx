@@ -98,7 +98,7 @@ function CardLink({ href, icon: Icon, title, description, cta = "Åpne kart", in
             </div>
             <p className="text-sm text-muted-foreground leading-relaxed">{description}</p>
           </div>
-          <div className="flex items-center gap-1.5 mt-4 font-medium text-muted-foreground group-hover:text-foreground transition-colors text-xs">
+          <div className="flex items-center gap-1.5 mt-4 font-medium text-foreground/70 group-hover:text-foreground transition-colors text-xs">
             {cta}
             <ArrowRight className="h-3.5 w-3.5 -translate-x-1 group-hover:translate-x-0 transition-transform" />
           </div>
@@ -151,7 +151,7 @@ export default function Home() {
           {/* Featured */}
           <div>
             <FadeInView>
-              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">
+              <p className="text-xs font-semibold uppercase tracking-widest text-foreground/70 mb-3">
                 Aktuelt
               </p>
             </FadeInView>
@@ -164,7 +164,7 @@ export default function Home() {
           {groups.map((group) => (
             <div key={group.label}>
               <FadeInView>
-                <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">
+                <p className="text-xs font-semibold uppercase tracking-widest text-foreground/70 mb-3">
                   {group.label}
                 </p>
               </FadeInView>
@@ -198,14 +198,14 @@ export default function Home() {
                   </div>
                   <div>
                     <p className="font-semibold text-sm">{item.label}</p>
-                    <p className="text-xs text-muted-foreground leading-relaxed mt-0.5">{item.desc}</p>
+                    <p className="text-xs text-foreground/70 leading-relaxed mt-0.5">{item.desc}</p>
                   </div>
                 </div>
               </FadeInView>
             ))}
           </div>
 
-          <p className="text-xs text-muted-foreground mt-8">
+          <p className="text-xs text-foreground/70 mt-8">
             Laget av Anders Gram.
           </p>
         </FadeInView>

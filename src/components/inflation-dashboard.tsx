@@ -192,7 +192,7 @@ export function InflationDashboard() {
       {/* Hero stat cards */}
       <div>
         <h2 className="text-lg font-bold mb-1" style={{ color: "#24374c" }}>Nøkkeltall</h2>
-        <p className="text-xs text-muted-foreground mb-3">Sist oppdatert {current.month}.</p>
+        <p className="text-xs text-foreground/70 mb-3">Sist oppdatert {current.month}.</p>
       </div>
       <div className="grid grid-cols-1 gap-3">
         {/* KPI */}
@@ -214,7 +214,7 @@ export function InflationDashboard() {
             </p>
           </div>
           <div className="flex items-center justify-between gap-2 mt-1">
-            <p className="text-xs text-muted-foreground">12-månedersendring, {current.month}</p>
+            <p className="text-xs text-foreground/70">12-månedersendring, {current.month}</p>
             {(() => { const b = targetBadge(current.total, 2); return (
               <span className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-xs font-semibold shrink-0 ${b.className}`}>{b.text}</span>
             ); })()}
@@ -233,7 +233,7 @@ export function InflationDashboard() {
             </p>
           </div>
           <div className="flex items-center justify-between gap-2 mt-1">
-            <p className="text-xs text-muted-foreground">Justert for avgifter og energi</p>
+            <p className="text-xs text-foreground/70">Justert for avgifter og energi</p>
             {(() => { const b = targetBadge(current.jae, 2); return (
               <span className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-xs font-semibold shrink-0 ${b.className}`}>{b.text}</span>
             ); })()}
@@ -252,7 +252,7 @@ export function InflationDashboard() {
             </p>
           </div>
           <div className="flex items-center justify-between gap-2 mt-1">
-            <p className="text-xs text-muted-foreground">Norges Bank</p>
+            <p className="text-xs text-foreground/70">Norges Bank</p>
           </div>
         </div>
       </div>
@@ -320,7 +320,7 @@ export function InflationDashboard() {
       {/* Category breakdown */}
       <div>
         <h2 className="text-lg font-bold mb-3" style={{ color: "#24374c" }}>Prisvekst etter kategori</h2>
-        <p className="text-xs text-muted-foreground mb-4">12-månedersendring per {current.month}. Trykk for detaljer.</p>
+        <p className="text-xs text-foreground/70 mb-4">12-månedersendring per {current.month}. Trykk for detaljer.</p>
         <div className="space-y-2">
           {categories.map((cat) => {
             const Icon = CATEGORY_ICONS[cat.code] ?? ShoppingBag;
@@ -363,19 +363,19 @@ export function InflationDashboard() {
                   <div className="px-4 pb-3 border-t">
                     <div className="grid grid-cols-2 gap-3 mt-3">
                       <div>
-                        <p className="text-[10px] text-muted-foreground">12-månedersendring</p>
+                        <p className="text-[10px] text-foreground/70">12-månedersendring</p>
                         <p className={`text-lg font-bold ${changeColor(cat.change12m)}`}>
                           {cat.change12m != null ? `${cat.change12m > 0 ? "+" : ""}${cat.change12m.toFixed(1)}%` : "–"}
                         </p>
                       </div>
                       <div>
-                        <p className="text-[10px] text-muted-foreground">Siste måned</p>
+                        <p className="text-[10px] text-foreground/70">Siste måned</p>
                         <p className={`text-lg font-bold ${changeColor(cat.change1m)}`}>
                           {cat.change1m != null ? `${cat.change1m > 0 ? "+" : ""}${cat.change1m.toFixed(1)}%` : "–"}
                         </p>
                       </div>
                     </div>
-                    <p className="text-[10px] text-muted-foreground mt-2 italic">{cat.name}</p>
+                    <p className="text-[10px] text-foreground/70 mt-2 italic">{cat.name}</p>
                   </div>
                 )}
               </button>
@@ -448,7 +448,7 @@ export function InflationDashboard() {
       {Object.values(nordic).some((v) => v != null) && (
         <div>
           <h2 className="text-lg font-bold mb-3" style={{ color: "#24374c" }}>Nordisk sammenligning</h2>
-          <p className="text-xs text-muted-foreground mb-4">Harmonisert konsumprisindeks (HICP), 12-månedersendring.</p>
+          <p className="text-xs text-foreground/70 mb-4">Harmonisert konsumprisindeks (HICP), 12-månedersendring.</p>
           <div className="space-y-2">
             {(["NO", "SE", "DK", "FI", "EU"] as const).map((code) => {
               const val = nordic[code];
@@ -484,10 +484,10 @@ export function InflationDashboard() {
 
       {/* Source */}
       <div className="pt-4 border-t">
-        <p className="text-xs text-muted-foreground text-center">
+        <p className="text-xs text-foreground/70 text-center">
           Kilder: <a href="https://www.ssb.no/statbank/table/03013/" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">SSB Tabell 03013</a> (KPI) · <a href="https://www.ssb.no/statbank/table/05327/" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">SSB Tabell 05327</a> (KPI-JAE) · <a href="https://www.norges-bank.no" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Norges Bank</a> (styringsrente) · <a href="https://ec.europa.eu/eurostat" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Eurostat</a> (HICP)
         </p>
-        <p className="text-[10px] text-muted-foreground text-center mt-1">
+        <p className="text-[10px] text-foreground/70 text-center mt-1">
           Data kan inneholde feil og bør ikke brukes som eneste kilde for beslutninger.
         </p>
       </div>

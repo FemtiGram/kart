@@ -327,7 +327,7 @@ export function IncomeMap() {
                 )}
               </div>
               <div className="flex items-center justify-between gap-2 mt-1 pr-7">
-                <p className="text-xs text-muted-foreground">{getFylke(selected.kommunenummer)}</p>
+                <p className="text-xs text-foreground/70">{getFylke(selected.kommunenummer)}</p>
                 {selected.income != null && (() => {
                   const { vsMedian } = computeStats(incomeData, selected.kommunenummer);
                   return (
@@ -341,7 +341,7 @@ export function IncomeMap() {
 
             {compareMode ? (
               <div className="mt-3">
-                <p className="text-[10px] text-muted-foreground mb-1.5">Velg en kommune å sammenligne med, eller klikk på kartet.</p>
+                <p className="text-[10px] text-foreground/70 mb-1.5">Velg en kommune å sammenligne med, eller klikk på kartet.</p>
                 <div className="relative">
                   <input
                     autoFocus
@@ -380,7 +380,7 @@ export function IncomeMap() {
                             className={`w-full text-left px-3 py-2.5 text-sm transition-colors border-b last:border-0 ${compareHighlight === i ? "bg-muted" : "hover:bg-muted"}`}
                           >
                             <p className="font-medium">{k.kommunenavn}</p>
-                            <p className="text-[10px] text-muted-foreground">{getFylke(k.kommunenummer)}</p>
+                            <p className="text-[10px] text-foreground/70">{getFylke(k.kommunenummer)}</p>
                           </button>
                         </li>
                       ))}
@@ -389,7 +389,7 @@ export function IncomeMap() {
                 </div>
                 <button
                   onClick={() => { setCompareMode(false); setCompareQuery(""); }}
-                  className="mt-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                  className="mt-2 text-xs text-foreground/70 hover:text-foreground transition-colors"
                 >
                   Avbryt
                 </button>
@@ -441,7 +441,7 @@ export function IncomeMap() {
                   ) : (
                     <p className="text-sm text-muted-foreground">Ingen inntektsdata</p>
                   )}
-                  <p className="text-xs text-muted-foreground mt-1">median inntekt etter skatt per husholdning (2024)</p>
+                  <p className="text-xs text-foreground/70 mt-1">median inntekt etter skatt per husholdning (2024)</p>
                 </div>
 
                 {/* Layer 3 — Progress + rank */}
@@ -461,11 +461,11 @@ export function IncomeMap() {
                         />
                       </div>
                       <div className="flex justify-between mt-0.5">
-                        <span className="text-[10px] text-muted-foreground">{formatKr(min)}</span>
-                        <span className="text-[10px] text-muted-foreground">{formatKr(max)}</span>
+                        <span className="text-[10px] text-foreground/70">{formatKr(min)}</span>
+                        <span className="text-[10px] text-foreground/70">{formatKr(max)}</span>
                       </div>
                       <div className="mt-3 flex items-center justify-between gap-2">
-                        <span className="text-xs text-muted-foreground">#{rank} av {total} kommuner</span>
+                        <span className="text-xs text-foreground/70">#{rank} av {total} kommuner</span>
                         <span className="text-xs font-semibold" style={{ color: above ? "var(--kv-positive)" : "var(--kv-negative)" }}>
                           {above ? "+" : ""}{vsMedian.toFixed(1)}% vs. medianen
                         </span>
@@ -476,7 +476,7 @@ export function IncomeMap() {
 
                 {/* Layer 4 — Source */}
                 <div className="mt-4 pt-4 border-t">
-                  <p className="text-xs text-muted-foreground text-center">
+                  <p className="text-xs text-foreground/70 text-center">
                     Kilde: <a href="https://www.ssb.no/inntekt-og-forbruk/inntekt-og-formue/statistikk/inntekts-og-formuesstatistikk-for-husholdninger" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">SSB InntektStruk13</a>, 2024
                   </p>
                   <DataDisclaimer />
@@ -511,18 +511,18 @@ export function IncomeMap() {
 
                   <div className="flex items-center gap-1.5 mb-3">
                     <ArrowLeftRight className="h-4 w-4" style={{ color: "var(--kv-blue)" }} />
-                    <p className="text-xs font-semibold text-muted-foreground">Sammenligning · Median inntekt 2024</p>
+                    <p className="text-xs font-semibold text-foreground/70">Sammenligning · Median inntekt 2024</p>
                   </div>
 
                   {/* Header: two kommune names */}
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <p className="font-bold text-base leading-snug">{a.kommunenavn}</p>
-                      <p className="text-xs text-muted-foreground">{getFylke(a.kommunenummer)}</p>
+                      <p className="text-xs text-foreground/70">{getFylke(a.kommunenummer)}</p>
                     </div>
                     <div>
                       <p className="font-bold text-base leading-snug">{b.kommunenavn}</p>
-                      <p className="text-xs text-muted-foreground">{getFylke(b.kommunenummer)}</p>
+                      <p className="text-xs text-foreground/70">{getFylke(b.kommunenummer)}</p>
                     </div>
                   </div>
 
@@ -533,13 +533,13 @@ export function IncomeMap() {
                         <span className="text-2xl font-extrabold" style={{ color: "var(--kv-blue)" }}>
                           {incomeA ? formatKr(incomeA) : "–"}
                         </span>
-                        <p className="text-[10px] text-muted-foreground">median inntekt</p>
+                        <p className="text-[10px] text-foreground/70">median inntekt</p>
                       </div>
                       <div>
                         <span className="text-2xl font-extrabold" style={{ color: "var(--kv-blue)" }}>
                           {incomeB ? formatKr(incomeB) : "–"}
                         </span>
-                        <p className="text-[10px] text-muted-foreground">median inntekt</p>
+                        <p className="text-[10px] text-foreground/70">median inntekt</p>
                       </div>
                     </div>
                     {diff != null && (
@@ -553,7 +553,7 @@ export function IncomeMap() {
 
                   {/* Percentile bars */}
                   <div className="mt-4 pt-4 border-t">
-                    <p className="text-xs font-semibold text-muted-foreground mb-3">Plassering blant alle kommuner</p>
+                    <p className="text-xs font-semibold text-foreground/70 mb-3">Plassering blant alle kommuner</p>
                     <div className="space-y-3">
                       {[
                         { name: a.kommunenavn, stats: statsA, pct: pctA, income: incomeA },
@@ -562,7 +562,7 @@ export function IncomeMap() {
                         <div key={item.name}>
                           <div className="flex items-center justify-between mb-1">
                             <span className="text-xs font-medium">{item.name}</span>
-                            <span className="text-xs text-muted-foreground">#{item.stats.rank} av {item.stats.total}</span>
+                            <span className="text-xs text-foreground/70">#{item.stats.rank} av {item.stats.total}</span>
                           </div>
                           <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
                             <div
@@ -577,7 +577,7 @@ export function IncomeMap() {
 
                   {/* vs median comparison */}
                   <div className="mt-4 pt-4 border-t">
-                    <p className="text-xs font-semibold text-muted-foreground mb-2">Sammenlignet med mediankommunen</p>
+                    <p className="text-xs font-semibold text-foreground/70 mb-2">Sammenlignet med mediankommunen</p>
                     <div className="grid grid-cols-2 gap-4">
                       {[
                         { name: a.kommunenavn, stats: statsA },
@@ -588,7 +588,7 @@ export function IncomeMap() {
                           <span className="text-sm font-bold" style={{ color: item.stats.vsMedian >= 0 ? "var(--kv-positive)" : "var(--kv-negative)" }}>
                             {item.stats.vsMedian >= 0 ? "+" : ""}{item.stats.vsMedian.toFixed(1)}%
                           </span>
-                          <p className="text-[10px] text-muted-foreground">vs. medianen ({formatKr(item.stats.medianIncome)})</p>
+                          <p className="text-[10px] text-foreground/70">vs. medianen ({formatKr(item.stats.medianIncome)})</p>
                         </div>
                       ))}
                     </div>
@@ -596,7 +596,7 @@ export function IncomeMap() {
 
                   {/* Source */}
                   <div className="mt-4 pt-4 border-t">
-                    <p className="text-xs text-muted-foreground text-center">
+                    <p className="text-xs text-foreground/70 text-center">
                       Kilde: <a href="https://www.ssb.no/inntekt-og-forbruk/inntekt-og-formue/statistikk/inntekts-og-formuesstatistikk-for-husholdninger" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">SSB InntektStruk13</a>, 2024
                     </p>
                     <DataDisclaimer />
@@ -614,14 +614,14 @@ export function IncomeMap() {
               className="hidden sm:block bg-card rounded-xl shadow-md px-3 py-2.5"
               style={{ border: "1px solid var(--kv-muted-fill)" }}
             >
-              <p className="text-xs font-semibold text-muted-foreground mb-1.5">Inntekt etter skatt</p>
+              <p className="text-xs font-semibold text-foreground/70 mb-1.5">Inntekt etter skatt</p>
               <div
                 className="h-3 w-24 rounded-sm"
                 style={{ background: "linear-gradient(to right, var(--kv-negative), #facc15, var(--kv-positive))" }}
               />
               <div className="flex justify-between mt-0.5">
-                <span className="text-[10px] text-muted-foreground">{formatKr(min)}</span>
-                <span className="text-[10px] text-muted-foreground">{formatKr(max)}</span>
+                <span className="text-[10px] text-foreground/70">{formatKr(min)}</span>
+                <span className="text-[10px] text-foreground/70">{formatKr(max)}</span>
               </div>
             </div>
             <button
@@ -673,7 +673,7 @@ export function IncomeMap() {
                 href="https://www.ssb.no/inntekt-og-forbruk/inntekt-og-formue/statistikk/inntekts-og-formuesstatistikk-for-husholdninger"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors mt-1"
+                className="inline-flex items-center gap-1 text-xs font-medium text-foreground/70 hover:text-foreground transition-colors mt-1"
               >
                 <ExternalLink className="h-3 w-3" />
                 Åpne SSB InntektStruk13

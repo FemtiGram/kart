@@ -412,7 +412,7 @@ export function BoligMap() {
             </select>
             <button
               onClick={() => setShowInfo(true)}
-              className="ml-auto inline-flex items-center gap-1 text-xs px-3 py-1.5 rounded-full border bg-muted text-muted-foreground hover:text-foreground transition-colors shrink-0"
+              className="ml-auto inline-flex items-center gap-1 text-xs px-3 py-1.5 rounded-full border bg-muted text-foreground/70 hover:text-foreground transition-colors shrink-0"
             >
               <Info className="h-3 w-3" /> Om
             </button>
@@ -420,7 +420,7 @@ export function BoligMap() {
 
           {/* Stats summary */}
           <div className="flex items-center justify-between mt-2">
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-foreground/70">
               {loading
                 ? "Henter boligpriser..."
                 : `${visibleMarkers.length} kommuner med data · ${TYPE_LABELS[boligtype]} · ${year} · Kilde: SSB`}
@@ -591,11 +591,11 @@ export function BoligMap() {
           {/* Legend — hidden on mobile to save space */}
           {!loading && visibleMarkers.length > 0 && (
             <div className="hidden sm:block bg-card rounded-xl shadow-md px-3 py-2.5" style={{ border: "1px solid var(--border)" }}>
-              <p className="text-xs font-semibold text-muted-foreground mb-1.5">kr/m² ({TYPE_LABELS[boligtype]})</p>
+              <p className="text-xs font-semibold text-foreground/70 mb-1.5">kr/m² ({TYPE_LABELS[boligtype]})</p>
               <div className="h-3 w-24 rounded-sm" style={{ background: "linear-gradient(to right, #3b82f6, #f97316, #ef4444)" }} />
               <div className="flex justify-between mt-0.5">
-                <span className="text-[10px] text-muted-foreground">{minPrice.toLocaleString("nb-NO")}</span>
-                <span className="text-[10px] text-muted-foreground">{maxPrice.toLocaleString("nb-NO")}</span>
+                <span className="text-[10px] text-foreground/70">{minPrice.toLocaleString("nb-NO")}</span>
+                <span className="text-[10px] text-foreground/70">{maxPrice.toLocaleString("nb-NO")}</span>
               </div>
             </div>
           )}
@@ -619,7 +619,7 @@ export function BoligMap() {
                 <div className="flex items-baseline gap-1.5 min-w-0">
                   <p className="text-xl font-extrabold leading-snug truncate" style={{ color: "var(--kv-blue)" }}>{selected.kommunenavn}</p>
                   {selectedCount != null && (
-                    <span className="text-xs text-muted-foreground shrink-0">{selectedCount.toLocaleString("nb-NO")} salg</span>
+                    <span className="text-xs text-foreground/70 shrink-0">{selectedCount.toLocaleString("nb-NO")} salg</span>
                   )}
                 </div>
                 {selectedPrice != null ? (
@@ -627,14 +627,14 @@ export function BoligMap() {
                     <span className="text-xl font-extrabold" style={{ color: "var(--kv-blue)" }}>
                       {selectedPrice.toLocaleString("nb-NO")}
                     </span>
-                    <span className="text-xs text-muted-foreground">kr/m²</span>
+                    <span className="text-xs text-foreground/70">kr/m²</span>
                   </div>
                 ) : (
-                  <span className="text-xs text-muted-foreground shrink-0">Ingen data</span>
+                  <span className="text-xs text-foreground/70 shrink-0">Ingen data</span>
                 )}
               </div>
               <div className="flex items-center justify-between gap-2 mt-1 pr-7">
-                <p className="text-xs text-muted-foreground truncate">
+                <p className="text-xs text-foreground/70 truncate">
                   {[getFylke(selected.kommunenummer), TYPE_LABELS[boligtype], year].filter(Boolean).join(" · ")}
                 </p>
                 {yoyChange != null && (
@@ -691,7 +691,7 @@ export function BoligMap() {
                             className={`w-full text-left px-3 py-2.5 text-sm transition-colors border-b last:border-0 ${compareHighlight === i ? "bg-muted" : "hover:bg-muted"}`}
                           >
                             <p className="font-medium">{k.kommunenavn}</p>
-                            <p className="text-[10px] text-muted-foreground">{getFylke(k.kommunenummer)}</p>
+                            <p className="text-[10px] text-foreground/70">{getFylke(k.kommunenummer)}</p>
                           </button>
                         </li>
                       ))}
@@ -700,7 +700,7 @@ export function BoligMap() {
                 </div>
                 <button
                   onClick={() => { setCompareMode(false); setCompareQuery(""); }}
-                  className="mt-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                  className="mt-2 text-xs text-foreground/70 hover:text-foreground transition-colors"
                 >
                   Avbryt
                 </button>
@@ -751,7 +751,7 @@ export function BoligMap() {
                     <div className="flex items-baseline gap-1.5 min-w-0">
                       <p className="text-2xl font-extrabold leading-snug truncate" style={{ color: "var(--kv-blue)" }}>{selected.kommunenavn}</p>
                       {count != null && (
-                        <span className="text-xs text-muted-foreground shrink-0">{count.toLocaleString("nb-NO")} salg</span>
+                        <span className="text-xs text-foreground/70 shrink-0">{count.toLocaleString("nb-NO")} salg</span>
                       )}
                     </div>
                     {price != null ? (
@@ -759,14 +759,14 @@ export function BoligMap() {
                         <span className="text-2xl font-extrabold" style={{ color: "var(--kv-blue)" }}>
                           {price.toLocaleString("nb-NO")}
                         </span>
-                        <span className="text-xs text-muted-foreground">kr/m²</span>
+                        <span className="text-xs text-foreground/70">kr/m²</span>
                       </div>
                     ) : (
-                      <span className="text-xs text-muted-foreground shrink-0">Ingen data</span>
+                      <span className="text-xs text-foreground/70 shrink-0">Ingen data</span>
                     )}
                   </div>
                   <div className="flex items-center justify-between gap-2 mt-0.5">
-                    <p className="text-xs text-muted-foreground truncate">
+                    <p className="text-xs text-foreground/70 truncate">
                       {[fylke, TYPE_LABELS[boligtype], year].filter(Boolean).join(" · ")}
                     </p>
                     {yoyChange != null && (
@@ -778,7 +778,7 @@ export function BoligMap() {
 
                   {/* All dwelling types comparison */}
                   <div className="mt-4 pt-4 border-t">
-                    <p className="text-xs font-semibold text-muted-foreground mb-2">Alle boligtyper i {selected.kommunenavn}</p>
+                    <p className="text-xs font-semibold text-foreground/70 mb-2">Alle boligtyper i {selected.kommunenavn}</p>
                     <div className="space-y-2">
                       {TYPE_KEYS.map((t) => {
                         const p = getPrice(nr, t, year);
@@ -793,12 +793,13 @@ export function BoligMap() {
                           >
                             <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
                             <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium">{TYPE_LABELS[t]}</p>
-                              {p != null ? (
-                                <p className="text-xs text-muted-foreground">{c?.toLocaleString("nb-NO") ?? "–"} salg</p>
-                              ) : (
-                                <p className="text-xs text-muted-foreground">Ingen data</p>
-                              )}
+                              <p className="text-sm font-medium">
+                                {TYPE_LABELS[t]}
+                                {c != null && <span className="text-xs text-foreground/70 font-normal ml-1.5">{c.toLocaleString("nb-NO")} salg</span>}
+                              </p>
+                              <p className="text-xs text-foreground/70">
+                                {t === "01" ? "Frittliggende hus med egen tomt" : t === "02" ? "Rekkehus, tomannsboliger og sammenbygde småhus" : p != null ? "Leiligheter i boligblokk" : "Ingen data"}
+                              </p>
                             </div>
                             <span className="text-sm font-bold tabular-nums" style={{ color: p ? "var(--kv-blue)" : undefined }}>
                               {p != null ? `${p.toLocaleString("nb-NO")} kr/m²` : "–"}
@@ -818,7 +819,7 @@ export function BoligMap() {
                     return (
                       <div className="mt-4 pt-4 border-t">
                         <div className="flex items-center justify-between mb-2">
-                          <p className="text-xs font-semibold text-muted-foreground">Prisutvikling ({years[0]}–{years[years.length - 1]})</p>
+                          <p className="text-xs font-semibold text-foreground/70">Prisutvikling ({years[0]}–{years[years.length - 1]})</p>
                           {totalChange != null && (
                             <span className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-xs font-semibold ${totalChange >= 0 ? "bg-green-50 text-green-700" : "bg-red-50 text-red-600"}`}>
                               {totalChange >= 0 ? "+" : ""}{totalChange.toFixed(0)}%
@@ -840,11 +841,11 @@ export function BoligMap() {
                           ))}
                         </div>
                         <div className="flex justify-between mt-0.5">
-                          <span className="text-[10px] text-muted-foreground">{years[0]}</span>
-                          <span className="text-[10px] text-muted-foreground">{years[years.length - 1]}</span>
+                          <span className="text-[10px] text-foreground/70">{years[0]}</span>
+                          <span className="text-[10px] text-foreground/70">{years[years.length - 1]}</span>
                         </div>
                         {mergedKommuner.has(nr) && (
-                          <p className="text-[10px] text-muted-foreground mt-2 italic">
+                          <p className="text-[10px] text-foreground/70 mt-2 italic">
                             * Kommunen endret grenser i 2020. Data før 2020 gjelder tidligere kommuneinndeling og er ikke direkte sammenlignbar.
                           </p>
                         )}
@@ -855,15 +856,15 @@ export function BoligMap() {
                   {/* Rankings */}
                   {rank > 0 && (
                     <div className="mt-4 pt-4 border-t">
-                      <p className="text-xs font-semibold text-muted-foreground mb-2">Rangering</p>
+                      <p className="text-xs font-semibold text-foreground/70 mb-2">Rangering</p>
                       <div className="space-y-1.5">
                         <div className="flex items-center justify-between">
-                          <span className="text-xs text-muted-foreground">Nasjonalt</span>
+                          <span className="text-xs text-foreground/70">Nasjonalt</span>
                           <span className="text-xs font-semibold">#{rank} av {total} kommuner</span>
                         </div>
                         {price != null && median > 0 && (
                           <div className="flex items-center justify-between">
-                            <span className="text-xs text-muted-foreground">vs. medianen</span>
+                            <span className="text-xs text-foreground/70">vs. medianen</span>
                             <span className={`text-xs font-semibold ${price >= median ? "text-green-600" : "text-red-500"}`}>
                               {price >= median ? "+" : ""}{(((price - median) / median) * 100).toFixed(1)}%
                             </span>
@@ -871,12 +872,12 @@ export function BoligMap() {
                         )}
                         {fylke && fRank.total > 1 && (
                           <div className="flex items-center justify-between">
-                            <span className="text-xs text-muted-foreground">{fylke}</span>
+                            <span className="text-xs text-foreground/70">{fylke}</span>
                             <span className="text-xs font-semibold">#{fRank.rank} av {fRank.total}</span>
                           </div>
                         )}
                         <div className="flex items-center justify-between">
-                          <span className="text-xs text-muted-foreground">Dyrere enn</span>
+                          <span className="text-xs text-foreground/70">Dyrere enn</span>
                           <span className="text-xs font-semibold">{percentile}% av kommuner</span>
                         </div>
                       </div>
@@ -885,7 +886,7 @@ export function BoligMap() {
 
                   {/* Source */}
                   <div className="mt-4 pt-4 border-t">
-                    <p className="text-xs text-muted-foreground text-center">
+                    <p className="text-xs text-foreground/70 text-center">
                       Kilde: <a href="https://www.ssb.no/statbank/table/06035/" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">SSB Tabell 06035</a>, {year}
                     </p>
                     <DataDisclaimer />
@@ -922,18 +923,18 @@ export function BoligMap() {
 
                   <div className="flex items-center gap-1.5 mb-3">
                     <ArrowLeftRight className="h-4 w-4" style={{ color: "var(--kv-blue)" }} />
-                    <p className="text-xs font-semibold text-muted-foreground">Sammenligning · {TYPE_LABELS[boligtype]} · {year}</p>
+                    <p className="text-xs font-semibold text-foreground/70">Sammenligning · {TYPE_LABELS[boligtype]} · {year}</p>
                   </div>
 
                   {/* Header: two kommune names */}
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <p className="font-bold text-base leading-snug">{a.kommunenavn}</p>
-                      <p className="text-xs text-muted-foreground">{getFylke(a.kommunenummer)}</p>
+                      <p className="text-xs text-foreground/70">{getFylke(a.kommunenummer)}</p>
                     </div>
                     <div>
                       <p className="font-bold text-base leading-snug">{b.kommunenavn}</p>
-                      <p className="text-xs text-muted-foreground">{getFylke(b.kommunenummer)}</p>
+                      <p className="text-xs text-foreground/70">{getFylke(b.kommunenummer)}</p>
                     </div>
                   </div>
 
@@ -944,13 +945,13 @@ export function BoligMap() {
                         <span className="text-2xl font-extrabold" style={{ color: "var(--kv-blue)" }}>
                           {priceA?.toLocaleString("nb-NO") ?? "–"}
                         </span>
-                        <p className="text-[10px] text-muted-foreground">kr/m²</p>
+                        <p className="text-[10px] text-foreground/70">kr/m²</p>
                       </div>
                       <div>
                         <span className="text-2xl font-extrabold" style={{ color: "var(--kv-blue)" }}>
                           {priceB?.toLocaleString("nb-NO") ?? "–"}
                         </span>
-                        <p className="text-[10px] text-muted-foreground">kr/m²</p>
+                        <p className="text-[10px] text-foreground/70">kr/m²</p>
                       </div>
                     </div>
                     {diff != null && (
@@ -964,9 +965,9 @@ export function BoligMap() {
 
                   {/* All types comparison table */}
                   <div className="mt-4 pt-4 border-t">
-                    <p className="text-xs font-semibold text-muted-foreground mb-2">Alle boligtyper</p>
+                    <p className="text-xs font-semibold text-foreground/70 mb-2">Alle boligtyper</p>
                     <div className="space-y-1">
-                      <div className="grid grid-cols-[1fr_auto_auto_auto] gap-2 text-xs font-semibold text-muted-foreground px-1 mb-1">
+                      <div className="grid grid-cols-[1fr_auto_auto_auto] gap-2 text-xs font-semibold text-foreground/70 px-1 mb-1">
                         <span />
                         <span className="text-right w-20">{a.kommunenavn}</span>
                         <span className="text-right w-20">{b.kommunenavn}</span>
@@ -1001,7 +1002,7 @@ export function BoligMap() {
                   {/* Trend comparison */}
                   {(sparkA.some((v) => v != null) || sparkB.some((v) => v != null)) && (
                     <div className="mt-4 pt-4 border-t">
-                      <p className="text-xs font-semibold text-muted-foreground mb-2">Prisutvikling ({years[0]}–{years[years.length - 1]})</p>
+                      <p className="text-xs font-semibold text-foreground/70 mb-2">Prisutvikling ({years[0]}–{years[years.length - 1]})</p>
                       <div className="grid grid-cols-2 gap-4">
                         {[{ name: a.kommunenavn, values: sparkA }, { name: b.kommunenavn, values: sparkB }].map((item) => {
                           const first = item.values.find((v) => v != null);
@@ -1032,15 +1033,15 @@ export function BoligMap() {
                                 ))}
                               </div>
                               <div className="flex justify-between mt-0.5">
-                                <span className="text-[10px] text-muted-foreground">{years[0]}</span>
-                                <span className="text-[10px] text-muted-foreground">{years[years.length - 1]}</span>
+                                <span className="text-[10px] text-foreground/70">{years[0]}</span>
+                                <span className="text-[10px] text-foreground/70">{years[years.length - 1]}</span>
                               </div>
                             </div>
                           );
                         })}
                       </div>
                       {(mergedKommuner.has(a.kommunenummer) || mergedKommuner.has(b.kommunenummer)) && (
-                        <p className="col-span-2 text-[10px] text-muted-foreground mt-1 italic">
+                        <p className="col-span-2 text-[10px] text-foreground/70 mt-1 italic">
                           * {[mergedKommuner.has(a.kommunenummer) ? a.kommunenavn : null, mergedKommuner.has(b.kommunenummer) ? b.kommunenavn : null].filter(Boolean).join(" og ")} endret grenser i 2020. Data før 2020 gjelder tidligere kommuneinndeling.
                         </p>
                       )}
@@ -1049,7 +1050,7 @@ export function BoligMap() {
 
                   {/* Rankings side by side */}
                   <div className="mt-4 pt-4 border-t">
-                    <p className="text-xs font-semibold text-muted-foreground mb-2">Rangering</p>
+                    <p className="text-xs font-semibold text-foreground/70 mb-2">Rangering</p>
                     <div className="grid grid-cols-2 gap-4">
                       {[
                         { name: a.kommunenavn, rank: rankA, nr: a.kommunenummer },
@@ -1062,16 +1063,16 @@ export function BoligMap() {
                           <div key={item.nr} className="space-y-1">
                             <p className="text-xs font-medium mb-1">{item.name}</p>
                             <div className="flex items-center justify-between">
-                              <span className="text-[10px] text-muted-foreground">Nasjonalt</span>
+                              <span className="text-[10px] text-foreground/70">Nasjonalt</span>
                               <span className="text-xs font-semibold">#{item.rank.rank} av {item.rank.total}</span>
                             </div>
                             <div className="flex items-center justify-between">
-                              <span className="text-[10px] text-muted-foreground">Dyrere enn</span>
+                              <span className="text-[10px] text-foreground/70">Dyrere enn</span>
                               <span className="text-xs font-semibold">{pct}%</span>
                             </div>
                             {fy && fR.total > 1 && (
                               <div className="flex items-center justify-between">
-                                <span className="text-[10px] text-muted-foreground">{fy}</span>
+                                <span className="text-[10px] text-foreground/70">{fy}</span>
                                 <span className="text-xs font-semibold">#{fR.rank} av {fR.total}</span>
                               </div>
                             )}
@@ -1083,7 +1084,7 @@ export function BoligMap() {
 
                   {/* Source */}
                   <div className="mt-4 pt-4 border-t">
-                    <p className="text-xs text-muted-foreground text-center">
+                    <p className="text-xs text-foreground/70 text-center">
                       Kilde: <a href="https://www.ssb.no/statbank/table/06035/" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">SSB Tabell 06035</a>, {year}
                     </p>
                     <DataDisclaimer />
@@ -1116,7 +1117,7 @@ export function BoligMap() {
                   Velg mellom eneboliger, småhus og blokkleiligheter, og se hvordan prisene har utviklet seg over tid.
                 </p>
               </div>
-              <p className="text-xs text-muted-foreground mt-4 pt-3 border-t">
+              <p className="text-xs text-foreground/70 mt-4 pt-3 border-t">
                 Kilde: <a href="https://www.ssb.no/statbank/table/06035/" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">SSB Tabell 06035</a>
               </p>
             </div>

@@ -138,13 +138,13 @@ export function MapSearchBar({ search: s, placeholder, children }: MapSearchBarP
               >
                 <MapPin className="h-4 w-4 mt-0.5 shrink-0 text-muted-foreground" />
                 {sug.type === "fylke" ? (
-                  <div><p className="font-medium">{sug.fylkesnavn}</p><p className="text-xs text-muted-foreground">Fylke</p></div>
+                  <div><p className="font-medium">{sug.fylkesnavn}</p><p className="text-xs text-foreground/70">Fylke</p></div>
                 ) : sug.type === "kommune" ? (
-                  <div><p className="font-medium">{sug.kommunenavn}</p><p className="text-xs text-muted-foreground">Kommune</p></div>
+                  <div><p className="font-medium">{sug.kommunenavn}</p><p className="text-xs text-foreground/70">Kommune</p></div>
                 ) : sug.type === "adresse" ? (
-                  <div><p className="font-medium">{sug.addr.adressetekst}</p><p className="text-xs text-muted-foreground">{sug.addr.poststed}, {sug.addr.kommunenavn}</p></div>
+                  <div><p className="font-medium">{sug.addr.adressetekst}</p><p className="text-xs text-foreground/70">{sug.addr.poststed}, {sug.addr.kommunenavn}</p></div>
                 ) : sug.type === "anlegg" ? (
-                  <div><p className="font-medium">{sug.name}</p><p className="text-xs text-muted-foreground">{sug.subtitle}</p></div>
+                  <div><p className="font-medium">{sug.name}</p><p className="text-xs text-foreground/70">{sug.subtitle}</p></div>
                 ) : null}
               </button>
             </li>

@@ -259,7 +259,7 @@ export function WindPowerMap() {
           </MapSearchBar>
         </div>
         <div className="flex items-center justify-between mt-2">
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-foreground/70">
             {loading
               ? "Henter vindkraftverk..."
               : farms.length > 0
@@ -268,7 +268,7 @@ export function WindPowerMap() {
           </p>
           <button
             onClick={() => setShowInfo(true)}
-            className="inline-flex items-center gap-1 text-xs px-3 py-1 rounded-full border bg-muted text-muted-foreground hover:text-foreground transition-colors shrink-0"
+            className="inline-flex items-center gap-1 text-xs px-3 py-1 rounded-full border bg-muted text-foreground/70 hover:text-foreground transition-colors shrink-0"
           >
             <Info className="h-3 w-3" />
             Om data
@@ -388,7 +388,7 @@ export function WindPowerMap() {
                 </p>
                 {selected.owner &&
                   selected.owner !== selected.name && (
-                    <p className="text-xs text-muted-foreground truncate">
+                    <p className="text-xs text-foreground/70 truncate">
                       {selected.owner}
                     </p>
                   )}
@@ -403,7 +403,7 @@ export function WindPowerMap() {
                   href={`https://www.google.com/maps/dir/?api=1&destination=${selected.lat},${selected.lon}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border mt-2 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors w-fit"
+                  className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border mt-2 text-foreground/70 hover:text-foreground hover:bg-muted transition-colors w-fit"
                 >
                   <ExternalLink className="h-3 w-3" /> Veibeskrivelse
                 </a>
@@ -428,7 +428,7 @@ export function WindPowerMap() {
                       ? Math.round(selected.capacityMW)
                       : "—"}
                   </span>
-                  <p className="text-xs text-muted-foreground">MW</p>
+                  <p className="text-xs text-foreground/70">MW</p>
                 </div>
                 <div>
                   <span
@@ -437,7 +437,7 @@ export function WindPowerMap() {
                   >
                     {selected.turbineCount ?? "—"}
                   </span>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-foreground/70">
                     turbiner
                   </p>
                 </div>
@@ -450,7 +450,7 @@ export function WindPowerMap() {
                       ? Math.round(selected.productionGWh)
                       : "—"}
                   </span>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-foreground/70">
                     GWh/år
                   </p>
                 </div>
@@ -495,7 +495,7 @@ export function WindPowerMap() {
                 <strong>GWh/år</strong> er forventet årlig produksjon,
                 som avhenger av vindforhold.
               </p>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-foreground/70">
                 Data oppdateres hver time. Kilde:{" "}
                 <a
                   href="https://api.nve.no/doc/vindkraftdatabase/"

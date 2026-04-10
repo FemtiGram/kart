@@ -198,7 +198,7 @@ export function ReservoirMap() {
         <div className="max-w-xl mx-auto relative flex flex-col gap-2">
           <MapSearchBar search={searchProps} placeholder="Søk etter magasin eller sted..." />
         </div>
-        <p className="text-xs text-muted-foreground mt-2 max-w-xl mx-auto">
+        <p className="text-xs text-foreground/70 mt-2 max-w-xl mx-auto">
           {loading ? "Henter magasindata..." : `${stats.total} magasiner${stats.totalVolume > 0 ? ` · ${stats.totalVolume.toLocaleString("nb-NO")} Mm³ total kapasitet` : ""} · Kilde: NVE`}
         </p>
       </div>
@@ -341,16 +341,16 @@ export function ReservoirMap() {
                     <span className="text-xl font-extrabold" style={{ color: "var(--kv-metric)" }}>
                       {selected.volumeMm3.toFixed(1)}
                     </span>
-                    <span className="text-xs text-muted-foreground">Mm³</span>
+                    <span className="text-xs text-foreground/70">Mm³</span>
                   </div>
                 )}
               </div>
               <div className="flex items-center justify-between gap-2 mt-1 pr-7">
-                <p className="text-xs text-muted-foreground truncate">
+                <p className="text-xs text-foreground/70 truncate">
                   {selected.plantName ?? selected.river}
                 </p>
                 {selected.yearBuilt != null && (
-                  <span className="text-xs text-muted-foreground shrink-0">Idriftsatt {selected.yearBuilt}</span>
+                  <span className="text-xs text-foreground/70 shrink-0">Idriftsatt {selected.yearBuilt}</span>
                 )}
               </div>
             </div>
@@ -401,13 +401,13 @@ export function ReservoirMap() {
                   {selected.volumeMm3 != null && (
                     <div className="flex items-baseline gap-1.5">
                       <span className="text-3xl font-extrabold" style={{ color: "var(--kv-metric)" }}>{selected.volumeMm3.toFixed(1)}</span>
-                      <span className="text-xs text-muted-foreground">Mm³ volum</span>
+                      <span className="text-xs text-foreground/70">Mm³ volum</span>
                     </div>
                   )}
                   {selected.areaKm2 != null && (
                     <div className="flex items-baseline gap-1.5">
                       <span className="text-3xl font-extrabold" style={{ color: "var(--kv-metric)" }}>{selected.areaKm2.toFixed(2)}</span>
-                      <span className="text-xs text-muted-foreground">km² areal</span>
+                      <span className="text-xs text-foreground/70">km² areal</span>
                     </div>
                   )}
                 </div>
@@ -444,7 +444,7 @@ export function ReservoirMap() {
                 {nationalFill && (
                   <div className="mt-4 pt-4 border-t">
                     <div className="flex items-center justify-between mb-1.5">
-                      <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Norges magasiner · uke {nationalFill.iso_uke}</span>
+                      <span className="text-xs font-semibold uppercase tracking-wide text-foreground/70">Norges magasiner · uke {nationalFill.iso_uke}</span>
                       <span className="text-sm font-bold" style={{ color: nationalFill.fyllingsgrad > 0.5 ? "#0369a1" : nationalFill.fyllingsgrad > 0.3 ? "var(--kv-warning)" : "var(--kv-negative)" }}>
                         {(nationalFill.fyllingsgrad * 100).toFixed(1)}%
                         {nationalFill.endring !== 0 && (
@@ -463,7 +463,7 @@ export function ReservoirMap() {
                         }}
                       />
                     </div>
-                    <p className="text-[10px] text-muted-foreground mt-1">
+                    <p className="text-[10px] text-foreground/70 mt-1">
                       {nationalFill.fylling_TWh.toFixed(1)} av {nationalFill.kapasitet_TWh.toFixed(1)} TWh
                     </p>
                   </div>
@@ -479,7 +479,7 @@ export function ReservoirMap() {
                   >
                     <Navigation className="h-4 w-4" /> Kjør hit
                   </a>
-                  <p className="text-xs text-muted-foreground text-center">
+                  <p className="text-xs text-foreground/70 text-center">
                     Kilde: <a href="https://nve.geodataonline.no/arcgis/rest/services/" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">NVE Geodata</a>
                   </p>
                   <DataDisclaimer />
@@ -510,7 +510,7 @@ export function ReservoirMap() {
                 <p className="font-semibold mb-1">Volum (Mm³)</p>
                 <p className="text-muted-foreground">Magasinets totale lagringskapasitet i millioner kubikkmeter vann.</p>
               </div>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-foreground/70">
                 Kilde: <a href="https://nve.geodataonline.no/arcgis/rest/services/" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">NVE Geodata</a> · <a href="https://www.nve.no/energi/energisystem/magasinstatistikk/" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">NVE Magasinstatistikk</a>
               </p>
               <DataDisclaimer />

@@ -63,7 +63,7 @@ export default function LonnPage() {
               </AccordionItem>
             ))}
           </Accordion>
-          <p className="text-xs text-muted-foreground mt-8">
+          <p className="text-xs text-foreground/70 mt-8">
             Data fra <a href="https://www.ssb.no" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">SSB</a> (Statistisk sentralbyrå). Kommunegrenser fra <a href="https://www.kartverket.no" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Kartverket</a>.
           </p>
         </div>

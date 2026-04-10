@@ -342,7 +342,7 @@ export function CabinMap() {
                   </SheetHeader>
                   <div className="flex flex-col gap-4 py-4">
                     <div>
-                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Hyttetype</p>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-foreground/70 mb-2">Hyttetype</p>
                       <div className="rounded-xl border overflow-hidden">
                         {(["fjellhytte", "ubetjent"] as const).map((type) => {
                           const active = filterTypes.has(type);
@@ -357,14 +357,14 @@ export function CabinMap() {
                               </div>
                               <div className="h-3 w-3 rounded-full shrink-0" style={{ background: CABIN_COLORS[type] }} />
                               <span className="font-medium flex-1 text-left">{CABIN_LABELS[type]}</span>
-                              <span className="text-xs text-muted-foreground tabular-nums">{norwayCabins.filter((c) => c.cabinType === type).length}</span>
+                              <span className="text-xs text-foreground/70 tabular-nums">{norwayCabins.filter((c) => c.cabinType === type).length}</span>
                             </button>
                           );
                         })}
                       </div>
                     </div>
                     <div>
-                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Organisasjon</p>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-foreground/70 mb-2">Organisasjon</p>
                       <div className="rounded-xl border overflow-hidden">
                         <button
                           onClick={() => setFilterDNT((v) => !v)}
@@ -374,7 +374,7 @@ export function CabinMap() {
                             {filterDNT && <Check className="h-3.5 w-3.5 text-primary-foreground" />}
                           </div>
                           <span className="font-medium flex-1 text-left">Kun DNT-hytter</span>
-                          <span className="text-xs text-muted-foreground tabular-nums">{dntCount}</span>
+                          <span className="text-xs text-foreground/70 tabular-nums">{dntCount}</span>
                         </button>
                       </div>
                     </div>
@@ -400,7 +400,7 @@ export function CabinMap() {
             </MapSearchBar>
         </div>
         <div className="flex items-center justify-between mt-2">
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-foreground/70">
             {loading ? "Henter hytter..." : norwayCabins.length > 0 ? `${filteredCabins.length} av ${norwayCabins.length} hytter · Kilde: OpenStreetMap` : "Ingen hytter funnet"}
           </p>
         </div>
@@ -528,18 +528,18 @@ export function CabinMap() {
                 <div className="flex items-baseline gap-1.5 min-w-0">
                   <p className="text-xl font-extrabold leading-snug truncate" style={{ color: "var(--kv-blue)" }}>{selected.name}</p>
                   {selected.beds != null && (
-                    <span className="text-xs text-muted-foreground shrink-0">{selected.beds} senger</span>
+                    <span className="text-xs text-foreground/70 shrink-0">{selected.beds} senger</span>
                   )}
                 </div>
                 {selected.elevation != null && (
                   <div className="flex items-baseline gap-1 shrink-0">
                     <span className="text-xl font-extrabold" style={{ color: "var(--kv-blue)" }}>{selected.elevation}</span>
-                    <span className="text-xs text-muted-foreground">moh.</span>
+                    <span className="text-xs text-foreground/70">moh.</span>
                   </div>
                 )}
               </div>
               <div className="flex items-center justify-between gap-2 mt-1 pr-7">
-                <p className="text-xs text-muted-foreground truncate">
+                <p className="text-xs text-foreground/70 truncate">
                   {selected.operator !== selected.name ? selected.operator : null}
                 </p>
                 <div className="flex items-center gap-1.5 shrink-0">
@@ -621,19 +621,19 @@ export function CabinMap() {
                     <div className="flex items-baseline gap-1.5">
                       <Mountain className="h-4 w-4 text-muted-foreground self-center" />
                       <span className="text-3xl font-extrabold" style={{ color: "var(--kv-blue)" }}>{selected.elevation}</span>
-                      <span className="text-xs font-medium text-muted-foreground">moh.</span>
+                      <span className="text-xs font-medium text-foreground/70">moh.</span>
                     </div>
                   )}
                   {selected.beds != null && (
                     <div className="flex items-baseline gap-1.5">
                       <span className="text-3xl font-extrabold" style={{ color: "var(--kv-blue)" }}>{selected.beds}</span>
-                      <span className="text-xs font-medium text-muted-foreground">sengeplasser</span>
+                      <span className="text-xs font-medium text-foreground/70">sengeplasser</span>
                     </div>
                   )}
                   {selected.shower === true && (
                     <div className="flex items-baseline gap-1.5">
                       <Droplets className="h-4 w-4 text-muted-foreground self-center" />
-                      <span className="text-xs font-medium text-muted-foreground">Dusj</span>
+                      <span className="text-xs font-medium text-foreground/70">Dusj</span>
                     </div>
                   )}
                 </div>
@@ -671,7 +671,7 @@ export function CabinMap() {
                             href={`https://www.yr.no/nb/søk?q=${encodeURIComponent(selected.name)}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors shrink-0"
+                            className="flex items-center gap-1 text-xs text-foreground/70 hover:text-foreground transition-colors shrink-0"
                           >
                             yr.no <ExternalLink className="h-3 w-3" />
                           </a>
@@ -719,7 +719,7 @@ export function CabinMap() {
                       <ExternalLink className="h-4 w-4" /> Finn på DNT.no
                     </a>
                   )}
-                  <p className="text-xs text-muted-foreground text-center">
+                  <p className="text-xs text-foreground/70 text-center">
                     Kilde: OpenStreetMap
                   </p>
                   <DataDisclaimer />
@@ -778,7 +778,7 @@ export function CabinMap() {
                 href="https://www.dnt.no/hytter/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors mt-1"
+                className="inline-flex items-center gap-1 text-xs font-medium text-foreground/70 hover:text-foreground transition-colors mt-1"
               >
                 <ExternalLink className="h-3 w-3" />
                 DNT — Hytteoversikt

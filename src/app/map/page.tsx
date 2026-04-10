@@ -59,7 +59,7 @@ export default function MapPage() {
               </AccordionItem>
             ))}
           </Accordion>
-          <p className="text-xs text-muted-foreground mt-8">
+          <p className="text-xs text-foreground/70 mt-8">
             Data fra <a href="https://www.kartverket.no" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Kartverket</a>, <a href="https://opentopomap.org" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">OpenTopoMap</a> og <a href="https://www.met.no" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">MET.no</a>.
           </p>
         </div>

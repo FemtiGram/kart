@@ -50,7 +50,7 @@ export function Footer() {
           {/* Link columns */}
           {Object.entries(footerLinks).map(([group, links]) => (
             <div key={group} className="flex flex-col gap-3">
-              <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+              <h3 className="text-xs font-bold uppercase tracking-widest text-foreground/70">
                 {group}
               </h3>
               <ul className="flex flex-col gap-2">
@@ -82,7 +82,7 @@ export function Footer() {
 
         <Separator className="my-8" />
 
-        <div className="flex flex-col md:flex-row items-center justify-between gap-3 text-xs text-muted-foreground">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-3 text-xs text-foreground/70">
           <p>© {new Date().getFullYear()} Datakart</p>
           <p>
             Bygd med{" "}

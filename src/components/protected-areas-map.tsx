@@ -393,16 +393,16 @@ export function ProtectedAreasMap() {
                       <span className="text-xl font-extrabold tabular-nums" style={{ color: label.color }}>
                         {pct.toFixed(1).replace(".", ",")}%
                       </span>
-                      <span className="text-xs text-muted-foreground">vernet</span>
+                      <span className="text-xs text-foreground/70">vernet</span>
                     </div>
                   ) : (
-                    <span className="text-xs text-muted-foreground shrink-0">Ingen data</span>
+                    <span className="text-xs text-foreground/70 shrink-0">Ingen data</span>
                   )}
                 </div>
                 <div className="flex items-center justify-between gap-2 mt-1 pr-7">
-                  <p className="text-xs text-muted-foreground">{selected.fylke ?? ""}</p>
+                  <p className="text-xs text-foreground/70">{selected.fylke ?? ""}</p>
                   {vernTotal > 0 && (
-                    <span className="text-xs text-muted-foreground shrink-0">{label.text}</span>
+                    <span className="text-xs text-foreground/70 shrink-0">{label.text}</span>
                   )}
                 </div>
               </div>
@@ -466,8 +466,8 @@ export function ProtectedAreasMap() {
                         </div>
                       </div>
                       <div className="flex justify-between mt-1">
-                        <span className="text-[10px] text-muted-foreground">0%</span>
-                        <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                        <span className="text-[10px] text-foreground/70">0%</span>
+                        <span className="text-[10px] text-foreground/70 flex items-center gap-1">
                           <span className="inline-block w-2 h-0.5 rounded-full bg-foreground/50" />
                           Snitt {stats.nationalPct.toFixed(1).replace(".", ",")}%
                         </span>
@@ -509,7 +509,7 @@ export function ProtectedAreasMap() {
                   {/* Layer 3 — Category breakdown */}
                   {vernTotal > 0 && (
                     <div className="mt-4 pt-4 border-t">
-                      <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-2">Fordeling</p>
+                      <p className="text-xs font-semibold uppercase tracking-widest text-foreground/70 mb-2">Fordeling</p>
                       <div className="flex flex-col gap-2">
                         {(["np", "nr", "lv", "nm"] as const).map((key) => {
                           const val = selected.vern![key];
@@ -531,7 +531,7 @@ export function ProtectedAreasMap() {
                           );
                         })}
                       </div>
-                      <p className="text-xs text-muted-foreground mt-3">
+                      <p className="text-xs text-foreground/70 mt-3">
                         Totalt areal: {selected.totalAreaKm2.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, "\u00A0")} km²,
                         herav {vernTotal.toFixed(2).replace(".", ",")} km² vernet
                       </p>
@@ -540,7 +540,7 @@ export function ProtectedAreasMap() {
 
                   {/* Layer 4 — Source */}
                   <div className="mt-4 pt-4 border-t">
-                    <p className="text-xs text-muted-foreground text-center">
+                    <p className="text-xs text-foreground/70 text-center">
                       Kilde: <a href="https://www.ssb.no/natur-og-miljo/areal/statistikk/arealbruk-og-arealressurser" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">SSB tabell 08936</a>
                     </p>
                     <DataDisclaimer />
@@ -592,7 +592,7 @@ export function ProtectedAreasMap() {
                 href="https://www.ssb.no/statbank/table/08936/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors mt-1"
+                className="inline-flex items-center gap-1 text-xs font-medium text-foreground/70 hover:text-foreground transition-colors mt-1"
               >
                 <ExternalLink className="h-3 w-3" />
                 Åpne SSB tabell 08936

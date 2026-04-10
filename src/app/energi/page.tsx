@@ -63,7 +63,7 @@ export default function EnergiPage() {
               </AccordionItem>
             ))}
           </Accordion>
-          <p className="text-xs text-muted-foreground mt-8">
+          <p className="text-xs text-foreground/70 mt-8">
             Data fra <a href="https://www.nve.no" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">NVE</a> og <a href="https://www.sodir.no" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Sodir</a>. Oppdateres med 1 times mellomlagring.
           </p>
         </div>

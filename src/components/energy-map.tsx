@@ -748,7 +748,7 @@ export function EnergyMap() {
                   </SheetHeader>
                   <div className="flex flex-col gap-4 py-4">
                     <div>
-                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Type</p>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-foreground/70 mb-2">Type</p>
                       <div className="rounded-xl border overflow-hidden">
                         {(["vind", "vann", "havvind", "oilgas"] as EnergyType[]).map((t) => {
                           const active = filterTypes.has(t);
@@ -765,7 +765,7 @@ export function EnergyMap() {
                               </div>
                               <div className="h-3 w-3 rounded-full shrink-0" style={{ background: meta.color }} />
                               <span className="font-medium flex-1 text-left">{meta.label}</span>
-                              <span className="text-xs text-muted-foreground tabular-nums">{count}</span>
+                              <span className="text-xs text-foreground/70 tabular-nums">{count}</span>
                             </button>
                           );
                         })}
@@ -773,7 +773,7 @@ export function EnergyMap() {
                     </div>
                     {filterTypes.has("vind") && (
                       <div>
-                        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Vindkraftstatus</p>
+                        <p className="text-xs font-semibold uppercase tracking-wide text-foreground/70 mb-2">Vindkraftstatus</p>
                         <div className="rounded-xl border overflow-hidden">
                           {(["operational", "construction", "approved", "rejected"] as WindStatus[]).map((s) => {
                             const active = filterWindStatus.has(s);
@@ -790,7 +790,7 @@ export function EnergyMap() {
                                 </div>
                                 <div className="h-3 w-3 rounded-full shrink-0" style={{ background: meta.color }} />
                                 <span className="font-medium flex-1 text-left">{meta.label}</span>
-                                <span className="text-xs text-muted-foreground tabular-nums">{count}</span>
+                                <span className="text-xs text-foreground/70 tabular-nums">{count}</span>
                               </button>
                             );
                           })}
@@ -798,7 +798,7 @@ export function EnergyMap() {
                       </div>
                     )}
                     <div>
-                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Størrelse</p>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-foreground/70 mb-2">Størrelse</p>
                       <div className="rounded-xl border overflow-hidden">
                         <button
                           onClick={() => setShowSmall((v) => !v)}
@@ -810,7 +810,7 @@ export function EnergyMap() {
                           <span className="font-medium flex-1 text-left">Vis små kraftverk (&lt;{MW_THRESHOLD} MW)</span>
                         </button>
                       </div>
-                      <p className="text-xs text-muted-foreground mt-2">Skjuler {plants.filter((p) => (p.capacityMW ?? 0) < MW_THRESHOLD).length} små kraftverk som standard for bedre ytelse.</p>
+                      <p className="text-xs text-foreground/70 mt-2">Skjuler {plants.filter((p) => (p.capacityMW ?? 0) < MW_THRESHOLD).length} små kraftverk som standard for bedre ytelse.</p>
                     </div>
                     <div className="flex gap-2 pt-1">
                       <Button
@@ -845,19 +845,19 @@ export function EnergyMap() {
                     {s.type === "anlegg" ? (
                       <div>
                         <p className="font-medium">{s.name}</p>
-                        <p className="text-xs text-muted-foreground">{s.subtitle}</p>
+                        <p className="text-xs text-foreground/70">{s.subtitle}</p>
                       </div>
                     ) : s.type === "fylke" ? (
                       <div>
                         <p className="font-medium">{s.fylkesnavn}</p>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-xs text-foreground/70">
                           Fylke
                         </p>
                       </div>
                     ) : s.type === "kommune" ? (
                       <div>
                         <p className="font-medium">{s.kommunenavn}</p>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-xs text-foreground/70">
                           Kommune
                         </p>
                       </div>
@@ -866,7 +866,7 @@ export function EnergyMap() {
                         <p className="font-medium">
                           {s.addr.adressetekst}
                         </p>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-xs text-foreground/70">
                           {s.addr.poststed}, {s.addr.kommunenavn}
                         </p>
                       </div>
@@ -878,7 +878,7 @@ export function EnergyMap() {
           )}
         </div>
         <div className="flex items-center justify-between mt-2">
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-foreground/70">
             {loading
               ? "Henter kraftverk..."
               : plants.length > 0
@@ -887,7 +887,7 @@ export function EnergyMap() {
           </p>
           <button
             onClick={() => setShowInfo(true)}
-            className="inline-flex items-center gap-1 text-xs px-3 py-1 rounded-full border bg-muted text-muted-foreground hover:text-foreground transition-colors shrink-0"
+            className="inline-flex items-center gap-1 text-xs px-3 py-1 rounded-full border bg-muted text-foreground/70 hover:text-foreground transition-colors shrink-0"
           >
             <Info className="h-3 w-3" />
             Om data
@@ -1164,18 +1164,18 @@ export function EnergyMap() {
                 <div className="flex items-baseline gap-1.5 min-w-0">
                   <p className="text-xl font-extrabold leading-snug truncate" style={{ color: "var(--kv-blue)" }}>{selected.name}</p>
                   {selected.type === "vind" && selected.turbineCount != null && (
-                    <span className="text-xs text-muted-foreground shrink-0">{selected.turbineCount} turbiner</span>
+                    <span className="text-xs text-foreground/70 shrink-0">{selected.turbineCount} turbiner</span>
                   )}
                 </div>
                 <div className="flex items-baseline gap-1 shrink-0">
                   <span className="text-xl font-extrabold" style={{ color: TYPE_META[selected.type].color }}>
                     {selected.capacityMW != null ? Math.round(selected.capacityMW) : "—"}
                   </span>
-                  <span className="text-xs text-muted-foreground">MW</span>
+                  <span className="text-xs text-foreground/70">MW</span>
                 </div>
               </div>
               <div className="flex items-center justify-between gap-2 mt-1 pr-7">
-                <p className="text-xs text-muted-foreground truncate">
+                <p className="text-xs text-foreground/70 truncate">
                   {[selected.owner !== selected.name ? selected.owner : null, selected.municipality].filter(Boolean).join(" · ")}
                 </p>
                 <div className="flex items-center gap-1.5 shrink-0">
@@ -1194,8 +1194,8 @@ export function EnergyMap() {
                     </span>
                   )}
                   {selected.type === "vind"
-                    ? selected.productionGWh != null && <span className="text-xs text-muted-foreground">{Math.round(selected.productionGWh)} GWh/år</span>
-                    : selected.fallHeight != null && <span className="text-xs text-muted-foreground">{Math.round(selected.fallHeight)} m fall</span>
+                    ? selected.productionGWh != null && <span className="text-xs text-foreground/70">{Math.round(selected.productionGWh)} GWh/år</span>
+                    : selected.fallHeight != null && <span className="text-xs text-foreground/70">{Math.round(selected.fallHeight)} m fall</span>
                   }
                 </div>
               </div>
@@ -1239,7 +1239,7 @@ export function EnergyMap() {
                   </span>
                 </div>
                 <p className="font-bold text-base truncate leading-snug">{selectedOilGas.name}</p>
-                <p className="text-xs text-muted-foreground truncate">
+                <p className="text-xs text-foreground/70 truncate">
                   {[selectedOilGas.operator, selectedOilGas.fieldName].filter(Boolean).join(" · ")}
                 </p>
               </div>
@@ -1257,7 +1257,7 @@ export function EnergyMap() {
                   <span className="text-2xl font-extrabold" style={{ color: OILGAS_COLOR }}>
                     {Math.round(selectedOilGas.waterDepth)}
                   </span>
-                  <span className="text-xs text-muted-foreground">m dybde</span>
+                  <span className="text-xs text-foreground/70">m dybde</span>
                 </div>
               )}
               {selectedOilGas.yearStartup != null && (
@@ -1265,7 +1265,7 @@ export function EnergyMap() {
                   <span className="text-2xl font-extrabold" style={{ color: OILGAS_COLOR }}>
                     {selectedOilGas.yearStartup}
                   </span>
-                  <span className="text-xs text-muted-foreground">oppstart</span>
+                  <span className="text-xs text-foreground/70">oppstart</span>
                 </div>
               )}
             </div>
@@ -1315,7 +1315,7 @@ export function EnergyMap() {
                       <span className="text-3xl font-extrabold" style={{ color: OILGAS_COLOR }}>
                         {Math.round(selectedOilGas.waterDepth)}
                       </span>
-                      <span className="text-xs text-muted-foreground">m dybde</span>
+                      <span className="text-xs text-foreground/70">m dybde</span>
                     </div>
                   )}
                   {selectedOilGas.yearStartup != null && (
@@ -1323,7 +1323,7 @@ export function EnergyMap() {
                       <span className="text-3xl font-extrabold" style={{ color: OILGAS_COLOR }}>
                         {selectedOilGas.yearStartup}
                       </span>
-                      <span className="text-xs text-muted-foreground">oppstart</span>
+                      <span className="text-xs text-foreground/70">oppstart</span>
                     </div>
                   )}
                 </div>
@@ -1333,7 +1333,7 @@ export function EnergyMap() {
                     onClick={() => setShowFacilityInfo((v) => !v)}
                     className="flex items-center gap-1.5 mb-3 group"
                   >
-                    <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Anleggsdetaljer</p>
+                    <p className="text-xs font-semibold uppercase tracking-widest text-foreground/70">Anleggsdetaljer</p>
                     <Info className="h-3.5 w-3.5 text-muted-foreground/70 group-hover:text-muted-foreground transition-colors" />
                   </button>
                   {showFacilityInfo && (
@@ -1344,7 +1344,7 @@ export function EnergyMap() {
                         <li><strong>Funksjoner</strong> – Hva anlegget gjør: produksjon, injeksjon, prosessering, boring osv.</li>
                         <li><strong>Status</strong> – Om anlegget er i aktiv drift, fjernet eller nedlagt</li>
                       </ul>
-                      <p className="text-[10px] text-muted-foreground mt-2">Kilde: Sokkeldirektoratet (Sodir)</p>
+                      <p className="text-[10px] text-foreground/70 mt-2">Kilde: Sokkeldirektoratet (Sodir)</p>
                     </div>
                   )}
                   <div className="flex flex-col gap-2">
@@ -1386,7 +1386,7 @@ export function EnergyMap() {
                         onClick={() => setShowProdInfo((v) => !v)}
                         className="flex items-center gap-1.5 mb-3 group"
                       >
-                        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Produksjon, {selectedOilGas.fieldName}</p>
+                        <p className="text-xs font-semibold uppercase tracking-widest text-foreground/70">Produksjon, {selectedOilGas.fieldName}</p>
                         <Info className="h-3.5 w-3.5 text-muted-foreground/70 group-hover:text-muted-foreground transition-colors" />
                       </button>
                       {showProdInfo && (
@@ -1397,17 +1397,17 @@ export function EnergyMap() {
                             <li><strong>Olje</strong> – Netto salgbar råolje (mill Sm³)</li>
                             <li><strong>Gass</strong> – Netto salgbar naturgass (mrd Sm³)</li>
                           </ul>
-                          <p className="text-[10px] text-muted-foreground mt-2">Kilde: Sokkeldirektoratet, årlig feltproduksjon{productionFetchedAt && ` · Hentet ${new Date(productionFetchedAt).toLocaleDateString("nb-NO")}`}</p>
+                          <p className="text-[10px] text-foreground/70 mt-2">Kilde: Sokkeldirektoratet, årlig feltproduksjon{productionFetchedAt && ` · Hentet ${new Date(productionFetchedAt).toLocaleDateString("nb-NO")}`}</p>
                         </div>
                       )}
                       <div className="grid grid-cols-2 gap-4">
                         <div>
                           <span className="text-2xl font-extrabold" style={{ color: OILGAS_COLOR }}>{totalOe.toFixed(1)}</span>
-                          <p className="text-[10px] text-muted-foreground">mill Sm³ o.e. totalt</p>
+                          <p className="text-[10px] text-foreground/70">mill Sm³ o.e. totalt</p>
                         </div>
                         <div>
                           <span className="text-2xl font-extrabold" style={{ color: OILGAS_COLOR }}>{latest.oe.toFixed(2)}</span>
-                          <p className="text-[10px] text-muted-foreground">mill Sm³ o.e. ({latest.year})</p>
+                          <p className="text-[10px] text-foreground/70">mill Sm³ o.e. ({latest.year})</p>
                         </div>
                       </div>
                       <div className="flex items-center justify-between text-sm mt-2">
@@ -1434,8 +1434,8 @@ export function EnergyMap() {
                         ))}
                       </div>
                       <div className="flex justify-between mt-0.5">
-                        <span className="text-[10px] text-muted-foreground">{fieldProd[0].year}</span>
-                        <span className="text-[10px] text-muted-foreground">{latest.year}</span>
+                        <span className="text-[10px] text-foreground/70">{fieldProd[0].year}</span>
+                        <span className="text-[10px] text-foreground/70">{latest.year}</span>
                       </div>
                     </div>
                   );
@@ -1452,7 +1452,7 @@ export function EnergyMap() {
                       <ExternalLink className="h-4 w-4" /> Les mer på Sodir
                     </a>
                   )}
-                  <p className="text-xs text-muted-foreground text-center">
+                  <p className="text-xs text-foreground/70 text-center">
                     Kilde: <a href="https://www.sodir.no/en/facts/data-and-analyses/open-data/" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Sokkeldirektoratet (Sodir)</a>
                   </p>
                   <DataDisclaimer />
@@ -1479,7 +1479,7 @@ export function EnergyMap() {
                   </span>
                 </div>
                 <p className="font-bold text-base truncate leading-snug">{selectedHavvind.name}</p>
-                <p className="text-xs text-muted-foreground">Planlagt område, ikke bygget ennå</p>
+                <p className="text-xs text-foreground/70">Planlagt område, ikke bygget ennå</p>
               </div>
               <button
                 onClick={() => setSelectedHavvind(null)}
@@ -1495,7 +1495,7 @@ export function EnergyMap() {
                   <span className="text-2xl font-extrabold" style={{ color: HAVVIND_COLOR }}>
                     {selectedHavvind.arealKm2.toLocaleString("nb-NO")}
                   </span>
-                  <span className="text-xs text-muted-foreground">km²</span>
+                  <span className="text-xs text-foreground/70">km²</span>
                 </div>
               )}
               {selectedHavvind.minDistanceKm != null && (
@@ -1503,7 +1503,7 @@ export function EnergyMap() {
                   <span className="text-2xl font-extrabold" style={{ color: HAVVIND_COLOR }}>
                     {selectedHavvind.minDistanceKm}
                   </span>
-                  <span className="text-xs text-muted-foreground">km til land</span>
+                  <span className="text-xs text-foreground/70">km til land</span>
                 </div>
               )}
             </div>
@@ -1545,7 +1545,7 @@ export function EnergyMap() {
                       <span className="text-3xl font-extrabold" style={{ color: HAVVIND_COLOR }}>
                         {selectedHavvind.arealKm2.toLocaleString("nb-NO")}
                       </span>
-                      <span className="text-xs text-muted-foreground">km² areal</span>
+                      <span className="text-xs text-foreground/70">km² areal</span>
                     </div>
                   )}
                   {selectedHavvind.minDistanceKm != null && (
@@ -1553,7 +1553,7 @@ export function EnergyMap() {
                       <span className="text-3xl font-extrabold" style={{ color: HAVVIND_COLOR }}>
                         {selectedHavvind.minDistanceKm}
                       </span>
-                      <span className="text-xs text-muted-foreground">km til land</span>
+                      <span className="text-xs text-foreground/70">km til land</span>
                     </div>
                   )}
                 </div>
@@ -1588,7 +1588,7 @@ export function EnergyMap() {
                       <ExternalLink className="h-4 w-4" /> Les mer på NVE
                     </a>
                   )}
-                  <p className="text-xs text-muted-foreground text-center">
+                  <p className="text-xs text-foreground/70 text-center">
                     Kilde: <a href="https://nve.geodataonline.no/arcgis/rest/services/" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">NVE Geodata</a> · Havvind 2023
                   </p>
                   <DataDisclaimer />
@@ -1640,14 +1640,14 @@ export function EnergyMap() {
                     <span className="text-3xl font-extrabold" style={{ color: TYPE_META[selected.type].color }}>
                       {selected.capacityMW != null ? Math.round(selected.capacityMW) : "—"}
                     </span>
-                    <span className="text-xs text-muted-foreground">MW kapasitet</span>
+                    <span className="text-xs text-foreground/70">MW kapasitet</span>
                   </div>
                   {selected.type === "vind" && (
                     <div className="flex items-baseline gap-1.5">
                       <span className="text-3xl font-extrabold" style={{ color: TYPE_META[selected.type].color }}>
                         {selected.turbineCount ?? "—"}
                       </span>
-                      <span className="text-xs text-muted-foreground">turbiner</span>
+                      <span className="text-xs text-foreground/70">turbiner</span>
                     </div>
                   )}
                   <div className="flex items-baseline gap-1.5">
@@ -1656,7 +1656,7 @@ export function EnergyMap() {
                         ? (selected.productionGWh != null ? Math.round(selected.productionGWh) : "—")
                         : (selected.fallHeight != null ? Math.round(selected.fallHeight) : "—")}
                     </span>
-                    <span className="text-xs text-muted-foreground">
+                    <span className="text-xs text-foreground/70">
                       {selected.type === "vind" ? "GWh/år" : "m fallhøyde"}
                     </span>
                   </div>
@@ -1688,10 +1688,10 @@ export function EnergyMap() {
                       <div className="mt-2 pt-3 border-t">
                         <div className="flex items-center gap-1.5 mb-3">
                           <Waves className="h-3.5 w-3.5 text-muted-foreground" />
-                          <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                          <span className="text-xs font-semibold uppercase tracking-wide text-foreground/70">
                             Målestasjon: {hydroStation.station.name}
                           </span>
-                          <span className="text-[10px] text-muted-foreground">
+                          <span className="text-[10px] text-foreground/70">
                             ({hydroStation.station.distanceKm} km unna)
                           </span>
                         </div>
@@ -1701,7 +1701,7 @@ export function EnergyMap() {
                               <span className="text-2xl font-extrabold" style={{ color: "var(--kv-metric)" }}>
                                 {hydroStation.discharge.toFixed(1)}
                               </span>
-                              <span className="text-xs text-muted-foreground">m³/s vannføring</span>
+                              <span className="text-xs text-foreground/70">m³/s vannføring</span>
                             </div>
                           )}
                           {hydroStation.waterLevel != null && (
@@ -1709,7 +1709,7 @@ export function EnergyMap() {
                               <span className="text-2xl font-extrabold" style={{ color: "var(--kv-metric)" }}>
                                 {hydroStation.waterLevel.toFixed(2)}
                               </span>
-                              <span className="text-xs text-muted-foreground">m vannstand</span>
+                              <span className="text-xs text-foreground/70">m vannstand</span>
                             </div>
                           )}
                         </div>
@@ -1717,7 +1717,7 @@ export function EnergyMap() {
                           <div className="mt-3">
                             <div className="flex items-center gap-1.5 mb-1.5">
                               <Gauge className="h-3 w-3 text-muted-foreground" />
-                              <span className="text-xs text-muted-foreground">Vannføring vs. normalen for denne tiden av året</span>
+                              <span className="text-xs text-foreground/70">Vannføring vs. normalen for denne tiden av året</span>
                             </div>
                             <div className="relative h-2 w-full rounded-full bg-muted overflow-hidden">
                               <div
@@ -1732,7 +1732,7 @@ export function EnergyMap() {
                                 }}
                               />
                             </div>
-                            <div className="flex justify-between mt-0.5 text-[10px] text-muted-foreground">
+                            <div className="flex justify-between mt-0.5 text-[10px] text-foreground/70">
                               <span>Lavt</span>
                               <span>{hydroStation.percentile.p50 != null ? `Median: ${hydroStation.percentile.p50.toFixed(1)} m³/s` : ""}</span>
                               <span>Høyt</span>
@@ -1754,7 +1754,7 @@ export function EnergyMap() {
                   >
                     <Navigation className="h-4 w-4" /> Kjør hit
                   </a>
-                  <p className="text-xs text-muted-foreground text-center">
+                  <p className="text-xs text-foreground/70 text-center">
                     Kilde: <a href="https://nve.geodataonline.no/arcgis/rest/services/" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">NVE Geodata</a> · Oppdateres hver time
                   </p>
                   <DataDisclaimer />
@@ -1832,28 +1832,28 @@ export function EnergyMap() {
 
                 {/* General pipeline legend */}
                 <div className="pt-3 border-t">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Fargeforklaring</p>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-foreground/70 mb-2">Fargeforklaring</p>
                   <div className="flex flex-col gap-1.5">
                     <div className="flex items-center gap-2">
                       <div className="w-8 h-0.5 rounded-full" style={{ background: OILGAS_COLOR }} />
-                      <span className="text-xs text-muted-foreground">Oljerørledning</span>
+                      <span className="text-xs text-foreground/70">Oljerørledning</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <div className="w-8 h-0.5 rounded-full" style={{ background: "#facc15" }} />
-                      <span className="text-xs text-muted-foreground">Gassrørledning</span>
+                      <span className="text-xs text-foreground/70">Gassrørledning</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <div className="w-8 h-0.5 rounded-full bg-neutral-400" />
-                      <span className="text-xs text-muted-foreground">Annet (vann, kjemikalier etc.)</span>
+                      <span className="text-xs text-foreground/70">Annet (vann, kjemikalier etc.)</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <div className="w-8 h-0.5 rounded-full border border-dashed border-neutral-400" />
-                      <span className="text-xs text-muted-foreground">Nedlagt</span>
+                      <span className="text-xs text-foreground/70">Nedlagt</span>
                     </div>
                   </div>
                 </div>
 
-                <p className="text-xs text-muted-foreground pt-2 border-t">
+                <p className="text-xs text-foreground/70 pt-2 border-t">
                   Kilde: <a href="https://www.sodir.no/en/facts/data-and-analyses/open-data/" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Sokkeldirektoratet (Sodir)</a>
                 </p>
                 <DataDisclaimer />
@@ -1876,7 +1876,7 @@ export function EnergyMap() {
                   <p className="font-semibold mb-1">Olje og gass</p>
                   <p className="text-muted-foreground">Over 1200 anlegg på norsk sokkel — plattformer, FPSO-er, undervannsinstallasjoner. Rørledninger vises ved innzooming og kan klikkes for detaljer.</p>
                 </div>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-foreground/70">
                   Data oppdateres hver time. Kilde:{" "}
                   <a href="https://nve.geodataonline.no/arcgis/rest/services/" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">NVE Geodata</a>{" · "}
                   <a href="https://www.sodir.no/en/facts/data-and-analyses/open-data/" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Sodir</a>

@@ -384,7 +384,7 @@ export function ElevationMap() {
                     <MapPin className="h-4 w-4 mt-0.5 shrink-0 text-muted-foreground" />
                     <div>
                       <p className="font-medium">{addr.adressetekst}</p>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-xs text-foreground/70">
                         {addr.poststed}, {addr.kommunenavn}
                       </p>
                     </div>
@@ -459,7 +459,7 @@ export function ElevationMap() {
               <div className="min-w-0">
                 <p className="font-bold text-base truncate leading-snug">{selected.address.adressetekst}</p>
                 {selected.address.poststed && (
-                  <p className="text-xs text-muted-foreground truncate">
+                  <p className="text-xs text-foreground/70 truncate">
                     {selected.address.poststed}, {selected.address.kommunenavn}
                   </p>
                 )}
@@ -528,7 +528,7 @@ export function ElevationMap() {
                     {selected.address.poststed}, {selected.address.kommunenavn}
                   </p>
                 )}
-                <p className="text-xs text-muted-foreground font-mono mt-0.5">
+                <p className="text-xs text-foreground/70 font-mono mt-0.5">
                   {selected.address.representasjonspunkt.lat.toFixed(5)}, {selected.address.representasjonspunkt.lon.toFixed(5)}
                 </p>
 
@@ -549,7 +549,7 @@ export function ElevationMap() {
                     <p className="text-sm text-muted-foreground">Ingen høydedata</p>
                   )}
                   {selected.elevation?.datakilde && (
-                    <p className="text-xs text-muted-foreground mt-1">Kilde: {selected.elevation.datakilde}</p>
+                    <p className="text-xs text-foreground/70 mt-1">Kilde: {selected.elevation.datakilde}</p>
                   )}
                 </div>
 
@@ -587,7 +587,7 @@ export function ElevationMap() {
                             href={yrUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors shrink-0"
+                            className="flex items-center gap-1 text-xs text-foreground/70 hover:text-foreground transition-colors shrink-0"
                           >
                             yr.no <ExternalLink className="h-3 w-3" />
                           </a>
@@ -607,7 +607,7 @@ export function ElevationMap() {
                   >
                     <Navigation className="h-4 w-4" /> Kjør hit
                   </a>
-                  <p className="text-xs text-muted-foreground text-center">
+                  <p className="text-xs text-foreground/70 text-center">
                     Kilde: Kartverket, MET.no
                   </p>
                   <DataDisclaimer />
@@ -665,7 +665,7 @@ export function ElevationMap() {
                   href="https://www.kartverket.no/api-og-data/hoydedata"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+                  className="inline-flex items-center gap-1 text-xs font-medium text-foreground/70 hover:text-foreground transition-colors"
                 >
                   <ExternalLink className="h-3 w-3" />
                   Kartverket
@@ -674,7 +674,7 @@ export function ElevationMap() {
                   href="https://api.met.no/"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+                  className="inline-flex items-center gap-1 text-xs font-medium text-foreground/70 hover:text-foreground transition-colors"
                 >
                   <ExternalLink className="h-3 w-3" />
                   MET.no

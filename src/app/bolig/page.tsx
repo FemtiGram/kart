@@ -63,7 +63,7 @@ export default function BoligPage() {
               </AccordionItem>
             ))}
           </Accordion>
-          <p className="text-xs text-muted-foreground mt-8">
+          <p className="text-xs text-foreground/70 mt-8">
             Data fra <a href="https://www.ssb.no/statbank/table/06035/" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">SSB Tabell 06035</a>. Tallene gjelder selveierboliger omsatt i fritt salg.
           </p>
         </div>

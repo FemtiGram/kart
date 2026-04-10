@@ -63,7 +63,7 @@ export default function HytterPage() {
               </AccordionItem>
             ))}
           </Accordion>
-          <p className="text-xs text-muted-foreground mt-8">
+          <p className="text-xs text-foreground/70 mt-8">
             Data fra <a href="https://www.openstreetmap.org" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">OpenStreetMap</a> og <a href="https://www.met.no" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">MET.no</a>. Hyttedata oppdateres ved hver utrulling.
           </p>
         </div>

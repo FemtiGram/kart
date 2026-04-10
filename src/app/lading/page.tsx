@@ -63,7 +63,7 @@ export default function LadingPage() {
               </AccordionItem>
             ))}
           </Accordion>
-          <p className="text-xs text-muted-foreground mt-8">
+          <p className="text-xs text-foreground/70 mt-8">
             Data fra <a href="https://nobil.no" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">NOBIL</a> / Enova. Tallene oppdateres ved hver utrulling av nettsiden.
           </p>
         </div>
