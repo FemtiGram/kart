@@ -931,7 +931,7 @@ export function BoligMap() {
                     {diff != null && (
                       <div className="mt-2">
                         <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-semibold ${diff > 0 ? "bg-orange-50 text-orange-700" : diff < 0 ? "bg-green-50 text-green-700" : "bg-muted text-muted-foreground"}`}>
-                          {a.kommunenavn} er {diff > 0 ? `${diff.toLocaleString("nb-NO")} kr dyrere` : diff < 0 ? `${Math.abs(diff).toLocaleString("nb-NO")} kr rimeligere` : "lik pris"}
+                          {a.kommunenavn} er {diff > 0 ? `${diff.toLocaleString("nb-NO")} kr/m² dyrere` : diff < 0 ? `${Math.abs(diff).toLocaleString("nb-NO")} kr/m² rimeligere` : "lik pris"}
                         </span>
                       </div>
                     )}
@@ -953,8 +953,8 @@ export function BoligMap() {
                         const d = pA != null && pB != null ? pA - pB : null;
                         const Icon = TYPE_ICONS[t];
                         return (
-                          <div key={t} className={`grid grid-cols-[1fr_auto_auto_auto] gap-2 items-center rounded-lg px-1 py-1.5 ${t === boligtype ? "bg-muted" : ""}`}>
-                            <span className="flex items-center gap-1.5 text-xs font-medium">
+                          <button key={t} onClick={() => setBoligtype(t)} className={`w-full grid grid-cols-[1fr_auto_auto_auto] gap-2 items-center rounded-lg px-1 py-1.5 transition-colors ${t === boligtype ? "bg-muted" : "hover:bg-muted/50"}`}>
+                            <span className="flex items-center gap-1.5 text-xs font-medium text-left">
                               <Icon className="h-3.5 w-3.5 text-muted-foreground" />
                               {TYPE_LABELS[t]}
                             </span>
@@ -967,7 +967,7 @@ export function BoligMap() {
                             <span className={`text-[10px] font-semibold tabular-nums text-right w-16 ${d != null ? (d > 0 ? "text-orange-600" : d < 0 ? "text-green-600" : "text-muted-foreground") : "text-muted-foreground"}`}>
                               {d != null ? `${d > 0 ? "+" : ""}${d.toLocaleString("nb-NO")}` : "–"}
                             </span>
-                          </div>
+                          </button>
                         );
                       })}
                     </div>
