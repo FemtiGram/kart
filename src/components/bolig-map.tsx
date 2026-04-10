@@ -208,6 +208,12 @@ export function BoligMap() {
   const [center, setCenter] = useState<{ lat: number; lon: number; zoom?: number; _t?: number } | null>(null);
   const [zoomLevel, setZoomLevel] = useState(5);
 
+  // Refs for GeoJSON click handlers (closures capture stale state otherwise)
+  const compareModeRef = useRef(false);
+  const selectedRef = useRef<SelectedKommune | null>(null);
+  compareModeRef.current = compareMode;
+  selectedRef.current = selected;
+
   // Search
   const geoFeaturesRef = useRef<Array<{ kommunenummer: string; kommunenavn: string }>>([]);
   const setQueryRef = useRef<(q: string) => void>(() => {});
@@ -268,8 +274,9 @@ export function BoligMap() {
         kommunenavn: f.properties.kommunenavn,
       }));
 
-      const count = Object.keys(boligRes.data).length;
-      setLoadedCount(count);
+      // Count kommuner with data for default type (eneboliger) and latest year
+      const defaultCount = Object.values(boligRes.data as BoligData).filter((t) => t["01"]?.["2024"]?.price != null).length;
+      setLoadedCount(defaultCount);
       setCounting(true);
       setLoading(false);
       setTimeout(() => setCounting(false), 800);
@@ -443,7 +450,7 @@ export function BoligMap() {
                     const c = centroids.get(nr);
                     if (!c) return;
                     const kommun = { kommunenummer: nr, kommunenavn: name, lat: c.lat, lon: c.lon };
-                    if (compareMode && selected && selected.kommunenummer !== nr) {
+                    if (compareModeRef.current && selectedRef.current && selectedRef.current.kommunenummer !== nr) {
                       setCompareTarget(kommun);
                       setShowCompare(true);
                       setCompareMode(false);
@@ -457,14 +464,14 @@ export function BoligMap() {
                   },
                   mouseover(e) {
                     const l = e.target as L.Path;
-                    if (nr !== selected?.kommunenummer) {
+                    if (nr !== selectedRef.current?.kommunenummer) {
                       l.setStyle({ weight: 1.5, color: "#24374c", fillOpacity: 0.9 });
                       l.bringToFront();
                     }
                   },
                   mouseout(e) {
                     const l = e.target as L.Path;
-                    if (nr !== selected?.kommunenummer) {
+                    if (nr !== selectedRef.current?.kommunenummer) {
                       const price = getPrice(nr, boligtype, year);
                       const t = price != null ? pricePercentile(price, sortedPrices) : -1;
                       l.setStyle({ weight: 0.5, color: "white", fillOpacity: t >= 0 ? 0.7 : 0.15 });
@@ -601,7 +608,7 @@ export function BoligMap() {
                   )}
                   {yoyChange != null && (
                     <span className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-semibold ${yoyChange >= 0 ? "bg-green-50 text-green-700" : "bg-red-50 text-red-600"}`}>
-                      {yoyChange >= 0 ? "+" : ""}{yoyChange.toFixed(1)}%
+                      {yoyChange >= 0 ? "+" : ""}{yoyChange.toFixed(1)}% fra {prevYear}
                     </span>
                   )}
                 </div>
