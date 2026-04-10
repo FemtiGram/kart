@@ -190,92 +190,69 @@ export function InflationDashboard() {
   return (
     <div className="space-y-8">
       {/* Hero stat cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div>
+        <h2 className="text-lg font-bold mb-1" style={{ color: "#24374c" }}>Nøkkeltall</h2>
+        <p className="text-xs text-muted-foreground mb-3">Sist oppdatert {current.month}.</p>
+      </div>
+      <div className="grid grid-cols-1 gap-3">
         {/* KPI */}
-        <div className="rounded-2xl border bg-card p-5 shadow-sm flex flex-col">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <div className="flex items-center justify-center h-8 w-8 rounded-lg" style={{ background: "#24374c" }}>
-                <TrendingUp className="h-4 w-4 text-white" />
-              </div>
-              <p className="text-xs font-semibold text-muted-foreground">KPI</p>
+        <div className="relative rounded-2xl border bg-card p-5 shadow-sm">
+          <button onClick={() => setInfoModal("kpi")} className="absolute top-4 right-4 p-1.5 rounded-md text-muted-foreground/50 hover:text-muted-foreground transition-colors">
+            <Info className="h-3.5 w-3.5" />
+          </button>
+          <div className="flex items-baseline justify-between gap-2 pr-7">
+            <div className="flex items-baseline gap-1.5 min-w-0">
+              <p className="text-xl font-extrabold" style={{ color: "var(--kv-blue)" }}>KPI</p>
+              {current.total1m != null && (
+                <span className={`text-xs font-semibold ${current.total1m >= 0 ? "text-red-600" : "text-green-600"}`}>
+                  ({current.total1m >= 0 ? "+" : ""}{current.total1m.toFixed(1)}%)
+                </span>
+              )}
             </div>
-            <button onClick={() => setInfoModal("kpi")} className="p-1 rounded-md text-muted-foreground/50 hover:text-muted-foreground transition-colors">
-              <Info className="h-3.5 w-3.5" />
-            </button>
+            <p className="text-xl font-extrabold shrink-0" style={{ color: "var(--kv-blue)" }}>
+              {current.total != null ? `${current.total.toFixed(1)}%` : "–"}
+            </p>
           </div>
-          <p className="text-3xl font-extrabold" style={{ color: "var(--kv-blue)" }}>
-            {current.total != null ? `${current.total.toFixed(1)}%` : "–"}
-            {current.total1m != null && (
-              <span className={`text-sm font-semibold ml-1.5 ${current.total1m >= 0 ? "text-red-600" : "text-green-600"}`}>
-                ({current.total1m >= 0 ? "+" : ""}{current.total1m.toFixed(1)}%)
-              </span>
-            )}
-          </p>
-          <p className="text-xs text-muted-foreground mt-1">
-            12-månedersendring, {current.month}
-          </p>
-          <div className="mt-auto pt-2">
+          <div className="flex items-center justify-between gap-2 mt-1">
+            <p className="text-xs text-muted-foreground">12-månedersendring, {current.month}</p>
             {(() => { const b = targetBadge(current.total, 2); return (
-              <span className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-xs font-semibold ${b.className}`}>{b.text}</span>
+              <span className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-xs font-semibold shrink-0 ${b.className}`}>{b.text}</span>
             ); })()}
           </div>
         </div>
 
         {/* KPI-JAE */}
-        <div className="rounded-2xl border bg-card p-5 shadow-sm flex flex-col">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <div className="flex items-center justify-center h-8 w-8 rounded-lg" style={{ background: "#24374c" }}>
-                <TrendingUp className="h-4 w-4 text-white" />
-              </div>
-              <p className="text-xs font-semibold text-muted-foreground">KPI-JAE</p>
-            </div>
-            <button onClick={() => setInfoModal("jae")} className="p-1 rounded-md text-muted-foreground/50 hover:text-muted-foreground transition-colors">
-              <Info className="h-3.5 w-3.5" />
-            </button>
+        <div className="relative rounded-2xl border bg-card p-5 shadow-sm">
+          <button onClick={() => setInfoModal("jae")} className="absolute top-4 right-4 p-1.5 rounded-md text-muted-foreground/50 hover:text-muted-foreground transition-colors">
+            <Info className="h-3.5 w-3.5" />
+          </button>
+          <div className="flex items-baseline justify-between gap-2 pr-7">
+            <p className="text-xl font-extrabold" style={{ color: "var(--kv-blue)" }}>KPI-JAE</p>
+            <p className="text-xl font-extrabold shrink-0" style={{ color: "var(--kv-blue)" }}>
+              {current.jae != null ? `${current.jae.toFixed(1)}%` : "–"}
+            </p>
           </div>
-          <p className="text-3xl font-extrabold" style={{ color: "var(--kv-blue)" }}>
-            {current.jae != null ? `${current.jae.toFixed(1)}%` : "–"}
-          </p>
-          <p className="text-xs text-muted-foreground mt-1">
-            Justert for avgifter og energi
-          </p>
-          <div className="flex items-center gap-1.5 mt-auto pt-2">
+          <div className="flex items-center justify-between gap-2 mt-1">
+            <p className="text-xs text-muted-foreground">Justert for avgifter og energi</p>
             {(() => { const b = targetBadge(current.jae, 2); return (
-              <span className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-xs font-semibold ${b.className}`}>{b.text}</span>
+              <span className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-xs font-semibold shrink-0 ${b.className}`}>{b.text}</span>
             ); })()}
-            <span className="inline-flex items-center rounded-md bg-muted px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground">
-              Norges Bank
-            </span>
           </div>
         </div>
 
         {/* Styringsrente */}
-        <div className="rounded-2xl border bg-card p-5 shadow-sm flex flex-col">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <div className="flex items-center justify-center h-8 w-8 rounded-lg" style={{ background: "#24374c" }}>
-                <TrendingDown className="h-4 w-4 text-white" />
-              </div>
-              <p className="text-xs font-semibold text-muted-foreground">Styringsrenten</p>
-            </div>
-            <button onClick={() => setInfoModal("rente")} className="p-1 rounded-md text-muted-foreground/50 hover:text-muted-foreground transition-colors">
-              <Info className="h-3.5 w-3.5" />
-            </button>
+        <div className="relative rounded-2xl border bg-card p-5 shadow-sm">
+          <button onClick={() => setInfoModal("rente")} className="absolute top-4 right-4 p-1.5 rounded-md text-muted-foreground/50 hover:text-muted-foreground transition-colors">
+            <Info className="h-3.5 w-3.5" />
+          </button>
+          <div className="flex items-baseline justify-between gap-2 pr-7">
+            <p className="text-xl font-extrabold" style={{ color: "var(--kv-blue)" }}>Styringsrenten</p>
+            <p className="text-xl font-extrabold shrink-0" style={{ color: "var(--kv-blue)" }}>
+              {current.rate != null ? `${current.rate.toFixed(2)}%` : "–"}
+            </p>
           </div>
-          <p className="text-3xl font-extrabold" style={{ color: "var(--kv-blue)" }}>
-            {current.rate != null ? `${current.rate.toFixed(2)}%` : "–"}
-          </p>
-          <p className="text-xs text-muted-foreground mt-1">
-            Norges Bank
-          </p>
-          <div className="mt-auto pt-2">
-            {current.rate != null && current.jae != null && (
-              <span className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-xs font-semibold ${current.jae > 2.5 ? "bg-orange-50 text-orange-700" : "bg-green-50 text-green-700"}`}>
-                {current.jae > 2.5 ? "Holder igjen prisvekst" : "Prisveksten er under kontroll"}
-              </span>
-            )}
+          <div className="flex items-center justify-between gap-2 mt-1">
+            <p className="text-xs text-muted-foreground">Norges Bank</p>
           </div>
         </div>
       </div>

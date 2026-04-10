@@ -42,3 +42,8 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Local experiments (not committed)
+src/app/api/rapport/
+src/app/fonts/
+src/fonts/
