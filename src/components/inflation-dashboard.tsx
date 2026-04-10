@@ -435,7 +435,7 @@ export function InflationDashboard() {
               </defs>
               <CartesianGrid vertical={false} strokeDasharray="3 3" />
               <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={8} interval="preserveStartEnd" minTickGap={40} />
-              <YAxis tickLine={false} axisLine={false} tickMargin={4} tickFormatter={(v: number) => `${v}%`} domain={["dataMin - 0.5", "dataMax + 0.5"]} />
+              <YAxis tickLine={false} axisLine={false} tickMargin={4} tickFormatter={(v: number) => `${parseFloat(v.toFixed(1))}%`} domain={["dataMin - 0.5", "dataMax + 0.5"]} />
               {trendView !== "rente" && <ReferenceLine y={2.5} stroke="var(--kv-negative)" strokeDasharray="4 4" strokeOpacity={0.5} label={{ value: "2,5 %", position: "right", fontSize: 10, fill: "var(--kv-negative)" }} />}
               <ChartTooltip content={<ChartTooltipContent labelFormatter={(label) => label as string} formatter={(value) => [`${(value as number)?.toFixed(1)}%`, trendView === "kpi" ? "KPI" : trendView === "jae" ? "KPI-JAE" : "Rente"]} />} />
               <Area dataKey="value" type="monotone" stroke="var(--kv-blue)" strokeWidth={2} fill="url(#trendFill)" dot={false} activeDot={{ r: 4, fill: "var(--kv-blue)", stroke: "white", strokeWidth: 2 }} />
@@ -453,7 +453,7 @@ export function InflationDashboard() {
               <BarChart data={yearly.map((y) => ({ year: y.year, change: y.change }))} margin={{ top: 4, right: 4, bottom: 0, left: -12 }}>
                 <CartesianGrid vertical={false} strokeDasharray="3 3" />
                 <XAxis dataKey="year" tickLine={false} axisLine={false} tickMargin={8} interval="preserveStartEnd" minTickGap={30} />
-                <YAxis tickLine={false} axisLine={false} tickMargin={4} tickFormatter={(v: number) => `${v}%`} />
+                <YAxis tickLine={false} axisLine={false} tickMargin={4} tickFormatter={(v: number) => `${parseFloat(v.toFixed(1))}%`} />
                 <ReferenceLine y={2.5} stroke="var(--kv-negative)" strokeDasharray="4 4" strokeOpacity={0.5} label={{ value: "2,5 %", position: "right", fontSize: 10, fill: "var(--kv-negative)" }} />
                 <ChartTooltip content={<ChartTooltipContent labelFormatter={(label) => `${label}`} formatter={(value) => [`${(value as number)?.toFixed(1)}%`, "Prisvekst"]} />} />
                 <Bar dataKey="change" radius={[4, 4, 0, 0]}>
