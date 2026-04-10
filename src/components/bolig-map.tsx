@@ -588,9 +588,9 @@ export function BoligMap() {
             ))}
           </div>
 
-          {/* Legend */}
+          {/* Legend — hidden on mobile to save space */}
           {!loading && visibleMarkers.length > 0 && (
-            <div className="bg-card rounded-xl shadow-md px-3 py-2.5" style={{ border: "1px solid var(--border)" }}>
+            <div className="hidden sm:block bg-card rounded-xl shadow-md px-3 py-2.5" style={{ border: "1px solid var(--border)" }}>
               <p className="text-xs font-semibold text-muted-foreground mb-1.5">kr/m² ({TYPE_LABELS[boligtype]})</p>
               <div className="h-3 w-24 rounded-sm" style={{ background: "linear-gradient(to right, #3b82f6, #f97316, #ef4444)" }} />
               <div className="flex justify-between mt-0.5">
