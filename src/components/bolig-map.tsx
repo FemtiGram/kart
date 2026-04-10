@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { MapContainer, TileLayer, Marker, useMap } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, GeoJSON, useMap } from "react-leaflet";
+import type { GeoJsonObject, Feature } from "geojson";
+import type { Layer } from "leaflet";
 import MarkerClusterGroup from "react-leaflet-cluster";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -180,6 +182,7 @@ export function BoligMap() {
   const [boligData, setBoligData] = useState<BoligData>({});
   const [years, setYears] = useState<string[]>([]);
   const [centroids, setCentroids] = useState<Map<string, { lat: number; lon: number }>>(new Map());
+  const [geoData, setGeoData] = useState<GeoJsonObject | null>(null);
   const [loading, setLoading] = useState(true);
   const [counting, setCounting] = useState(false);
   const [loadedCount, setLoadedCount] = useState(0);
@@ -257,6 +260,7 @@ export function BoligMap() {
 
       const cent = computeCentroids(geoRes);
       setCentroids(cent);
+      setGeoData(geoRes);
       setBoligData(boligRes.data);
       setYears(boligRes.years ?? []);
       geoFeaturesRef.current = (geoRes.features ?? []).map((f: { properties: { kommunenummer: string; kommunenavn: string } }) => ({
@@ -415,7 +419,64 @@ export function BoligMap() {
           {center && <FlyTo lat={center.lat} lon={center.lon} zoom={center.zoom} _t={center._t} />}
           <ZoomTracker onZoom={setZoomLevel} />
 
-          <MarkerClusterGroup
+          {/* Polygon layer at high zoom */}
+          {zoomLevel >= 8 && geoData && (
+            <GeoJSON
+              key={`geo-${boligtype}-${year}`}
+              data={geoData}
+              style={(feature?: Feature) => {
+                const nr = feature?.properties?.kommunenummer;
+                const price = nr ? getPrice(nr, boligtype, year) : null;
+                const t = price != null ? pricePercentile(price, sortedPrices) : -1;
+                return {
+                  fillColor: t >= 0 ? priceColor(t) : "#e3ddd4",
+                  fillOpacity: t >= 0 ? 0.7 : 0.15,
+                  weight: selected?.kommunenummer === nr ? 2.5 : 0.5,
+                  color: selected?.kommunenummer === nr ? "#24374c" : "white",
+                };
+              }}
+              onEachFeature={(feature: Feature, layer: Layer) => {
+                const nr = feature.properties?.kommunenummer;
+                const name = feature.properties?.kommunenavn ?? "";
+                layer.on({
+                  click() {
+                    const c = centroids.get(nr);
+                    if (!c) return;
+                    const kommun = { kommunenummer: nr, kommunenavn: name, lat: c.lat, lon: c.lon };
+                    if (compareMode && selected && selected.kommunenummer !== nr) {
+                      setCompareTarget(kommun);
+                      setShowCompare(true);
+                      setCompareMode(false);
+                      setCompareQuery("");
+                    } else {
+                      setSelected((prev) => prev?.kommunenummer === nr ? null : kommun);
+                      setShowInfoSheet(false);
+                      setCompareMode(false);
+                      setCompareQuery("");
+                    }
+                  },
+                  mouseover(e) {
+                    const l = e.target as L.Path;
+                    if (nr !== selected?.kommunenummer) {
+                      l.setStyle({ weight: 1.5, color: "#24374c", fillOpacity: 0.9 });
+                      l.bringToFront();
+                    }
+                  },
+                  mouseout(e) {
+                    const l = e.target as L.Path;
+                    if (nr !== selected?.kommunenummer) {
+                      const price = getPrice(nr, boligtype, year);
+                      const t = price != null ? pricePercentile(price, sortedPrices) : -1;
+                      l.setStyle({ weight: 0.5, color: "white", fillOpacity: t >= 0 ? 0.7 : 0.15 });
+                    }
+                  },
+                });
+              }}
+            />
+          )}
+
+          {/* Bubble markers at low zoom */}
+          {zoomLevel < 8 && <MarkerClusterGroup
             key={`${boligtype}-${year}`}
             chunkedLoading
             maxClusterRadius={50}
@@ -468,7 +529,7 @@ export function BoligMap() {
                 {...{ price: m.price } as Record<string, unknown>}
               />
             ))}
-          </MarkerClusterGroup>
+          </MarkerClusterGroup>}
         </MapContainer>
 
         {/* Tile layer toggle */}
