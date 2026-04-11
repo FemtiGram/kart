@@ -13,6 +13,7 @@ import { useMapSearch, MapSearchBar } from "@/components/map-search";
 import { FYLKER } from "@/lib/fylker";
 import { FlyTo, DataDisclaimer, MapError, AnimatedCount } from "@/lib/map-utils";
 import type { Suggestion } from "@/lib/map-utils";
+import { CompactCard } from "@/components/compact-card";
 
 // ─── Types ──────────────────────────────────────────────────
 interface BoligEntry {
@@ -602,51 +603,28 @@ export function BoligMap() {
         </div>
 
         {/* Compact card */}
-        {selected && !showInfoSheet && !showCompare && (
-          <div
-            className="absolute bottom-4 left-3 right-3 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 sm:w-96 z-[999] bg-card rounded-2xl shadow-xl px-4 py-4"
-            style={{ border: "1.5px solid var(--border)" }}
-          >
-            <div className="relative">
-              <button
-                onClick={clearSelection}
-                className="absolute -top-1 -right-1 shrink-0 p-2.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                aria-label="Lukk"
-              >
-                <X className="h-4 w-4" />
-              </button>
-              <div className="flex items-baseline justify-between gap-2 pr-7">
-                <div className="flex items-baseline gap-1.5 min-w-0">
-                  <p className="text-xl font-extrabold leading-snug truncate" style={{ color: "var(--kv-blue)" }}>{selected.kommunenavn}</p>
-                  {selectedCount != null && (
-                    <span className="text-xs text-foreground/70 shrink-0">{selectedCount.toLocaleString("nb-NO")} salg</span>
-                  )}
-                </div>
-                {selectedPrice != null ? (
-                  <div className="flex items-baseline gap-1 shrink-0">
-                    <span className="text-xl font-extrabold" style={{ color: "var(--kv-blue)" }}>
-                      {selectedPrice.toLocaleString("nb-NO")}
-                    </span>
-                    <span className="text-xs text-foreground/70">kr/m²</span>
-                  </div>
-                ) : (
-                  <span className="text-xs text-foreground/70 shrink-0">Ingen data</span>
-                )}
-              </div>
-              <div className="flex items-center justify-between gap-2 mt-1 pr-7">
-                <p className="text-xs text-foreground/70 truncate">
-                  {[getFylke(selected.kommunenummer), TYPE_LABELS[boligtype], year].filter(Boolean).join(" · ")}
-                </p>
+        <CompactCard visible={!!selected && !showInfoSheet && !showCompare} onClose={clearSelection}>
+          {selected && (<>
+            <CompactCard.Header
+              title={selected.kommunenavn}
+              titleStat={selectedCount != null ? `${selectedCount.toLocaleString("nb-NO")} salg` : undefined}
+              metric={selectedPrice != null ? selectedPrice.toLocaleString("nb-NO") : undefined}
+              metricUnit="kr/m²"
+            />
+            <CompactCard.Context>
+              <CompactCard.ContextLeft>
+                <CompactCard.ContextText>{[getFylke(selected.kommunenummer), TYPE_LABELS[boligtype], year].filter(Boolean).join(" · ")}</CompactCard.ContextText>
+              </CompactCard.ContextLeft>
+              <CompactCard.ContextRight>
                 {yoyChange != null && (
-                  <span className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-xs font-semibold shrink-0 ${yoyChange >= 0 ? "bg-green-50 text-green-700" : "bg-red-50 text-red-600"}`}>
+                  <span className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-xs font-semibold ${yoyChange >= 0 ? "bg-green-50 text-green-700" : "bg-red-50 text-red-600"}`}>
                     {yoyChange >= 0 ? "+" : ""}{yoyChange.toFixed(1)}% fra {prevYear}
                   </span>
                 )}
-              </div>
-            </div>
-
+              </CompactCard.ContextRight>
+            </CompactCard.Context>
             {compareMode ? (
-              <div className="mt-3">
+              <CompactCard.Custom>
                 <div className="relative">
                   <input
                     autoFocus={typeof window !== "undefined" && window.innerWidth >= 640}
@@ -709,26 +687,15 @@ export function BoligMap() {
                 >
                   Avbryt
                 </button>
-              </div>
+              </CompactCard.Custom>
             ) : (
-              <div className="flex gap-2 mt-3">
-                <button
-                  onClick={() => setShowInfoSheet(true)}
-                  className="flex-1 inline-flex items-center justify-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl text-white transition-colors hover:opacity-90"
-                  style={{ background: "var(--kv-blue)" }}
-                >
-                  <ChevronUp className="h-3.5 w-3.5" /> Vis mer
-                </button>
-                <button
-                  onClick={() => setCompareMode(true)}
-                  className="flex-1 inline-flex items-center justify-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl border bg-muted/50 hover:bg-muted transition-colors"
-                >
-                  <ArrowLeftRight className="h-3.5 w-3.5" /> Sammenlign
-                </button>
-              </div>
+              <CompactCard.Actions>
+                <CompactCard.Action primary onClick={() => setShowInfoSheet(true)} icon={<ChevronUp className="h-3.5 w-3.5" />}>Vis mer</CompactCard.Action>
+                <CompactCard.Action onClick={() => setCompareMode(true)} icon={<ArrowLeftRight className="h-3.5 w-3.5" />}>Sammenlign</CompactCard.Action>
+              </CompactCard.Actions>
             )}
-          </div>
-        )}
+          </>)}
+        </CompactCard>
 
         {/* Detail sheet */}
         <Sheet open={showInfoSheet && !!selected} onOpenChange={(open) => { setShowInfoSheet(open); }}>

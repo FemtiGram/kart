@@ -9,6 +9,7 @@ import "react-leaflet-cluster/dist/assets/MarkerCluster.css";
 import "react-leaflet-cluster/dist/assets/MarkerCluster.Default.css";
 import { Loader2, X, ExternalLink, Info, Map as MapIcon, Layers, LocateFixed, Mountain, Wind, Droplets, Sun, Cloud, CloudSun, CloudRain, CloudSnow, CloudLightning, CloudFog, CloudHail, CloudDrizzle, Moon, SlidersHorizontal, Check, ChevronUp, Navigation } from "lucide-react";
 import { FlyTo, DataDisclaimer, MapError, AnimatedCount } from "@/lib/map-utils";
+import { CompactCard } from "@/components/compact-card";
 import type { LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -548,74 +549,32 @@ export function CabinMap() {
         </div>
 
         {/* Compact info card */}
-        {selected && !showInfoSheet && (
-          <div
-            className="absolute bottom-4 left-3 right-3 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 sm:w-96 z-[999] bg-card rounded-2xl shadow-xl px-4 py-4"
-            style={{ border: "1.5px solid var(--border)" }}
-          >
-            <div className="relative">
-              <button
-                onClick={() => setSelected(null)}
-                className="absolute -top-1 -right-1 shrink-0 p-2.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                aria-label="Lukk"
-              >
-                <X className="h-4 w-4" />
-              </button>
-              <div className="flex items-baseline justify-between gap-2 pr-7">
-                <div className="flex items-baseline gap-1.5 min-w-0">
-                  <p className="text-xl font-extrabold leading-snug truncate" style={{ color: "var(--kv-blue)" }}>{selected.name}</p>
-                  {selected.beds != null && (
-                    <span className="text-xs text-foreground/70 shrink-0">{selected.beds} senger</span>
-                  )}
-                </div>
-                {selected.elevation != null && (
-                  <div className="flex items-baseline gap-1 shrink-0">
-                    <span className="text-xl font-extrabold" style={{ color: "var(--kv-blue)" }}>{selected.elevation}</span>
-                    <span className="text-xs text-foreground/70">moh.</span>
-                  </div>
+        <CompactCard visible={!!selected && !showInfoSheet} onClose={() => setSelected(null)}>
+          {selected && (<>
+            <CompactCard.Header
+              title={selected.name}
+              titleStat={selected.beds != null ? `${selected.beds} senger` : undefined}
+              metric={selected.elevation ?? undefined}
+              metricUnit="moh."
+            />
+            <CompactCard.Context>
+              <CompactCard.ContextLeft>
+                {selected.operator && selected.operator !== selected.name && (
+                  <CompactCard.ContextText>{selected.operator}</CompactCard.ContextText>
                 )}
-              </div>
-              <div className="flex items-center justify-between gap-2 mt-1 pr-7">
-                <p className="text-xs text-foreground/70 truncate">
-                  {selected.operator !== selected.name ? selected.operator : null}
-                </p>
-                <div className="flex items-center gap-1.5 shrink-0">
-                  <span
-                    className="text-xs font-semibold px-1.5 py-0.5 rounded-full text-white"
-                    style={{ background: CABIN_COLORS[selected.cabinType] }}
-                  >
-                    {CABIN_LABELS[selected.cabinType]}
-                  </span>
-                  {selected.isDNT && (
-                    <span className="text-xs font-semibold px-1.5 py-0.5 rounded-full bg-muted text-foreground">DNT</span>
-                  )}
-                  {selected.fee === false && (
-                    <span className="text-xs font-semibold px-1.5 py-0.5 rounded-full bg-green-100 text-green-800">Gratis</span>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Action row */}
-            <div className="flex gap-2 mt-3">
-              <button
-                onClick={() => { setShowInfoSheet(true); setShowFilter(false); }}
-                className="flex-1 inline-flex items-center justify-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl text-white transition-colors hover:opacity-90"
-                style={{ background: "var(--kv-blue)" }}
-              >
-                <ChevronUp className="h-3.5 w-3.5" /> Vis mer
-              </button>
-              <a
-                href={`https://www.google.com/maps/dir/?api=1&destination=${selected.lat},${selected.lon}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex-1 inline-flex items-center justify-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl border bg-muted/50 hover:bg-muted transition-colors"
-              >
-                <Navigation className="h-3.5 w-3.5" /> Kjør hit
-              </a>
-            </div>
-          </div>
-        )}
+              </CompactCard.ContextLeft>
+              <CompactCard.ContextRight>
+                <CompactCard.Badge color="white" bg={CABIN_COLORS[selected.cabinType]}>{CABIN_LABELS[selected.cabinType]}</CompactCard.Badge>
+                {selected.isDNT && <CompactCard.Badge color="var(--foreground)" bg="var(--muted)">DNT</CompactCard.Badge>}
+                {selected.fee === false && <CompactCard.Badge color="#166534" bg="#dcfce7">Gratis</CompactCard.Badge>}
+              </CompactCard.ContextRight>
+            </CompactCard.Context>
+            <CompactCard.Actions>
+              <CompactCard.Action primary onClick={() => { setShowInfoSheet(true); setShowFilter(false); }} icon={<ChevronUp className="h-3.5 w-3.5" />}>Vis mer</CompactCard.Action>
+              <CompactCard.Action href={`https://www.google.com/maps/dir/?api=1&destination=${selected.lat},${selected.lon}`} icon={<Navigation className="h-3.5 w-3.5" />}>Kjør hit</CompactCard.Action>
+            </CompactCard.Actions>
+          </>)}
+        </CompactCard>
 
         {/* Info detail sheet */}
         <Sheet open={showInfoSheet && !!selected} onOpenChange={(open) => { setShowInfoSheet(open); }}>

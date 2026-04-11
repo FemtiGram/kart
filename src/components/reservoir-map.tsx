@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useMapSearch, MapSearchBar } from "@/components/map-search";
 import { FlyTo, DataDisclaimer, MapError, AnimatedCount } from "@/lib/map-utils";
+import { CompactCard } from "@/components/compact-card";
 import type { Suggestion } from "@/lib/map-utils";
 
 interface Reservoir {
@@ -321,59 +322,23 @@ export function ReservoirMap() {
         </button>
 
         {/* Compact info card */}
-        {selected && !showInfoSheet && (
-          <div
-            className="absolute bottom-4 left-3 right-3 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 sm:w-96 z-[999] bg-card rounded-2xl shadow-xl px-4 py-4"
-            style={{ border: "1.5px solid var(--border)" }}
-          >
-            <div className="relative">
-              <button
-                onClick={() => { setSelected(null); setShowInfoSheet(false); }}
-                className="absolute -top-1 -right-1 shrink-0 p-2.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                aria-label="Lukk"
-              >
-                <X className="h-4 w-4" />
-              </button>
-              <div className="flex items-baseline justify-between gap-2 pr-7">
-                <p className="text-xl font-extrabold leading-snug truncate min-w-0" style={{ color: "var(--kv-blue)" }}>{selected.name}</p>
-                {selected.volumeMm3 != null && (
-                  <div className="flex items-baseline gap-1 shrink-0">
-                    <span className="text-xl font-extrabold" style={{ color: "var(--kv-metric)" }}>
-                      {selected.volumeMm3.toFixed(1)}
-                    </span>
-                    <span className="text-xs text-foreground/70">Mm³</span>
-                  </div>
-                )}
-              </div>
-              <div className="flex items-center justify-between gap-2 mt-1 pr-7">
-                <p className="text-xs text-foreground/70 truncate">
-                  {selected.plantName ?? selected.river}
-                </p>
-                {selected.yearBuilt != null && (
-                  <span className="text-xs text-foreground/70 shrink-0">Idriftsatt {selected.yearBuilt}</span>
-                )}
-              </div>
-            </div>
-
-            <div className="flex gap-2 mt-3">
-              <button
-                onClick={() => setShowInfoSheet(true)}
-                className="flex-1 inline-flex items-center justify-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl text-white transition-colors hover:opacity-90"
-                style={{ background: "var(--kv-blue)" }}
-              >
-                <ChevronUp className="h-3.5 w-3.5" /> Vis mer
-              </button>
-              <a
-                href={`https://www.google.com/maps/dir/?api=1&destination=${selected.center.lat},${selected.center.lon}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex-1 inline-flex items-center justify-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl border bg-muted/50 hover:bg-muted transition-colors"
-              >
-                <Navigation className="h-3.5 w-3.5" /> Kjør hit
-              </a>
-            </div>
-          </div>
-        )}
+        <CompactCard visible={!!selected && !showInfoSheet} onClose={() => { setSelected(null); setShowInfoSheet(false); }}>
+          {selected && (<>
+            <CompactCard.Header title={selected.name} metric={selected.volumeMm3?.toFixed(1)} metricUnit="Mm³" metricColor="var(--kv-metric)" />
+            <CompactCard.Context>
+              <CompactCard.ContextLeft>
+                <CompactCard.ContextText>{selected.plantName ?? selected.river}</CompactCard.ContextText>
+              </CompactCard.ContextLeft>
+              <CompactCard.ContextRight>
+                {selected.yearBuilt != null && <CompactCard.ContextText>Idriftsatt {selected.yearBuilt}</CompactCard.ContextText>}
+              </CompactCard.ContextRight>
+            </CompactCard.Context>
+            <CompactCard.Actions>
+              <CompactCard.Action primary onClick={() => setShowInfoSheet(true)} icon={<ChevronUp className="h-3.5 w-3.5" />}>Vis mer</CompactCard.Action>
+              <CompactCard.Action href={`https://www.google.com/maps/dir/?api=1&destination=${selected.center.lat},${selected.center.lon}`} icon={<Navigation className="h-3.5 w-3.5" />}>Kjør hit</CompactCard.Action>
+            </CompactCard.Actions>
+          </>)}
+        </CompactCard>
 
         {/* Info detail sheet */}
         <Sheet open={showInfoSheet && !!selected} onOpenChange={(open) => { setShowInfoSheet(open); }}>

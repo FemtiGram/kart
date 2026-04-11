@@ -13,6 +13,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { useMapSearch, MapSearchBar } from "@/components/map-search";
 import { isInNorway, OSLO } from "@/lib/fylker";
 import { FlyTo, DataDisclaimer, MapError, AnimatedCount } from "@/lib/map-utils";
+import { CompactCard } from "@/components/compact-card";
 import type { KommuneEntry, Suggestion } from "@/lib/map-utils";
 
 interface Connector {
@@ -408,58 +409,23 @@ export function ChargingMap() {
         </div>
 
         {/* Compact info card */}
-        {selected && !showInfoSheet && (
-          <div
-            className="absolute bottom-4 left-3 right-3 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 sm:w-96 z-[999] bg-card rounded-2xl shadow-xl px-4 py-4"
-            style={{ border: "1.5px solid var(--border)" }}
-          >
-            <div className="relative">
-              <button
-                onClick={() => setSelected(null)}
-                className="absolute -top-1 -right-1 shrink-0 p-2.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                aria-label="Lukk"
-              >
-                <X className="h-4 w-4" />
-              </button>
-              <div className="flex items-baseline justify-between gap-2 pr-7">
-                <p className="text-xl font-extrabold leading-snug truncate min-w-0" style={{ color: "var(--kv-blue)" }}>{selected.name}</p>
-                {selected.maxKw != null && (
-                  <div className="flex items-baseline gap-1 shrink-0">
-                    <span className="text-xl font-extrabold" style={{ color: "var(--kv-blue)" }}>{selected.maxKw}</span>
-                    <span className="text-xs text-foreground/70">kW</span>
-                  </div>
-                )}
-              </div>
-              <div className="flex items-center justify-between gap-2 mt-1 pr-7">
-                <p className="text-xs text-foreground/70 truncate">
-                  {[selected.operator !== selected.name ? selected.operator : null, selected.open24h ? "Åpent: 24t" : null].filter(Boolean).join(" · ")}
-                </p>
-                <span className="text-xs text-foreground/70 shrink-0">
-                  {selected.numPoints != null ? `${selected.numPoints} punkt` : ""}
-                </span>
-              </div>
-            </div>
-
-            {/* Action row */}
-            <div className="flex gap-2 mt-3">
-              <button
-                onClick={() => { setShowInfoSheet(true); setShowFilter(false); }}
-                className="flex-1 inline-flex items-center justify-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl text-white transition-colors hover:opacity-90"
-                style={{ background: "var(--kv-blue)" }}
-              >
-                <ChevronUp className="h-3.5 w-3.5" /> Vis mer
-              </button>
-              <a
-                href={`https://www.google.com/maps/dir/?api=1&destination=${selected.lat},${selected.lon}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex-1 inline-flex items-center justify-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl border bg-muted/50 hover:bg-muted transition-colors"
-              >
-                <Navigation className="h-3.5 w-3.5" /> Kjør hit
-              </a>
-            </div>
-          </div>
-        )}
+        <CompactCard visible={!!selected && !showInfoSheet} onClose={() => setSelected(null)}>
+          {selected && (<>
+            <CompactCard.Header title={selected.name} metric={selected.maxKw ?? undefined} metricUnit="kW" />
+            <CompactCard.Context>
+              <CompactCard.ContextLeft>
+                <CompactCard.ContextText>{[selected.operator !== selected.name ? selected.operator : null, selected.open24h ? "Åpent: 24t" : null].filter(Boolean).join(" · ")}</CompactCard.ContextText>
+              </CompactCard.ContextLeft>
+              <CompactCard.ContextRight>
+                {selected.numPoints != null && <CompactCard.ContextText>{selected.numPoints} punkt</CompactCard.ContextText>}
+              </CompactCard.ContextRight>
+            </CompactCard.Context>
+            <CompactCard.Actions>
+              <CompactCard.Action primary onClick={() => { setShowInfoSheet(true); setShowFilter(false); }} icon={<ChevronUp className="h-3.5 w-3.5" />}>Vis mer</CompactCard.Action>
+              <CompactCard.Action href={`https://www.google.com/maps/dir/?api=1&destination=${selected.lat},${selected.lon}`} icon={<Navigation className="h-3.5 w-3.5" />}>Kjør hit</CompactCard.Action>
+            </CompactCard.Actions>
+          </>)}
+        </CompactCard>
 
         {/* Info detail sheet */}
         <Sheet open={showInfoSheet && !!selected} onOpenChange={(open) => { setShowInfoSheet(open); }}>
