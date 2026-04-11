@@ -10,13 +10,14 @@ import { fileURLToPath } from "url";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const OUT_PATH = join(__dirname, "..", "public", "data", "reservoirs.json");
 
-const NVE_URL =
+const NVE_BASE =
   "https://nve.geodataonline.no/arcgis/rest/services/Vannkraft1/MapServer/6/query?" +
   "where=status%3D'D'+AND+volumOppdemt_Mm3+IS+NOT+NULL" +
   "&outFields=OBJECTID,magasinNavn,vannkraftverkNavn,elvenavnHierarki," +
   "hoyesteRegulerteVannstand_moh,lavesteRegulerteVannstand_moh," +
   "volumOppdemt_Mm3,magasinArealHRV_km2,idriftsattAar,magasinFormal_Liste" +
-  "&returnGeometry=true&f=json&resultRecordCount=500";
+  "&returnGeometry=true&f=json";
+const PAGE_SIZE = 50;
 
 // ─── UTM zone 33N → WGS84 (same math as src/lib/utm.ts) ────
 
@@ -73,18 +74,25 @@ function utmToLatLon(easting, northing) {
 // ─── Main ───────────────────────────────────────────────────
 
 async function main() {
-  console.log("Fetching reservoirs from NVE...");
+  console.log("Fetching reservoirs from NVE (paginated)...");
   try {
-    const res = await fetch(NVE_URL, {
-      headers: { "User-Agent": "Datakart/1.0 github.com/FemtiGram/kart" },
-      signal: AbortSignal.timeout(30000),
-    });
-
-    if (!res.ok) throw new Error(`NVE API returned ${res.status}`);
-
-    const data = await res.json();
-    const features = data.features ?? [];
-    console.log(`  → ${features.length} features from NVE`);
+    const features = [];
+    let offset = 0;
+    while (true) {
+      const url = `${NVE_BASE}&resultRecordCount=${PAGE_SIZE}&resultOffset=${offset}`;
+      const res = await fetch(url, {
+        headers: { "User-Agent": "Datakart/1.0 github.com/FemtiGram/kart" },
+        signal: AbortSignal.timeout(30000),
+      });
+      if (!res.ok) throw new Error(`NVE API returned ${res.status}`);
+      const data = await res.json();
+      const batch = data.features ?? [];
+      features.push(...batch);
+      console.log(`  → Page ${Math.floor(offset / PAGE_SIZE) + 1}: ${batch.length} features (total: ${features.length})`);
+      if (batch.length < PAGE_SIZE || !data.exceededTransferLimit) break;
+      offset += PAGE_SIZE;
+    }
+    console.log(`  → ${features.length} total features from NVE`);
 
     const reservoirs = [];
 

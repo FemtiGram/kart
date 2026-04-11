@@ -147,6 +147,8 @@ export function CabinMap() {
   const [showInfoSheet, setShowInfoSheet] = useState(false);
   const [filterTypes, setFilterTypes] = useState<Set<Cabin["cabinType"]>>(new Set(["fjellhytte", "ubetjent"]));
   const [filterDNT, setFilterDNT] = useState(false);
+  const [filterFee, setFilterFee] = useState<"all" | "free" | "paid">("all");
+  const [filterSeason, setFilterSeason] = useState<"all" | "helårs">("all");
   const [weather, setWeather] = useState<WeatherResult | null>(null);
   const [loadingWeather, setLoadingWeather] = useState(false);
 
@@ -302,10 +304,17 @@ export function CabinMap() {
   const dntCount = norwayCabins.filter((c) => c.isDNT).length;
 
   const filteredCabins = useMemo(() => {
-    return norwayCabins.filter((c) => filterTypes.has(c.cabinType) && (!filterDNT || c.isDNT));
-  }, [norwayCabins, filterTypes, filterDNT]);
+    return norwayCabins.filter((c) => {
+      if (!filterTypes.has(c.cabinType)) return false;
+      if (filterDNT && !c.isDNT) return false;
+      if (filterFee === "free" && c.fee !== false) return false;
+      if (filterFee === "paid" && c.fee === false) return false;
+      if (filterSeason === "helårs" && c.season !== "Helårs") return false;
+      return true;
+    });
+  }, [norwayCabins, filterTypes, filterDNT, filterFee, filterSeason]);
 
-  const activeFilterCount = (2 - filterTypes.size) + (filterDNT ? 1 : 0);
+  const activeFilterCount = (2 - filterTypes.size) + (filterDNT ? 1 : 0) + (filterFee !== "all" ? 1 : 0) + (filterSeason !== "all" ? 1 : 0);
 
   const toggleType = (type: Cabin["cabinType"]) => {
     setFilterTypes((prev) => {
@@ -378,11 +387,39 @@ export function CabinMap() {
                         </button>
                       </div>
                     </div>
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-foreground/70 mb-2">Pris</p>
+                      <div className="flex rounded-xl border overflow-hidden">
+                        {([["all", "Alle"], ["free", "Gratis"], ["paid", "Betalt"]] as const).map(([val, label]) => (
+                          <button
+                            key={val}
+                            onClick={() => setFilterFee(val)}
+                            className={`flex-1 px-3 py-2.5 text-sm font-medium transition-colors ${filterFee === val ? "bg-primary text-primary-foreground" : "bg-muted/40 text-muted-foreground hover:bg-muted"}`}
+                          >
+                            {label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-foreground/70 mb-2">Sesong</p>
+                      <div className="flex rounded-xl border overflow-hidden">
+                        {([["all", "Alle"], ["helårs", "Kun helårs"]] as const).map(([val, label]) => (
+                          <button
+                            key={val}
+                            onClick={() => setFilterSeason(val)}
+                            className={`flex-1 px-3 py-2.5 text-sm font-medium transition-colors ${filterSeason === val ? "bg-primary text-primary-foreground" : "bg-muted/40 text-muted-foreground hover:bg-muted"}`}
+                          >
+                            {label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                     <div className="flex gap-2 pt-1">
                       <Button
                         variant="secondary"
                         className="flex-1"
-                        onClick={() => { setFilterTypes(new Set(["fjellhytte", "ubetjent"])); setFilterDNT(false); }}
+                        onClick={() => { setFilterTypes(new Set(["fjellhytte", "ubetjent"])); setFilterDNT(false); setFilterFee("all"); setFilterSeason("all"); }}
                       >
                         Nullstill
                       </Button>
