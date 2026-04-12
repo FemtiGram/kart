@@ -8,7 +8,7 @@ import MarkerClusterGroup from "react-leaflet-cluster";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import Link from "next/link";
-import { Info, ChevronUp, Navigation, Home, Building2, Building, ArrowLeftRight, ArrowRight } from "lucide-react";
+import { Info, ChevronUp, Navigation, Home, Building2, Building, ArrowLeftRight, ArrowRight, ExternalLink } from "lucide-react";
 import { kommuneSlug } from "@/lib/kommune-slug";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { MapSearchBar, type MapSearchBarHandle } from "@/components/map-search";
@@ -195,6 +195,7 @@ export function BoligMap() {
   const [counting, setCounting] = useState(false);
   const [loadedCount, setLoadedCount] = useState(0);
   const [error, setError] = useState(false);
+  const finnLocationsRef = useRef<Record<string, string>>({});
 
   // Filters
   const [boligtype, setBoligtype] = useState<string>("01");
@@ -260,12 +261,15 @@ export function BoligMap() {
     setError(false);
     setLoading(true);
     try {
-      const [geoRes, boligRes] = await Promise.all([
+      const [geoRes, boligRes, finnRes] = await Promise.all([
         fetch("/api/kommuner").then((r) => r.json()),
         fetch("/api/bolig").then((r) => r.json()),
+        fetch("/data/finn-locations.json").then((r) => r.ok ? r.json() : {}).catch(() => ({})),
       ]);
 
       if (boligRes.error) { setError(true); setLoading(false); return; }
+
+      finnLocationsRef.current = finnRes ?? {};
 
       const cent = computeCentroids(geoRes);
       setCentroids(cent);
@@ -833,22 +837,47 @@ export function BoligMap() {
                     </div>
                   )}
 
-                  {/* Full profile link */}
-                  <div className="mt-4 pt-4 border-t">
+                  {/* Action cards */}
+                  <div className="mt-4 pt-4 border-t grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <Link
                       href={`/kommune/${kommuneSlug(selected.kommunenummer, selected.kommunenavn)}`}
                       className="flex items-center justify-between rounded-xl border bg-muted/40 hover:bg-muted px-4 py-3 transition-colors"
                     >
-                      <div>
-                        <p className="text-sm font-semibold" style={{ color: "var(--kv-blue)" }}>
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold truncate" style={{ color: "var(--kv-blue)" }}>
                           Se full stedsprofil
                         </p>
-                        <p className="text-xs text-foreground/70 mt-0.5">
-                          Befolkning, inntekt, energi og mer
+                        <p className="text-xs text-foreground/70 mt-0.5 truncate">
+                          Befolkning, inntekt, energi
                         </p>
                       </div>
-                      <ArrowRight className="h-4 w-4 text-foreground/70 shrink-0" />
+                      <ArrowRight className="h-4 w-4 text-foreground/70 shrink-0 ml-3" />
                     </Link>
+                    {(() => {
+                      const kommuneName = selected.kommunenavn.split(/\s+-\s+/)[0].trim();
+                      const finnCode = finnLocationsRef.current[selected.kommunenummer];
+                      const finnUrl = finnCode
+                        ? `https://www.finn.no/realestate/homes/search.html?q=${encodeURIComponent(kommuneName)}&location=${finnCode}`
+                        : `https://www.finn.no/realestate/homes/search.html?q=${encodeURIComponent(kommuneName)}`;
+                      return (
+                        <a
+                          href={finnUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center justify-between rounded-xl border bg-muted/40 hover:bg-muted px-4 py-3 transition-colors"
+                        >
+                          <div className="min-w-0">
+                            <p className="text-sm font-semibold truncate" style={{ color: "var(--kv-blue)" }}>
+                              Boliger til salgs
+                            </p>
+                            <p className="text-xs text-foreground/70 mt-0.5 truncate">
+                              Søk i {kommuneName} på Finn.no
+                            </p>
+                          </div>
+                          <ExternalLink className="h-4 w-4 text-foreground/70 shrink-0 ml-3" />
+                        </a>
+                      );
+                    })()}
                   </div>
 
                   {/* Source */}
