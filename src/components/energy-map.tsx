@@ -31,9 +31,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { FYLKER, isInNorway, OSLO } from "@/lib/fylker";
-import { FlyTo, DataDisclaimer, MapError, AnimatedCount, useDebounceRef, useSearchAbort } from "@/lib/map-utils";
+import { FlyTo, DataDisclaimer, MapError, useDebounceRef, useSearchAbort, MAP_HEIGHT } from "@/lib/map-utils";
 import type { Address, KommuneEntry, Suggestion } from "@/lib/map-utils";
 import { CompactCard } from "@/components/compact-card";
+import { MapLoading } from "@/components/map-loading";
+import { DriveLink } from "@/components/drive-link";
 
 type EnergyType = "vind" | "vann" | "havvind" | "oilgas";
 type WindStatus = "operational" | "construction" | "approved" | "rejected";
@@ -704,7 +706,7 @@ export function EnergyMap() {
   );
 
   return (
-    <div className="flex flex-col" style={{ height: "calc(100svh - 57px - 56px)" }}>
+    <div className="flex flex-col" style={{ height: MAP_HEIGHT }}>
       {/* Search bar */}
       <div className="relative z-[1000] px-4 py-4 md:px-8 shrink-0 bg-background border-b">
         <div className="max-w-xl mx-auto relative flex flex-col gap-2">
@@ -898,30 +900,14 @@ export function EnergyMap() {
 
       {/* Map */}
       <div className="relative grow">
-        {(loading || counting) && (
-          <div className="absolute inset-0 z-[1000] bg-background flex items-center justify-center">
-            <div className="flex flex-col items-center gap-3 text-center px-6">
-              <Loader2
-                className="h-8 w-8 animate-spin"
-                style={{ color: "var(--kv-blue)" }}
-              />
-              {counting ? (
-                <>
-                  <p className="text-2xl font-extrabold tabular-nums" style={{ color: "var(--kv-blue)" }}>
-                    <AnimatedCount target={loadedCount} duration={700} />
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    datapunkter lastet
-                  </p>
-                </>
-              ) : (
-                <p className="text-sm text-muted-foreground">
-                  Henter kraftverk...
-                </p>
-              )}
-            </div>
-          </div>
-        )}
+        <MapLoading
+          visible={loading || counting}
+          loading={loading}
+          counting={counting}
+          count={loadedCount}
+          countLabel="datapunkter lastet"
+          loadingMessage="Henter kraftverk..."
+        />
         {locating && (
           <div className="absolute bottom-20 sm:top-3 sm:bottom-auto left-1/2 -translate-x-1/2 z-[1000] bg-background/90 backdrop-blur-sm border rounded-full px-4 py-2 shadow-lg">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -1702,14 +1688,7 @@ export function EnergyMap() {
 
                 {/* Layer 4 — Links & source */}
                 <div className="mt-4 pt-4 border-t flex flex-col gap-3">
-                  <a
-                    href={`https://www.google.com/maps/dir/?api=1&destination=${selected.lat},${selected.lon}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center justify-center gap-2 text-sm font-semibold px-4 py-2.5 rounded-xl border bg-muted/50 hover:bg-muted transition-colors w-full"
-                  >
-                    <Navigation className="h-4 w-4" /> Kjør hit
-                  </a>
+                  <DriveLink lat={selected.lat} lon={selected.lon} />
                   <p className="text-xs text-foreground/70 text-center">
                     Kilde: <a href="https://nve.geodataonline.no/arcgis/rest/services/" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">NVE Geodata</a> · Oppdateres hver time
                   </p>

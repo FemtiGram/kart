@@ -8,7 +8,10 @@ import { Search, MapPin, Mountain, Loader2, X, ChevronUp, LocateFixed, Wind, Dro
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import type { LucideIcon } from "lucide-react";
-import { FlyTo, DataDisclaimer, useDebounceRef } from "@/lib/map-utils";
+import { FlyTo, DataDisclaimer, useDebounceRef, MAP_HEIGHT } from "@/lib/map-utils";
+import { InfoModal } from "@/components/info-modal";
+import { TileToggle } from "@/components/tile-toggle";
+import { DriveLink } from "@/components/drive-link";
 
 function weatherIcon(symbolCode: string): LucideIcon {
   const c = symbolCode.toLowerCase();
@@ -332,7 +335,7 @@ export function ElevationMap() {
   const lon = selected?.address.representasjonspunkt.lon ?? 14;
 
   return (
-    <div className="flex flex-col" style={{ height: "calc(100svh - 57px - 56px)" }}>
+    <div className="flex flex-col" style={{ height: MAP_HEIGHT }}>
       {/* API health banner */}
       {apiDown && !apiBannerDismissed && (
         <div className="shrink-0 flex items-center justify-between gap-3 px-4 py-2.5 bg-yellow-50 border-b border-yellow-200 text-yellow-800 text-sm">
@@ -434,18 +437,15 @@ export function ElevationMap() {
         </MapContainer>
 
         {/* Tile layer toggle */}
-        <div className="absolute top-3 right-3 z-[999] flex rounded-lg border bg-card shadow-md overflow-hidden">
-          {(["kart", "terreng"] as TileLayerKey[]).map((key, i) => (
-            <button
-              key={key}
-              onClick={() => setTileLayer(key)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold transition-colors ${i > 0 ? "border-l" : ""} ${tileLayer === key ? "text-white" : "text-muted-foreground hover:bg-muted"}`}
-              style={tileLayer === key ? { background: "var(--kv-blue)" } : {}}
-            >
-              {key === "kart" ? <MapIcon className="h-3.5 w-3.5" /> : <Mountain className="h-3.5 w-3.5" />}
-              {TILE_LAYERS[key].label}
-            </button>
-          ))}
+        <div className="absolute top-3 right-3 z-[999]">
+          <TileToggle
+            value={tileLayer}
+            onChange={setTileLayer}
+            options={[
+              { value: "kart", label: "Kart", icon: <MapIcon className="h-3.5 w-3.5" /> },
+              { value: "terreng", label: "Terreng", icon: <Mountain className="h-3.5 w-3.5" /> },
+            ]}
+          />
         </div>
 
         {/* Compact info card */}
@@ -599,14 +599,10 @@ export function ElevationMap() {
 
                 {/* Layer 4 — Links & source */}
                 <div className="mt-4 pt-4 border-t flex flex-col gap-3">
-                  <a
-                    href={`https://www.google.com/maps/dir/?api=1&destination=${selected.mapsCoords?.lat ?? selected.address.representasjonspunkt.lat},${selected.mapsCoords?.lon ?? selected.address.representasjonspunkt.lon}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center justify-center gap-2 text-sm font-semibold px-4 py-2.5 rounded-xl border bg-muted/50 hover:bg-muted transition-colors w-full"
-                  >
-                    <Navigation className="h-4 w-4" /> Kjør hit
-                  </a>
+                  <DriveLink
+                    lat={selected.mapsCoords?.lat ?? selected.address.representasjonspunkt.lat}
+                    lon={selected.mapsCoords?.lon ?? selected.address.representasjonspunkt.lon}
+                  />
                   <p className="text-xs text-foreground/70 text-center">
                     Kilde: Kartverket, MET.no
                   </p>
@@ -628,62 +624,40 @@ export function ElevationMap() {
       </div>
 
       {/* Info modal */}
-      {showInfo && (
-        <div
-          className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/40 px-4"
-          onClick={() => setShowInfo(false)}
-        >
-          <div
-            className="bg-background rounded-2xl shadow-xl border w-full max-w-sm p-5"
-            onClick={(e) => e.stopPropagation()}
+      <InfoModal open={showInfo} onClose={() => setShowInfo(false)} title="Om høydekartet">
+        <p>
+          Søk etter en adresse eller klikk i kartet for å se <span className="font-medium text-foreground">høyde over havet</span> for et punkt i Norge.
+        </p>
+        <p>
+          <span className="font-medium text-foreground">Høydedata</span> hentes fra Kartverkets høyde-API og er basert på den nasjonale terrengmodellen (DTM). Nøyaktigheten varierer, men er typisk ±2–5 meter.
+        </p>
+        <p>
+          <span className="font-medium text-foreground">Værdata</span> hentes fra MET.no (Meteorologisk institutt) og viser gjeldende temperatur, vindstyrke og nedbør for det valgte punktet.
+        </p>
+        <p>
+          Kartet bruker <span className="font-medium text-foreground">Kartverket</span> for bakgrunnskart og <span className="font-medium text-foreground">OpenTopoMap</span> for terrengvisning.
+        </p>
+        <div className="flex gap-3 mt-1">
+          <a
+            href="https://www.kartverket.no/api-og-data/hoydedata"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-xs font-medium text-foreground/70 hover:text-foreground transition-colors"
           >
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="font-bold text-base">Om høydekartet</h2>
-              <button
-                onClick={() => setShowInfo(false)}
-                className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                aria-label="Lukk"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-            <div className="flex flex-col gap-3 text-sm text-muted-foreground">
-              <p>
-                Søk etter en adresse eller klikk i kartet for å se <span className="font-medium text-foreground">høyde over havet</span> for et punkt i Norge.
-              </p>
-              <p>
-                <span className="font-medium text-foreground">Høydedata</span> hentes fra Kartverkets høyde-API og er basert på den nasjonale terrengmodellen (DTM). Nøyaktigheten varierer, men er typisk ±2–5 meter.
-              </p>
-              <p>
-                <span className="font-medium text-foreground">Værdata</span> hentes fra MET.no (Meteorologisk institutt) og viser gjeldende temperatur, vindstyrke og nedbør for det valgte punktet.
-              </p>
-              <p>
-                Kartet bruker <span className="font-medium text-foreground">Kartverket</span> for bakgrunnskart og <span className="font-medium text-foreground">OpenTopoMap</span> for terrengvisning.
-              </p>
-              <div className="flex gap-3 mt-1">
-                <a
-                  href="https://www.kartverket.no/api-og-data/hoydedata"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-xs font-medium text-foreground/70 hover:text-foreground transition-colors"
-                >
-                  <ExternalLink className="h-3 w-3" />
-                  Kartverket
-                </a>
-                <a
-                  href="https://api.met.no/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-xs font-medium text-foreground/70 hover:text-foreground transition-colors"
-                >
-                  <ExternalLink className="h-3 w-3" />
-                  MET.no
-                </a>
-              </div>
-            </div>
-          </div>
+            <ExternalLink className="h-3 w-3" />
+            Kartverket
+          </a>
+          <a
+            href="https://api.met.no/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-xs font-medium text-foreground/70 hover:text-foreground transition-colors"
+          >
+            <ExternalLink className="h-3 w-3" />
+            MET.no
+          </a>
         </div>
-      )}
+      </InfoModal>
     </div>
   );
 }

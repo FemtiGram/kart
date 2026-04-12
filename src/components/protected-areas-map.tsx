@@ -6,12 +6,14 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import type { GeoJsonObject, Feature } from "geojson";
 import type { Layer } from "leaflet";
-import { Loader2, X, Map as MapIcon, ChevronUp, Info, ExternalLink } from "lucide-react";
+import { Map as MapIcon, ChevronUp, Info, ExternalLink } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useMapSearch, MapSearchBar } from "@/components/map-search";
 import { FYLKER } from "@/lib/fylker";
-import { FlyTo, DataDisclaimer, MapError, AnimatedCount, interpolateColor } from "@/lib/map-utils";
+import { FlyTo, DataDisclaimer, MapError, interpolateColor, MAP_HEIGHT } from "@/lib/map-utils";
 import { CompactCard } from "@/components/compact-card";
+import { InfoModal } from "@/components/info-modal";
+import { MapLoading } from "@/components/map-loading";
 
 // ─── Geodesic area from GeoJSON coordinates ────────────────
 
@@ -295,7 +297,7 @@ export function ProtectedAreasMap() {
   };
 
   return (
-    <div className="flex flex-col" style={{ height: "calc(100svh - 57px - 56px)" }}>
+    <div className="flex flex-col" style={{ height: MAP_HEIGHT }}>
       {/* Search bar */}
       <div className="relative z-[1000] px-4 py-4 md:px-8 shrink-0 bg-background border-b">
         <div className="max-w-xl mx-auto relative">
@@ -305,28 +307,14 @@ export function ProtectedAreasMap() {
 
       {/* Map */}
       <div className="relative grow">
-        {(loading || counting) && (
-          <div className="absolute inset-0 z-[1000] bg-background flex items-center justify-center">
-            <div className="flex flex-col items-center gap-3 text-center px-6">
-              <Loader2
-                className="h-8 w-8 animate-spin"
-                style={{ color: "var(--kv-blue)" }}
-              />
-              {counting ? (
-                <>
-                  <p className="text-2xl font-extrabold tabular-nums" style={{ color: "var(--kv-blue)" }}>
-                    <AnimatedCount target={loadedCount} duration={700} />
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    datapunkter lastet
-                  </p>
-                </>
-              ) : (
-                <p className="text-sm text-muted-foreground">Henter verneområdedata...</p>
-              )}
-            </div>
-          </div>
-        )}
+        <MapLoading
+          visible={loading || counting}
+          loading={loading}
+          counting={counting}
+          count={loadedCount}
+          countLabel="datapunkter lastet"
+          loadingMessage="Henter verneområdedata..."
+        />
         {error && <MapError message="Kunne ikke laste data." onRetry={loadData} />}
 
         {!loading && !error && geoData && (
@@ -530,54 +518,32 @@ export function ProtectedAreasMap() {
       </div>
 
       {/* Info modal */}
-      {showInfo && (
-        <div
-          className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/40 px-4"
-          onClick={() => setShowInfo(false)}
+      <InfoModal open={showInfo} onClose={() => setShowInfo(false)} title="Om verneområdekartet">
+        <p>
+          Kartet viser <span className="font-medium text-foreground">vernet areal per kommune</span> i Norge, målt i km². Jo mørkere grønn farge, desto mer vernet areal har kommunen.
+        </p>
+        <p>
+          Dataene er hentet fra <span className="font-medium text-foreground">SSB tabell 08936</span> og inkluderer fire vernekategorier:
+        </p>
+        <ul className="list-disc list-inside space-y-1 text-sm">
+          <li><span className="font-medium text-foreground">Nasjonalpark</span> — store naturområder med lite inngrep</li>
+          <li><span className="font-medium text-foreground">Naturreservat</span> — strengt vernet for å bevare naturtyper, arter eller geologiske forekomster</li>
+          <li><span className="font-medium text-foreground">Landskapsvernområde</span> — vern av natur- eller kulturlandskap</li>
+          <li><span className="font-medium text-foreground">Andre vernekategorier</span> — biotopvern, naturminner m.m.</li>
+        </ul>
+        <p>
+          <span className="font-medium text-foreground">Rangering</span> viser kommunens plassering blant alle kommuner med vernet areal. Prosentavviket sammenlignes med medianverdien.
+        </p>
+        <a
+          href="https://www.ssb.no/statbank/table/08936/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1 text-xs font-medium text-foreground/70 hover:text-foreground transition-colors mt-1"
         >
-          <div
-            className="bg-background rounded-2xl shadow-xl border w-full max-w-sm p-5"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="font-bold text-base">Om verneområdekartet</h2>
-              <button
-                onClick={() => setShowInfo(false)}
-                className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                aria-label="Lukk"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-            <div className="flex flex-col gap-3 text-sm text-muted-foreground">
-              <p>
-                Kartet viser <span className="font-medium text-foreground">vernet areal per kommune</span> i Norge, målt i km². Jo mørkere grønn farge, desto mer vernet areal har kommunen.
-              </p>
-              <p>
-                Dataene er hentet fra <span className="font-medium text-foreground">SSB tabell 08936</span> og inkluderer fire vernekategorier:
-              </p>
-              <ul className="list-disc list-inside space-y-1 text-sm">
-                <li><span className="font-medium text-foreground">Nasjonalpark</span> — store naturområder med lite inngrep</li>
-                <li><span className="font-medium text-foreground">Naturreservat</span> — strengt vernet for å bevare naturtyper, arter eller geologiske forekomster</li>
-                <li><span className="font-medium text-foreground">Landskapsvernområde</span> — vern av natur- eller kulturlandskap</li>
-                <li><span className="font-medium text-foreground">Andre vernekategorier</span> — biotopvern, naturminner m.m.</li>
-              </ul>
-              <p>
-                <span className="font-medium text-foreground">Rangering</span> viser kommunens plassering blant alle kommuner med vernet areal. Prosentavviket sammenlignes med medianverdien.
-              </p>
-              <a
-                href="https://www.ssb.no/statbank/table/08936/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-xs font-medium text-foreground/70 hover:text-foreground transition-colors mt-1"
-              >
-                <ExternalLink className="h-3 w-3" />
-                Åpne SSB tabell 08936
-              </a>
-            </div>
-          </div>
-        </div>
-      )}
+          <ExternalLink className="h-3 w-3" />
+          Åpne SSB tabell 08936
+        </a>
+      </InfoModal>
     </div>
   );
 }

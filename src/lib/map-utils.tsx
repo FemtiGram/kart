@@ -3,6 +3,11 @@
 import { useState, useEffect, useRef } from "react";
 import { useMap } from "react-leaflet";
 
+// ─── Shared constants ───────────────────────────────────────
+
+/** Standard map container height — viewport minus navbar (57px) and footer (56px). */
+export const MAP_HEIGHT = "calc(100svh - 57px - 56px)";
+
 // ─── Shared types ────────────────────────────────────────────
 
 export interface Address {

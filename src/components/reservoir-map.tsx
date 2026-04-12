@@ -8,8 +8,6 @@ import "leaflet/dist/leaflet.css";
 import "react-leaflet-cluster/dist/assets/MarkerCluster.css";
 import "react-leaflet-cluster/dist/assets/MarkerCluster.Default.css";
 import {
-  Loader2,
-  X,
   Info,
   Map as MapIcon,
   Layers,
@@ -19,8 +17,12 @@ import {
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useMapSearch, MapSearchBar } from "@/components/map-search";
-import { FlyTo, DataDisclaimer, MapError, AnimatedCount } from "@/lib/map-utils";
+import { FlyTo, DataDisclaimer, MapError, MAP_HEIGHT } from "@/lib/map-utils";
 import { CompactCard } from "@/components/compact-card";
+import { InfoModal } from "@/components/info-modal";
+import { TileToggle } from "@/components/tile-toggle";
+import { MapLoading } from "@/components/map-loading";
+import { DriveLink } from "@/components/drive-link";
 import type { Suggestion } from "@/lib/map-utils";
 
 interface Reservoir {
@@ -193,7 +195,7 @@ export function ReservoirMap() {
   }, [reservoirs]);
 
   return (
-    <div className="flex flex-col" style={{ height: "calc(100svh - 57px - 56px)" }}>
+    <div className="flex flex-col" style={{ height: MAP_HEIGHT }}>
       {/* Search bar */}
       <div className="relative z-[1000] px-4 py-4 md:px-8 shrink-0 bg-background border-b">
         <div className="max-w-xl mx-auto relative flex flex-col gap-2">
@@ -206,28 +208,14 @@ export function ReservoirMap() {
 
       {/* Map */}
       <div className="relative grow">
-        {(loading || counting) && (
-          <div className="absolute inset-0 z-[1000] bg-background flex items-center justify-center">
-            <div className="flex flex-col items-center gap-3 text-center px-6">
-              <Loader2
-                className="h-8 w-8 animate-spin"
-                style={{ color: "var(--kv-blue)" }}
-              />
-              {counting ? (
-                <>
-                  <p className="text-2xl font-extrabold tabular-nums" style={{ color: "var(--kv-blue)" }}>
-                    <AnimatedCount target={loadedCount} duration={700} />
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    datapunkter lastet
-                  </p>
-                </>
-              ) : (
-                <p className="text-sm text-muted-foreground">Henter magasindata...</p>
-              )}
-            </div>
-          </div>
-        )}
+        <MapLoading
+          visible={loading || counting}
+          loading={loading}
+          counting={counting}
+          count={loadedCount}
+          countLabel="datapunkter lastet"
+          loadingMessage="Henter magasindata..."
+        />
         {error && <MapError message="Kunne ikke hente magasindata." onRetry={loadReservoirs} />}
 
         <MapContainer center={[65, 14]} zoom={5} style={{ height: "100%", width: "100%" }}>
@@ -298,18 +286,15 @@ export function ReservoirMap() {
         </MapContainer>
 
         {/* Tile layer toggle */}
-        <div className="absolute top-3 right-3 z-[999] flex rounded-lg border bg-card shadow-md overflow-hidden">
-          {(["kart", "gråtone"] as TileLayerKey[]).map((key, i) => (
-            <button
-              key={key}
-              onClick={() => setTileLayer(key)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold transition-colors ${i > 0 ? "border-l" : ""} ${tileLayer === key ? "text-white" : "text-muted-foreground hover:bg-muted"}`}
-              style={tileLayer === key ? { background: "var(--kv-blue)" } : {}}
-            >
-              {key === "kart" ? <MapIcon className="h-3.5 w-3.5" /> : <Layers className="h-3.5 w-3.5" />}
-              {TILE_LAYERS[key].label}
-            </button>
-          ))}
+        <div className="absolute top-3 right-3 z-[999]">
+          <TileToggle
+            value={tileLayer}
+            onChange={setTileLayer}
+            options={[
+              { value: "kart", label: "Kart", icon: <MapIcon className="h-3.5 w-3.5" /> },
+              { value: "gråtone", label: "Gråtone", icon: <Layers className="h-3.5 w-3.5" /> },
+            ]}
+          />
         </div>
 
         {/* Floating info button */}
@@ -436,14 +421,7 @@ export function ReservoirMap() {
 
                 {/* Layer 4 — Links & source */}
                 <div className="mt-4 pt-4 border-t flex flex-col gap-3">
-                  <a
-                    href={`https://www.google.com/maps/dir/?api=1&destination=${selected.center.lat},${selected.center.lon}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center justify-center gap-2 text-sm font-semibold px-4 py-2.5 rounded-xl border bg-muted/50 hover:bg-muted transition-colors w-full"
-                  >
-                    <Navigation className="h-4 w-4" /> Kjør hit
-                  </a>
+                  <DriveLink lat={selected.center.lat} lon={selected.center.lon} />
                   <p className="text-xs text-foreground/70 text-center">
                     Kilde: <a href="https://nve.geodataonline.no/arcgis/rest/services/" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">NVE Geodata</a>
                   </p>
@@ -456,33 +434,21 @@ export function ReservoirMap() {
       </div>
 
       {/* Info modal */}
-      {showInfo && (
-        <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/40 px-4" onClick={() => setShowInfo(false)}>
-          <div className="bg-background rounded-2xl shadow-xl border w-full max-w-sm p-5" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="font-bold text-base">Om magasindata</h2>
-              <button onClick={() => setShowInfo(false)} className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors" aria-label="Lukk">
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-            <div className="flex flex-col gap-3 text-sm">
-              <p>Kartet viser regulerte vannmagasiner i Norge. Disse samler vann for kraftproduksjon og er en viktig del av Norges energisystem.</p>
-              <div className="bg-muted/50 rounded-xl p-3">
-                <p className="font-semibold mb-1">Hva betyr «m regulering»?</p>
-                <p className="text-muted-foreground">Regulering er forskjellen mellom <strong>HRV</strong> (høyeste regulerte vannstand) og <strong>LRV</strong> (laveste regulerte vannstand), målt i meter. Det viser hvor mye vannstanden i magasinet kan varieres, jo høyere tall, desto mer vann kan lagres og tappes for kraftproduksjon.</p>
-              </div>
-              <div className="bg-muted/50 rounded-xl p-3">
-                <p className="font-semibold mb-1">Volum (Mm³)</p>
-                <p className="text-muted-foreground">Magasinets totale lagringskapasitet i millioner kubikkmeter vann.</p>
-              </div>
-              <p className="text-xs text-foreground/70">
-                Kilde: <a href="https://nve.geodataonline.no/arcgis/rest/services/" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">NVE Geodata</a> · <a href="https://www.nve.no/energi/energisystem/magasinstatistikk/" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">NVE Magasinstatistikk</a>
-              </p>
-              <DataDisclaimer />
-            </div>
-          </div>
+      <InfoModal open={showInfo} onClose={() => setShowInfo(false)} title="Om magasindata">
+        <p>Kartet viser regulerte vannmagasiner i Norge. Disse samler vann for kraftproduksjon og er en viktig del av Norges energisystem.</p>
+        <div className="bg-muted/50 rounded-xl p-3">
+          <p className="font-semibold mb-1">Hva betyr «m regulering»?</p>
+          <p className="text-muted-foreground">Regulering er forskjellen mellom <strong>HRV</strong> (høyeste regulerte vannstand) og <strong>LRV</strong> (laveste regulerte vannstand), målt i meter. Det viser hvor mye vannstanden i magasinet kan varieres, jo høyere tall, desto mer vann kan lagres og tappes for kraftproduksjon.</p>
         </div>
-      )}
+        <div className="bg-muted/50 rounded-xl p-3">
+          <p className="font-semibold mb-1">Volum (Mm³)</p>
+          <p className="text-muted-foreground">Magasinets totale lagringskapasitet i millioner kubikkmeter vann.</p>
+        </div>
+        <p className="text-xs text-foreground/70">
+          Kilde: <a href="https://nve.geodataonline.no/arcgis/rest/services/" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">NVE Geodata</a> · <a href="https://www.nve.no/energi/energisystem/magasinstatistikk/" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">NVE Magasinstatistikk</a>
+        </p>
+        <DataDisclaimer />
+      </InfoModal>
     </div>
   );
 }

@@ -17,8 +17,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { useMapSearch, MapSearchBar } from "@/components/map-search";
 import { isInNorway, OSLO } from "@/lib/fylker";
-import { FlyTo, DataDisclaimer, MapError, AnimatedCount } from "@/lib/map-utils";
+import { FlyTo, DataDisclaimer, MapError, MAP_HEIGHT } from "@/lib/map-utils";
 import type { KommuneEntry, Suggestion } from "@/lib/map-utils";
+import { InfoModal } from "@/components/info-modal";
+import { TileToggle } from "@/components/tile-toggle";
+import { MapLoading } from "@/components/map-loading";
 
 interface WindFarm {
   id: unknown;
@@ -248,7 +251,7 @@ export function WindPowerMap() {
   );
 
   return (
-    <div className="flex flex-col" style={{ height: "calc(100svh - 57px - 56px)" }}>
+    <div className="flex flex-col" style={{ height: MAP_HEIGHT }}>
       {/* Search bar */}
       <div className="relative z-[1000] px-4 py-4 md:px-8 shrink-0 bg-background border-b">
         <div className="max-w-xl mx-auto relative flex flex-col gap-2">
@@ -278,30 +281,14 @@ export function WindPowerMap() {
 
       {/* Map */}
       <div className="relative grow">
-        {(loading || counting) && (
-          <div className="absolute inset-0 z-[1000] bg-background flex items-center justify-center">
-            <div className="flex flex-col items-center gap-3 text-center px-6">
-              <Loader2
-                className="h-8 w-8 animate-spin"
-                style={{ color: "var(--kv-blue)" }}
-              />
-              {counting ? (
-                <>
-                  <p className="text-2xl font-extrabold tabular-nums" style={{ color: "var(--kv-blue)" }}>
-                    <AnimatedCount target={loadedCount} duration={700} />
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    datapunkter lastet
-                  </p>
-                </>
-              ) : (
-                <p className="text-sm text-muted-foreground">
-                  Henter vindkraftverk...
-                </p>
-              )}
-            </div>
-          </div>
-        )}
+        <MapLoading
+          visible={loading || counting}
+          loading={loading}
+          counting={counting}
+          count={loadedCount}
+          countLabel="datapunkter lastet"
+          loadingMessage="Henter vindkraftverk..."
+        />
         {locating && (
           <div className="absolute bottom-20 sm:top-3 sm:bottom-auto left-1/2 -translate-x-1/2 z-[1000] bg-background/90 backdrop-blur-sm border rounded-full px-4 py-2 shadow-lg">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -348,26 +335,15 @@ export function WindPowerMap() {
         </MapContainer>
 
         {/* Tile layer toggle */}
-        <div className="absolute top-3 right-3 z-[999] flex rounded-lg border bg-card shadow-md overflow-hidden">
-          {(["kart", "gråtone"] as TileLayerKey[]).map((key, i) => (
-            <button
-              key={key}
-              onClick={() => setTileLayer(key)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold transition-colors ${i > 0 ? "border-l" : ""} ${tileLayer === key ? "text-white" : "text-muted-foreground hover:bg-muted"}`}
-              style={
-                tileLayer === key
-                  ? { background: "var(--kv-blue)" }
-                  : {}
-              }
-            >
-              {key === "kart" ? (
-                <MapIcon className="h-3.5 w-3.5" />
-              ) : (
-                <Layers className="h-3.5 w-3.5" />
-              )}
-              {TILE_LAYERS[key].label}
-            </button>
-          ))}
+        <div className="absolute top-3 right-3 z-[999]">
+          <TileToggle
+            value={tileLayer}
+            onChange={setTileLayer}
+            options={[
+              { value: "kart", label: "Kart", icon: <MapIcon className="h-3.5 w-3.5" /> },
+              { value: "gråtone", label: "Gråtone", icon: <Layers className="h-3.5 w-3.5" /> },
+            ]}
+          />
         </div>
 
         {/* Info card */}
@@ -461,56 +437,34 @@ export function WindPowerMap() {
       </div>
 
       {/* Info modal */}
-      {showInfo && (
-        <div
-          className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/40 px-4"
-          onClick={() => setShowInfo(false)}
-        >
-          <div
-            className="bg-background rounded-2xl shadow-xl border w-full max-w-sm p-5"
-            onClick={(e) => e.stopPropagation()}
+      <InfoModal open={showInfo} onClose={() => setShowInfo(false)} title="Om vindkraftdata">
+        <p>
+          Kartet viser alle vindkraftverk i drift i Norge. Data
+          hentes fra{" "}
+          <strong>NVE Vindkraftdatabase</strong> (Norges
+          vassdrags- og energidirektorat).
+        </p>
+        <p>
+          <strong>MW (megawatt)</strong> er installert kapasitet
+          — maks effekt kraftverket kan produsere.
+        </p>
+        <p>
+          <strong>GWh/år</strong> er forventet årlig produksjon,
+          som avhenger av vindforhold.
+        </p>
+        <p className="text-xs text-foreground/70">
+          Data oppdateres hver time. Kilde:{" "}
+          <a
+            href="https://api.nve.no/doc/vindkraftdatabase/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline hover:text-foreground"
           >
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="font-bold text-base">Om vindkraftdata</h2>
-              <button
-                onClick={() => setShowInfo(false)}
-                className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                aria-label="Lukk"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-            <div className="flex flex-col gap-3 text-sm">
-              <p>
-                Kartet viser alle vindkraftverk i drift i Norge. Data
-                hentes fra{" "}
-                <strong>NVE Vindkraftdatabase</strong> (Norges
-                vassdrags- og energidirektorat).
-              </p>
-              <p>
-                <strong>MW (megawatt)</strong> er installert kapasitet
-                — maks effekt kraftverket kan produsere.
-              </p>
-              <p>
-                <strong>GWh/år</strong> er forventet årlig produksjon,
-                som avhenger av vindforhold.
-              </p>
-              <p className="text-xs text-foreground/70">
-                Data oppdateres hver time. Kilde:{" "}
-                <a
-                  href="https://api.nve.no/doc/vindkraftdatabase/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="underline hover:text-foreground"
-                >
-                  api.nve.no
-                </a>
-              </p>
-              <DataDisclaimer />
-            </div>
-          </div>
-        </div>
-      )}
+            api.nve.no
+          </a>
+        </p>
+        <DataDisclaimer />
+      </InfoModal>
     </div>
   );
 }

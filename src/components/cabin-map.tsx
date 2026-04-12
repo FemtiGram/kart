@@ -7,9 +7,13 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "react-leaflet-cluster/dist/assets/MarkerCluster.css";
 import "react-leaflet-cluster/dist/assets/MarkerCluster.Default.css";
-import { Loader2, X, ExternalLink, Info, Map as MapIcon, Layers, LocateFixed, Mountain, Wind, Droplets, Sun, Cloud, CloudSun, CloudRain, CloudSnow, CloudLightning, CloudFog, CloudHail, CloudDrizzle, Moon, SlidersHorizontal, Check, ChevronUp, Navigation } from "lucide-react";
-import { FlyTo, DataDisclaimer, MapError, AnimatedCount } from "@/lib/map-utils";
+import { Loader2, ExternalLink, Map as MapIcon, Layers, LocateFixed, Mountain, Wind, Droplets, Sun, Cloud, CloudSun, CloudRain, CloudSnow, CloudLightning, CloudFog, CloudHail, CloudDrizzle, Moon, SlidersHorizontal, Check, ChevronUp, Navigation } from "lucide-react";
+import { FlyTo, DataDisclaimer, MapError, MAP_HEIGHT } from "@/lib/map-utils";
 import { CompactCard } from "@/components/compact-card";
+import { InfoModal } from "@/components/info-modal";
+import { TileToggle } from "@/components/tile-toggle";
+import { MapLoading } from "@/components/map-loading";
+import { DriveLink } from "@/components/drive-link";
 import type { LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -327,7 +331,7 @@ export function CabinMap() {
   };
 
   return (
-    <div className="flex flex-col" style={{ height: "calc(100svh - 57px - 56px)" }}>
+    <div className="flex flex-col" style={{ height: MAP_HEIGHT }}>
       {/* Search bar */}
       <div className="relative z-[1000] px-4 py-4 md:px-8 shrink-0 bg-background border-b">
         <div className="max-w-xl mx-auto relative flex flex-col gap-2">
@@ -446,28 +450,14 @@ export function CabinMap() {
 
       {/* Map */}
       <div className="relative grow">
-        {(loading || counting) && (
-          <div className="absolute inset-0 z-[1000] bg-background flex items-center justify-center">
-            <div className="flex flex-col items-center gap-3 text-center px-6">
-              <Loader2
-                className="h-8 w-8 animate-spin"
-                style={{ color: "var(--kv-blue)" }}
-              />
-              {counting ? (
-                <>
-                  <p className="text-2xl font-extrabold tabular-nums" style={{ color: "var(--kv-blue)" }}>
-                    <AnimatedCount target={loadedCount} duration={700} />
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    datapunkter lastet
-                  </p>
-                </>
-              ) : (
-                <p className="text-sm text-muted-foreground">Henter hytter...</p>
-              )}
-            </div>
-          </div>
-        )}
+        <MapLoading
+          visible={loading || counting}
+          loading={loading}
+          counting={counting}
+          count={loadedCount}
+          countLabel="datapunkter lastet"
+          loadingMessage="Henter hytter..."
+        />
         {locating && (
           <div className="absolute bottom-20 sm:top-3 sm:bottom-auto left-1/2 -translate-x-1/2 z-[1000] bg-background/90 backdrop-blur-sm border rounded-full px-4 py-2 shadow-lg">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -532,20 +522,14 @@ export function CabinMap() {
 
         {/* Legend + tile toggle */}
         <div className="absolute top-3 right-3 z-[999] flex flex-col gap-2 items-end">
-          <div className="flex rounded-lg border bg-card shadow-md overflow-hidden">
-            {(["kart", "gråtone"] as TileLayerKey[]).map((key, i) => (
-              <button
-                key={key}
-                onClick={() => setTileLayer(key)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold transition-colors ${i > 0 ? "border-l" : ""} ${tileLayer === key ? "text-white" : "text-muted-foreground hover:bg-muted"}`}
-                style={tileLayer === key ? { background: "var(--kv-blue)" } : {}}
-              >
-                {key === "kart" ? <MapIcon className="h-3.5 w-3.5" /> : <Layers className="h-3.5 w-3.5" />}
-                {TILE_LAYERS[key].label}
-              </button>
-            ))}
-          </div>
-
+          <TileToggle
+            value={tileLayer}
+            onChange={setTileLayer}
+            options={[
+              { value: "kart", label: "Kart", icon: <MapIcon className="h-3.5 w-3.5" /> },
+              { value: "gråtone", label: "Gråtone", icon: <Layers className="h-3.5 w-3.5" /> },
+            ]}
+          />
         </div>
 
         {/* Compact info card */}
@@ -686,14 +670,7 @@ export function CabinMap() {
                 {/* Layer 4 — Links & source */}
                 <div className="mt-4 pt-4 border-t flex flex-col gap-3">
                   <div className="flex gap-2">
-                    <a
-                      href={`https://www.google.com/maps/dir/?api=1&destination=${selected.lat},${selected.lon}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex-1 inline-flex items-center justify-center gap-2 text-sm font-semibold px-4 py-2.5 rounded-xl border bg-muted/50 hover:bg-muted transition-colors"
-                    >
-                      <Navigation className="h-4 w-4" /> Kjør hit
-                    </a>
+                    <DriveLink lat={selected.lat} lon={selected.lon} className="flex-1 w-auto" />
                     {selected.website && !selected.website.includes("ut.no") && (
                       <a
                         href={selected.website}
@@ -727,62 +704,40 @@ export function CabinMap() {
       </div>
 
       {/* Info modal */}
-      {showInfo && (
-        <div
-          className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/40 px-4"
-          onClick={() => setShowInfo(false)}
-        >
-          <div
-            className="bg-background rounded-2xl shadow-xl border w-full max-w-sm p-5"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="font-bold text-base">Om hyttekartet</h2>
-              <button
-                onClick={() => setShowInfo(false)}
-                className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                aria-label="Lukk"
-              >
-                <X className="h-4 w-4" />
-              </button>
+      <InfoModal open={showInfo} onClose={() => setShowInfo(false)} title="Om hyttekartet">
+        <p>
+          Kartet viser <span className="font-medium text-foreground">turisthytter i Norge</span> fra OpenStreetMap, inkludert DNT-hytter og andre fjellhytter.
+        </p>
+        <p>Hyttene er fargekodet etter type:</p>
+        <div className="flex flex-col gap-1.5 ml-1">
+          <div className="flex items-start gap-2">
+            <div className="h-3 w-3 rounded-full mt-0.5 shrink-0" style={{ background: CABIN_COLORS.fjellhytte }} />
+            <div>
+              <span className="font-medium text-foreground">Fjellhytte</span>
+              <span className="text-muted-foreground"> — betjent eller selvbetjent hytte (alpine_hut)</span>
             </div>
-            <div className="flex flex-col gap-3 text-sm text-muted-foreground">
-              <p>
-                Kartet viser <span className="font-medium text-foreground">turisthytter i Norge</span> fra OpenStreetMap, inkludert DNT-hytter og andre fjellhytter.
-              </p>
-              <p>Hyttene er fargekodet etter type:</p>
-              <div className="flex flex-col gap-1.5 ml-1">
-                <div className="flex items-start gap-2">
-                  <div className="h-3 w-3 rounded-full mt-0.5 shrink-0" style={{ background: CABIN_COLORS.fjellhytte }} />
-                  <div>
-                    <span className="font-medium text-foreground">Fjellhytte</span>
-                    <span className="text-muted-foreground"> — betjent eller selvbetjent hytte (alpine_hut)</span>
-                  </div>
-                </div>
-                <div className="flex items-start gap-2">
-                  <div className="h-3 w-3 rounded-full mt-0.5 shrink-0" style={{ background: CABIN_COLORS.ubetjent }} />
-                  <div>
-                    <span className="font-medium text-foreground">Ubetjent hytte</span>
-                    <span className="text-muted-foreground"> — åpen hytte med basisutstyr (wilderness_hut)</span>
-                  </div>
-                </div>
-              </div>
-              <p>
-                Data som sengeplasser og høyde hentes fra OpenStreetMap og kan være utdatert. Sjekk alltid <a href="https://www.dnt.no/hytter/" target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:text-foreground transition-colors">dnt.no</a> for oppdatert informasjon.
-              </p>
-              <a
-                href="https://www.dnt.no/hytter/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-xs font-medium text-foreground/70 hover:text-foreground transition-colors mt-1"
-              >
-                <ExternalLink className="h-3 w-3" />
-                DNT — Hytteoversikt
-              </a>
+          </div>
+          <div className="flex items-start gap-2">
+            <div className="h-3 w-3 rounded-full mt-0.5 shrink-0" style={{ background: CABIN_COLORS.ubetjent }} />
+            <div>
+              <span className="font-medium text-foreground">Ubetjent hytte</span>
+              <span className="text-muted-foreground"> — åpen hytte med basisutstyr (wilderness_hut)</span>
             </div>
           </div>
         </div>
-      )}
+        <p>
+          Data som sengeplasser og høyde hentes fra OpenStreetMap og kan være utdatert. Sjekk alltid <a href="https://www.dnt.no/hytter/" target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:text-foreground transition-colors">dnt.no</a> for oppdatert informasjon.
+        </p>
+        <a
+          href="https://www.dnt.no/hytter/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1 text-xs font-medium text-foreground/70 hover:text-foreground transition-colors mt-1"
+        >
+          <ExternalLink className="h-3 w-3" />
+          DNT — Hytteoversikt
+        </a>
+      </InfoModal>
     </div>
   );
 }

@@ -6,13 +6,15 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import type { GeoJsonObject, Feature } from "geojson";
 import type { Layer } from "leaflet";
-import { Loader2, X, Info, LocateFixed, Map as MapIcon, ChevronUp, Navigation, ExternalLink, ArrowLeftRight } from "lucide-react";
+import { Info, LocateFixed, Map as MapIcon, ChevronUp, Navigation, ExternalLink, ArrowLeftRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useMapSearch, MapSearchBar } from "@/components/map-search";
-import { FlyTo, DataDisclaimer, MapError, AnimatedCount, interpolateColor } from "@/lib/map-utils";
+import { FlyTo, DataDisclaimer, MapError, interpolateColor, MAP_HEIGHT } from "@/lib/map-utils";
 import { FYLKER } from "@/lib/fylker";
 import { CompactCard } from "@/components/compact-card";
+import { InfoModal } from "@/components/info-modal";
+import { MapLoading } from "@/components/map-loading";
 
 import type { Suggestion } from "@/lib/map-utils";
 
@@ -247,7 +249,7 @@ export function IncomeMap() {
   };
 
   return (
-    <div className="flex flex-col" style={{ height: "calc(100svh - 57px - 56px)" }}>
+    <div className="flex flex-col" style={{ height: MAP_HEIGHT }}>
       {/* Search bar */}
       <div className="relative z-[1000] px-4 py-4 md:px-8 shrink-0 bg-background border-b">
         <div className="max-w-xl mx-auto relative">
@@ -258,28 +260,14 @@ export function IncomeMap() {
 
       {/* Map */}
       <div className="relative grow">
-        {(loading || counting) && (
-          <div className="absolute inset-0 z-[1000] bg-background flex items-center justify-center">
-            <div className="flex flex-col items-center gap-3 text-center px-6">
-              <Loader2
-                className="h-8 w-8 animate-spin"
-                style={{ color: "var(--kv-blue)" }}
-              />
-              {counting ? (
-                <>
-                  <p className="text-2xl font-extrabold tabular-nums" style={{ color: "var(--kv-blue)" }}>
-                    <AnimatedCount target={loadedCount} duration={700} />
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    datapunkter lastet
-                  </p>
-                </>
-              ) : (
-                <p className="text-sm text-muted-foreground">Henter inntektsdata...</p>
-              )}
-            </div>
-          </div>
-        )}
+        <MapLoading
+          visible={loading || counting}
+          loading={loading}
+          counting={counting}
+          count={loadedCount}
+          countLabel="datapunkter lastet"
+          loadingMessage="Henter inntektsdata..."
+        />
         {error && <MapError message="Kunne ikke laste data." onRetry={loadData} />}
 
         {!loading && !error && geoData && (
@@ -616,51 +604,29 @@ export function IncomeMap() {
       </div>
 
       {/* Info modal */}
-      {showInfo && (
-        <div
-          className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/40 px-4"
-          onClick={() => setShowInfo(false)}
+      <InfoModal open={showInfo} onClose={() => setShowInfo(false)} title="Om inntektskartet">
+        <p>
+          Kartet viser <span className="font-medium text-foreground">median inntekt etter skatt per husholdning</span> i hver kommune. Jo mørkere grønn farge, desto høyere inntekt.
+        </p>
+        <p>
+          <span className="font-medium text-foreground">Medianinntekt</span> er den midterste verdien når alle husholdninger sorteres etter inntekt. Halvparten tjener mer, halvparten mindre. Dette gir et mer representativt bilde enn gjennomsnittet, som påvirkes av svært høye enkeltinntekter.
+        </p>
+        <p>
+          <span className="font-medium text-foreground">Rangering</span> viser kommunens plassering blant alle kommuner med data. Prosentavviket sammenlignes med medianen av alle kommunemedianer.
+        </p>
+        <p>
+          Tallene beregnes lokalt i nettleseren. Ikke alle kommuner har fullstendige data.
+        </p>
+        <a
+          href="https://www.ssb.no/inntekt-og-forbruk/inntekt-og-formue/statistikk/inntekts-og-formuesstatistikk-for-husholdninger"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1 text-xs font-medium text-foreground/70 hover:text-foreground transition-colors mt-1"
         >
-          <div
-            className="bg-background rounded-2xl shadow-xl border w-full max-w-sm p-5"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="font-bold text-base">Om inntektskartet</h2>
-              <button
-                onClick={() => setShowInfo(false)}
-                className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                aria-label="Lukk"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-            <div className="flex flex-col gap-3 text-sm text-muted-foreground">
-              <p>
-                Kartet viser <span className="font-medium text-foreground">median inntekt etter skatt per husholdning</span> i hver kommune. Jo mørkere grønn farge, desto høyere inntekt.
-              </p>
-              <p>
-                <span className="font-medium text-foreground">Medianinntekt</span> er den midterste verdien når alle husholdninger sorteres etter inntekt. Halvparten tjener mer, halvparten mindre. Dette gir et mer representativt bilde enn gjennomsnittet, som påvirkes av svært høye enkeltinntekter.
-              </p>
-              <p>
-                <span className="font-medium text-foreground">Rangering</span> viser kommunens plassering blant alle kommuner med data. Prosentavviket sammenlignes med medianen av alle kommunemedianer.
-              </p>
-              <p>
-                Tallene beregnes lokalt i nettleseren. Ikke alle kommuner har fullstendige data.
-              </p>
-              <a
-                href="https://www.ssb.no/inntekt-og-forbruk/inntekt-og-formue/statistikk/inntekts-og-formuesstatistikk-for-husholdninger"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-xs font-medium text-foreground/70 hover:text-foreground transition-colors mt-1"
-              >
-                <ExternalLink className="h-3 w-3" />
-                Åpne SSB InntektStruk13
-              </a>
-            </div>
-          </div>
-        </div>
-      )}
+          <ExternalLink className="h-3 w-3" />
+          Åpne SSB InntektStruk13
+        </a>
+      </InfoModal>
     </div>
   );
 }

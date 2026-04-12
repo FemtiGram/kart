@@ -7,13 +7,16 @@ import type { Layer } from "leaflet";
 import MarkerClusterGroup from "react-leaflet-cluster";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { X, Info, ChevronUp, Navigation, Home, Building2, Building, Loader2, ArrowLeftRight } from "lucide-react";
+import { Info, ChevronUp, Navigation, Home, Building2, Building, ArrowLeftRight } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useMapSearch, MapSearchBar } from "@/components/map-search";
 import { FYLKER } from "@/lib/fylker";
-import { FlyTo, DataDisclaimer, MapError, AnimatedCount } from "@/lib/map-utils";
+import { FlyTo, DataDisclaimer, MapError, MAP_HEIGHT } from "@/lib/map-utils";
 import type { Suggestion } from "@/lib/map-utils";
 import { CompactCard } from "@/components/compact-card";
+import { InfoModal } from "@/components/info-modal";
+import { TileToggle } from "@/components/tile-toggle";
+import { MapLoading } from "@/components/map-loading";
 
 // ─── Types ──────────────────────────────────────────────────
 interface BoligEntry {
@@ -378,7 +381,7 @@ export function BoligMap() {
   const yoyChange = selectedPrice && prevPrice ? ((selectedPrice - prevPrice) / prevPrice) * 100 : null;
 
   return (
-    <div className="flex flex-col" style={{ height: "calc(100svh - 57px - 56px)" }}>
+    <div className="flex flex-col" style={{ height: MAP_HEIGHT }}>
       {/* Search bar + filters */}
       <div className="relative z-[1000] px-4 py-3 md:px-8 shrink-0 bg-background border-b">
         <div className="max-w-xl mx-auto">
@@ -432,23 +435,14 @@ export function BoligMap() {
 
       {/* Map */}
       <div className="relative grow">
-        {(loading || counting) && (
-          <div className="absolute inset-0 z-[1000] bg-background flex items-center justify-center">
-            <div className="flex flex-col items-center gap-3 text-center px-6">
-              <Loader2 className="h-8 w-8 animate-spin" style={{ color: "var(--kv-blue)" }} />
-              {counting ? (
-                <>
-                  <p className="text-2xl font-extrabold tabular-nums" style={{ color: "var(--kv-blue)" }}>
-                    <AnimatedCount target={loadedCount} duration={700} />
-                  </p>
-                  <p className="text-sm text-muted-foreground">kommuner lastet</p>
-                </>
-              ) : (
-                <p className="text-sm text-muted-foreground">Henter boligpriser...</p>
-              )}
-            </div>
-          </div>
-        )}
+        <MapLoading
+          visible={loading || counting}
+          loading={loading}
+          counting={counting}
+          count={loadedCount}
+          countLabel="kommuner lastet"
+          loadingMessage="Henter boligpriser..."
+        />
         {error && <MapError message="Kunne ikke hente boligpriser." onRetry={loadData} />}
 
         <MapContainer center={[65, 14]} zoom={5} style={{ height: "100%", width: "100%" }}>
@@ -576,18 +570,14 @@ export function BoligMap() {
 
         {/* Tile layer toggle */}
         <div className="absolute top-3 right-3 z-[999] flex flex-col gap-2 items-end">
-          <div className="flex rounded-lg border bg-card shadow-md overflow-hidden">
-            {(["kart", "gråtone"] as const).map((t) => (
-              <button
-                key={t}
-                onClick={() => setTileLayer(t)}
-                className={`px-3 py-1.5 text-xs font-semibold transition-colors ${tileLayer === t ? "text-white" : "text-muted-foreground hover:bg-muted"}`}
-                style={tileLayer === t ? { background: "var(--kv-blue)" } : {}}
-              >
-                {t === "kart" ? "Kart" : "Gråtone"}
-              </button>
-            ))}
-          </div>
+          <TileToggle
+            value={tileLayer}
+            onChange={setTileLayer}
+            options={[
+              { value: "kart", label: "Kart" },
+              { value: "gråtone", label: "Gråtone" },
+            ]}
+          />
 
           {/* Legend — hidden on mobile to save space */}
           {!loading && visibleMarkers.length > 0 && (
@@ -1068,33 +1058,21 @@ export function BoligMap() {
         </Sheet>
 
         {/* Info modal */}
-        {showInfo && (
-          <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/40 px-4" onClick={() => setShowInfo(false)}>
-            <div className="bg-background rounded-2xl shadow-xl border w-full max-w-sm p-5" onClick={(e) => e.stopPropagation()}>
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="font-bold text-base">Om boligpriskartet</h2>
-                <button onClick={() => setShowInfo(false)} className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-              <div className="space-y-3 text-sm text-muted-foreground">
-                <p>
-                  Kartet viser gjennomsnittlig <strong>kvadratmeterpris</strong> for selveierboliger i alle norske kommuner.
-                  Data kommer fra SSB (Statistisk sentralbyrå), tabell 06035.
-                </p>
-                <p>
-                  <strong>Farge</strong> viser prisnivå (blå = rimelig, rød = dyrt). <strong>Størrelse</strong> viser markedsaktivitet (antall salg).
-                </p>
-                <p>
-                  Velg mellom eneboliger, småhus og blokkleiligheter, og se hvordan prisene har utviklet seg over tid.
-                </p>
-              </div>
-              <p className="text-xs text-foreground/70 mt-4 pt-3 border-t">
-                Kilde: <a href="https://www.ssb.no/statbank/table/06035/" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">SSB Tabell 06035</a>
-              </p>
-            </div>
-          </div>
-        )}
+        <InfoModal open={showInfo} onClose={() => setShowInfo(false)} title="Om boligpriskartet">
+          <p>
+            Kartet viser gjennomsnittlig <strong>kvadratmeterpris</strong> for selveierboliger i alle norske kommuner.
+            Data kommer fra SSB (Statistisk sentralbyrå), tabell 06035.
+          </p>
+          <p>
+            <strong>Farge</strong> viser prisnivå (blå = rimelig, rød = dyrt). <strong>Størrelse</strong> viser markedsaktivitet (antall salg).
+          </p>
+          <p>
+            Velg mellom eneboliger, småhus og blokkleiligheter, og se hvordan prisene har utviklet seg over tid.
+          </p>
+          <p className="text-xs text-foreground/70 mt-1 pt-3 border-t">
+            Kilde: <a href="https://www.ssb.no/statbank/table/06035/" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">SSB Tabell 06035</a>
+          </p>
+        </InfoModal>
       </div>
     </div>
   );
