@@ -116,7 +116,7 @@ export function ElevationMap() {
   useEffect(() => {
     const checkApis = async () => {
       const results = await Promise.allSettled([
-        devFetch("https://ws.geonorge.no/adresser/v1/sok?sok=Oslo&treffPerSide=1", () => "Helsesjekk: Adresser API"),
+        devFetch("/api/sok?q=Oslo&n=1", () => "Helsesjekk: Adresser API"),
         devFetch("/api/weather?lat=59.9&lon=10.7", () => "Helsesjekk: Vær-proxy"),
       ]);
       const anyFailed = results.some((r) => r.status === "rejected");
@@ -130,7 +130,7 @@ export function ElevationMap() {
       if (q.length < 2) { setSuggestions([]); return; }
       setLoadingSuggestions(true);
       try {
-        const url = `https://ws.geonorge.no/adresser/v1/sok?sok=${encodeURIComponent(q)}&treffPerSide=6&utkoordsys=4326`;
+        const url = `/api/sok?q=${encodeURIComponent(q)}&n=6`;
         const data = await devFetch(url, (d: unknown) => {
           const result = d as { adresser?: unknown[] };
           return `${result.adresser?.length ?? 0} adresser funnet`;
@@ -204,7 +204,7 @@ export function ElevationMap() {
 
     const fetchAddr = async (radius: number) => {
       const data = await devFetch(
-        `https://ws.geonorge.no/adresser/v1/punktsok?lat=${lat}&lon=${lon}&radius=${radius}&utkoordsys=4326&treffPerSide=1`,
+        `/api/sok?lat=${lat}&lon=${lon}&radius=${radius}&n=1`,
         (d: unknown) => {
           const a = (d as AdresseResponse).adresser?.[0];
           return a ? `${a.adressetekst}, ${a.poststed}` : "Ingen adresse";

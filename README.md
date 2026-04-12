@@ -87,7 +87,7 @@ The seed scripts are also run automatically as a `prebuild` hook when deploying.
 | Weather | MET.no locationforecast | 30-minute server cache |
 | Elevation | Kartverket høyde-API | Per-request |
 | Municipality boundaries | GitHub (robhop/fylker-og-kommuner) | Build-time static GeoJSON |
-| Address search | Geonorge adresser API | Per-query |
+| Address search | Geonorge adresser API (via `/api/sok` proxy) | 1-hour edge cache + 24-hour stale-while-revalidate |
 
 Map tiles: [Kartverket WMTS](https://cache.kartverket.no) (topo, topograatone) and [OpenTopoMap](https://opentopomap.org).
 

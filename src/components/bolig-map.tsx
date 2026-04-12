@@ -9,7 +9,7 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { Info, ChevronUp, Navigation, Home, Building2, Building, ArrowLeftRight } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { useMapSearch, MapSearchBar } from "@/components/map-search";
+import { MapSearchBar, type MapSearchBarHandle } from "@/components/map-search";
 import { FYLKER } from "@/lib/fylker";
 import { FlyTo, DataDisclaimer, MapError, MAP_HEIGHT } from "@/lib/map-utils";
 import type { Suggestion } from "@/lib/map-utils";
@@ -223,16 +223,16 @@ export function BoligMap() {
 
   // Search
   const geoFeaturesRef = useRef<Array<{ kommunenummer: string; kommunenavn: string }>>([]);
-  const setQueryRef = useRef<(q: string) => void>(() => {});
+  const searchBarRef = useRef<MapSearchBarHandle>(null);
 
   const handleSearchSelect = useCallback((s: Suggestion) => {
     setSelected(null);
     setShowInfoSheet(false);
     if (s.type === "fylke") {
-      setQueryRef.current(s.fylkesnavn);
+      searchBarRef.current?.setQuery(s.fylkesnavn);
       setCenter({ lat: s.lat, lon: s.lon, zoom: s.zoom });
     } else if (s.type === "kommune") {
-      setQueryRef.current(s.kommunenavn);
+      searchBarRef.current?.setQuery(s.kommunenavn);
       const c = centroids.get(s.kommunenummer);
       if (c) {
         setCenter({ lat: c.lat, lon: c.lon, zoom: 10 });
@@ -240,7 +240,7 @@ export function BoligMap() {
       }
     } else if (s.type === "adresse") {
       const addr = s.addr;
-      setQueryRef.current(addr.kommunenavn);
+      searchBarRef.current?.setQuery(addr.kommunenavn);
       const match = geoFeaturesRef.current.find((f) => f.kommunenavn.toLowerCase() === addr.kommunenavn.toLowerCase());
       const nr = match?.kommunenummer;
       if (nr) {
@@ -252,12 +252,6 @@ export function BoligMap() {
       }
     }
   }, [centroids]);
-
-  const searchProps = useMapSearch({
-    kommuneList: geoFeaturesRef.current,
-    onSelect: handleSearchSelect,
-  });
-  setQueryRef.current = searchProps.setQuery;
 
   // ─── Data loading ───────────────────────────────────────
   const loadData = useCallback(async () => {
@@ -351,8 +345,8 @@ export function BoligMap() {
     setShowInfoSheet(false);
     setCompareMode(false);
     setCompareQuery("");
-    searchProps.setQuery("");
-  }, [searchProps]);
+    searchBarRef.current?.setQuery("");
+  }, []);
 
   // ─── Card data helpers ──────────────────────────────────
   const getPrice = (nr: string, type: string, yr: string) => boligData[nr]?.[type]?.[yr]?.price ?? null;
@@ -371,7 +365,12 @@ export function BoligMap() {
       {/* Search bar + filters */}
       <div className="relative z-[1000] px-4 py-3 md:px-8 shrink-0 bg-background border-b">
         <div className="max-w-xl mx-auto">
-          <MapSearchBar search={searchProps} placeholder="Søk etter kommune eller adresse..." />
+          <MapSearchBar
+            ref={searchBarRef}
+            kommuneList={() => geoFeaturesRef.current}
+            onSelect={handleSearchSelect}
+            placeholder="Søk etter kommune eller adresse..."
+          />
 
           {/* Filter row */}
           <div className="flex items-center gap-3 mt-2">

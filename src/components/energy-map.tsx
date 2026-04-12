@@ -14,8 +14,6 @@ import {
   Droplets,
   LocateFixed,
   ExternalLink,
-  Search,
-  MapPin,
   Info,
   Map as MapIcon,
   Layers,
@@ -30,9 +28,10 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { FYLKER, isInNorway, OSLO } from "@/lib/fylker";
-import { FlyTo, DataDisclaimer, MapError, useDebounceRef, useSearchAbort, MAP_HEIGHT } from "@/lib/map-utils";
-import type { Address, KommuneEntry, Suggestion } from "@/lib/map-utils";
+import { isInNorway, OSLO } from "@/lib/fylker";
+import { FlyTo, DataDisclaimer, MapError, MAP_HEIGHT } from "@/lib/map-utils";
+import type { KommuneEntry, Suggestion } from "@/lib/map-utils";
+import { MapSearchBar, type MapSearchBarHandle } from "@/components/map-search";
 import { CompactCard } from "@/components/compact-card";
 import { MapLoading } from "@/components/map-loading";
 import { DriveLink } from "@/components/drive-link";
@@ -108,13 +107,7 @@ export function EnergyMap() {
   const [showProdInfo, setShowProdInfo] = useState(false);
   const [showFacilityInfo, setShowFacilityInfo] = useState(false);
 
-  const [query, setQuery] = useState("");
-  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
-  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
-  const [showDropdown, setShowDropdown] = useState(false);
-  const [highlightedIndex, setHighlightedIndex] = useState(-1);
-  const debounceRef = useDebounceRef();
-  const searchAbort = useSearchAbort();
+  const searchBarRef = useRef<MapSearchBarHandle>(null);
   const kommunerRef = useRef<KommuneEntry[]>([]);
   const initialHash = useRef(window.location.hash);
 
@@ -227,40 +220,17 @@ export function EnergyMap() {
     return () => { cancelled = true; };
   }, [showInfoSheet, selected]);
 
-  const search = useCallback(
-    async (q: string) => {
-      if (q.length < 2) {
-        setSuggestions([]);
-        return;
-      }
-      setLoadingSuggestions(true);
-
-      const fylkeMatches: Suggestion[] = FYLKER.filter((f) =>
-        f.fylkesnavn.toLowerCase().includes(q.toLowerCase())
-      )
-        .slice(0, 3)
-        .map((f) => ({
-          type: "fylke",
-          fylkesnavn: f.fylkesnavn,
-          lat: f.lat,
-          lon: f.lon,
-          zoom: f.zoom,
-        }));
-
-      const kommuneMatches: Suggestion[] = kommunerRef.current
-        .filter((k) =>
-          k.kommunenavn.toLowerCase().includes(q.toLowerCase())
-        )
-        .slice(0, 5)
-        .map((k) => ({
-          type: "kommune",
-          kommunenummer: k.kommunenummer,
-          kommunenavn: k.kommunenavn,
-        }));
-
+  // Oil/gas facility name + field name suggestions (extra on top of
+  // fylke/kommune/adresse provided by MapSearchBar).
+  const extraSuggestions = useCallback(
+    (q: string): Suggestion[] => {
       const ql = q.toLowerCase();
-      const facilityMatches: Suggestion[] = oilGasFacilities
-        .filter((f) => f.name.toLowerCase().includes(ql) || (f.fieldName && f.fieldName.toLowerCase().includes(ql)))
+      return oilGasFacilities
+        .filter(
+          (f) =>
+            f.name.toLowerCase().includes(ql) ||
+            (f.fieldName && f.fieldName.toLowerCase().includes(ql))
+        )
         .slice(0, 5)
         .map((f) => ({
           type: "anlegg",
@@ -269,79 +239,26 @@ export function EnergyMap() {
           lat: f.lat,
           lon: f.lon,
         }));
-
-      let adresseMatches: Suggestion[] = [];
-      try {
-        const signal = searchAbort.renew();
-        const res = await fetch(
-          `https://ws.geonorge.no/adresser/v1/sok?sok=${encodeURIComponent(q)}&treffPerSide=2&utkoordsys=4326`,
-          { signal }
-        );
-        const data = await res.json();
-        adresseMatches = (data.adresser ?? []).map((a: Address) => ({
-          type: "adresse" as const,
-          addr: a,
-        }));
-      } catch {
-        /* aborted or network error */
-      }
-
-      setSuggestions([
-        ...facilityMatches,
-        ...fylkeMatches,
-        ...kommuneMatches,
-        ...adresseMatches,
-      ]);
-      setShowDropdown(true);
-      setLoadingSuggestions(false);
     },
-    [searchAbort, oilGasFacilities]
+    [oilGasFacilities]
   );
 
-  const handleInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value;
-    setQuery(val);
-    setHighlightedIndex(-1);
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => search(val), 300);
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (!showDropdown || suggestions.length === 0) return;
-    if (e.key === "ArrowDown") {
-      e.preventDefault();
-      setHighlightedIndex((i) => Math.min(i + 1, suggestions.length - 1));
-    } else if (e.key === "ArrowUp") {
-      e.preventDefault();
-      setHighlightedIndex((i) => Math.max(i - 1, 0));
-    } else if (e.key === "Enter" && highlightedIndex >= 0) {
-      e.preventDefault();
-      handleSelect(suggestions[highlightedIndex]);
-      setHighlightedIndex(-1);
-    } else if (e.key === "Escape") {
-      setShowDropdown(false);
-      setHighlightedIndex(-1);
-    }
-  };
-
-  const handleSelect = async (s: Suggestion) => {
-    setShowDropdown(false);
-    setSuggestions([]);
+  const handleSearchSelect = useCallback(async (s: Suggestion) => {
     setSelected(null);
     setSelectedHavvind(null);
     setSelectedOilGas(null);
     if (s.type === "anlegg") {
-      setQuery(s.name);
+      searchBarRef.current?.setQuery(s.name);
       setCenter({ lat: s.lat, lon: s.lon, zoom: 12 });
       return;
     }
     if (s.type === "fylke") {
-      setQuery(s.fylkesnavn);
+      searchBarRef.current?.setQuery(s.fylkesnavn);
       setCenter({ lat: s.lat, lon: s.lon, zoom: s.zoom });
       return;
     }
     if (s.type === "kommune") {
-      setQuery(s.kommunenavn);
+      searchBarRef.current?.setQuery(s.kommunenavn);
       const res = await fetch(
         `https://ws.geonorge.no/stedsnavn/v1/navn?sok=${encodeURIComponent(s.kommunenavn)}&kommunenummer=${s.kommunenummer}&treffPerSide=1`
       );
@@ -351,13 +268,13 @@ export function EnergyMap() {
         setCenter({ lat: point.nord, lon: point.øst });
       }
     } else if (s.type === "adresse") {
-      setQuery(`${s.addr.adressetekst}, ${s.addr.poststed}`);
+      searchBarRef.current?.setQuery(`${s.addr.adressetekst}, ${s.addr.poststed}`);
       setCenter({
         lat: s.addr.representasjonspunkt.lat,
         lon: s.addr.representasjonspunkt.lon,
       });
     }
-  };
+  }, []);
 
   const handleLocate = () => {
     if (!navigator.geolocation) return;
@@ -446,27 +363,13 @@ export function EnergyMap() {
       {/* Search bar */}
       <div className="relative z-[1000] px-4 py-4 md:px-8 shrink-0 bg-background border-b">
         <div className="max-w-xl mx-auto relative flex flex-col gap-2">
-          <div className="flex items-center gap-2">
-            <div className="flex flex-1 items-center gap-2 bg-background border rounded-xl px-4 py-3">
-              {loadingSuggestions ? (
-                <Loader2 className="h-4 w-4 shrink-0 animate-spin text-muted-foreground" />
-              ) : (
-                <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
-              )}
-              <input
-                value={query}
-                onChange={handleInput}
-                onFocus={() =>
-                  suggestions.length > 0 && setShowDropdown(true)
-                }
-                onBlur={() =>
-                  setTimeout(() => setShowDropdown(false), 150)
-                }
-                onKeyDown={handleKeyDown}
-                placeholder="Søk etter anlegg, felt, sted..."
-                className="flex-1 bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground text-[16px] sm:text-sm"
-              />
-            </div>
+          <MapSearchBar
+            ref={searchBarRef}
+            kommuneList={() => kommunerRef.current}
+            extraSuggestions={extraSuggestions}
+            onSelect={handleSearchSelect}
+            placeholder="Søk etter anlegg, felt, sted..."
+          >
             <Sheet open={showFilter} onOpenChange={(open) => { setShowFilter(open); if (open) setShowInfoSheet(false); }}>
               <SheetTrigger
                 render={
@@ -570,51 +473,7 @@ export function EnergyMap() {
             <Button onClick={handleLocate} disabled={locating || loading} variant="secondary" size="icon" className="shadow-lg shrink-0 h-11 w-11 rounded-xl">
               {locating ? <Loader2 className="h-4 w-4 animate-spin" /> : <LocateFixed className="h-4 w-4" />}
             </Button>
-          </div>
-
-          {showDropdown && suggestions.length > 0 && (
-            <ul className="absolute top-full mt-1 left-0 right-0 bg-background rounded-xl shadow-xl border overflow-hidden">
-              {suggestions.map((s, i) => (
-                <li key={i}>
-                  <button
-                    onMouseDown={() => handleSelect(s)}
-                    className={`w-full text-left px-4 py-3 text-sm flex items-start gap-3 transition-colors border-b last:border-0 ${highlightedIndex === i ? "bg-muted" : "hover:bg-muted"}`}
-                  >
-                    {s.type === "anlegg" ? <Anchor className="h-4 w-4 mt-0.5 shrink-0 text-muted-foreground" /> : <MapPin className="h-4 w-4 mt-0.5 shrink-0 text-muted-foreground" />}
-                    {s.type === "anlegg" ? (
-                      <div>
-                        <p className="font-medium">{s.name}</p>
-                        <p className="text-xs text-foreground/70">{s.subtitle}</p>
-                      </div>
-                    ) : s.type === "fylke" ? (
-                      <div>
-                        <p className="font-medium">{s.fylkesnavn}</p>
-                        <p className="text-xs text-foreground/70">
-                          Fylke
-                        </p>
-                      </div>
-                    ) : s.type === "kommune" ? (
-                      <div>
-                        <p className="font-medium">{s.kommunenavn}</p>
-                        <p className="text-xs text-foreground/70">
-                          Kommune
-                        </p>
-                      </div>
-                    ) : s.type === "adresse" ? (
-                      <div>
-                        <p className="font-medium">
-                          {s.addr.adressetekst}
-                        </p>
-                        <p className="text-xs text-foreground/70">
-                          {s.addr.poststed}, {s.addr.kommunenavn}
-                        </p>
-                      </div>
-                    ) : null}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
+          </MapSearchBar>
         </div>
         <div className="flex items-center justify-between mt-2">
           <p className="text-xs text-foreground/70">

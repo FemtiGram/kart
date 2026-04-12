@@ -101,7 +101,7 @@ This map uses the standard compact card + detail sheet pattern, adapted for chor
 
 ### Search
 
-3-tier search: Fylke (3 results), Kommune (5 results), Adresse (2 results). 300ms debounce. Abort controller. Selecting a kommune navigates using GeoJSON layer bounds (not the Geonorge `stedsnavn` API used on marker maps).
+3-tier search: Fylke (3 results), Kommune (5 results), Adresse (2 results). 150ms debounce. Address lookups go through the cached `/api/sok` proxy. Abort controller. Selecting a kommune navigates using GeoJSON layer bounds (not the Geonorge `stedsnavn` API used on marker maps).
 
 No "Min posisjon" button — choropleth maps do not have a location button since there is no single point to navigate to.
 

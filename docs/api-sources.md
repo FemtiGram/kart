@@ -10,7 +10,7 @@ Overview of all data sources: what MapGram currently uses, and what remains unta
 
 | API | Endpoint | Used In | Status |
 |-----|----------|---------|--------|
-| Adresser (address search) | `ws.geonorge.no/adresser/v1/` | All maps | In use |
+| Adresser (address search) | Via `/api/sok` proxy → `ws.geonorge.no/adresser/v1/` (1h edge cache + SWR) | All maps | In use |
 | Kommuneinfo | `ws.geonorge.no/kommuneinfo/v1/` | Charging, cabin, energy | In use |
 | Stedsnavn (place names) | `ws.geonorge.no/stedsnavn/v1/` | All marker maps (kommune center) | In use |
 | Høydedata (elevation) | `ws.geonorge.no/hoydedata/v1/` | Elevation map | In use |

@@ -18,7 +18,7 @@ import type { LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Toggle } from "@/components/ui/toggle";
-import { useMapSearch, MapSearchBar } from "@/components/map-search";
+import { MapSearchBar, type MapSearchBarHandle } from "@/components/map-search";
 import { useHashSelection } from "@/lib/use-hash-selection";
 import { isInNorway } from "@/lib/fylker";
 
@@ -159,7 +159,7 @@ export function CabinMap() {
   const [loadingWeather, setLoadingWeather] = useState(false);
 
   const kommunerRef = useRef<KommuneEntry[]>([]);
-  const setQueryRef = useRef<(q: string) => void>(() => {});
+  const searchBarRef = useRef<MapSearchBarHandle>(null);
 
   useEffect(() => {
     fetch("https://ws.geonorge.no/kommuneinfo/v1/kommuner")
@@ -171,12 +171,12 @@ export function CabinMap() {
   const handleSearchSelect = useCallback(async (s: Suggestion) => {
     setSelected(null);
     if (s.type === "fylke") {
-      setQueryRef.current(s.fylkesnavn);
+      searchBarRef.current?.setQuery(s.fylkesnavn);
       setCenter({ lat: s.lat, lon: s.lon, zoom: s.zoom });
       return;
     }
     if (s.type === "kommune") {
-      setQueryRef.current(s.kommunenavn);
+      searchBarRef.current?.setQuery(s.kommunenavn);
       const res = await fetch(
         `https://ws.geonorge.no/stedsnavn/v1/navn?sok=${encodeURIComponent(s.kommunenavn)}&kommunenummer=${s.kommunenummer}&treffPerSide=1`
       );
@@ -186,16 +186,10 @@ export function CabinMap() {
         setCenter({ lat: point.nord, lon: point.øst });
       }
     } else if (s.type === "adresse") {
-      setQueryRef.current(`${s.addr.adressetekst}, ${s.addr.poststed}`);
+      searchBarRef.current?.setQuery(`${s.addr.adressetekst}, ${s.addr.poststed}`);
       setCenter({ lat: s.addr.representasjonspunkt.lat, lon: s.addr.representasjonspunkt.lon });
     }
   }, []);
-
-  const searchProps = useMapSearch({
-    kommuneList: kommunerRef.current,
-    onSelect: handleSearchSelect,
-  });
-  setQueryRef.current = searchProps.setQuery;
 
   const handleLocate = () => {
     if (!navigator.geolocation) return;
@@ -352,7 +346,12 @@ export function CabinMap() {
       {/* Search bar */}
       <div className="relative z-[1000] px-4 py-4 md:px-8 shrink-0 bg-background border-b">
         <div className="max-w-xl mx-auto relative flex flex-col gap-2">
-            <MapSearchBar search={searchProps} placeholder="Søk etter fjellområde eller sted...">
+            <MapSearchBar
+              ref={searchBarRef}
+              kommuneList={() => kommunerRef.current}
+              onSelect={handleSearchSelect}
+              placeholder="Søk etter fjellområde eller sted..."
+            >
             <Sheet open={showFilter} onOpenChange={(open) => { setShowFilter(open); if (open) setShowInfoSheet(false); }}>
               <SheetTrigger
                 render={

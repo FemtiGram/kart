@@ -8,7 +8,7 @@ import type { GeoJsonObject, Feature } from "geojson";
 import type { Layer } from "leaflet";
 import { Map as MapIcon, ChevronUp, Info, ExternalLink } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { useMapSearch, MapSearchBar } from "@/components/map-search";
+import { MapSearchBar, type MapSearchBarHandle } from "@/components/map-search";
 import { FYLKER } from "@/lib/fylker";
 import { FlyTo, DataDisclaimer, MapError, interpolateColor, MAP_HEIGHT } from "@/lib/map-utils";
 import { CompactCard } from "@/components/compact-card";
@@ -154,7 +154,7 @@ export function ProtectedAreasMap() {
   const geoFeaturesRef = useRef<Array<{ kommunenummer: string; kommunenavn: string }>>([]);
   const layerRefs = useRef<Map<string, L.Path>>(new Map());
   const selectedKommuneRef = useRef<string | null>(null);
-  const setQueryRef = useRef<(q: string) => void>(() => {});
+  const searchBarRef = useRef<MapSearchBarHandle>(null);
 
   const loadData = useCallback(async () => {
     setError(false);
@@ -243,18 +243,18 @@ export function ProtectedAreasMap() {
       selectedKommuneRef.current = null;
     }
     setSelected(null);
-    setQueryRef.current("");
+    searchBarRef.current?.setQuery("");
   }, []);
 
 
   const handleSearchSelect = useCallback((s: Suggestion) => {
     if (s.type === "fylke") {
-      setQueryRef.current(s.fylkesnavn);
+      searchBarRef.current?.setQuery(s.fylkesnavn);
       setFlyTarget({ lat: s.lat, lon: s.lon, zoom: s.zoom });
       return;
     }
     if (s.type === "kommune") {
-      setQueryRef.current(s.kommunenavn);
+      searchBarRef.current?.setQuery(s.kommunenavn);
       highlightKommune(s.kommunenummer);
       setSelected({ kommunenummer: s.kommunenummer, kommunenavn: s.kommunenavn, vern: verneRef.current[s.kommunenummer] ?? null, totalAreaKm2: kommuneAreasRef.current[s.kommunenummer] ?? 0, fylke: getFylke(s.kommunenummer), coords: { lat: 0, lon: 0 } });
       const layer = layerRefs.current.get(s.kommunenummer) as L.Polygon | undefined;
@@ -263,18 +263,12 @@ export function ProtectedAreasMap() {
     } else if (s.type === "adresse") {
       const addr = s.addr;
       const nr = addr.kommunenummer ?? "";
-      setQueryRef.current(addr.kommunenavn);
+      searchBarRef.current?.setQuery(addr.kommunenavn);
       if (nr) highlightKommune(nr);
       setSelected({ kommunenummer: nr, kommunenavn: addr.kommunenavn, vern: verneRef.current[nr] ?? null, totalAreaKm2: kommuneAreasRef.current[nr] ?? 0, fylke: getFylke(nr), coords: addr.representasjonspunkt });
       setFlyTarget(addr.representasjonspunkt);
     }
   }, [highlightKommune]);
-
-  const searchProps = useMapSearch({
-    kommuneList: geoFeaturesRef.current,
-    onSelect: handleSearchSelect,
-  });
-  setQueryRef.current = searchProps.setQuery;
 
   const geoStyle = (feature?: Feature) => {
     const nr = feature?.properties?.kommunenummer;
@@ -327,7 +321,12 @@ export function ProtectedAreasMap() {
       {/* Search bar */}
       <div className="relative z-[1000] px-4 py-4 md:px-8 shrink-0 bg-background border-b">
         <div className="max-w-xl mx-auto relative">
-          <MapSearchBar search={searchProps} placeholder="Søk etter en kommune eller adresse..." />
+          <MapSearchBar
+            ref={searchBarRef}
+            kommuneList={() => geoFeaturesRef.current}
+            onSelect={handleSearchSelect}
+            placeholder="Søk etter en kommune eller adresse..."
+          />
         </div>
       </div>
 

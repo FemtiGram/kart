@@ -110,7 +110,7 @@ Same rendering approach as the income map: react-leaflet `<GeoJSON>` with a `sty
 
 ### Search
 
-3-tier search: Fylke (3 results), Kommune (5 results), Adresse (2 results). 300ms debounce. Abort controller. Selecting a kommune uses GeoJSON layer bounds. No "Min posisjon" button.
+3-tier search: Fylke (3 results), Kommune (5 results), Adresse (2 results). 150ms debounce. Address lookups go through the cached `/api/sok` proxy. Abort controller. Selecting a kommune uses GeoJSON layer bounds. No "Min posisjon" button.
 
 ### Loading state
 

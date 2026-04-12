@@ -134,7 +134,7 @@ Toggle between Kart (Kartverket topo) and Gråtone (Kartverket topograatone).
 
 ### Search
 
-3-tier search: Fylke (3 results), Kommune (5 results), Adresse (2 results). 300ms debounce. Abort controller. "Min posisjon" with `isInNorway()` fallback to Oslo.
+3-tier search: Fylke (3 results), Kommune (5 results), Adresse (2 results), plus reservoir names as `extraSuggestions`. 150ms debounce. Address lookups go through the cached `/api/sok` proxy. Abort controller. "Min posisjon" with `isInNorway()` fallback to Oslo.
 
 ---
 

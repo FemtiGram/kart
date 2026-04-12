@@ -9,7 +9,7 @@ import type { Layer } from "leaflet";
 import { Info, LocateFixed, Map as MapIcon, ChevronUp, Navigation, ExternalLink, ArrowLeftRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { useMapSearch, MapSearchBar } from "@/components/map-search";
+import { MapSearchBar, type MapSearchBarHandle } from "@/components/map-search";
 import { FlyTo, DataDisclaimer, MapError, interpolateColor, MAP_HEIGHT } from "@/lib/map-utils";
 import { FYLKER } from "@/lib/fylker";
 import { CompactCard } from "@/components/compact-card";
@@ -91,7 +91,7 @@ export function IncomeMap() {
   const geoFeaturesRef = useRef<Array<{ kommunenummer: string; kommunenavn: string }>>([]);
   const layerRefs = useRef<Map<string, L.Path>>(new Map());
   const selectedKommuneRef = useRef<string | null>(null);
-  const setQueryRef = useRef<(q: string) => void>(() => {});
+  const searchBarRef = useRef<MapSearchBarHandle>(null);
 
   const loadData = useCallback(async () => {
     setError(false);
@@ -190,18 +190,18 @@ export function IncomeMap() {
     setCompareQuery("");
     setCompareTarget(null);
     setShowCompare(false);
-    setQueryRef.current("");
+    searchBarRef.current?.setQuery("");
   }, []);
 
 
   const handleSearchSelect = useCallback((s: Suggestion) => {
     if (s.type === "fylke") {
-      setQueryRef.current(s.fylkesnavn);
+      searchBarRef.current?.setQuery(s.fylkesnavn);
       setFlyTarget({ lat: s.lat, lon: s.lon, zoom: s.zoom });
       return;
     }
     if (s.type === "kommune") {
-      setQueryRef.current(s.kommunenavn);
+      searchBarRef.current?.setQuery(s.kommunenavn);
       highlightKommune(s.kommunenummer);
       setSelected({ kommunenummer: s.kommunenummer, kommunenavn: s.kommunenavn, income: incomeRef.current[s.kommunenummer] ?? null, coords: { lat: 0, lon: 0 } });
       const layer = layerRefs.current.get(s.kommunenummer) as L.Polygon | undefined;
@@ -210,18 +210,12 @@ export function IncomeMap() {
     } else if (s.type === "adresse") {
       const addr = s.addr;
       const nr = addr.kommunenummer ?? "";
-      setQueryRef.current(addr.kommunenavn);
+      searchBarRef.current?.setQuery(addr.kommunenavn);
       if (nr) highlightKommune(nr);
       setSelected({ kommunenummer: nr, kommunenavn: addr.kommunenavn, income: incomeRef.current[nr] ?? null, coords: addr.representasjonspunkt });
       setFlyTarget(addr.representasjonspunkt);
     }
   }, [highlightKommune]);
-
-  const searchProps = useMapSearch({
-    kommuneList: geoFeaturesRef.current,
-    onSelect: handleSearchSelect,
-  });
-  setQueryRef.current = searchProps.setQuery;
 
   const geoStyle = (feature?: Feature) => {
     const nr = feature?.properties?.kommunenummer;
@@ -277,7 +271,12 @@ export function IncomeMap() {
       {/* Search bar */}
       <div className="relative z-[1000] px-4 py-4 md:px-8 shrink-0 bg-background border-b">
         <div className="max-w-xl mx-auto relative">
-          <MapSearchBar search={searchProps} placeholder="Søk etter en adresse for å finne kommunen..." />
+          <MapSearchBar
+            ref={searchBarRef}
+            kommuneList={() => geoFeaturesRef.current}
+            onSelect={handleSearchSelect}
+            placeholder="Søk etter en adresse for å finne kommunen..."
+          />
         </div>
 
       </div>

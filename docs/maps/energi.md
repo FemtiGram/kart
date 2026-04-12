@@ -172,7 +172,7 @@ Toggle between Kart (Kartverket topo) and Gråtone (Kartverket topograatone) in 
 
 ### Search
 
-3-tier search: Fylke (3 results), Kommune (5 results), Adresse (2 results). 300ms debounce. Abort controller cancels previous in-flight address request. "Min posisjon" geolocation button with `isInNorway()` check; falls back to Oslo if outside Norway.
+3-tier search: Fylke (3 results), Kommune (5 results), Adresse (2 results), plus Anlegg (5 results) for oil/gas facility names matched locally via `extraSuggestions`. 150ms debounce. Address lookups go through the cached `/api/sok` proxy. Abort controller cancels previous in-flight address request. "Min posisjon" geolocation button with `isInNorway()` check; falls back to Oslo if outside Norway.
 
 ---
 

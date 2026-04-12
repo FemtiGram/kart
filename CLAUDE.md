@@ -43,6 +43,7 @@ src/app/
     charging-status/route.ts — Enova real-time WebSocket token (requires ENOVA_RT_API_KEY)
     hydro-station/route.ts — NVE HydAPI live river data (requires API key)
     inflation/route.ts  — SSB KPI + KPI-JAE + Norges Bank rate + Eurostat HICP
+    sok/route.ts        — Geonorge adresser proxy (free-text + punktsok), 1h edge cache + SWR
 
 src/components/
   navbar.tsx            — Shared nav with grouped dropdowns (Energi/Natur/Samfunn) + mobile sheet
@@ -53,7 +54,8 @@ src/components/
 
 src/lib/
   fylker.ts             — Hardcoded 15 counties with coords + zoom, isInNorway(), OSLO default
-  map-utils.tsx         — FlyTo, interpolateColor, DataDisclaimer, shared types (Suggestion, Address), useDebounceRef, useSearchAbort
+  map-utils.tsx         — FlyTo, interpolateColor, DataDisclaimer, shared types (Suggestion, Address, KommuneEntry), useDebounceRef, useSearchAbort
+  use-hash-selection.ts — URL hash deep linking hook for selection state (#kommune-<id>, #station-<id>, etc.)
   utm.ts                — UTM zone 33N → WGS84 conversion (for NVE ArcGIS data)
   utils.ts              — cn() helper
 
@@ -128,14 +130,19 @@ All maps use a **compact floating card + expandable bottom Sheet** pattern:
 - Cabin badges use sentence case ("Ubetjent hytte") not uppercase
 
 ### Search architecture:
-- **Debounce:** 300ms after last keystroke before triggering search
-- **Abort controller:** Each new search aborts the previous in-flight address fetch (`useSearchAbort` from map-utils)
-- **Suggestion sources:** Fylke (local filter on hardcoded list), Kommune (local filter on loaded list), Adresse (Geonorge API), Anlegg (energy map only — oil/gas facility name + field name)
-- **Kommune data:** Marker maps load from `geonorge.no/kommuneinfo/v1/kommuner`; choropleth maps use GeoJSON properties they already have
-- **Kommune center:** Marker maps resolve via `geonorge.no/stedsnavn` API; choropleth maps use GeoJSON layer bounds
-- **Dropdown:** `onMouseDown` for selection (fires before `onBlur`), 150ms blur delay, keyboard nav (↑↓ Enter Escape)
-- **Icon caching:** All icon functions (`chargingIcon`, `cabinIcon`, `energyIcon`, `bubbleIcon`) cache `L.divIcon` instances by args to avoid recreating 15,000 icons per re-render
-- **Future refactor:** Split search bar + map markers into separate React components to avoid keystroke re-renders propagating to marker layer
+- **Component:** `MapSearchBar` (`src/components/map-search.tsx`) is a self-contained `forwardRef` component. All search state (query, suggestions, dropdown, debounce, abort, composition, spinner grace) lives inside the component so **keystrokes never re-render the parent map**. Parents pass `kommuneList` (a getter), `extraSuggestions` (optional), `onSelect`, and `placeholder`, and receive a ref exposing `setQuery()` / `focus()` for imperative control.
+- **Address proxy:** All address lookups go through `/api/sok?q=...&n=...` (or `?lat=...&lon=...&radius=...&n=1` for reverse geocode). The route forwards to `ws.geonorge.no/adresser/v1/` with a 1h Vercel edge cache + 24h stale-while-revalidate. Popular queries ("oslo", "bergen") return from the CDN in ~20ms instead of 100–800ms direct.
+- **Debounce:** 150ms after last keystroke. Below the ~200ms perception threshold, so typing feels instant. Cached CDN responses make this cheap.
+- **IME composition:** `onCompositionStart` / `onCompositionEnd` (via `isComposingRef`) skip the debounced search during IME input so Japanese/Chinese typing doesn't fire mid-composition searches.
+- **Spinner grace:** 200ms grace before the loading spinner shows. Cached responses arrive in 20–50ms so the spinner never flashes for repeat queries (no flicker).
+- **useDeferredValue:** The suggestions list uses `useDeferredValue` to let React deprioritize dropdown renders under concurrent mode — keeps input at 60fps even under render pressure.
+- **Abort controller:** Each new search aborts the previous in-flight address fetch (`useSearchAbort` from map-utils).
+- **Suggestion sources:** Fylke (local filter on hardcoded list), Kommune (local filter on a `kommuneList` getter, which reads the parent's ref), Adresse (proxied Geonorge), plus `extraSuggestions` for per-map additions (oil/gas facilities on energy map, reservoir names on magasin map).
+- **Kommune data:** Marker maps load from `geonorge.no/kommuneinfo/v1/kommuner`; choropleth maps use GeoJSON properties they already have.
+- **Kommune center:** Marker maps resolve via `geonorge.no/stedsnavn` API; choropleth maps use GeoJSON layer bounds.
+- **Dropdown:** `onMouseDown` for selection (fires before `onBlur`), 150ms blur delay, keyboard nav (↑↓ Enter Escape), `Anchor` icon for `anlegg` results and `MapPin` for everything else.
+- **Input attributes:** `autoComplete="off"`, `autoCorrect="off"`, `autoCapitalize="off"`, `spellCheck={false}`, `enterKeyHint="search"`, `text-[16px] sm:text-sm` to prevent iOS zoom. `autoFocus` gated to desktop (`window.innerWidth >= 640`).
+- **Icon caching:** All icon functions (`chargingIcon`, `cabinIcon`, `energyIcon`, `bubbleIcon`) cache `L.divIcon` instances by args to avoid recreating 15,000 icons per re-render.
 
 ### Markers (charging, cabin, energy maps):
 - `L.divIcon` with inline SVG icons inside circles, cached by args to avoid re-creation
@@ -272,7 +279,7 @@ Every new page MUST be rigged for Google Search and AI search (ChatGPT, Perplexi
 | Weather | MET.no locationforecast | 30min server cache |
 | Elevation | Kartverket høyde-API | Per-request |
 | Kommune boundaries | GitHub (robhop/fylker-og-kommuner) | Build-time static GeoJSON |
-| Address search | Geonorge adresser API | Per-query |
+| Address search | Geonorge adresser API (via `/api/sok` proxy) | 1h edge cache + 24h SWR |
 | Kommune list | Geonorge kommuneinfo API | Loaded once on mount |
 | Inflation (KPI) | SSB tabell 03013 + 05327 | Loaded once on mount |
 | Policy rate | Norges Bank API | Loaded once on mount |

@@ -15,7 +15,7 @@ import {
   Layers,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useMapSearch, MapSearchBar } from "@/components/map-search";
+import { MapSearchBar, type MapSearchBarHandle } from "@/components/map-search";
 import { isInNorway, OSLO } from "@/lib/fylker";
 import { FlyTo, DataDisclaimer, MapError, MAP_HEIGHT } from "@/lib/map-utils";
 import type { KommuneEntry, Suggestion } from "@/lib/map-utils";
@@ -123,7 +123,7 @@ export function WindPowerMap() {
   const [tileLayer, setTileLayer] = useState<TileLayerKey>("gråtone");
 
   const kommunerRef = useRef<KommuneEntry[]>([]);
-  const setQueryRef = useRef<(q: string) => void>(() => {});
+  const searchBarRef = useRef<MapSearchBarHandle>(null);
 
   const loadWindFarms = useCallback(async () => {
     setError(false);
@@ -187,12 +187,12 @@ export function WindPowerMap() {
   const handleSearchSelect = useCallback(async (s: Suggestion) => {
     setSelected(null);
     if (s.type === "fylke") {
-      setQueryRef.current(s.fylkesnavn);
+      searchBarRef.current?.setQuery(s.fylkesnavn);
       setCenter({ lat: s.lat, lon: s.lon, zoom: s.zoom });
       return;
     }
     if (s.type === "kommune") {
-      setQueryRef.current(s.kommunenavn);
+      searchBarRef.current?.setQuery(s.kommunenavn);
       const res = await fetch(
         `https://ws.geonorge.no/stedsnavn/v1/navn?sok=${encodeURIComponent(s.kommunenavn)}&kommunenummer=${s.kommunenummer}&treffPerSide=1`
       );
@@ -202,19 +202,13 @@ export function WindPowerMap() {
         setCenter({ lat: point.nord, lon: point.øst });
       }
     } else if (s.type === "adresse") {
-      setQueryRef.current(`${s.addr.adressetekst}, ${s.addr.poststed}`);
+      searchBarRef.current?.setQuery(`${s.addr.adressetekst}, ${s.addr.poststed}`);
       setCenter({
         lat: s.addr.representasjonspunkt.lat,
         lon: s.addr.representasjonspunkt.lon,
       });
     }
   }, []);
-
-  const searchProps = useMapSearch({
-    kommuneList: kommunerRef.current,
-    onSelect: handleSearchSelect,
-  });
-  setQueryRef.current = searchProps.setQuery;
 
   const handleLocate = () => {
     if (!navigator.geolocation) return;
@@ -255,7 +249,12 @@ export function WindPowerMap() {
       {/* Search bar */}
       <div className="relative z-[1000] px-4 py-4 md:px-8 shrink-0 bg-background border-b">
         <div className="max-w-xl mx-auto relative flex flex-col gap-2">
-          <MapSearchBar search={searchProps} placeholder="Søk etter vindkraftverk eller sted...">
+          <MapSearchBar
+            ref={searchBarRef}
+            kommuneList={() => kommunerRef.current}
+            onSelect={handleSearchSelect}
+            placeholder="Søk etter vindkraftverk eller sted..."
+          >
             <Button onClick={handleLocate} disabled={locating || loading} variant="secondary" size="icon" className="shadow-lg shrink-0 h-11 w-11 rounded-xl">
               {locating ? <Loader2 className="h-4 w-4 animate-spin" /> : <LocateFixed className="h-4 w-4" />}
             </Button>

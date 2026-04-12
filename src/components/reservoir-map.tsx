@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { useMapSearch, MapSearchBar } from "@/components/map-search";
+import { MapSearchBar, type MapSearchBarHandle } from "@/components/map-search";
 import { FlyTo, DataDisclaimer, MapError, MAP_HEIGHT } from "@/lib/map-utils";
 import { CompactCard } from "@/components/compact-card";
 import { InfoModal } from "@/components/info-modal";
@@ -120,7 +120,7 @@ export function ReservoirMap() {
   const [tileLayer, setTileLayer] = useState<TileLayerKey>("gråtone");
   const [zoomLevel, setZoomLevel] = useState(5);
 
-  const setQueryRef = useRef<(q: string) => void>(() => {});
+  const searchBarRef = useRef<MapSearchBarHandle>(null);
 
   const loadReservoirs = useCallback(async () => {
     setError(false);
@@ -188,20 +188,13 @@ export function ReservoirMap() {
 
   const handleSearchSelect = useCallback((s: Suggestion) => {
     if (s.type === "fylke") {
-      setQueryRef.current(s.fylkesnavn);
+      searchBarRef.current?.setQuery(s.fylkesnavn);
       setCenter({ lat: s.lat, lon: s.lon, zoom: s.zoom, _t: Date.now() });
     } else if (s.type === "adresse") {
-      setQueryRef.current(`${s.addr.adressetekst}, ${s.addr.poststed}`);
+      searchBarRef.current?.setQuery(`${s.addr.adressetekst}, ${s.addr.poststed}`);
       setCenter({ lat: s.addr.representasjonspunkt.lat, lon: s.addr.representasjonspunkt.lon, _t: Date.now() });
     }
   }, []);
-
-  const searchProps = useMapSearch({
-    kommuneList: [],
-    extraSuggestions,
-    onSelect: handleSearchSelect,
-  });
-  setQueryRef.current = searchProps.setQuery;
 
   const stats = useMemo(() => {
     const total = reservoirs.length;
@@ -215,7 +208,13 @@ export function ReservoirMap() {
       {/* Search bar */}
       <div className="relative z-[1000] px-4 py-4 md:px-8 shrink-0 bg-background border-b">
         <div className="max-w-xl mx-auto relative flex flex-col gap-2">
-          <MapSearchBar search={searchProps} placeholder="Søk etter magasin eller sted..." />
+          <MapSearchBar
+            ref={searchBarRef}
+            kommuneList={() => []}
+            extraSuggestions={extraSuggestions}
+            onSelect={handleSearchSelect}
+            placeholder="Søk etter magasin eller sted..."
+          />
         </div>
         <p className="text-xs text-foreground/70 mt-2 max-w-xl mx-auto">
           {loading ? "Henter magasindata..." : `${stats.total} magasiner${stats.totalVolume > 0 ? ` · ${stats.totalVolume.toLocaleString("nb-NO")} Mm³ total kapasitet` : ""} · Kilde: NVE`}

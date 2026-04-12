@@ -12,7 +12,7 @@ Route: `/map`
 |--------|----------|------|-------|
 | Kartverket høyde-API | `ws.geonorge.no/hoydedata/v1/punkt?nord=...&ost=...&koordsys=4258&geoidmodell=nn2000` | Elevation in metres above sea level | Per-request (no cache) |
 | MET.no locationforecast | Via `/api/weather?lat=...&lon=...` | Temperature, wind speed, precipitation, weather symbol | 30min server cache |
-| Geonorge adresser API | `ws.geonorge.no/adresser/v1/sok?sok=...&treffPerSide=6` | Address search results with coordinates | Per-query (no cache) |
+| Geonorge adresser API (via `/api/sok` proxy) | `/api/sok?q=...&n=6` → `ws.geonorge.no/adresser/v1/sok` | Address search results with coordinates | 1h edge cache + 24h stale-while-revalidate |
 
 ### Kartverket høyde-API
 
@@ -28,7 +28,7 @@ Proxied through `/api/weather` to add a 30-minute server-side cache and avoid se
 
 ### Address search
 
-Queries the Geonorge `adresser` API with `treffPerSide=6` (6 results). Each result includes:
+Queries `/api/sok?q=...&n=6`, which proxies to the Geonorge `adresser` API. Proxying adds a 1-hour Vercel edge cache with 24-hour stale-while-revalidate, so repeat searches for common queries return in ~20ms from the CDN instead of 100–800ms from Geonorge. Each result includes:
 - `adressetekst` — street address
 - `poststed` — postal place name
 - `kommunenavn` — municipality name
@@ -50,8 +50,8 @@ User clicks map or selects address from search
 ```
 
 ```
-User types in search box (300ms debounce)
-  → fetch Geonorge adresser API
+User types in search box (150ms debounce, skipped during IME composition)
+  → fetch /api/sok?q=...&n=6 (cached at Vercel edge)
   → Dropdown shows up to 6 address suggestions
   → User selects → map flies to address → triggers elevation + weather fetch
 ```
@@ -73,7 +73,7 @@ User types in search box (300ms debounce)
 |-------|-----|-----------|
 | Elevation | None | Per-request, no server or client cache |
 | Weather | 30 minutes | `next: { revalidate: 1800 }` in `/api/weather` |
-| Address search | None | Per-keystroke query, results discarded on next search |
+| Address search | 1h edge + 24h SWR | `/api/sok` proxy sets `Cache-Control: public, s-maxage=3600, stale-while-revalidate=86400` |
 
 ---
 
