@@ -418,7 +418,14 @@ export function BoligMap() {
             <p className="text-xs text-foreground/70">
               {loading
                 ? "Henter boligpriser..."
-                : `${visibleMarkers.length} kommuner med data · ${TYPE_LABELS[boligtype]} · ${year} · Kilde: SSB`}
+                : (() => {
+                    const isLatest =
+                      years.length > 0 && year === years[years.length - 1];
+                    const base = `${visibleMarkers.length} kommuner med data · ${TYPE_LABELS[boligtype]} · ${year} · Kilde: SSB`;
+                    return isLatest
+                      ? `${base} · ${String(Number(year) + 1)}-tall kommer i april/mai ${String(Number(year) + 2)}`
+                      : base;
+                  })()}
             </p>
           </div>
         </div>
