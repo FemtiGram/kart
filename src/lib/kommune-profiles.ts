@@ -9,6 +9,14 @@ export interface BoligEntry {
   trend: Array<{ year: string; price: number }>;
 }
 
+export interface ChargingMarker {
+  id: string;
+  name: string;
+  maxKw: number | null;
+  lat: number;
+  lon: number;
+}
+
 export interface ChargingSummary {
   total: number;
   fast: number;
@@ -18,6 +26,17 @@ export interface ChargingSummary {
     operator: string | null;
     maxKw: number | null;
   }>;
+  /** All charging stations in the kommune (capped at 200 per kommune). */
+  all: ChargingMarker[];
+}
+
+export interface CabinMarker {
+  id: number;
+  name: string;
+  cabinType: "fjellhytte" | "ubetjent";
+  beds: number | null;
+  lat: number;
+  lon: number;
 }
 
 export interface CabinSummary {
@@ -31,6 +50,16 @@ export interface CabinSummary {
     lat: number;
     lon: number;
   }>;
+  /** All cabins in the kommune (capped at 200 per kommune). */
+  all: CabinMarker[];
+}
+
+export interface ReservoirMarker {
+  id: number;
+  name: string;
+  volumeMm3: number | null;
+  lat: number;
+  lon: number;
 }
 
 export interface ReservoirSummary {
@@ -43,6 +72,17 @@ export interface ReservoirSummary {
     lat: number;
     lon: number;
   }>;
+  /** All reservoirs in the kommune (capped at 200 per kommune). */
+  all: ReservoirMarker[];
+}
+
+export interface EnergyMarker {
+  id: number;
+  name: string;
+  type: "vind" | "vann";
+  capacityMW: number | null;
+  lat: number;
+  lon: number;
 }
 
 export interface EnergySummary {
@@ -58,6 +98,8 @@ export interface EnergySummary {
     lat: number;
     lon: number;
   }>;
+  /** All plants in the kommune (capped at 200 per kommune). */
+  all: EnergyMarker[];
 }
 
 export interface KommuneProfile {

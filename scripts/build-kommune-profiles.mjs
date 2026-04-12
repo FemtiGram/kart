@@ -655,6 +655,17 @@ async function main() {
             operator: s.operator,
             maxKw: s.maxKw,
           })),
+        // All stations in the kommune (minimal fields for the mini-map)
+        all: stationList
+          .sort((a, b) => (b.maxKw ?? 0) - (a.maxKw ?? 0))
+          .slice(0, 200)
+          .map((s) => ({
+            id: s.id,
+            name: s.name,
+            maxKw: s.maxKw,
+            lat: s.lat,
+            lon: s.lon,
+          })),
       },
       cabins: {
         total: cabinList.length,
@@ -667,6 +678,17 @@ async function main() {
             operator: c.operator,
             beds: c.beds,
             elevation: c.elevation,
+            lat: c.lat,
+            lon: c.lon,
+          })),
+        all: cabinList
+          .sort((a, b) => (b.beds ?? 0) - (a.beds ?? 0))
+          .slice(0, 200)
+          .map((c) => ({
+            id: c.id,
+            name: c.name,
+            cabinType: c.cabinType,
+            beds: c.beds,
             lat: c.lat,
             lon: c.lon,
           })),
@@ -684,6 +706,16 @@ async function main() {
             lat: r.center?.lat,
             lon: r.center?.lon,
           })),
+        all: reservoirList
+          .sort((a, b) => (b.volumeMm3 ?? 0) - (a.volumeMm3 ?? 0))
+          .slice(0, 200)
+          .map((r) => ({
+            id: r.id,
+            name: r.name,
+            volumeMm3: r.volumeMm3,
+            lat: r.center?.lat,
+            lon: r.center?.lon,
+          })),
       },
       energy: {
         totalMW: Math.round(totalMW),
@@ -693,6 +725,17 @@ async function main() {
         top: plantList
           .sort((a, b) => (b.capacityMW ?? 0) - (a.capacityMW ?? 0))
           .slice(0, 5)
+          .map((p) => ({
+            id: p.id,
+            name: p.name,
+            type: p.type,
+            capacityMW: p.capacityMW,
+            lat: p.lat,
+            lon: p.lon,
+          })),
+        all: plantList
+          .sort((a, b) => (b.capacityMW ?? 0) - (a.capacityMW ?? 0))
+          .slice(0, 200)
           .map((p) => ({
             id: p.id,
             name: p.name,

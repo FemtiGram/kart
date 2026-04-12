@@ -379,76 +379,33 @@ function InfraSection({ profile }: { profile: KommuneProfile }) {
 // ─── Section: Kart ───────────────────────────────────────────
 
 function KartSection({ profile }: { profile: KommuneProfile }) {
-  const markers = [
-    ...profile.energy.top
-      .filter((p) => p.lat != null && p.lon != null)
-      .map((p) => ({
-        lat: p.lat,
-        lon: p.lon,
-        name: p.name,
-        kind: "energy" as const,
-        detail:
-          p.capacityMW != null
-            ? `${p.type === "vann" ? "Vannkraft" : "Vindkraft"} · ${fmtNumber(p.capacityMW)} MW`
-            : p.type === "vann"
-              ? "Vannkraft"
-              : "Vindkraft",
-      })),
-    ...profile.cabins.top
-      .filter((c) => c.lat != null && c.lon != null)
-      .map((c) => ({
-        lat: c.lat,
-        lon: c.lon,
-        name: c.name,
-        kind: "cabin" as const,
-        detail: c.beds != null ? `${c.beds} senger` : c.operator ?? undefined,
-      })),
-    ...profile.reservoirs.top
-      .filter((r) => r.lat != null && r.lon != null)
-      .map((r) => ({
-        lat: r.lat,
-        lon: r.lon,
-        name: r.name,
-        kind: "reservoir" as const,
-        detail:
-          r.volumeMm3 != null
-            ? `${fmtNumber(r.volumeMm3)} Mm³`
-            : r.plantName ?? undefined,
-      })),
-  ];
   return (
     <Section title="Plassering" icon={MapIcon}>
       <KommuneMiniMap
         outline={profile.outline}
         bbox={profile.bbox}
         name={profile.displayName}
-        markers={markers}
+        layers={{
+          energy: profile.energy.all.filter(
+            (p) => p.lat != null && p.lon != null
+          ),
+          charging: profile.charging.all.filter(
+            (s) => s.lat != null && s.lon != null
+          ),
+          cabin: profile.cabins.all.filter(
+            (c) => c.lat != null && c.lon != null
+          ),
+          reservoir: profile.reservoirs.all.filter(
+            (r) => r.lat != null && r.lon != null
+          ),
+        }}
+        totals={{
+          energy: profile.energy.plantCount,
+          charging: profile.charging.total,
+          cabin: profile.cabins.total,
+          reservoir: profile.reservoirs.total,
+        }}
       />
-      {markers.length > 0 && (
-        <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
-          <span className="inline-flex items-center gap-1.5">
-            <span
-              className="inline-block h-2.5 w-2.5 rounded-full border-2"
-              style={{ background: "#3b82f6", borderColor: "#1e3a5f" }}
-            />
-            Kraftverk
-          </span>
-          <span className="inline-flex items-center gap-1.5">
-            <span
-              className="inline-block h-2.5 w-2.5 rounded-full border-2"
-              style={{ background: "#d97706", borderColor: "#78350f" }}
-            />
-            Fjellhytter
-          </span>
-          <span className="inline-flex items-center gap-1.5">
-            <span
-              className="inline-block h-2.5 w-2.5 rounded-full border-2"
-              style={{ background: "#0891b2", borderColor: "#0c4a6e" }}
-            />
-            Magasiner
-          </span>
-        </div>
-      )}
     </Section>
   );
 }
