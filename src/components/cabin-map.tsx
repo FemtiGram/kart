@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Toggle } from "@/components/ui/toggle";
 import { useMapSearch, MapSearchBar } from "@/components/map-search";
+import { useHashSelection } from "@/lib/use-hash-selection";
 import { isInNorway } from "@/lib/fylker";
 
 function isInNorwayApprox(lat: number, lon: number): boolean {
@@ -291,6 +292,22 @@ export function CabinMap() {
   }, []);
 
   useEffect(() => { loadCabins(); }, [loadCabins]);
+
+  // Deep linking: sync selected cabin ↔ URL hash (#cabin-<id>)
+  const restoreCabin = useCallback((id: string) => {
+    const cabin = cabins.find((c) => String(c.id) === id);
+    if (cabin) {
+      setSelected(cabin);
+      setCenter({ lat: cabin.lat, lon: cabin.lon, zoom: 14, _t: Date.now() });
+      setShowInfoSheet(true);
+    }
+  }, [cabins]);
+  useHashSelection({
+    prefix: "cabin",
+    selectedId: selected?.id ?? null,
+    onRestore: restoreCabin,
+    readyToRestore: !loading && cabins.length > 0,
+  });
 
   // Fetch weather when a cabin is selected
   useEffect(() => {

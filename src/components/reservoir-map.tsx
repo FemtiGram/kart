@@ -23,6 +23,7 @@ import { InfoModal } from "@/components/info-modal";
 import { TileToggle } from "@/components/tile-toggle";
 import { MapLoading } from "@/components/map-loading";
 import { DriveLink } from "@/components/drive-link";
+import { useHashSelection } from "@/lib/use-hash-selection";
 import type { Suggestion } from "@/lib/map-utils";
 
 interface Reservoir {
@@ -155,6 +156,21 @@ export function ReservoirMap() {
   }, []);
 
   useEffect(() => { loadReservoirs(); }, [loadReservoirs]);
+
+  // Deep linking: sync selected reservoir ↔ URL hash (#reservoir-<id>)
+  const restoreReservoir = useCallback((id: string) => {
+    const reservoir = reservoirs.find((r) => String(r.id) === id);
+    if (reservoir) {
+      setSelected(reservoir);
+      setShowInfoSheet(true);
+    }
+  }, [reservoirs]);
+  useHashSelection({
+    prefix: "reservoir",
+    selectedId: selected?.id ?? null,
+    onRestore: restoreReservoir,
+    readyToRestore: !loading && reservoirs.length > 0,
+  });
 
   // Search — reservoir names as extra suggestions (using fylke type for coordinates)
   const extraSuggestions = useCallback((q: string): Suggestion[] => {

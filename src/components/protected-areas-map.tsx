@@ -14,6 +14,7 @@ import { FlyTo, DataDisclaimer, MapError, interpolateColor, MAP_HEIGHT } from "@
 import { CompactCard } from "@/components/compact-card";
 import { InfoModal } from "@/components/info-modal";
 import { MapLoading } from "@/components/map-loading";
+import { useHashSelection } from "@/lib/use-hash-selection";
 
 // ─── Geodesic area from GeoJSON coordinates ────────────────
 
@@ -206,6 +207,31 @@ export function ProtectedAreasMap() {
     }
     selectedKommuneRef.current = kommunenummer;
   }, []);
+
+  // Deep linking: sync selected kommune ↔ URL hash (#kommune-<nr>)
+  const restoreKommune = useCallback((nr: string) => {
+    const match = geoFeaturesRef.current.find((f) => f.kommunenummer === nr);
+    if (!match) return;
+    highlightKommune(nr);
+    setSelected({
+      kommunenummer: nr,
+      kommunenavn: match.kommunenavn,
+      vern: verneRef.current[nr] ?? null,
+      totalAreaKm2: kommuneAreasRef.current[nr] ?? 0,
+      fylke: getFylke(nr),
+      coords: { lat: 0, lon: 0 },
+    });
+    const layer = layerRefs.current.get(nr) as L.Polygon | undefined;
+    const center = layer?.getBounds().getCenter();
+    if (center) setFlyTarget({ lat: center.lat, lon: center.lng });
+    setShowInfoSheet(true);
+  }, [highlightKommune]);
+  useHashSelection({
+    prefix: "kommune",
+    selectedId: selected?.kommunenummer ?? null,
+    onRestore: restoreKommune,
+    readyToRestore: !loading && geoData != null,
+  });
 
   const clearSelection = useCallback(() => {
     if (selectedKommuneRef.current) {

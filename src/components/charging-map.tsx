@@ -18,6 +18,7 @@ import { InfoModal } from "@/components/info-modal";
 import { TileToggle } from "@/components/tile-toggle";
 import { MapLoading } from "@/components/map-loading";
 import { DriveLink } from "@/components/drive-link";
+import { useHashSelection } from "@/lib/use-hash-selection";
 import type { KommuneEntry, Suggestion } from "@/lib/map-utils";
 
 interface Connector {
@@ -140,6 +141,22 @@ export function ChargingMap() {
   }, []);
 
   useEffect(() => { loadStations(); }, [loadStations]);
+
+  // Deep linking: sync selected station ↔ URL hash (#station-<id>)
+  const restoreStation = useCallback((id: string) => {
+    const station = stations.find((s) => s.id === id);
+    if (station) {
+      setSelected(station);
+      setCenter({ lat: station.lat, lon: station.lon, zoom: 14, _t: Date.now() });
+      setShowInfoSheet(true);
+    }
+  }, [stations]);
+  useHashSelection({
+    prefix: "station",
+    selectedId: selected?.id ?? null,
+    onRestore: restoreStation,
+    readyToRestore: !loading && stations.length > 0,
+  });
 
 
   useEffect(() => {

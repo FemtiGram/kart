@@ -49,7 +49,7 @@ export default function PrisvekstPage() {
     <>
       <div className="min-h-[calc(100svh-57px)] bg-background">
         <div className="container mx-auto px-6 md:px-16 py-8 md:py-12 max-w-4xl">
-          <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight" style={{ color: "#24374c" }}>
+          <h1 className="text-headline" style={{ color: "#24374c" }}>
             Prisvekst i Norge
           </h1>
           <p className="mt-2 text-muted-foreground max-w-xl">

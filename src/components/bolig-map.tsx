@@ -17,6 +17,7 @@ import { CompactCard } from "@/components/compact-card";
 import { InfoModal } from "@/components/info-modal";
 import { TileToggle } from "@/components/tile-toggle";
 import { MapLoading } from "@/components/map-loading";
+import { useHashSelection } from "@/lib/use-hash-selection";
 
 // ─── Types ──────────────────────────────────────────────────
 interface BoligEntry {
@@ -214,9 +215,6 @@ export function BoligMap() {
   const [center, setCenter] = useState<{ lat: number; lon: number; zoom?: number; _t?: number } | null>(null);
   const [zoomLevel, setZoomLevel] = useState(5);
 
-  // Deep linking
-  const initialHash = useRef(window.location.hash);
-
   // Refs for GeoJSON click handlers (closures capture stale state otherwise)
   const compareModeRef = useRef(false);
   const selectedRef = useRef<SelectedKommune | null>(null);
@@ -298,33 +296,21 @@ export function BoligMap() {
 
   useEffect(() => { loadData(); }, [loadData]);
 
-  // Sync selection → URL hash
-  useEffect(() => {
-    if (loading) return;
-    if (selected) {
-      history.replaceState(null, "", `#kommune-${selected.kommunenummer}`);
-    } else if (!initialHash.current) {
-      history.replaceState(null, "", window.location.pathname);
-    }
-  }, [selected, loading]);
-
-  // Read URL hash on data load → auto-select
-  useEffect(() => {
-    if (loading) return;
-    const hash = initialHash.current || window.location.hash;
-    initialHash.current = "";
-    if (!hash) return;
-    const match = hash.match(/^#kommune-(\d{4})$/);
-    if (!match) return;
-    const nr = match[1];
+  // Deep linking: sync selected kommune ↔ URL hash (#kommune-<nr>)
+  const restoreKommune = useCallback((nr: string) => {
     const c = centroids.get(nr);
+    if (!c) return;
     const name = geoFeaturesRef.current.find((f) => f.kommunenummer === nr)?.kommunenavn ?? nr;
-    if (c) {
-      setSelected({ kommunenummer: nr, kommunenavn: name, lat: c.lat, lon: c.lon });
-      setShowInfoSheet(true);
-      setCenter({ lat: c.lat, lon: c.lon, zoom: 10 });
-    }
-  }, [loading, centroids]);
+    setSelected({ kommunenummer: nr, kommunenavn: name, lat: c.lat, lon: c.lon });
+    setShowInfoSheet(true);
+    setCenter({ lat: c.lat, lon: c.lon, zoom: 10 });
+  }, [centroids]);
+  useHashSelection({
+    prefix: "kommune",
+    selectedId: selected?.kommunenummer ?? null,
+    onRestore: restoreKommune,
+    readyToRestore: !loading && geoFeaturesRef.current.length > 0,
+  });
 
   // ─── Derived data ───────────────────────────────────────
   const markers = useMemo(() => {

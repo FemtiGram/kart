@@ -109,7 +109,7 @@ export default function KilderPage() {
     <div className="min-h-[calc(100svh-57px)] bg-background">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <div className="container mx-auto px-6 md:px-16 py-12 md:py-20 max-w-3xl">
-        <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight" style={{ color: "#24374c" }}>
+        <h1 className="text-headline" style={{ color: "#24374c" }}>
           Datakilder og lisenser
         </h1>
         <p className="mt-3 text-muted-foreground text-base max-w-xl">
