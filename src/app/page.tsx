@@ -1,9 +1,16 @@
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowRight, ChevronDown, Mountain, DollarSign, Shield, Zap, Home as HomeIcon, BatteryCharging, Waves, Database, Globe, Code, TrendingUp, BarChart3 } from "lucide-react";
+import { ArrowRight, ChevronDown, Mountain, DollarSign, Shield, Zap, Home as HomeIcon, BatteryCharging, Waves, Database, Globe, Code, TrendingUp, BarChart3, MapPinned } from "lucide-react";
 import { FadeIn, FadeInView, HoverLift } from "@/components/motion";
 
 const featured = [
+  {
+    title: "Stedsprofil",
+    description: "Alle 357 kommuner i ett sammendrag: befolkning, økonomi, energi, natur og infrastruktur.",
+    href: "/kommune",
+    icon: MapPinned,
+    cta: "Utforsk kommuner",
+  },
   {
     title: "Boligpriser",
     description: "Kvadratmeterpris for eneboliger, småhus og blokkleiligheter i alle kommuner.",
@@ -155,7 +162,7 @@ export default function Home() {
                 Aktuelt
               </p>
             </FadeInView>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {featured.map((item, i) => (
                 <CardLink key={item.href} {...item} index={i} />
               ))}

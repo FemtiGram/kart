@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { Menu, X, Mountain, DollarSign, Shield, Zap, Home, BatteryCharging, Waves, TrendingUp, BarChart3 } from "lucide-react";
+import { Menu, X, Mountain, DollarSign, Shield, Zap, Home, BatteryCharging, Waves, TrendingUp, BarChart3, MapPinned } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -52,6 +52,7 @@ const navGroups: NavGroup[] = [
   {
     label: "Samfunn",
     links: [
+      { href: "/kommune", label: "Stedsprofil", icon: MapPinned, description: "Alle 357 kommuner i ett sammendrag" },
       { href: "/lonn", label: "Inntektskart", icon: DollarSign, description: "Median inntekt per kommune" },
       { href: "/bolig", label: "Boligpriser", icon: TrendingUp, description: "Kvadratmeterpris per kommune" },
       { href: "/prisvekst", label: "Prisvekst", icon: BarChart3, description: "Konsumprisindeksen i Norge" },
@@ -88,7 +89,9 @@ export function Navbar() {
         <NavigationMenu align="center" className="hidden md:flex">
           <NavigationMenuList className="gap-1">
             {navGroups.map((group) => {
-              const isGroupActive = group.links.some((l) => l.href === pathname);
+              const isGroupActive = group.links.some(
+                (l) => l.href === pathname || (l.href !== "/" && pathname.startsWith(l.href + "/"))
+              );
               return (
                 <NavigationMenuItem key={group.label}>
                   <NavigationMenuTrigger

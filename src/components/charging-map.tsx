@@ -11,6 +11,7 @@ import { Loader2, Zap, LocateFixed, ExternalLink, Info, Map as MapIcon, Layers, 
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { MapSearchBar, type MapSearchBarHandle } from "@/components/map-search";
+import { useInitialPosition } from "@/lib/use-initial-position";
 import { isInNorway, OSLO } from "@/lib/fylker";
 import { FlyTo, DataDisclaimer, MapError, MAP_HEIGHT } from "@/lib/map-utils";
 import { CompactCard } from "@/components/compact-card";
@@ -116,6 +117,10 @@ export function ChargingMap() {
   const kommunerRef = useRef<KommuneEntry[]>([]);
   const searchBarRef = useRef<MapSearchBarHandle>(null);
 
+  // Deep link from /kommune/[slug]
+  useInitialPosition((lat, lon, zoom) => {
+    setCenter({ lat, lon, zoom, _t: Date.now() });
+  });
 
   const loadStations = useCallback(async () => {
     setError(false);

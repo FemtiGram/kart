@@ -7,7 +7,9 @@ import type { Layer } from "leaflet";
 import MarkerClusterGroup from "react-leaflet-cluster";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { Info, ChevronUp, Navigation, Home, Building2, Building, ArrowLeftRight } from "lucide-react";
+import Link from "next/link";
+import { Info, ChevronUp, Navigation, Home, Building2, Building, ArrowLeftRight, ArrowRight } from "lucide-react";
+import { kommuneSlug } from "@/lib/kommune-slug";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { MapSearchBar, type MapSearchBarHandle } from "@/components/map-search";
 import { FYLKER } from "@/lib/fylker";
@@ -830,6 +832,24 @@ export function BoligMap() {
                       </div>
                     </div>
                   )}
+
+                  {/* Full profile link */}
+                  <div className="mt-4 pt-4 border-t">
+                    <Link
+                      href={`/kommune/${kommuneSlug(selected.kommunenummer, selected.kommunenavn)}`}
+                      className="flex items-center justify-between rounded-xl border bg-muted/40 hover:bg-muted px-4 py-3 transition-colors"
+                    >
+                      <div>
+                        <p className="text-sm font-semibold" style={{ color: "var(--kv-blue)" }}>
+                          Se full stedsprofil
+                        </p>
+                        <p className="text-xs text-foreground/70 mt-0.5">
+                          Befolkning, inntekt, energi og mer
+                        </p>
+                      </div>
+                      <ArrowRight className="h-4 w-4 text-foreground/70 shrink-0" />
+                    </Link>
+                  </div>
 
                   {/* Source */}
                   <div className="mt-4 pt-4 border-t">

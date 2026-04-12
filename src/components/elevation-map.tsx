@@ -12,6 +12,7 @@ import { FlyTo, DataDisclaimer, useDebounceRef, MAP_HEIGHT } from "@/lib/map-uti
 import { InfoModal } from "@/components/info-modal";
 import { TileToggle } from "@/components/tile-toggle";
 import { DriveLink } from "@/components/drive-link";
+import { useInitialPosition } from "@/lib/use-initial-position";
 
 function weatherIcon(symbolCode: string): LucideIcon {
   const c = symbolCode.toLowerCase();
@@ -322,6 +323,13 @@ export function ElevationMap() {
       mapsCoords: nearest.roadCoords ?? { lat, lon },
     });
   };
+
+  // Deep link from /kommune/[slug]: ?lat=&lon=&z= triggers an elevation+weather
+  // fetch at that point. The existing <FlyTo> inside MapContainer picks up the
+  // resulting `selected` state and flies there.
+  useInitialPosition((lat, lon) => {
+    handleMapClick(lat, lon);
+  });
 
   const handleSelect = async (address: Address) => {
     setShowDropdown(false);

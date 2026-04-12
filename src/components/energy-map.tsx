@@ -32,6 +32,7 @@ import { isInNorway, OSLO } from "@/lib/fylker";
 import { FlyTo, DataDisclaimer, MapError, MAP_HEIGHT } from "@/lib/map-utils";
 import type { KommuneEntry, Suggestion } from "@/lib/map-utils";
 import { MapSearchBar, type MapSearchBarHandle } from "@/components/map-search";
+import { useInitialPosition } from "@/lib/use-initial-position";
 import { CompactCard } from "@/components/compact-card";
 import { MapLoading } from "@/components/map-loading";
 import { DriveLink } from "@/components/drive-link";
@@ -110,6 +111,11 @@ export function EnergyMap() {
   const searchBarRef = useRef<MapSearchBarHandle>(null);
   const kommunerRef = useRef<KommuneEntry[]>([]);
   const initialHash = useRef(window.location.hash);
+
+  // Deep link from /kommune/[slug]: ?lat=&lon=&z= flies to that position
+  useInitialPosition((lat, lon, zoom) => {
+    setCenter({ lat, lon, zoom, _t: Date.now() });
+  });
 
   const loadPlants = useCallback(async () => {
     setError(false);
