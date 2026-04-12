@@ -6,11 +6,12 @@ Live at: [datakart.no](https://datakart.no)
 
 ---
 
-## Maps
+## Features
 
-| Map | Route | Description | Docs |
+| Feature | Route | Description | Docs |
 |-----|-------|-------------|------|
-| Boligpriser | `/bolig` | Housing prices (kr/m²) per municipality — bubble map with kommune comparison | |
+| Stedsprofil | `/kommune/[slug]` | One dashboard per kommune (357 pages) combining population, income, housing, energy, natur, charging, weather, and an interactive locator map with markers | |
+| Boligpriser | `/bolig` | Housing prices (kr/m²) per municipality — bubble map with kommune comparison and Finn.no deep-links | |
 | Energikart | `/energi` | Wind, hydro, offshore wind, oil and gas | [docs/maps/energi.md](docs/maps/energi.md) |
 | Magasinkart | `/magasin` | Regulated water reservoirs with live fill levels | [docs/maps/magasin.md](docs/maps/magasin.md) |
 | Ladestasjoner | `/lading` | All EV charging stations in Norway | [docs/maps/lading.md](docs/maps/lading.md) |
@@ -56,6 +57,8 @@ node scripts/fetch-cabins.mjs
 node scripts/fetch-production.mjs
 node scripts/fetch-reservoirs.mjs
 node scripts/fetch-kommuner.mjs
+node scripts/fetch-finn-locations.mjs
+node scripts/build-kommune-profiles.mjs
 
 npm run dev
 ```
@@ -79,7 +82,9 @@ The seed scripts are also run automatically as a `prebuild` hook when deploying.
 | Oil and gas facilities | Sodir FactMaps (WGS84 MapServer) | 1-hour server cache |
 | River observations | NVE HydAPI | Per-request |
 | Housing prices | SSB table 06035 (Selveierboliger) | 24-hour server cache |
+| Population | SSB table 07459 | Build-time static JSON |
 | Income | SSB InntektStruk13 | 24-hour server cache |
+| Finn.no location codes | Scraped from `finn.no/realestate/homes/search.html` | Build-time static JSON |
 | Inflation (KPI) | SSB tables 03013 + 05327 | Loaded once on mount |
 | Policy rate | Norges Bank API | Loaded once on mount |
 | Nordic inflation | Eurostat HICP | Loaded once on mount |

@@ -78,7 +78,7 @@ function Hero({ profile }: { profile: KommuneProfile }) {
   const totals = getTotals();
 
   return (
-    <div className="border-b pb-8 mb-8">
+    <div className="pb-2">
       <Link
         href="/kommune"
         className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-4"
@@ -86,38 +86,30 @@ function Hero({ profile }: { profile: KommuneProfile }) {
         <ArrowLeft className="h-4 w-4" />
         Alle kommuner
       </Link>
-      <h1 className="text-headline" style={{ color: "var(--kv-blue)" }}>
+      <h1
+        className="text-4xl md:text-5xl font-extrabold tracking-tight leading-[1.1]"
+        style={{ color: "var(--kv-blue)" }}
+      >
         {name}
       </h1>
-      <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-foreground/70">
+      <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-foreground/70">
         {fylke && <span>{fylke} fylke</span>}
         <span className="text-muted-foreground/40">·</span>
         <span>Kommunenummer {knr}</span>
         <span className="text-muted-foreground/40">·</span>
         <span>{fmtNumber(area)} km²</span>
       </div>
-      <div className="mt-6 grid grid-cols-2 sm:grid-cols-3 gap-4">
+      <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Stat
           label="Innbyggere"
           value={fmtNumber(population)}
-          rank={fmtRank(ranks.population, totals.popTotal)}
+          context={fmtRank(ranks.population, totals.popTotal)}
         />
         <Stat
           label="Median inntekt"
           value={fmtCurrency(profile.income)}
-          rank={fmtRank(ranks.income, totals.incomeTotal)}
+          context={fmtRank(ranks.income, totals.incomeTotal)}
         />
-        {profile.affordability != null && (
-          <Stat
-            label="År inntekt for 50 m²"
-            value={`${profile.affordability.toLocaleString("nb-NO")} år`}
-            rank={fmtRank(
-              ranks.affordability,
-              totals.boligTotal
-            )}
-            rankLabel="(lavere er bedre)"
-          />
-        )}
       </div>
       {displayName !== name && (
         <p className="mt-4 text-xs text-muted-foreground">
@@ -128,33 +120,57 @@ function Hero({ profile }: { profile: KommuneProfile }) {
   );
 }
 
+/**
+ * Vertical stat card: big value reads first, label as a caption below,
+ * optional context row at the bottom. Avoids truncating large numbers.
+ */
 function Stat({
   label,
   value,
-  rank,
-  rankLabel,
+  context,
+  contextRight,
 }: {
   label: string;
   value: string;
-  rank: string;
-  rankLabel?: string;
+  context?: string;
+  contextRight?: React.ReactNode;
 }) {
   return (
-    <div className="rounded-2xl border bg-card p-4">
-      <p className="text-xs font-semibold uppercase tracking-wide text-foreground/70">
-        {label}
-      </p>
+    <div className="rounded-2xl border bg-card px-5 py-4">
       <p
-        className="mt-1 text-2xl font-extrabold tabular-nums"
+        className="text-2xl font-extrabold tabular-nums leading-none whitespace-nowrap"
         style={{ color: "var(--kv-blue)" }}
       >
         {value}
       </p>
-      <p className="mt-1 text-xs text-muted-foreground">
-        {rank}
-        {rankLabel && <span className="ml-1">{rankLabel}</span>}
+      <p className="mt-2 text-xs font-semibold uppercase tracking-wide text-foreground/70">
+        {label}
       </p>
+      {(context || contextRight) && (
+        <div className="mt-1 flex items-baseline justify-between gap-3 text-xs text-muted-foreground">
+          <span className="truncate">{context ?? ""}</span>
+          {contextRight && <span className="shrink-0">{contextRight}</span>}
+        </div>
+      )}
     </div>
+  );
+}
+
+// ─── Yoy helper ──────────────────────────────────────────────
+
+function YoyBadge({ value }: { value: number }) {
+  const positive = value >= 0;
+  return (
+    <span
+      className="inline-flex items-center rounded-md px-1.5 py-0.5 text-xs font-semibold tabular-nums shrink-0"
+      style={{
+        background: positive ? "var(--kv-positive-light)" : "var(--kv-negative-light)",
+        color: positive ? "var(--kv-positive)" : "var(--kv-negative)",
+      }}
+    >
+      {positive ? "+" : ""}
+      {value.toFixed(1)} %
+    </span>
   );
 }
 
@@ -162,9 +178,9 @@ function Stat({
 
 function BoligSection({ profile }: { profile: KommuneProfile }) {
   const types = [
-    { code: "01", label: "Enebolig", icon: Home },
-    { code: "02", label: "Småhus", icon: Home },
-    { code: "03", label: "Blokkleilighet", icon: Home },
+    { code: "01", label: "Enebolig" },
+    { code: "02", label: "Småhus" },
+    { code: "03", label: "Blokkleilighet" },
   ];
   const hasAny = types.some((t) => profile.bolig[t.code]);
 
@@ -178,28 +194,63 @@ function BoligSection({ profile }: { profile: KommuneProfile }) {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {types.map(({ code, label }) => {
             const entry = profile.bolig[code];
-            if (!entry) return (
-              <div key={code} className="rounded-2xl border bg-card p-4 opacity-60">
-                <p className="text-xs font-semibold uppercase tracking-wide text-foreground/70">{label}</p>
-                <p className="mt-1 text-2xl font-extrabold text-muted-foreground">–</p>
-                <p className="mt-1 text-xs text-muted-foreground">Ingen salg registrert</p>
-              </div>
-            );
+            if (!entry) {
+              return (
+                <div
+                  key={code}
+                  className="rounded-2xl border bg-card px-5 py-4 opacity-60"
+                >
+                  <p className="text-2xl font-extrabold text-muted-foreground leading-none">
+                    –
+                  </p>
+                  <p className="mt-2 text-xs font-semibold uppercase tracking-wide text-foreground/70">
+                    {label}
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Ingen salg registrert
+                  </p>
+                </div>
+              );
+            }
+            const trend = entry.trend ?? [];
+            const prices = trend.map((t) => t.price);
+            const last = prices[prices.length - 1];
+            const prev = prices[prices.length - 2];
+            const yoy =
+              prev != null && last != null
+                ? ((last - prev) / prev) * 100
+                : null;
             return (
-              <div key={code} className="rounded-2xl border bg-card p-4">
-                <p className="text-xs font-semibold uppercase tracking-wide text-foreground/70">{label}</p>
-                <p className="mt-1 text-2xl font-extrabold tabular-nums" style={{ color: "var(--kv-blue)" }}>
-                  {fmtCurrency(entry.price)}<span className="text-sm font-normal text-muted-foreground">/m²</span>
+              <div key={code} className="rounded-2xl border bg-card px-5 py-4">
+                <p
+                  className="text-2xl font-extrabold tabular-nums leading-none whitespace-nowrap"
+                  style={{ color: "var(--kv-blue)" }}
+                >
+                  {fmtNumber(entry.price)}
+                  <span className="text-sm font-normal text-muted-foreground">
+                    {" "}
+                    kr/m²
+                  </span>
                 </p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  {entry.count ? `${fmtNumber(entry.count)} salg (2024)` : "Ingen salg"}
+                <p className="mt-2 text-xs font-semibold uppercase tracking-wide text-foreground/70">
+                  {label}
                 </p>
+                <div className="mt-1 flex items-baseline justify-between gap-3 text-xs text-muted-foreground">
+                  <span className="truncate">
+                    {entry.count
+                      ? `${fmtNumber(entry.count)} salg i 2024`
+                      : "Ingen salg"}
+                  </span>
+                  {yoy != null && <YoyBadge value={yoy} />}
+                </div>
               </div>
             );
           })}
         </div>
       ) : (
-        <p className="text-sm text-muted-foreground">Ingen boligsalg registrert i SSB-data for denne kommunen.</p>
+        <p className="text-sm text-muted-foreground">
+          Ingen boligsalg registrert i SSB-data for denne kommunen.
+        </p>
       )}
     </Section>
   );
@@ -209,6 +260,14 @@ function BoligSection({ profile }: { profile: KommuneProfile }) {
 
 function NaturSection({ profile }: { profile: KommuneProfile }) {
   const totals = getTotals();
+  const verneContext =
+    profile.verneAreaKm2 != null
+      ? `${fmtNumber(profile.verneAreaKm2)} km² vernet`
+      : "Ingen data";
+  const topCabin = profile.cabins.top[0];
+  const cabinContext = topCabin
+    ? `Største: ${topCabin.name}${topCabin.beds ? ` (${topCabin.beds} senger)` : ""}`
+    : "Ingen hytter registrert";
   return (
     <Section
       title="Natur og verneområder"
@@ -216,27 +275,21 @@ function NaturSection({ profile }: { profile: KommuneProfile }) {
       href={`/vern#kommune-${profile.knr}`}
     >
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="rounded-2xl border bg-card p-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-foreground/70">Verneområde</p>
-          <p className="mt-1 text-2xl font-extrabold tabular-nums" style={{ color: "var(--kv-blue)" }}>
-            {profile.vernePct != null ? `${profile.vernePct.toLocaleString("nb-NO")} %` : "–"}
-          </p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            {profile.verneAreaKm2 != null ? `${fmtNumber(profile.verneAreaKm2)} km² vernet` : "Ingen data"} · {fmtRank(profile.ranks.verne, totals.kommuner)}
-          </p>
-        </div>
-        <div className="rounded-2xl border bg-card p-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-foreground/70">DNT-hytter og fjellhytter</p>
-          <p className="mt-1 text-2xl font-extrabold tabular-nums" style={{ color: "var(--kv-blue)" }}>
-            {fmtNumber(profile.cabins.total)}
-          </p>
-          {profile.cabins.top.length > 0 && (
-            <p className="mt-1 text-xs text-muted-foreground truncate">
-              Største: {profile.cabins.top[0].name}
-              {profile.cabins.top[0].beds ? ` (${profile.cabins.top[0].beds} senger)` : ""}
-            </p>
-          )}
-        </div>
+        <Stat
+          label="Verneområde"
+          value={
+            profile.vernePct != null
+              ? `${profile.vernePct.toLocaleString("nb-NO")} %`
+              : "–"
+          }
+          context={verneContext}
+          contextRight={fmtRank(profile.ranks.verne, totals.kommuner)}
+        />
+        <Stat
+          label="DNT og fjellhytter"
+          value={fmtNumber(profile.cabins.total)}
+          context={cabinContext}
+        />
       </div>
     </Section>
   );
@@ -258,33 +311,25 @@ function EnergiSection({ profile }: { profile: KommuneProfile }) {
   return (
     <Section title="Energi" icon={Zap} href={energiHref}>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="rounded-2xl border bg-card p-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-foreground/70">Installert effekt</p>
-          <p className="mt-1 text-2xl font-extrabold tabular-nums" style={{ color: "var(--kv-blue)" }}>
-            {fmtNumber(energy.totalMW)}<span className="text-sm font-normal text-muted-foreground"> MW</span>
-          </p>
-          <p className="mt-1 text-xs text-muted-foreground">{fmtRank(ranks.energy, totals.kommuner)}</p>
-        </div>
-        <div className="rounded-2xl border bg-card p-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-foreground/70">Kraftverk</p>
-          <p className="mt-1 text-2xl font-extrabold tabular-nums" style={{ color: "var(--kv-blue)" }}>
-            {fmtNumber(energy.plantCount)}
-          </p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            {energy.hydroCount} vann · {energy.windCount} vind
-          </p>
-        </div>
-        <div className="rounded-2xl border bg-card p-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-foreground/70">Magasiner</p>
-          <p className="mt-1 text-2xl font-extrabold tabular-nums" style={{ color: "var(--kv-blue)" }}>
-            {fmtNumber(reservoirs.total)}
-          </p>
-          {reservoirs.top[0] && (
-            <p className="mt-1 text-xs text-muted-foreground truncate">
-              Største: {reservoirs.top[0].name}
-            </p>
-          )}
-        </div>
+        <Stat
+          label="Installert effekt"
+          value={`${fmtNumber(energy.totalMW)} MW`}
+          context={fmtRank(ranks.energy, totals.kommuner)}
+        />
+        <Stat
+          label="Kraftverk"
+          value={fmtNumber(energy.plantCount)}
+          context={`${energy.hydroCount} vann · ${energy.windCount} vind`}
+        />
+        <Stat
+          label="Magasiner"
+          value={fmtNumber(reservoirs.total)}
+          context={
+            reservoirs.top[0]
+              ? `Største: ${reservoirs.top[0].name}`
+              : "Ingen magasiner"
+          }
+        />
       </div>
       {energy.top.length > 0 && (
         <div className="mt-4">
@@ -316,24 +361,16 @@ function InfraSection({ profile }: { profile: KommuneProfile }) {
   return (
     <Section title="Infrastruktur" icon={BatteryCharging} href={ladingHref}>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="rounded-2xl border bg-card p-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-foreground/70">Ladestasjoner</p>
-          <p className="mt-1 text-2xl font-extrabold tabular-nums" style={{ color: "var(--kv-blue)" }}>
-            {fmtNumber(profile.charging.total)}
-          </p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            {fmtNumber(profile.charging.fast)} hurtiglading (≥ 50 kW)
-          </p>
-        </div>
-        <div className="rounded-2xl border bg-card p-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-foreground/70">Fjellhytter</p>
-          <p className="mt-1 text-2xl font-extrabold tabular-nums" style={{ color: "var(--kv-blue)" }}>
-            {fmtNumber(profile.cabins.total)}
-          </p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            DNT og ubetjente
-          </p>
-        </div>
+        <Stat
+          label="Ladestasjoner"
+          value={fmtNumber(profile.charging.total)}
+          context={`${fmtNumber(profile.charging.fast)} hurtiglading (≥ 50 kW)`}
+        />
+        <Stat
+          label="Fjellhytter"
+          value={fmtNumber(profile.cabins.total)}
+          context="DNT og ubetjente"
+        />
       </div>
     </Section>
   );
@@ -342,13 +379,76 @@ function InfraSection({ profile }: { profile: KommuneProfile }) {
 // ─── Section: Kart ───────────────────────────────────────────
 
 function KartSection({ profile }: { profile: KommuneProfile }) {
+  const markers = [
+    ...profile.energy.top
+      .filter((p) => p.lat != null && p.lon != null)
+      .map((p) => ({
+        lat: p.lat,
+        lon: p.lon,
+        name: p.name,
+        kind: "energy" as const,
+        detail:
+          p.capacityMW != null
+            ? `${p.type === "vann" ? "Vannkraft" : "Vindkraft"} · ${fmtNumber(p.capacityMW)} MW`
+            : p.type === "vann"
+              ? "Vannkraft"
+              : "Vindkraft",
+      })),
+    ...profile.cabins.top
+      .filter((c) => c.lat != null && c.lon != null)
+      .map((c) => ({
+        lat: c.lat,
+        lon: c.lon,
+        name: c.name,
+        kind: "cabin" as const,
+        detail: c.beds != null ? `${c.beds} senger` : c.operator ?? undefined,
+      })),
+    ...profile.reservoirs.top
+      .filter((r) => r.lat != null && r.lon != null)
+      .map((r) => ({
+        lat: r.lat,
+        lon: r.lon,
+        name: r.name,
+        kind: "reservoir" as const,
+        detail:
+          r.volumeMm3 != null
+            ? `${fmtNumber(r.volumeMm3)} Mm³`
+            : r.plantName ?? undefined,
+      })),
+  ];
   return (
     <Section title="Plassering" icon={MapIcon}>
       <KommuneMiniMap
         outline={profile.outline}
         bbox={profile.bbox}
         name={profile.displayName}
+        markers={markers}
       />
+      {markers.length > 0 && (
+        <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+          <span className="inline-flex items-center gap-1.5">
+            <span
+              className="inline-block h-2.5 w-2.5 rounded-full border-2"
+              style={{ background: "#3b82f6", borderColor: "#1e3a5f" }}
+            />
+            Kraftverk
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <span
+              className="inline-block h-2.5 w-2.5 rounded-full border-2"
+              style={{ background: "#d97706", borderColor: "#78350f" }}
+            />
+            Fjellhytter
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <span
+              className="inline-block h-2.5 w-2.5 rounded-full border-2"
+              style={{ background: "#0891b2", borderColor: "#0c4a6e" }}
+            />
+            Magasiner
+          </span>
+        </div>
+      )}
     </Section>
   );
 }
@@ -383,23 +483,23 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <section className="mb-8">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
+    <section className="pt-12 mt-12 border-t first:border-t-0 first:pt-0 first:mt-0">
+      <div className="flex items-center justify-between mb-5 gap-4">
+        <div className="flex items-center gap-3 min-w-0">
           <div
-            className="flex items-center justify-center h-8 w-8 rounded-lg"
+            className="flex items-center justify-center h-9 w-9 rounded-lg shrink-0"
             style={{ background: "var(--kv-blue)" }}
           >
             <Icon className="h-4 w-4 text-white" />
           </div>
-          <h2 className="text-xl font-bold" style={{ color: "var(--kv-blue)" }}>
+          <h2 className="text-title truncate" style={{ color: "var(--kv-blue)" }}>
             {title}
           </h2>
         </div>
         {href && (
           <Link
             href={href}
-            className="text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+            className="text-xs font-medium text-muted-foreground hover:text-foreground transition-colors shrink-0"
           >
             Se fullt kart →
           </Link>

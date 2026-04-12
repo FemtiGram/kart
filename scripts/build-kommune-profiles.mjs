@@ -667,6 +667,8 @@ async function main() {
             operator: c.operator,
             beds: c.beds,
             elevation: c.elevation,
+            lat: c.lat,
+            lon: c.lon,
           })),
       },
       reservoirs: {
@@ -679,6 +681,8 @@ async function main() {
             name: r.name,
             volumeMm3: r.volumeMm3,
             plantName: r.plantName,
+            lat: r.center?.lat,
+            lon: r.center?.lon,
           })),
       },
       energy: {
@@ -694,6 +698,8 @@ async function main() {
             name: p.name,
             type: p.type,
             capacityMW: p.capacityMW,
+            lat: p.lat,
+            lon: p.lon,
           })),
       },
     };

@@ -28,6 +28,8 @@ export interface CabinSummary {
     operator: string | null;
     beds: number | null;
     elevation: number | null;
+    lat: number;
+    lon: number;
   }>;
 }
 
@@ -38,6 +40,8 @@ export interface ReservoirSummary {
     name: string;
     volumeMm3: number | null;
     plantName: string | null;
+    lat: number;
+    lon: number;
   }>;
 }
 
@@ -51,6 +55,8 @@ export interface EnergySummary {
     name: string;
     type: "vind" | "vann";
     capacityMW: number | null;
+    lat: number;
+    lon: number;
   }>;
 }
 

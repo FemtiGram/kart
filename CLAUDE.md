@@ -31,6 +31,9 @@ src/app/
   magasin/page.tsx      — Reservoir monitor map
   prisvekst/page.tsx    — Inflation dashboard (KPI, categories, trends)
   vindkraft/page.tsx    — Wind power plants map (standalone)
+  kommune/page.tsx      — Kommuner index (searchable list grouped by fylke, keyboard nav)
+  kommune/[slug]/page.tsx — Stedsprofil (dashboard per kommune, SSG at build time)
+  kommune/[slug]/opengraph-image.tsx — Dynamic OG image per kommune
   api/
     bolig/route.ts      — SSB housing price data (table 06035)
     income/route.ts     — SSB income data
@@ -50,12 +53,19 @@ src/components/
   *-map.tsx             — Map components (one per page)
   *-map-loader.tsx      — Dynamic import wrappers (ssr: false)
   inflation-dashboard.tsx — Prisvekst dashboard (Recharts charts, target badges, category breakdown)
+  kommune-index.tsx     — Client component for /kommune index search + list (keyboard nav, Sami-aware)
+  kommune-mini-map.tsx  — Interactive Leaflet map for Stedsprofil "Plassering" section (polygon + markers)
+  kommune-mini-map-loader.tsx — Dynamic wrapper for kommune-mini-map (ssr: false)
+  kommune-weather.tsx   — Client weather card for Stedsprofil (fetches /api/weather)
   ui/                   — shadcn/ui primitives (includes chart.tsx for Recharts wrappers)
 
 src/lib/
   fylker.ts             — Hardcoded 15 counties with coords + zoom, isInNorway(), OSLO default
   map-utils.tsx         — FlyTo, interpolateColor, DataDisclaimer, shared types (Suggestion, Address, KommuneEntry), useDebounceRef, useSearchAbort
   use-hash-selection.ts — URL hash deep linking hook for selection state (#kommune-<id>, #station-<id>, etc.)
+  use-initial-position.ts — Reads ?lat=&lon=&z= on mount and fires a callback (deep linking from Stedsprofil to maps)
+  kommune-profiles.ts   — Reads public/data/kommune-profiles.json at build time, exports getProfileBySlug / getAllKommuner / getTotals
+  kommune-slug.ts       — Pure function that mirrors the build-time slugify logic (knr-name) for client-side URL construction
   utm.ts                — UTM zone 33N → WGS84 conversion (for NVE ArcGIS data)
   utils.ts              — cn() helper
 
@@ -65,6 +75,8 @@ scripts/
   fetch-production.mjs  — Build-time: fetches yearly oil/gas production from Sodir → public/data/production.json
   fetch-reservoirs.mjs  — Build-time: fetches reservoir polygons from NVE → public/data/reservoirs.json
   fetch-kommuner.mjs    — Build-time: fetches kommune boundaries GeoJSON → public/data/kommuner.geojson
+  fetch-finn-locations.mjs — Build-time: scrapes Finn.no realestate page, extracts hierarchical location codes, matches each kommune → public/data/finn-locations.json
+  build-kommune-profiles.mjs — Build-time: composes SSB population/income/bolig/vern + NVE plants + static files via point-in-polygon into one profile per kommune → public/data/kommune-profiles.json
 
 public/data/
   stations.json         — Pre-built charging station data (committed to repo)
@@ -72,6 +84,8 @@ public/data/
   production.json       — Pre-built Sodir yearly field production data (committed to repo)
   reservoirs.json       — Pre-built NVE reservoir polygons (committed to repo)
   kommuner.geojson      — Pre-built kommune boundary GeoJSON (committed to repo)
+  finn-locations.json   — Pre-built kommune → Finn.no location code map (committed to repo)
+  kommune-profiles.json — Pre-built per-kommune profile data for Stedsprofil (committed to repo)
 ```
 
 ## Map Architecture Patterns
@@ -197,6 +211,53 @@ All maps use a **compact floating card + expandable bottom Sheet** pattern:
 - **MapError:** Shared error toast with retry button, used across all maps
 - **Navigation:** Grouped dropdown nav (Energi/Natur/Samfunn) with matching landing page structure
 
+## Stedsprofil (kommune pages)
+
+Not a map — a portrait of a place. One pre-rendered dashboard per kommune at `/kommune/[slug]`, all 357 generated via `generateStaticParams`. Sits alongside the maps as a cross-cutting "what is this place?" view.
+
+### Data pipeline
+- `scripts/build-kommune-profiles.mjs` runs in `prebuild`. Fetches SSB population (07459), income (InntektStruk13), housing prices (06035), protected areas (08936), and NVE hydro + operational wind. Reads the pre-built static files (`stations.json`, `cabins.json`, `reservoirs.json`, `kommuner.geojson`) for the join.
+- **Point-in-polygon** (inline ray-casting + bbox pre-filter, no turf dependency) assigns cabins, reservoirs, and plants to kommuner. Charging stations skip PIP since NOBIL provides `municipalityId` directly.
+- Output: `public/data/kommune-profiles.json` (~1.3 MB). Imported at build time by `src/lib/kommune-profiles.ts`; only the current kommune's subset (~3 KB) is inlined into each pre-rendered HTML page.
+- **Rankings** (pop, income, bolig, verne, energy) are computed once at build time and stored per profile, not at runtime.
+- Simplified kommune outline (~40 points) is stored per profile for the Plassering mini-map, so no client-side GeoJSON fetch is needed.
+
+### Page sections (top to bottom)
+1. **Hero** — kommune name (H1, 4xl/5xl), metadata row (fylke · knr · km²), 2 stat cards (Innbyggere, Median inntekt)
+2. **Plassering** — interactive Leaflet map with kommune polygon highlighted and top features as `CircleMarker` overlays (plants, cabins, reservoirs). Color tiles (topo), zoom controls, drag, touch zoom. `scrollWheelZoom={false}` so page scrolling isn't hijacked.
+3. **Boligmarked** — 3 dwelling-type cards (Enebolig/Småhus/Blokk) with kr/m², yoy badge, sales count. Deep-links to `/bolig#kommune-<knr>`.
+4. **Natur og verneområder** — verne % + DNT/fjellhytter count. Deep-links to `/vern#kommune-<knr>`.
+5. **Energi** — installert MW, kraftverk count by type, magasiner, top 5 plants list. Deep-links to `/energi?lat=&lon=&z=10`.
+6. **Infrastruktur** — charging stations (total + ≥50 kW), cabins. Deep-links to `/lading?lat=&lon=&z=11`.
+7. **Vær akkurat nå** — client-fetched MET.no for the kommune centroid. Deep-links to `/map?lat=&lon=&z=12`.
+
+### Card pattern (different from the maps!)
+Stedsprofil cards are **vertically stacked** (value on top, label caption, context row). Intentionally distinct from the horizontal Z-pattern used on map compact cards:
+- **Row 1:** big value (`text-2xl font-extrabold`, brand blue, `leading-none whitespace-nowrap`)
+- **Row 2:** label (`text-xs font-semibold uppercase`, muted)
+- **Row 3 (optional):** context left + badge/rank right (`text-xs text-muted-foreground`)
+
+The big number reads first so the eye lands on the data, not the label. `whitespace-nowrap` prevents truncation on long prices like "102 899 kr/m²" in Oslo.
+
+### Deep linking (both directions)
+- **Into Stedsprofil:** map detail sheets in bolig/lonn/vern have a "Se full stedsprofil" card linking to `/kommune/<knr>-<slug>`.
+- **Out of Stedsprofil:** each section's "Se fullt kart →" uses either:
+  - `#kommune-<knr>` (for bolig/vern) — restores the kommune selection via `useHashSelection`
+  - `?lat=<lat>&lon=<lon>&z=<z>` (for energi/lading/map) — flies the map to the centroid via the new `useInitialPosition` hook in `src/lib/use-initial-position.ts`
+
+### Index page `/kommune`
+- Searchable flat list (when query present) or grouped-by-fylke list (default)
+- Client-side search via `src/components/kommune-index.tsx`
+- Search matches `name` (full), `knr`, and `fylke`, normalized for Norwegian + Sami diacritics (so "kautokeino" finds "Guovdageaidnu - Kautokeino")
+- Keyboard nav: ↑↓ Home End Enter Escape; first match auto-highlighted
+- `role="listbox"` + `aria-activedescendant` for screen readers
+
+### Bolig detail sheet — Finn.no integration
+- `public/data/finn-locations.json` maps each `kommunenummer` → Finn's hierarchical location code (e.g. `1.20012.20194` for Eigersund, `0.20061` for Oslo as a special 2-level code)
+- Generated at build time by `scripts/fetch-finn-locations.mjs` — scrapes the embedded JSON from Finn's realestate search page, disambiguates colliding names (e.g. the two "Herøy" / two "Våler") using the learned SSB-fylke → Finn-fylke prefix mapping
+- Covers 356/357 kommuner (Drammen missing from Finn's taxonomy, falls back to `?q=` text search)
+- Bolig detail sheet surfaces a "Boliger til salgs" card next to "Se full stedsprofil", linking to `finn.no/realestate/homes/search.html?q=<name>&location=<code>`
+
 ### WCAG contrast:
 - No `/60` or `/40` opacity modifiers on text elements
 - Metric numbers use `#0e7490` (cyan-700, 4.6:1) not `#0891b2` (cyan-600, 2.1:1)
@@ -208,17 +269,19 @@ Every new page MUST be rigged for Google Search and AI search (ChatGPT, Perplexi
 
 ### Checklist for every new page:
 1. **`export const metadata`** — unique `title` (uses layout template `%s — Datakart`) and `description` (specific, keyword-rich, Norwegian). Description should answer "what does this page show?" in one sentence.
-2. **`opengraph-image.tsx`** — dynamic OG image (Next.js ImageResponse). Shows page title + key stat on branded background. Required for social sharing and rich previews.
-3. **`sitemap.ts`** — add the route with appropriate `priority` and `changeFrequency`.
-4. **JSON-LD** — the root layout has WebSite schema. Add page-specific schema (e.g., `Dataset`, `Map`) if the page has structured data that search engines can index.
-5. **Semantic HTML** — use proper heading hierarchy (h1 → h2 → h3). Screen readers and crawlers use this.
-6. **Norwegian language** — all user-facing text in Norwegian (bokmål). `<html lang="no">` is set in layout. Descriptions, labels, and error messages should be Norwegian.
+2. **`alternates.canonical`** in metadata — required to avoid Google's "Duplicate without user-selected canonical" warning. Every page sets its own canonical path; the root layout defaults to `/`. Kommune pages set canonical dynamically via `generateMetadata`.
+3. **`opengraph-image.tsx`** — dynamic OG image (Next.js ImageResponse). Shows page title + key stat on branded background. Required for social sharing and rich previews. For dynamic routes like `/kommune/[slug]`, the OG image is also generated dynamically per slug.
+4. **`sitemap.ts`** — add the route with appropriate `priority` and `changeFrequency`. Dynamic routes should enumerate all slugs (`/kommune/[slug]` adds all 357 kommune URLs).
+5. **JSON-LD** — the root layout has WebSite schema. Add page-specific schema (e.g., `Dataset`, `Map`, `Place`) if the page has structured data that search engines can index. Kommune pages emit `@type: Place` with `geo`, `containedInPlace`, and `additionalProperty` per stat.
+6. **Semantic HTML** — use proper heading hierarchy (h1 → h2 → h3). Screen readers and crawlers use this.
+7. **Norwegian language** — all user-facing text in Norwegian (bokmål). `<html lang="no">` is set in layout. Descriptions, labels, and error messages should be Norwegian.
 
 ### What exists today:
-- `src/app/layout.tsx` — global metadata (title template, description, metadataBase, openGraph, twitter card), JSON-LD WebSite schema
-- `src/app/sitemap.ts` — all pages with priority/frequency
+- `src/app/layout.tsx` — global metadata (title template, description, metadataBase, canonical default, openGraph, twitter card), JSON-LD WebSite schema
+- `src/app/sitemap.ts` — all pages with priority/frequency + 357 kommune URLs pulled from `getAllKommuner()`
 - `src/app/robots.ts` — allows all crawlers, points to sitemap
-- `src/app/*/opengraph-image.tsx` — dynamic OG images per page
+- `src/app/*/opengraph-image.tsx` — dynamic OG images per page (including per-slug for kommune pages)
+- Canonical URLs site-wide via `alternates.canonical` (resolves against `metadataBase`)
 - Google Analytics (G-T8XDP59WNK) — dedicated property for datakart.no
 - Google Search Console — site verified, sitemap submitted
 
@@ -274,8 +337,10 @@ Every new page MUST be rigged for Google Search and AI search (ChatGPT, Perplexi
 | Reservoirs | NVE ArcGIS (Vannkraft1 layer 6 — Magasin) | 1h server cache via API route |
 | River observations | NVE HydAPI (discharge, water level, percentiles) | Per-request (requires NVE_API_KEY) |
 | Housing prices | SSB tabell 06035 (Selveierboliger) | 24h server cache via API route |
+| Population (Stedsprofil) | SSB tabell 07459 | Build-time static JSON |
 | Income | SSB InntektStruk13 | Loaded once on mount |
 | Protected areas | SSB tabell 08936 | Loaded once on mount |
+| Finn.no location codes | Scraped from `finn.no/realestate/homes/search.html` (embedded JSON) | Build-time static JSON |
 | Weather | MET.no locationforecast | 30min server cache |
 | Elevation | Kartverket høyde-API | Per-request |
 | Kommune boundaries | GitHub (robhop/fylker-og-kommuner) | Build-time static GeoJSON |
