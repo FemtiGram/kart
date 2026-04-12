@@ -230,6 +230,8 @@ export function KommuneMiniMap({ outline, bbox, name, layers, totals }: Props) {
       <div className="mt-3 flex flex-wrap gap-2">
         {PILLS.map((pill) => {
           const count = totals[pill.key];
+          const visible = layers[pill.key].length;
+          const capped = count > visible;
           const isActive = active.has(pill.key);
           const disabled = count === 0;
           const Icon = pill.icon;
@@ -240,6 +242,11 @@ export function KommuneMiniMap({ outline, bbox, name, layers, totals }: Props) {
               onClick={() => !disabled && toggle(pill.key)}
               disabled={disabled}
               aria-pressed={isActive}
+              title={
+                capped
+                  ? `${count.toLocaleString("nb-NO")} totalt — viser de ${visible} største`
+                  : undefined
+              }
               className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
                 disabled
                   ? "border-border bg-muted/30 text-muted-foreground/50 cursor-not-allowed"
@@ -261,6 +268,7 @@ export function KommuneMiniMap({ outline, bbox, name, layers, totals }: Props) {
                 }`}
               >
                 {count}
+                {capped && "+"}
               </span>
             </button>
           );
