@@ -5,6 +5,7 @@ export const metadata = {
   title: "Inntektskart – Datakart",
   description:
     "Median inntekt etter skatt per husholdning i alle norske kommuner. Se rangering, sammenlign kommuner og finn inntektsforskjellene på kart.",
+  alternates: { canonical: "/lonn" },
 };
 
 const faqs = [

@@ -3,6 +3,7 @@ import { ExternalLink } from "lucide-react";
 export const metadata = {
   title: "Datakilder og lisenser – Datakart",
   description: "Oversikt over alle datakilder, lisenser og attribusjon brukt i Datakart",
+  alternates: { canonical: "/kilder" },
 };
 
 const sources = [

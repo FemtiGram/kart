@@ -5,6 +5,7 @@ export const metadata = {
   title: "Verneområder – Datakart",
   description:
     "Utforsk vernet natur i alle norske kommuner. Nasjonalparker, naturreservater og landskapsvernområder med andel og rangering.",
+  alternates: { canonical: "/vern" },
 };
 
 const faqs = [

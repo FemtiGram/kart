@@ -5,6 +5,7 @@ import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/
 export const metadata: Metadata = {
   title: "Magasinkart — Datakart",
   description: "Utforsk over 500 regulerte vannmagasiner i Norge med nasjonal fyllingsgrad, kapasitet og polygon-visning fra NVE.",
+  alternates: { canonical: "/magasin" },
 };
 
 const faqs = [

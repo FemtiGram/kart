@@ -5,6 +5,7 @@ export const metadata = {
   title: "Energikart – Datakart",
   description:
     "Norges kraftverk på kart. Over 1 700 vannkraftverk, vindkraftanlegg, planlagt havvind og olje- og gassanlegg med produksjonsdata.",
+  alternates: { canonical: "/energi" },
 };
 
 const faqs = [

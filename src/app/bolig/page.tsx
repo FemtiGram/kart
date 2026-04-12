@@ -5,6 +5,7 @@ export const metadata = {
   title: "Boligpriser",
   description:
     "Gjennomsnittlig kvadratmeterpris for eneboliger, småhus og blokkleiligheter i alle norske kommuner. Sammenlign boligpriser, se prisutvikling og finn de dyreste og rimeligste områdene.",
+  alternates: { canonical: "/bolig" },
 };
 
 const faqs = [

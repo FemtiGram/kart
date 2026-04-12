@@ -6,6 +6,7 @@ export const metadata: Metadata = {
   title: "Kommuner",
   description:
     "Stedsprofil for alle 357 kommuner i Norge: befolkning, inntekt, boligpriser, energi, verneområder og infrastruktur. Basert på åpne data fra SSB, NVE, Kartverket og flere.",
+  alternates: { canonical: "/kommune" },
 };
 
 export default function KommuneIndexPage() {

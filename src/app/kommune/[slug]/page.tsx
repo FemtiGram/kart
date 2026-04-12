@@ -45,6 +45,7 @@ export async function generateMetadata({
   return {
     title: profile.displayName,
     description,
+    alternates: { canonical: `/kommune/${profile.slug}` },
     openGraph: {
       title: `${profile.displayName} — Datakart`,
       description,

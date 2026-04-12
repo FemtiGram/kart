@@ -5,6 +5,7 @@ export const metadata = {
   title: "Prisvekst",
   description:
     "Norsk inflasjon og konsumprisindeks (KPI) med kategorifordeling, kjerneinflasjon, styringsrente og nordisk sammenligning. Oppdatert månedlig fra SSB.",
+  alternates: { canonical: "/prisvekst" },
 };
 
 const faqs = [

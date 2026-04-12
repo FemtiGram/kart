@@ -5,6 +5,7 @@ export const metadata = {
   title: "Ladestasjoner",
   description:
     "Alle 5 000+ elbilladestasjoner i Norge på kart. Se kontakttyper, ladefart i kW, operatør og tilgjengelighet fra NOBIL-databasen.",
+  alternates: { canonical: "/lading" },
 };
 
 const faqs = [

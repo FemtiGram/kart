@@ -5,6 +5,7 @@ export const metadata = {
   title: "Turisthytter – Datakart",
   description:
     "Over 2 300 turisthytter og fjellhytter i Norge på kart. Se type, sengeplasser, høyde og vær fra DNT og OpenStreetMap.",
+  alternates: { canonical: "/hytter" },
 };
 
 const faqs = [

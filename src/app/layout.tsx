@@ -20,6 +20,9 @@ export const metadata: Metadata = {
   },
   description: "Utforsk Norge gjennom åpne geodata. Boligpriser, energikart, prisvekst, ladestasjoner, inntekt, hytter og verneområder på interaktive kart.",
   metadataBase: new URL("https://datakart.no"),
+  alternates: {
+    canonical: "/",
+  },
   openGraph: {
     type: "website",
     locale: "nb_NO",
