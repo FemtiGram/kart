@@ -746,7 +746,14 @@ export default async function KommunePage({
         <InfraSection profile={profile} />
         <VaerSection profile={profile} />
         <p className="text-xs text-muted-foreground mt-12 pt-6 border-t">
-          Kilder: Kartverket, SSB, NVE, NOBIL/Enova, OpenStreetMap. Tallene er oppdatert så ofte kildene tillater det — typisk 1–2 ganger i året for boligpriser og inntekt.
+          Kilder: Kartverket, SSB, NVE, Utdanningsdirektoratet (UDIR),
+          NOBIL/Enova, MET Norway og OpenStreetMap. Tallene er oppdatert så
+          ofte kildene tillater det — typisk 1–2 ganger i året for
+          boligpriser og inntekt, daglig for skoler og barnehager.{" "}
+          <Link href="/kilder" className="underline hover:text-foreground">
+            Se alle datakilder
+          </Link>
+          .
         </p>
       </div>
     </div>

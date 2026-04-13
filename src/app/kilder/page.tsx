@@ -23,7 +23,7 @@ const sources = [
     licenseUrl: "https://data.norge.no/nlod/no/2.0",
     attribution: "Inneholder data under norsk lisens for offentlige data (NLOD) tilgjengeliggjort av NVE",
     url: "https://www.nve.no",
-    usedIn: ["Energikart", "Magasinkart"],
+    usedIn: ["Energikart", "Magasinkart", "Stedsprofil"],
   },
   {
     name: "Sokkeldirektoratet (Sodir)",
@@ -36,12 +36,12 @@ const sources = [
   },
   {
     name: "Statistisk sentralbyra (SSB)",
-    description: "Inntektsstatistikk per kommune og arealstatistikk for verneomrader.",
+    description: "Inntektsstatistikk, befolkningsstatistikk, boligpriser (tabell 06035), konsumprisindeks og arealstatistikk for verneomrader.",
     license: "CC BY 4.0",
     licenseUrl: "https://creativecommons.org/licenses/by/4.0/",
     attribution: "\u00a9 Statistisk sentralbyra (SSB)",
     url: "https://www.ssb.no",
-    usedIn: ["Inntektskart", "Verneomrader"],
+    usedIn: ["Inntektskart", "Verneomrader", "Boligkart", "Prisvekst", "Stedsprofil"],
   },
   {
     name: "Meteorologisk institutt (MET)",
@@ -50,7 +50,7 @@ const sources = [
     licenseUrl: "https://creativecommons.org/licenses/by/4.0/",
     attribution: "\u00a9 MET Norway",
     url: "https://api.met.no",
-    usedIn: ["Hoydekart", "Turisthytter"],
+    usedIn: ["Hoydekart", "Turisthytter", "Stedsprofil"],
   },
   {
     name: "NOBIL / Enova",
@@ -59,7 +59,7 @@ const sources = [
     licenseUrl: "https://creativecommons.org/licenses/by/3.0/",
     attribution: "\u00a9 NOBIL / Enova",
     url: "https://nobil.no",
-    usedIn: ["Ladestasjoner"],
+    usedIn: ["Ladestasjoner", "Stedsprofil"],
   },
   {
     name: "OpenStreetMap",
@@ -68,7 +68,7 @@ const sources = [
     licenseUrl: "https://opendatacommons.org/licenses/odbl/",
     attribution: "\u00a9 OpenStreetMap contributors",
     url: "https://www.openstreetmap.org/copyright",
-    usedIn: ["Turisthytter"],
+    usedIn: ["Turisthytter", "Stedsprofil"],
   },
   {
     name: "OpenTopoMap",
@@ -95,7 +95,25 @@ const sources = [
     licenseUrl: "https://data.norge.no/nlod/no/2.0",
     attribution: "Inneholder data under norsk lisens for offentlige data (NLOD) tilgjengeliggjort av Utdanningsdirektoratet",
     url: "https://www.udir.no",
-    usedIn: ["Skoler og barnehager"],
+    usedIn: ["Skoler og barnehager", "Stedsprofil"],
+  },
+  {
+    name: "Norges Bank",
+    description: "Styringsrenten (policy rate) brukt som referanse mot inflasjonsmalet pa 2 prosent.",
+    license: "CC BY 4.0",
+    licenseUrl: "https://creativecommons.org/licenses/by/4.0/",
+    attribution: "\u00a9 Norges Bank",
+    url: "https://www.norges-bank.no",
+    usedIn: ["Prisvekst"],
+  },
+  {
+    name: "Eurostat",
+    description: "Harmonisert konsumprisindeks (HICP) for nordiske land brukt til sammenligning.",
+    license: "CC BY 4.0",
+    licenseUrl: "https://creativecommons.org/licenses/by/4.0/",
+    attribution: "\u00a9 Eurostat",
+    url: "https://ec.europa.eu/eurostat",
+    usedIn: ["Prisvekst"],
   },
 ];
 
