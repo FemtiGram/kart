@@ -349,21 +349,54 @@ export function SchoolsMap() {
     });
   };
 
-  const selectSchool = (s: School) => {
+  const selectSchool = useCallback((s: School) => {
     setSelected((prev) =>
       prev?.kind === "school" && prev.data.id === s.id
         ? null
         : { kind: "school", data: s }
     );
-  };
+  }, []);
 
-  const selectKindergarten = (k: Kindergarten) => {
+  const selectKindergarten = useCallback((k: Kindergarten) => {
     setSelected((prev) =>
       prev?.kind === "kindergarten" && prev.data.id === k.id
         ? null
         : { kind: "kindergarten", data: k }
     );
-  };
+  }, []);
+
+  // Memoize the heavy marker JSX lists so clicks don't regenerate 8k+
+  // Marker components per click. Dropping `selected` from the deps means
+  // clicking a marker only updates the CompactCard, not the marker tree.
+  // The trade-off: the clicked marker doesn't visually highlight on the map,
+  // but the CompactCard appearing is the primary feedback anyway.
+  const inverted = tileLayer === "gråtone";
+
+  const schoolMarkers = useMemo(
+    () =>
+      filteredSchools.map((s) => (
+        <Marker
+          key={s.id}
+          position={[s.lat, s.lon]}
+          icon={schoolIcon(s.type, false, inverted)}
+          eventHandlers={{ click: () => selectSchool(s) }}
+        />
+      )),
+    [filteredSchools, inverted, selectSchool]
+  );
+
+  const kindergartenMarkers = useMemo(
+    () =>
+      filteredKindergartens.map((k) => (
+        <Marker
+          key={k.id}
+          position={[k.lat, k.lon]}
+          icon={kindergartenIcon(false, inverted)}
+          eventHandlers={{ click: () => selectKindergarten(k) }}
+        />
+      )),
+    [filteredKindergartens, inverted, selectKindergarten]
+  );
 
   return (
     <div className="flex flex-col" style={{ height: MAP_HEIGHT }}>
@@ -621,18 +654,7 @@ export function SchoolsMap() {
               showCoverageOnHover={false}
               iconCreateFunction={schoolClusterIcon}
             >
-              {filteredSchools.map((s) => (
-                <Marker
-                  key={s.id}
-                  position={[s.lat, s.lon]}
-                  icon={schoolIcon(
-                    s.type,
-                    selected?.kind === "school" && selected.data.id === s.id,
-                    tileLayer === "gråtone"
-                  )}
-                  eventHandlers={{ click: () => selectSchool(s) }}
-                />
-              ))}
+              {schoolMarkers}
             </MarkerClusterGroup>
           )}
 
@@ -644,18 +666,7 @@ export function SchoolsMap() {
               showCoverageOnHover={false}
               iconCreateFunction={kindergartenClusterIcon}
             >
-              {filteredKindergartens.map((k) => (
-                <Marker
-                  key={k.id}
-                  position={[k.lat, k.lon]}
-                  icon={kindergartenIcon(
-                    selected?.kind === "kindergarten" &&
-                      selected.data.id === k.id,
-                    tileLayer === "gråtone"
-                  )}
-                  eventHandlers={{ click: () => selectKindergarten(k) }}
-                />
-              ))}
+              {kindergartenMarkers}
             </MarkerClusterGroup>
           )}
         </MapContainer>
