@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowRight, ChevronDown, Mountain, DollarSign, Shield, Zap, Home as HomeIcon, BatteryCharging, Waves, Database, Globe, Code, TrendingUp, BarChart3, MapPinned } from "lucide-react";
+import { ArrowRight, ChevronDown, Mountain, DollarSign, Shield, Zap, Home as HomeIcon, BatteryCharging, Waves, Database, Globe, Code, TrendingUp, BarChart3, MapPinned, GraduationCap } from "lucide-react";
 import { FadeIn, FadeInView, HoverLift } from "@/components/motion";
 
 const featured = [
@@ -76,6 +76,12 @@ const groups = [
   {
     label: "Samfunn",
     items: [
+      {
+        title: "Skoler og barnehager",
+        description: "Alle 3 100+ skoler og 5 500+ barnehager i Norge med elev- og barnetall.",
+        href: "/skoler",
+        icon: GraduationCap,
+      },
       {
         title: "Inntektskart",
         description: "Median inntekt etter skatt per husholdning i alle kommuner.",

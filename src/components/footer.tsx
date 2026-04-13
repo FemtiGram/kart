@@ -4,6 +4,7 @@ import { Separator } from "@/components/ui/separator";
 const footerLinks = {
   Utforsk: [
     { label: "Boligpriser", href: "/bolig" },
+    { label: "Skoler og barnehager", href: "/skoler" },
     { label: "Energikart", href: "/energi" },
     { label: "Magasinkart", href: "/magasin" },
     { label: "Ladestasjoner", href: "/lading" },

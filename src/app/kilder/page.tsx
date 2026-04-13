@@ -88,6 +88,15 @@ const sources = [
     url: "https://www.geonorge.no",
     usedIn: ["Alle kart"],
   },
+  {
+    name: "Utdanningsdirektoratet (UDIR)",
+    description: "Nasjonalt skoleregister (NSR) og Nasjonalt barnehageregister (NBR). Alle aktive skoler og barnehager med koordinater, eierskap, elev- og barnetall.",
+    license: "NLOD 2.0",
+    licenseUrl: "https://data.norge.no/nlod/no/2.0",
+    attribution: "Inneholder data under norsk lisens for offentlige data (NLOD) tilgjengeliggjort av Utdanningsdirektoratet",
+    url: "https://www.udir.no",
+    usedIn: ["Skoler og barnehager"],
+  },
 ];
 
 const jsonLd = {
