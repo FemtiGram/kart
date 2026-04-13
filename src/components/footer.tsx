@@ -15,6 +15,8 @@ const footerLinks = {
   ],
   Ressurser: [
     { label: "Datakilder og lisenser", href: "/kilder" },
+    { label: "Personvern", href: "/personvern" },
+    { label: "Åpen kildekode", href: "https://github.com/FemtiGram/kart", external: true },
     { label: "kartverket.no", href: "https://www.kartverket.no", external: true },
     { label: "Geonorge", href: "https://geonorge.no", external: true },
   ],

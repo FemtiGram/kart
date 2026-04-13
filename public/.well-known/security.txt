@@ -1,0 +1,8 @@
+# Datakart — security contact
+# If you find a security issue, please report it via GitHub issues.
+# RFC 9116: https://www.rfc-editor.org/rfc/rfc9116
+
+Contact: https://github.com/FemtiGram/kart/issues/new
+Expires: 2027-04-13T00:00:00.000Z
+Preferred-Languages: no, en
+Canonical: https://datakart.no/.well-known/security.txt
