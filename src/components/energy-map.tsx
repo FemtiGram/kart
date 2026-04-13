@@ -111,7 +111,8 @@ export function EnergyMap() {
 
   const searchBarRef = useRef<MapSearchBarHandle>(null);
   const kommunerRef = useRef<KommuneEntry[]>([]);
-  const initialHash = useRef(window.location.hash);
+  const restoredRef = useRef(false);
+  const prevSelectionKey = useRef<string | null>(null);
 
   // Deep link from /kommune/[slug]: ?lat=&lon=&z= flies to that position
   useInitialPosition((lat, lon, zoom) => {
@@ -157,27 +158,40 @@ export function EnergyMap() {
       .catch(() => {});
   }, [loadPlants]);
 
-  // Sync selection → URL hash
+  // Sync selection → URL hash. Only runs when selection actually changes
+  // (not on mount / strict-mode re-run). Uses absolute pathname in
+  // replaceState so Next.js App Router's internal URL state doesn't drift
+  // and later concatenate hashes on subsequent Link navigations.
   useEffect(() => {
-    if (loading) return;
-    if (selected) {
-      history.replaceState(null, "", `#kraft-${selected.id}`);
-    } else if (selectedOilGas) {
-      history.replaceState(null, "", `#anlegg-${selectedOilGas.id}`);
-    } else if (selectedHavvind) {
-      history.replaceState(null, "", `#havvind-${selectedHavvind.id}`);
-    } else if (!initialHash.current) {
-      history.replaceState(null, "", window.location.pathname);
+    const key = selected
+      ? `kraft-${selected.id}`
+      : selectedOilGas
+        ? `anlegg-${selectedOilGas.id}`
+        : selectedHavvind
+          ? `havvind-${selectedHavvind.id}`
+          : null;
+    if (key === prevSelectionKey.current) return;
+    prevSelectionKey.current = key;
+    const path = window.location.pathname;
+    if (key) {
+      history.replaceState(null, "", `${path}#${key}`);
+    } else {
+      history.replaceState(null, "", path);
     }
-  }, [selected, selectedOilGas, selectedHavvind, loading]);
+  }, [selected, selectedOilGas, selectedHavvind]);
 
-  // Read URL hash on data load → auto-select
+  // Read URL hash on data load → auto-select. Takes the LAST valid segment
+  // from a hash — Next.js App Router has a bug where Link → back → Link
+  // to the same route concatenates the old and new hash into #a-X#b-Y.
   useEffect(() => {
+    if (restoredRef.current) return;
     if (loading) return;
-    const hash = initialHash.current || window.location.hash;
-    initialHash.current = "";
+    restoredRef.current = true;
+    const hash = window.location.hash;
     if (!hash) return;
-    const match = hash.match(/^#(kraft|anlegg|havvind)-(\d+)$/);
+    const segments = hash.split("#").filter(Boolean);
+    const last = segments[segments.length - 1];
+    const match = last?.match(/^(kraft|anlegg|havvind)-(\d+)$/);
     if (!match) return;
     const [, type, idStr] = match;
     const id = parseInt(idStr, 10);
