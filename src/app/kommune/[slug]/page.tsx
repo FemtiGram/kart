@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
-import { ArrowLeft, TrendingUp, Home, Shield, Zap, BatteryCharging, Mountain, Waves, Cloud, ExternalLink, Briefcase, Compass } from "lucide-react";
+import { ArrowLeft, TrendingUp, Home, Shield, Zap, BatteryCharging, Mountain, Waves, Cloud, ExternalLink, Briefcase, Compass, GraduationCap } from "lucide-react";
 import {
   getAllKommuner,
   getProfileBySlug,
@@ -456,6 +456,72 @@ function EnergiSection({ profile }: { profile: KommuneProfile }) {
 
 // ─── Section: Infrastruktur ──────────────────────────────────
 
+function SkoleSection({ profile }: { profile: KommuneProfile }) {
+  const { schools, kindergartens, centroid } = profile;
+  const href = `/skoler?lat=${centroid.lat.toFixed(4)}&lon=${centroid.lon.toFixed(4)}&z=12`;
+  if (schools.total === 0 && kindergartens.total === 0) {
+    return (
+      <Section title="Skoler og barnehager" icon={GraduationCap} href={href}>
+        <p className="text-sm text-muted-foreground">
+          Ingen skoler eller barnehager registrert i kommunen.
+        </p>
+      </Section>
+    );
+  }
+  return (
+    <Section title="Skoler og barnehager" icon={GraduationCap} href={href}>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <Stat
+          label="Grunnskoler"
+          value={fmtNumber(schools.grunnskoleCount)}
+          context={
+            schools.totalStudents > 0
+              ? `${fmtNumber(schools.totalStudents)} elever totalt`
+              : "Ingen elevtall"
+          }
+        />
+        <Stat
+          label="Videregående"
+          value={fmtNumber(schools.vgsCount)}
+          context={schools.vgsCount > 0 ? "Inkl. fagskoler" : "Ingen VGS"}
+        />
+        <Stat
+          label="Barnehager"
+          value={fmtNumber(kindergartens.total)}
+          context={
+            kindergartens.totalChildren > 0
+              ? `${fmtNumber(kindergartens.totalChildren)} barn totalt`
+              : "Ingen barnetall"
+          }
+        />
+      </div>
+      {schools.top.length > 0 && (
+        <div className="mt-4">
+          <p className="text-xs font-semibold uppercase tracking-wide text-foreground/70 mb-2">
+            Største skoler
+          </p>
+          <div className="rounded-2xl border bg-card overflow-hidden">
+            {schools.top.map((s, i) => (
+              <div
+                key={s.id}
+                className={`flex items-center justify-between px-4 py-3 text-sm ${i > 0 ? "border-t" : ""}`}
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <GraduationCap className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  <span className="font-medium truncate">{s.name}</span>
+                </div>
+                <span className="tabular-nums text-foreground/70 shrink-0 ml-3">
+                  {s.students != null ? `${fmtNumber(s.students)} elever` : "–"}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </Section>
+  );
+}
+
 function InfraSection({ profile }: { profile: KommuneProfile }) {
   const { centroid } = profile;
   const ladingHref = `/lading?lat=${centroid.lat.toFixed(4)}&lon=${centroid.lon.toFixed(4)}&z=11`;
@@ -499,12 +565,20 @@ function KartSection({ profile }: { profile: KommuneProfile }) {
           reservoir: profile.reservoirs.all.filter(
             (r) => r.lat != null && r.lon != null
           ),
+          school: profile.schools.all.filter(
+            (s) => s.lat != null && s.lon != null
+          ),
+          kindergarten: profile.kindergartens.all.filter(
+            (k) => k.lat != null && k.lon != null
+          ),
         }}
         totals={{
           energy: profile.energy.plantCount,
           charging: profile.charging.total,
           cabin: profile.cabins.total,
           reservoir: profile.reservoirs.total,
+          school: profile.schools.total,
+          kindergarten: profile.kindergartens.total,
         }}
       />
     </Section>
@@ -665,6 +739,7 @@ export default async function KommunePage({
         <MuligheterSection profile={profile} />
         <KartSection profile={profile} />
         <BoligSection profile={profile} />
+        <SkoleSection profile={profile} />
         <NaturSection profile={profile} />
         <EnergiSection profile={profile} />
         <InfraSection profile={profile} />

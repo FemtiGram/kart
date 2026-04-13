@@ -9,6 +9,8 @@ import {
   cabinIcon,
   reservoirIcon,
   energyIcon,
+  schoolIcon,
+  kindergartenIcon,
   type CabinType,
 } from "@/components/map-icons";
 import { TileToggle } from "@/components/tile-toggle";
@@ -16,12 +18,20 @@ import type {
   CabinMarker,
   ChargingMarker,
   EnergyMarker,
+  KindergartenMarker,
   ReservoirMarker,
+  SchoolMarker,
 } from "@/lib/kommune-profiles";
-import { Zap, Home, Droplets, BatteryCharging, Map as MapIcon, Layers } from "lucide-react";
+import { Zap, Home, Droplets, BatteryCharging, Map as MapIcon, Layers, GraduationCap, Baby } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
-export type LayerKey = "energy" | "charging" | "cabin" | "reservoir";
+export type LayerKey =
+  | "energy"
+  | "charging"
+  | "cabin"
+  | "reservoir"
+  | "school"
+  | "kindergarten";
 
 const TILE_LAYERS = {
   kart: {
@@ -47,6 +57,8 @@ interface Props {
     charging: ChargingMarker[];
     cabin: CabinMarker[];
     reservoir: ReservoirMarker[];
+    school: SchoolMarker[];
+    kindergarten: KindergartenMarker[];
   };
   /** Total counts — shown on pills. Used to render "+X flere" when capped. */
   totals: {
@@ -54,6 +66,8 @@ interface Props {
     charging: number;
     cabin: number;
     reservoir: number;
+    school: number;
+    kindergarten: number;
   };
 }
 
@@ -74,6 +88,8 @@ interface PillConfig {
 }
 
 const PILLS: PillConfig[] = [
+  { key: "school", label: "Skoler", icon: GraduationCap, color: "#6d28d9" },
+  { key: "kindergarten", label: "Barnehager", icon: Baby, color: "#c2410c" },
   { key: "energy", label: "Kraftverk", icon: Zap, color: "#0369a1" },
   { key: "charging", label: "Lading", icon: BatteryCharging, color: "#15803d" },
   { key: "cabin", label: "Hytter", icon: Home, color: "#b91c1c" },
@@ -204,6 +220,51 @@ export function KommuneMiniMap({ outline, bbox, name, layers, totals }: Props) {
                           maximumFractionDigits: 1,
                         })}{" "}
                         Mm³
+                      </div>
+                    )}
+                  </div>
+                </Tooltip>
+              </Marker>
+            ))}
+
+          {active.has("school") &&
+            layers.school.map((s) => (
+              <Marker
+                key={`school-${s.id}`}
+                position={[s.lat, s.lon]}
+                icon={schoolIcon(s.type, false, tileLayer === "gråtone")}
+              >
+                <Tooltip direction="top" offset={[0, -8]} opacity={1}>
+                  <div className="text-xs">
+                    <div className="font-semibold">{s.name}</div>
+                    <div className="text-foreground/70">
+                      {s.type === "vgs"
+                        ? "Videregående"
+                        : s.type === "begge"
+                          ? "Grunnskole + VGS"
+                          : "Grunnskole"}
+                      {s.students != null
+                        ? ` · ${s.students.toLocaleString("nb-NO")} elever`
+                        : ""}
+                    </div>
+                  </div>
+                </Tooltip>
+              </Marker>
+            ))}
+
+          {active.has("kindergarten") &&
+            layers.kindergarten.map((k) => (
+              <Marker
+                key={`kg-${k.id}`}
+                position={[k.lat, k.lon]}
+                icon={kindergartenIcon(false, tileLayer === "gråtone")}
+              >
+                <Tooltip direction="top" offset={[0, -8]} opacity={1}>
+                  <div className="text-xs">
+                    <div className="font-semibold">{k.name}</div>
+                    {k.children != null && (
+                      <div className="text-foreground/70">
+                        {k.children.toLocaleString("nb-NO")} barn
                       </div>
                     )}
                   </div>

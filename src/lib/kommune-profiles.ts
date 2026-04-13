@@ -102,6 +102,58 @@ export interface EnergySummary {
   all: EnergyMarker[];
 }
 
+export type SchoolKind = "grunnskole" | "vgs" | "begge";
+
+export interface SchoolMarker {
+  id: string;
+  name: string;
+  type: SchoolKind;
+  students: number | null;
+  lat: number;
+  lon: number;
+}
+
+export interface SchoolSummary {
+  total: number;
+  grunnskoleCount: number;
+  vgsCount: number;
+  totalStudents: number;
+  top: Array<{
+    id: string;
+    name: string;
+    type: SchoolKind;
+    students: number | null;
+    owner: "offentlig" | "privat";
+    lat: number;
+    lon: number;
+  }>;
+  /** All schools in the kommune (capped at 200 per kommune). */
+  all: SchoolMarker[];
+}
+
+export interface KindergartenMarker {
+  id: string;
+  name: string;
+  children: number | null;
+  lat: number;
+  lon: number;
+}
+
+export interface KindergartenSummary {
+  total: number;
+  totalChildren: number;
+  top: Array<{
+    id: string;
+    name: string;
+    children: number | null;
+    owner: "offentlig" | "privat";
+    lat: number;
+    lon: number;
+  }>;
+  /** All kindergartens in the kommune (capped at 200 per kommune). */
+  all: KindergartenMarker[];
+}
+
 export interface KommuneProfile {
   knr: string;
   name: string;
@@ -127,6 +179,8 @@ export interface KommuneProfile {
   cabins: CabinSummary;
   reservoirs: ReservoirSummary;
   energy: EnergySummary;
+  schools: SchoolSummary;
+  kindergartens: KindergartenSummary;
   ranks: {
     population: number | null;
     income: number | null;

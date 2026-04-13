@@ -20,6 +20,7 @@ const GEOJSON_PATH = join(ROOT, "public", "data", "kommuner.geojson");
 const STATIONS_PATH = join(ROOT, "public", "data", "stations.json");
 const CABINS_PATH = join(ROOT, "public", "data", "cabins.json");
 const RESERVOIRS_PATH = join(ROOT, "public", "data", "reservoirs.json");
+const SCHOOLS_PATH = join(ROOT, "public", "data", "schools.json");
 const FINN_LOCATIONS_PATH = join(ROOT, "public", "data", "finn-locations.json");
 const OUT_PATH = join(ROOT, "public", "data", "kommune-profiles.json");
 
@@ -510,8 +511,13 @@ async function main() {
   const finnLocations = existsSync(FINN_LOCATIONS_PATH)
     ? JSON.parse(readFileSync(FINN_LOCATIONS_PATH, "utf8"))
     : {};
+  const schoolsFile = existsSync(SCHOOLS_PATH)
+    ? JSON.parse(readFileSync(SCHOOLS_PATH, "utf8"))
+    : { schools: [], kindergartens: [] };
+  const schools = schoolsFile.schools ?? [];
+  const kindergartens = schoolsFile.kindergartens ?? [];
 
-  console.log(`  Loaded ${geo.features.length} kommuner, ${stations.length} stations, ${cabins.length} cabins, ${reservoirs.length} reservoirs, ${Object.keys(finnLocations).length} Finn codes`);
+  console.log(`  Loaded ${geo.features.length} kommuner, ${stations.length} stations, ${cabins.length} cabins, ${reservoirs.length} reservoirs, ${schools.length} schools, ${kindergartens.length} barnehager, ${Object.keys(finnLocations).length} Finn codes`);
 
   // Fetch external data in parallel
   let population, income, bolig, protectedAreas, plants;
@@ -538,6 +544,20 @@ async function main() {
     const knr = s.municipalityId;
     if (!knr) continue;
     (stationsByKnr[knr] ??= []).push(s);
+  }
+
+  // Index schools and kindergartens by kommunenummer (UDIR already provides this)
+  const schoolsByKnr = {};
+  for (const s of schools) {
+    const knr = s.kommunenummer;
+    if (!knr) continue;
+    (schoolsByKnr[knr] ??= []).push(s);
+  }
+  const kindergartensByKnr = {};
+  for (const k of kindergartens) {
+    const knr = k.kommunenummer;
+    if (!knr) continue;
+    (kindergartensByKnr[knr] ??= []).push(k);
   }
 
   // Compute bboxes for all kommune polygons (fast point rejection)
@@ -593,6 +613,22 @@ async function main() {
     const reservoirList = reservoirsByKnr[knr] ?? [];
     const plantList = plantsByKnr[knr] ?? [];
     const totalMW = plantList.reduce((sum, p) => sum + (p.capacityMW ?? 0), 0);
+    const schoolList = schoolsByKnr[knr] ?? [];
+    const kindergartenList = kindergartensByKnr[knr] ?? [];
+    const totalStudents = schoolList.reduce(
+      (sum, s) => sum + (s.students ?? 0),
+      0
+    );
+    const totalChildren = kindergartenList.reduce(
+      (sum, k) => sum + (k.children ?? 0),
+      0
+    );
+    const grunnskoleCount = schoolList.filter(
+      (s) => s.type === "grunnskole" || s.type === "begge"
+    ).length;
+    const vgsCount = schoolList.filter(
+      (s) => s.type === "vgs" || s.type === "begge"
+    ).length;
 
     // Bolig summary: take 2024 for each of the 3 dwelling types
     const boligRaw = bolig[knr] ?? {};
@@ -748,6 +784,60 @@ async function main() {
             capacityMW: p.capacityMW,
             lat: p.lat,
             lon: p.lon,
+          })),
+      },
+      schools: {
+        total: schoolList.length,
+        grunnskoleCount,
+        vgsCount,
+        totalStudents,
+        top: schoolList
+          .sort((a, b) => (b.students ?? 0) - (a.students ?? 0))
+          .slice(0, 5)
+          .map((s) => ({
+            id: s.id,
+            name: s.name,
+            type: s.type,
+            students: s.students,
+            owner: s.owner,
+            lat: s.lat,
+            lon: s.lon,
+          })),
+        all: schoolList
+          .sort((a, b) => (b.students ?? 0) - (a.students ?? 0))
+          .slice(0, 200)
+          .map((s) => ({
+            id: s.id,
+            name: s.name,
+            type: s.type,
+            students: s.students,
+            lat: s.lat,
+            lon: s.lon,
+          })),
+      },
+      kindergartens: {
+        total: kindergartenList.length,
+        totalChildren,
+        top: kindergartenList
+          .sort((a, b) => (b.children ?? 0) - (a.children ?? 0))
+          .slice(0, 5)
+          .map((k) => ({
+            id: k.id,
+            name: k.name,
+            children: k.children,
+            owner: k.owner,
+            lat: k.lat,
+            lon: k.lon,
+          })),
+        all: kindergartenList
+          .sort((a, b) => (b.children ?? 0) - (a.children ?? 0))
+          .slice(0, 200)
+          .map((k) => ({
+            id: k.id,
+            name: k.name,
+            children: k.children,
+            lat: k.lat,
+            lon: k.lon,
           })),
       },
     };
