@@ -34,6 +34,8 @@ src/app/
   kommune/page.tsx      — Kommuner index (searchable list grouped by fylke, keyboard nav)
   kommune/[slug]/page.tsx — Stedsprofil (dashboard per kommune, SSG at build time)
   kommune/[slug]/opengraph-image.tsx — Dynamic OG image per kommune
+  skoler/page.tsx       — Schools and kindergartens map (NSR + NBR from UDIR)
+  personvern/page.tsx   — Privacy policy page
   api/
     bolig/route.ts      — SSB housing price data (table 06035)
     income/route.ts     — SSB income data
@@ -54,9 +56,12 @@ src/components/
   *-map-loader.tsx      — Dynamic import wrappers (ssr: false)
   inflation-dashboard.tsx — Prisvekst dashboard (Recharts charts, target badges, category breakdown)
   kommune-index.tsx     — Client component for /kommune index search + list (keyboard nav, Sami-aware)
-  kommune-mini-map.tsx  — Interactive Leaflet map for Stedsprofil "Plassering" section (polygon + markers)
+  kommune-mini-map.tsx  — Interactive Leaflet map for Stedsprofil "Plassering" section (polygon + 6 layer pills)
   kommune-mini-map-loader.tsx — Dynamic wrapper for kommune-mini-map (ssr: false)
   kommune-weather.tsx   — Client weather card for Stedsprofil (fetches /api/weather)
+  schools-map.tsx       — /skoler map: schools + kindergartens with independent cluster toggles
+  schools-map-loader.tsx — Dynamic wrapper for schools-map (ssr: false)
+  map-icons.tsx         — Shared L.divIcon factories: chargingIcon, cabinIcon, reservoirIcon, schoolIcon, kindergartenIcon + re-exports of energyIcon from energy-map-helpers
   ui/                   — shadcn/ui primitives (includes chart.tsx for Recharts wrappers)
 
 src/lib/
@@ -76,7 +81,8 @@ scripts/
   fetch-reservoirs.mjs  — Build-time: fetches reservoir polygons from NVE → public/data/reservoirs.json
   fetch-kommuner.mjs    — Build-time: fetches kommune boundaries GeoJSON → public/data/kommuner.geojson
   fetch-finn-locations.mjs — Build-time: scrapes Finn.no realestate page, extracts hierarchical location codes, matches each kommune → public/data/finn-locations.json
-  build-kommune-profiles.mjs — Build-time: composes SSB population/income/bolig/vern + NVE plants + static files via point-in-polygon into one profile per kommune → public/data/kommune-profiles.json
+  fetch-schools.mjs     — Build-time: lists active schools (NSR) and barnehager (NBR) from UDIR, fetches per-orgnr detail for coordinates and stats in a 20-wide pool → public/data/schools.json
+  build-kommune-profiles.mjs — Build-time: composes SSB population/income/bolig/vern + NVE plants + UDIR schools/barnehager + static files via point-in-polygon and kommunenummer grouping into one profile per kommune → public/data/kommune-profiles.json
 
 public/data/
   stations.json         — Pre-built charging station data (committed to repo)
@@ -85,6 +91,7 @@ public/data/
   reservoirs.json       — Pre-built NVE reservoir polygons (committed to repo)
   kommuner.geojson      — Pre-built kommune boundary GeoJSON (committed to repo)
   finn-locations.json   — Pre-built kommune → Finn.no location code map (committed to repo)
+  schools.json          — Pre-built NSR + NBR data (schools and barnehager with coordinates)
   kommune-profiles.json — Pre-built per-kommune profile data for Stedsprofil (committed to repo)
 ```
 
@@ -216,20 +223,22 @@ All maps use a **compact floating card + expandable bottom Sheet** pattern:
 Not a map — a portrait of a place. One pre-rendered dashboard per kommune at `/kommune/[slug]`, all 357 generated via `generateStaticParams`. Sits alongside the maps as a cross-cutting "what is this place?" view.
 
 ### Data pipeline
-- `scripts/build-kommune-profiles.mjs` runs in `prebuild`. Fetches SSB population (07459), income (InntektStruk13), housing prices (06035), protected areas (08936), and NVE hydro + operational wind. Reads the pre-built static files (`stations.json`, `cabins.json`, `reservoirs.json`, `kommuner.geojson`) for the join.
-- **Point-in-polygon** (inline ray-casting + bbox pre-filter, no turf dependency) assigns cabins, reservoirs, and plants to kommuner. Charging stations skip PIP since NOBIL provides `municipalityId` directly.
-- Output: `public/data/kommune-profiles.json` (~1.3 MB). Imported at build time by `src/lib/kommune-profiles.ts`; only the current kommune's subset (~3 KB) is inlined into each pre-rendered HTML page.
+- `scripts/build-kommune-profiles.mjs` runs in `prebuild`. Fetches SSB population (07459), income (InntektStruk13), housing prices (06035), protected areas (08936), and NVE hydro + operational wind. Reads the pre-built static files (`stations.json`, `cabins.json`, `reservoirs.json`, `schools.json`, `kommuner.geojson`, `finn-locations.json`) for the join.
+- **Point-in-polygon** (inline ray-casting + bbox pre-filter, no turf dependency) assigns cabins, reservoirs, and plants to kommuner. Charging stations, schools, and kindergartens skip PIP — NOBIL and UDIR both provide `kommunenummer` / `municipalityId` directly.
+- Output: `public/data/kommune-profiles.json` (~3.2 MB after schools added). Imported at build time by `src/lib/kommune-profiles.ts`; only the current kommune's subset (~5–10 KB) is inlined into each pre-rendered HTML page.
 - **Rankings** (pop, income, bolig, verne, energy) are computed once at build time and stored per profile, not at runtime.
 - Simplified kommune outline (~40 points) is stored per profile for the Plassering mini-map, so no client-side GeoJSON fetch is needed.
 
 ### Page sections (top to bottom)
 1. **Hero** — kommune name (H1, 4xl/5xl), metadata row (fylke · knr · km²), 2 stat cards (Innbyggere, Median inntekt)
-2. **Plassering** — interactive Leaflet map with kommune polygon highlighted and top features as `CircleMarker` overlays (plants, cabins, reservoirs). Color tiles (topo), zoom controls, drag, touch zoom. `scrollWheelZoom={false}` so page scrolling isn't hijacked.
-3. **Boligmarked** — 3 dwelling-type cards (Enebolig/Småhus/Blokk) with kr/m², yoy badge, sales count. Deep-links to `/bolig#kommune-<knr>`.
-4. **Natur og verneområder** — verne % + DNT/fjellhytter count. Deep-links to `/vern#kommune-<knr>`.
-5. **Energi** — installert MW, kraftverk count by type, magasiner, top 5 plants list. Deep-links to `/energi?lat=&lon=&z=10`.
-6. **Infrastruktur** — charging stations (total + ≥50 kW), cabins. Deep-links to `/lading?lat=&lon=&z=11`.
-7. **Vær akkurat nå** — client-fetched MET.no for the kommune centroid. Deep-links to `/map?lat=&lon=&z=12`.
+2. **Utforsk muligheter i <kommune>** — two Finn.no external-link cards (boliger + ledige jobber) with kommune-level location filter. Jobs use a separate URL format `/job/search?location=2.20001.<fylke>.<kommune>` derived from the boliger code at render time.
+3. **Plassering** — interactive Leaflet map with kommune polygon highlighted, 6 toggleable layer pills below the map (Skoler, Barnehager, Kraftverk, Lading, Hytter, Magasiner). Default empty. Real `L.divIcon` markers with hover tooltips. Kart/Gråtone tile toggle top-right. `scrollWheelZoom={false}` so page scrolling isn't hijacked.
+4. **Boligmarked** — 3 dwelling-type cards (Enebolig/Småhus/Blokk) with kr/m², yoy badge, sales count. Deep-links to `/bolig#kommune-<knr>`.
+5. **Skoler og barnehager** — 3 stat cards (Grunnskoler, Videregående, Barnehager) with totalStudents/totalChildren context. Største skoler list with top 5. Deep-links to `/skoler?lat=&lon=&z=12`.
+6. **Natur og verneområder** — verne % + DNT/fjellhytter count. Deep-links to `/vern#kommune-<knr>`.
+7. **Energi** — installert MW, kraftverk count by type, magasiner, top 5 plants list. Deep-links to `/energi?lat=&lon=&z=10`.
+8. **Infrastruktur** — charging stations (total + ≥50 kW), cabins. Deep-links to `/lading?lat=&lon=&z=11`.
+9. **Vær akkurat nå** — client-fetched MET.no for the kommune centroid. Deep-links to `/map?lat=&lon=&z=12`.
 
 ### Card pattern (different from the maps!)
 Stedsprofil cards are **vertically stacked** (value on top, label caption, context row). Intentionally distinct from the horizontal Z-pattern used on map compact cards:
@@ -340,6 +349,8 @@ Every new page MUST be rigged for Google Search and AI search (ChatGPT, Perplexi
 | Population (Stedsprofil) | SSB tabell 07459 | Build-time static JSON |
 | Income | SSB InntektStruk13 | Loaded once on mount |
 | Protected areas | SSB tabell 08936 | Loaded once on mount |
+| Schools | Utdanningsdirektoratet NSR (`data-nsr.udir.no/v3`) — list + per-orgnr detail calls for coords | Build-time static JSON |
+| Kindergartens | Utdanningsdirektoratet NBR (`data-nbr.udir.no/v3`) — same shape as NSR | Build-time static JSON |
 | Finn.no location codes | Scraped from `finn.no/realestate/homes/search.html` (embedded JSON) | Build-time static JSON |
 | Weather | MET.no locationforecast | 30min server cache |
 | Elevation | Kartverket høyde-API | Per-request |
