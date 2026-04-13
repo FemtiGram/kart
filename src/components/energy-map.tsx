@@ -364,6 +364,64 @@ export function EnergyMap() {
     [filteredPlants]
   );
 
+  // Marker click handlers — stable identity via useCallback so the memoized
+  // marker JSX below doesn't need to regenerate on selection changes.
+  const selectPlant = useCallback((p: EnergyPlant) => {
+    setSelected((prev) =>
+      prev?.id === p.id && prev?.type === p.type ? null : p
+    );
+    setSelectedHavvind(null);
+    setSelectedOilGas(null);
+  }, []);
+
+  const selectOilGas = useCallback((f: OilGasFacility) => {
+    setSelectedOilGas((prev) => (prev?.id === f.id ? null : f));
+    setSelected(null);
+    setSelectedHavvind(null);
+    setShowInfoSheet(false);
+  }, []);
+
+  // Memoize the heavy marker JSX lists so clicks don't regenerate 2k+
+  // plant markers or 130 oil/gas markers. Deps exclude selection state —
+  // clicked marker doesn't visually highlight, CompactCard is the primary
+  // feedback. See schools-map.tsx for rationale + measured impact.
+  const inverted = tileLayer === "gråtone";
+  const plantMarkers = useMemo(
+    () =>
+      filteredPlants.map((p) => (
+        <Marker
+          key={`${p.type}-${p.id}`}
+          position={[p.lat, p.lon]}
+          icon={energyIcon(false, inverted, p.type, p.capacityMW, p.windStatus)}
+          eventHandlers={{ click: () => selectPlant(p) }}
+        />
+      )),
+    [filteredPlants, inverted, selectPlant]
+  );
+  const turbineMarkers = useMemo(
+    () =>
+      turbines.map((t) => (
+        <Marker
+          key={`turbine-${t.id}`}
+          position={[t.lat, t.lon]}
+          icon={turbineIcon(inverted)}
+        />
+      )),
+    [turbines, inverted]
+  );
+  const oilgasMarkers = useMemo(
+    () =>
+      filteredOilGas.map((f) => (
+        <Marker
+          key={`oilgas-${f.id}`}
+          position={[f.lat, f.lon]}
+          icon={oilgasIcon(false, inverted, f.isSurface)}
+          eventHandlers={{ click: () => selectOilGas(f) }}
+        />
+      )),
+    [filteredOilGas, inverted, selectOilGas]
+  );
+
   return (
     <div className="flex flex-col" style={{ height: MAP_HEIGHT }}>
       {/* Search bar */}
@@ -568,36 +626,9 @@ export function EnergyMap() {
               });
             }}
           >
-            {filteredPlants.map((p) => (
-              <Marker
-                key={`${p.type}-${p.id}`}
-                position={[p.lat, p.lon]}
-                icon={energyIcon(
-                  selected?.id === p.id && selected?.type === p.type,
-                  tileLayer === "gråtone",
-                  p.type,
-                  p.capacityMW,
-                  p.windStatus
-                )}
-                eventHandlers={{
-                  click() {
-                    setSelected((prev) =>
-                      prev?.id === p.id && prev?.type === p.type ? null : p
-                    );
-                    setSelectedHavvind(null);
-                    setSelectedOilGas(null);
-                  },
-                }}
-              />
-            ))}
+            {plantMarkers}
           </MarkerClusterGroup>
-          {zoomLevel >= 12 && turbines.map((t) => (
-            <Marker
-              key={`turbine-${t.id}`}
-              position={[t.lat, t.lon]}
-              icon={turbineIcon(tileLayer === "gråtone")}
-            />
-          ))}
+          {zoomLevel >= 12 && turbineMarkers}
           {/* Havvind zone markers */}
           {filteredHavvindZones.map((z) => (
             <Marker
@@ -657,21 +688,7 @@ export function EnergyMap() {
                 });
               }}
             >
-              {filteredOilGas.map((f) => (
-                <Marker
-                  key={`oilgas-${f.id}`}
-                  position={[f.lat, f.lon]}
-                  icon={oilgasIcon(selectedOilGas?.id === f.id, tileLayer === "gråtone", f.isSurface)}
-                  eventHandlers={{
-                    click() {
-                      setSelectedOilGas((prev) => prev?.id === f.id ? null : f);
-                      setSelected(null);
-                      setSelectedHavvind(null);
-                      setShowInfoSheet(false);
-                    },
-                  }}
-                />
-              ))}
+              {oilgasMarkers}
             </MarkerClusterGroup>
           )}
           {/* Pipelines at zoom >= 8 */}

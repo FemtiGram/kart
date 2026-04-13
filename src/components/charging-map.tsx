@@ -221,6 +221,29 @@ export function ChargingMap() {
     });
   };
 
+  const selectStation = useCallback((s: Station) => {
+    setSelected((prev) => (prev?.id === s.id ? null : s));
+  }, []);
+
+  // Memoize the heavy marker JSX list so clicks don't regenerate ~5000
+  // Marker components. Deps exclude `selected` — clicks only update the
+  // CompactCard, not the marker tree. The clicked marker doesn't visually
+  // swap to a highlighted icon, but the CompactCard is the primary
+  // feedback anyway.
+  const inverted = tileLayer === "gråtone";
+  const stationMarkers = useMemo(
+    () =>
+      filteredStations.map((s) => (
+        <Marker
+          key={s.id}
+          position={[s.lat, s.lon]}
+          icon={chargingIcon(false, inverted)}
+          eventHandlers={{ click: () => selectStation(s) }}
+        />
+      )),
+    [filteredStations, inverted, selectStation]
+  );
+
   return (
     <div className="flex flex-col" style={{ height: MAP_HEIGHT }}>
       {/* Search bar */}
@@ -368,18 +391,7 @@ export function ChargingMap() {
               });
             }}
           >
-            {filteredStations.map((s) => (
-              <Marker
-                key={s.id}
-                position={[s.lat, s.lon]}
-                icon={chargingIcon(selected?.id === s.id, tileLayer === "gråtone")}
-                eventHandlers={{
-                  click() {
-                    setSelected((prev) => (prev?.id === s.id ? null : s));
-                  },
-                }}
-              />
-            ))}
+            {stationMarkers}
           </MarkerClusterGroup>
         </MapContainer>
 

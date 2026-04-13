@@ -244,6 +244,25 @@ export function WindPowerMap() {
     [farms]
   );
 
+  const selectFarm = useCallback((f: WindFarm) => {
+    setSelected((prev) => (prev?.id === f.id ? null : f));
+  }, []);
+
+  // Memoize the marker list — see schools-map.tsx for rationale.
+  const inverted = tileLayer === "gråtone";
+  const farmMarkers = useMemo(
+    () =>
+      farms.map((f, idx) => (
+        <Marker
+          key={String(f.id ?? idx)}
+          position={[f.lat, f.lon]}
+          icon={windFarmIcon(false, inverted, f.capacityMW)}
+          eventHandlers={{ click: () => selectFarm(f) }}
+        />
+      )),
+    [farms, inverted, selectFarm]
+  );
+
   return (
     <div className="flex flex-col" style={{ height: MAP_HEIGHT }}>
       {/* Search bar */}
@@ -313,24 +332,7 @@ export function WindPowerMap() {
             attribution={TILE_LAYERS[tileLayer].attribution}
             maxZoom={17}
           />
-          {farms.map((f, idx) => (
-            <Marker
-              key={String(f.id ?? idx)}
-              position={[f.lat, f.lon]}
-              icon={windFarmIcon(
-                selected?.id === f.id,
-                tileLayer === "gråtone",
-                f.capacityMW
-              )}
-              eventHandlers={{
-                click() {
-                  setSelected((prev) =>
-                    prev?.id === f.id ? null : f
-                  );
-                },
-              }}
-            />
-          ))}
+          {farmMarkers}
         </MapContainer>
 
         {/* Tile layer toggle */}

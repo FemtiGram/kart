@@ -298,6 +298,26 @@ export function CabinMap() {
 
   const activeFilterCount = (2 - filterTypes.size) + (filterDNT ? 1 : 0) + (filterFee !== "all" ? 1 : 0) + (filterSeason !== "all" ? 1 : 0);
 
+  const selectCabin = useCallback((c: Cabin) => {
+    setSelected((prev) => (prev?.id === c.id ? null : c));
+  }, []);
+
+  // Memoize the marker list so clicks don't regenerate ~2300 Markers.
+  // Deps exclude `selected` — see schools-map.tsx for rationale.
+  const inverted = tileLayer === "gråtone";
+  const cabinMarkers = useMemo(
+    () =>
+      filteredCabins.map((c) => (
+        <Marker
+          key={c.id}
+          position={[c.lat, c.lon]}
+          icon={cabinIcon(c.cabinType, false, inverted)}
+          eventHandlers={{ click: () => selectCabin(c) }}
+        />
+      )),
+    [filteredCabins, inverted, selectCabin]
+  );
+
   const toggleType = (type: Cabin["cabinType"]) => {
     setFilterTypes((prev) => {
       const next = new Set(prev);
@@ -487,18 +507,7 @@ export function CabinMap() {
               });
             }}
           >
-            {filteredCabins.map((c) => (
-              <Marker
-                key={c.id}
-                position={[c.lat, c.lon]}
-                icon={cabinIcon(c.cabinType, selected?.id === c.id, tileLayer === "gråtone")}
-                eventHandlers={{
-                  click() {
-                    setSelected((prev) => (prev?.id === c.id ? null : c));
-                  },
-                }}
-              />
-            ))}
+            {cabinMarkers}
           </MarkerClusterGroup>
         </MapContainer>
 

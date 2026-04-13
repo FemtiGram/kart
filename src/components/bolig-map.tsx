@@ -337,6 +337,43 @@ export function BoligMap() {
 
   const visibleMarkers = useMemo(() => markers.filter((m) => m.price != null && m.price > 0), [markers]);
 
+  // Stable ref holding the latest click handler. Lets us memoize the marker
+  // JSX below without re-running when `selected` / `compareMode` change,
+  // while still seeing fresh state inside the click callback.
+  type MarkerInfo = (typeof visibleMarkers)[number];
+  const markerClickRef = useRef<(m: MarkerInfo) => void>(() => {});
+  markerClickRef.current = (m) => {
+    const kommun = { kommunenummer: m.nr, kommunenavn: m.name, lat: m.lat, lon: m.lon };
+    if (compareMode && selected && selected.kommunenummer !== m.nr) {
+      setCompareTarget(kommun);
+      setShowCompare(true);
+      setCompareMode(false);
+      setCompareQuery("");
+    } else {
+      setSelected((prev) => (prev?.kommunenummer === m.nr ? null : kommun));
+      setShowInfoSheet(false);
+      setCompareMode(false);
+      setCompareQuery("");
+    }
+  };
+
+  // Memoize the marker list. Deps exclude `selected` / `compareMode` —
+  // see schools-map.tsx for rationale. Click handler lives in a ref so the
+  // memo stays stable across selection changes.
+  const bubbleMarkers = useMemo(
+    () =>
+      visibleMarkers.map((m) => (
+        <Marker
+          key={m.nr}
+          position={[m.lat, m.lon]}
+          icon={bubbleIcon(m.price, m.count, sortedPrices, false)}
+          eventHandlers={{ click: () => markerClickRef.current(m) }}
+          {...({ price: m.price } as Record<string, unknown>)}
+        />
+      )),
+    [visibleMarkers, sortedPrices]
+  );
+
   // Compare search results
   const compareResults = useMemo(() => {
     if (!compareMode || compareQuery.length < 1) return [];
@@ -538,31 +575,7 @@ export function BoligMap() {
               });
             }}
           >
-            {visibleMarkers.map((m) => (
-              <Marker
-                key={m.nr}
-                position={[m.lat, m.lon]}
-                icon={bubbleIcon(m.price, m.count, sortedPrices, selected?.kommunenummer === m.nr)}
-                eventHandlers={{
-                  click() {
-                    const kommun = { kommunenummer: m.nr, kommunenavn: m.name, lat: m.lat, lon: m.lon };
-                    if (compareMode && selected && selected.kommunenummer !== m.nr) {
-                      // In compare mode — clicking a second bubble opens comparison
-                      setCompareTarget(kommun);
-                      setShowCompare(true);
-                      setCompareMode(false);
-                      setCompareQuery("");
-                    } else {
-                      setSelected((prev) => prev?.kommunenummer === m.nr ? null : kommun);
-                      setShowInfoSheet(false);
-                      setCompareMode(false);
-                      setCompareQuery("");
-                    }
-                  },
-                }}
-                {...{ price: m.price } as Record<string, unknown>}
-              />
-            ))}
+            {bubbleMarkers}
           </MarkerClusterGroup>}
         </MapContainer>
 
