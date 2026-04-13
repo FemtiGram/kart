@@ -166,11 +166,53 @@ export function SchoolsMap() {
 
   const kommunerRef = useRef<KommuneEntry[]>([]);
   const searchBarRef = useRef<MapSearchBarHandle>(null);
+  const initialHash = useRef(
+    typeof window !== "undefined" ? window.location.hash : ""
+  );
 
   // Deep link from /kommune/[slug]
   useInitialPosition((lat, lon, zoom) => {
     setCenter({ lat, lon, zoom, _t: Date.now() });
   });
+
+  // Sync selection → URL hash
+  useEffect(() => {
+    if (loading) return;
+    if (selected?.kind === "school") {
+      history.replaceState(null, "", `#skole-${selected.data.id}`);
+    } else if (selected?.kind === "kindergarten") {
+      history.replaceState(null, "", `#barnehage-${selected.data.id}`);
+    } else if (!initialHash.current) {
+      history.replaceState(null, "", window.location.pathname);
+    }
+  }, [selected, loading]);
+
+  // Read URL hash on data load → auto-select
+  useEffect(() => {
+    if (loading) return;
+    if (schools.length === 0 && kindergartens.length === 0) return;
+    const hash = initialHash.current || window.location.hash;
+    initialHash.current = "";
+    if (!hash) return;
+    const match = hash.match(/^#(skole|barnehage)-(\d+)$/);
+    if (!match) return;
+    const [, kind, id] = match;
+    if (kind === "skole") {
+      const school = schools.find((s) => s.id === id);
+      if (school) {
+        setSelected({ kind: "school", data: school });
+        setShowInfoSheet(true);
+        setCenter({ lat: school.lat, lon: school.lon, zoom: 14, _t: Date.now() });
+      }
+    } else {
+      const kg = kindergartens.find((k) => k.id === id);
+      if (kg) {
+        setSelected({ kind: "kindergarten", data: kg });
+        setShowInfoSheet(true);
+        setCenter({ lat: kg.lat, lon: kg.lon, zoom: 14, _t: Date.now() });
+      }
+    }
+  }, [loading, schools, kindergartens]);
 
   const loadData = useCallback(async () => {
     setError(false);

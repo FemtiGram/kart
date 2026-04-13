@@ -502,9 +502,10 @@ function SkoleSection({ profile }: { profile: KommuneProfile }) {
           </p>
           <div className="rounded-2xl border bg-card overflow-hidden">
             {schools.top.map((s, i) => (
-              <div
+              <Link
                 key={s.id}
-                className={`flex items-center justify-between px-4 py-3 text-sm ${i > 0 ? "border-t" : ""}`}
+                href={`/skoler#skole-${s.id}`}
+                className={`flex items-center justify-between px-4 py-3 text-sm hover:bg-muted/50 transition-colors ${i > 0 ? "border-t" : ""}`}
               >
                 <div className="flex items-center gap-3 min-w-0">
                   <GraduationCap className="h-4 w-4 shrink-0 text-muted-foreground" />
@@ -513,7 +514,7 @@ function SkoleSection({ profile }: { profile: KommuneProfile }) {
                 <span className="tabular-nums text-foreground/70 shrink-0 ml-3">
                   {s.students != null ? `${fmtNumber(s.students)} elever` : "–"}
                 </span>
-              </div>
+              </Link>
             ))}
           </div>
         </div>
