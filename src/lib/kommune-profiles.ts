@@ -118,6 +118,9 @@ export interface KommuneProfile {
   income: number | null;
   bolig: Record<string, BoligEntry>;
   affordability: number | null;
+  /** Finn.no hierarchical location code (e.g. `1.20012.20195`). Null for
+   *  kommuner not present in Finn's taxonomy (e.g. Drammen). */
+  finnLocationCode: string | null;
   verneAreaKm2: number | null;
   vernePct: number | null;
   charging: ChargingSummary;

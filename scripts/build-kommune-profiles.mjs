@@ -20,6 +20,7 @@ const GEOJSON_PATH = join(ROOT, "public", "data", "kommuner.geojson");
 const STATIONS_PATH = join(ROOT, "public", "data", "stations.json");
 const CABINS_PATH = join(ROOT, "public", "data", "cabins.json");
 const RESERVOIRS_PATH = join(ROOT, "public", "data", "reservoirs.json");
+const FINN_LOCATIONS_PATH = join(ROOT, "public", "data", "finn-locations.json");
 const OUT_PATH = join(ROOT, "public", "data", "kommune-profiles.json");
 
 // ─── Geometry helpers ────────────────────────────────────────
@@ -506,8 +507,11 @@ async function main() {
   const cabins = JSON.parse(readFileSync(CABINS_PATH, "utf8"));
   const reservoirsFile = JSON.parse(readFileSync(RESERVOIRS_PATH, "utf8"));
   const reservoirs = reservoirsFile.reservoirs ?? reservoirsFile;
+  const finnLocations = existsSync(FINN_LOCATIONS_PATH)
+    ? JSON.parse(readFileSync(FINN_LOCATIONS_PATH, "utf8"))
+    : {};
 
-  console.log(`  Loaded ${geo.features.length} kommuner, ${stations.length} stations, ${cabins.length} cabins, ${reservoirs.length} reservoirs`);
+  console.log(`  Loaded ${geo.features.length} kommuner, ${stations.length} stations, ${cabins.length} cabins, ${reservoirs.length} reservoirs, ${Object.keys(finnLocations).length} Finn codes`);
 
   // Fetch external data in parallel
   let population, income, bolig, protectedAreas, plants;
@@ -641,6 +645,7 @@ async function main() {
       income: incomeValue,
       bolig: boligByType,
       affordability,
+      finnLocationCode: finnLocations[knr] ?? null,
       verneAreaKm2,
       vernePct,
       charging: {

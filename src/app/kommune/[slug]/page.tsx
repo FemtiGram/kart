@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
-import { ArrowLeft, TrendingUp, Home, Shield, Zap, BatteryCharging, Mountain, Waves, Cloud } from "lucide-react";
+import { ArrowLeft, TrendingUp, Home, Shield, Zap, BatteryCharging, Mountain, Waves, Cloud, ExternalLink, Briefcase, Compass } from "lucide-react";
 import {
   getAllKommuner,
   getProfileBySlug,
@@ -253,6 +253,107 @@ function BoligSection({ profile }: { profile: KommuneProfile }) {
         </p>
       )}
     </Section>
+  );
+}
+
+// ─── Section: Utforsk muligheter (external Finn.no links) ──
+
+/**
+ * Finn.no's jobs section supports kommune-level location filtering, but uses
+ * a different URL endpoint and code format than the boliger section:
+ *
+ *   Boliger: `/realestate/homes/search.html?location=1.<fylke>.<kommune>`
+ *            Oslo special: `0.20061` (2 segments, Oslo is both fylke + kommune)
+ *
+ *   Jobs:    `/job/search?location=2.20001.<fylke>.<kommune>` (4 segments,
+ *            20001 = Norge prefix). Oslo: `2.20001.20061.20061`.
+ *
+ * Both formats use the same fylke and kommune IDs internally, so we can
+ * derive the jobs code from the boliger code.
+ */
+function jobsCodeFromBoligerCode(boligerCode: string | null): string | null {
+  if (!boligerCode) return null;
+  const parts = boligerCode.split(".");
+  if (parts[0] === "0") {
+    // Oslo special: "0.20061" → "2.20001.20061.20061"
+    const id = parts[1];
+    if (!id) return null;
+    return `2.20001.${id}.${id}`;
+  }
+  // Regular: "1.<fylke>.<kommune>" → "2.20001.<fylke>.<kommune>"
+  const fylke = parts[1];
+  const kommune = parts[2];
+  if (!fylke || !kommune) return null;
+  return `2.20001.${fylke}.${kommune}`;
+}
+
+function MuligheterSection({ profile }: { profile: KommuneProfile }) {
+  const name = profile.displayName;
+  const code = profile.finnLocationCode;
+  const jobCode = jobsCodeFromBoligerCode(code);
+  const boligUrl = code
+    ? `https://www.finn.no/realestate/homes/search.html?q=${encodeURIComponent(name)}&location=${code}`
+    : `https://www.finn.no/realestate/homes/search.html?q=${encodeURIComponent(name)}`;
+  const jobUrl = jobCode
+    ? `https://www.finn.no/job/search?location=${jobCode}`
+    : `https://www.finn.no/job/search?q=${encodeURIComponent(name)}`;
+  return (
+    <Section title={`Utforsk muligheter i ${name}`} icon={Compass}>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <FinnCard
+          href={boligUrl}
+          icon={Home}
+          title={`Boliger til salgs i ${name}`}
+          subtitle="Se aktuelle boligannonser på Finn.no"
+        />
+        <FinnCard
+          href={jobUrl}
+          icon={Briefcase}
+          title={`Ledige jobber i ${name}`}
+          subtitle="Se utlyste stillinger på Finn.no"
+        />
+      </div>
+    </Section>
+  );
+}
+
+function FinnCard({
+  href,
+  icon: Icon,
+  title,
+  subtitle,
+}: {
+  href: string;
+  icon: typeof TrendingUp;
+  title: string;
+  subtitle: string;
+}) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="flex items-center justify-between rounded-2xl border bg-card hover:bg-muted/60 px-5 py-4 transition-colors"
+    >
+      <div className="flex items-center gap-3 min-w-0">
+        <Icon
+          className="h-5 w-5 shrink-0"
+          style={{ color: "var(--kv-blue)" }}
+        />
+        <div className="min-w-0">
+          <p
+            className="text-sm font-semibold truncate"
+            style={{ color: "var(--kv-blue)" }}
+          >
+            {title}
+          </p>
+          <p className="mt-0.5 text-xs text-muted-foreground truncate">
+            {subtitle}
+          </p>
+        </div>
+      </div>
+      <ExternalLink className="h-4 w-4 text-foreground/70 shrink-0 ml-3" />
+    </a>
   );
 }
 
@@ -561,6 +662,7 @@ export default async function KommunePage({
       />
       <div className="container mx-auto px-6 md:px-16 py-8 md:py-12 max-w-4xl">
         <Hero profile={profile} />
+        <MuligheterSection profile={profile} />
         <KartSection profile={profile} />
         <BoligSection profile={profile} />
         <NaturSection profile={profile} />
