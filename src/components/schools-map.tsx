@@ -166,35 +166,53 @@ export function SchoolsMap() {
 
   const kommunerRef = useRef<KommuneEntry[]>([]);
   const searchBarRef = useRef<MapSearchBarHandle>(null);
-  const initialHash = useRef(
-    typeof window !== "undefined" ? window.location.hash : ""
-  );
+  const restoredRef = useRef(false);
+  const prevSelectionKey = useRef<string | null>(null);
 
   // Deep link from /kommune/[slug]
   useInitialPosition((lat, lon, zoom) => {
     setCenter({ lat, lon, zoom, _t: Date.now() });
   });
 
-  // Sync selection → URL hash
+  // Sync selection → URL hash. Only runs when selection actually changes
+  // value (not on every mount/strict-mode re-run). Uses absolute pathname
+  // in replaceState so Next.js App Router's internal URL state doesn't
+  // drift and later concatenate hashes on subsequent Link navigations.
   useEffect(() => {
-    if (loading) return;
+    const key = selected
+      ? `${selected.kind}-${selected.data.id}`
+      : null;
+    if (key === prevSelectionKey.current) return;
+    prevSelectionKey.current = key;
+    const path = window.location.pathname;
     if (selected?.kind === "school") {
-      history.replaceState(null, "", `#skole-${selected.data.id}`);
+      history.replaceState(null, "", `${path}#skole-${selected.data.id}`);
     } else if (selected?.kind === "kindergarten") {
-      history.replaceState(null, "", `#barnehage-${selected.data.id}`);
-    } else if (!initialHash.current) {
-      history.replaceState(null, "", window.location.pathname);
+      history.replaceState(null, "", `${path}#barnehage-${selected.data.id}`);
+    } else {
+      history.replaceState(null, "", path);
     }
-  }, [selected, loading]);
+  }, [selected]);
 
-  // Read URL hash on data load → auto-select
+  // Read URL hash on data load → auto-select. Reads window.location.hash
+  // fresh (not a ref captured at mount) to handle client-side navigation
+  // where the ref initializer fires before Next.js has finished updating
+  // the URL.
+  //
+  // Takes the LAST valid segment from a hash — Next.js App Router has a
+  // bug where navigating Link → back → Link to the same route concatenates
+  // the old and new hash, producing `#skole-A#skole-B`. We pick the last
+  // one (the user's current intent) and let the sync effect clean it up.
   useEffect(() => {
+    if (restoredRef.current) return;
     if (loading) return;
     if (schools.length === 0 && kindergartens.length === 0) return;
-    const hash = initialHash.current || window.location.hash;
-    initialHash.current = "";
+    restoredRef.current = true;
+    const hash = window.location.hash;
     if (!hash) return;
-    const match = hash.match(/^#(skole|barnehage)-(\d+)$/);
+    const segments = hash.split("#").filter(Boolean);
+    const last = segments[segments.length - 1];
+    const match = last?.match(/^(skole|barnehage)-(\d+)$/);
     if (!match) return;
     const [, kind, id] = match;
     if (kind === "skole") {
