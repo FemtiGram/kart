@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { MapSearchBar, type MapSearchBarHandle } from "@/components/map-search";
 import { chargingIcon } from "@/components/map-icons";
+import { SelectedHalo } from "@/components/selected-halo";
 import { useInitialPosition } from "@/lib/use-initial-position";
 import { isInNorway, OSLO } from "@/lib/fylker";
 import { FlyTo, DataDisclaimer, MapError, MAP_HEIGHT } from "@/lib/map-utils";
@@ -393,6 +394,10 @@ export function ChargingMap() {
           >
             {stationMarkers}
           </MarkerClusterGroup>
+
+          {selected && (
+            <SelectedHalo lat={selected.lat} lon={selected.lon} />
+          )}
         </MapContainer>
 
         {/* Tile layer toggle */}

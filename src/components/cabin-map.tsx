@@ -20,6 +20,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { Toggle } from "@/components/ui/toggle";
 import { MapSearchBar, type MapSearchBarHandle } from "@/components/map-search";
 import { cabinIcon, CABIN_COLORS } from "@/components/map-icons";
+import { SelectedHalo } from "@/components/selected-halo";
 import { useHashSelection } from "@/lib/use-hash-selection";
 import { isInNorway } from "@/lib/fylker";
 
@@ -509,6 +510,10 @@ export function CabinMap() {
           >
             {cabinMarkers}
           </MarkerClusterGroup>
+
+          {selected && (
+            <SelectedHalo lat={selected.lat} lon={selected.lon} />
+          )}
         </MapContainer>
 
         {/* Legend + tile toggle */}

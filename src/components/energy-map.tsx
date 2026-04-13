@@ -35,6 +35,7 @@ import { MapSearchBar, type MapSearchBarHandle } from "@/components/map-search";
 import { useInitialPosition } from "@/lib/use-initial-position";
 import { CompactCard } from "@/components/compact-card";
 import { MapLoading } from "@/components/map-loading";
+import { SelectedHalo } from "@/components/selected-halo";
 import { DriveLink } from "@/components/drive-link";
 import {
   energyIcon, turbineIcon, oilgasIcon, havvindIcon,
@@ -718,6 +719,19 @@ export function EnergyMap() {
               />
             </span>
           ))}
+
+          {selected && (
+            <SelectedHalo lat={selected.lat} lon={selected.lon} />
+          )}
+          {selectedOilGas && (
+            <SelectedHalo lat={selectedOilGas.lat} lon={selectedOilGas.lon} />
+          )}
+          {selectedHavvind && (
+            <SelectedHalo
+              lat={selectedHavvind.center.lat}
+              lon={selectedHavvind.center.lon}
+            />
+          )}
         </MapContainer>
 
         {/* Tile layer toggle */}

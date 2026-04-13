@@ -19,6 +19,7 @@ import { CompactCard } from "@/components/compact-card";
 import { InfoModal } from "@/components/info-modal";
 import { TileToggle } from "@/components/tile-toggle";
 import { MapLoading } from "@/components/map-loading";
+import { SelectedHalo } from "@/components/selected-halo";
 import { useHashSelection } from "@/lib/use-hash-selection";
 
 // ─── Types ──────────────────────────────────────────────────
@@ -577,6 +578,10 @@ export function BoligMap() {
           >
             {bubbleMarkers}
           </MarkerClusterGroup>}
+
+          {selected && (
+            <SelectedHalo lat={selected.lat} lon={selected.lon} />
+          )}
         </MapContainer>
 
         {/* Tile layer toggle */}

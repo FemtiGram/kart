@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/sheet";
 import { MapSearchBar, type MapSearchBarHandle } from "@/components/map-search";
 import { schoolIcon, kindergartenIcon, type SchoolType } from "@/components/map-icons";
+import { SelectedHalo } from "@/components/selected-halo";
 import { useInitialPosition } from "@/lib/use-initial-position";
 import { isInNorway, OSLO } from "@/lib/fylker";
 import { FlyTo, DataDisclaimer, MapError, MAP_HEIGHT } from "@/lib/map-utils";
@@ -668,6 +669,10 @@ export function SchoolsMap() {
             >
               {kindergartenMarkers}
             </MarkerClusterGroup>
+          )}
+
+          {selected && (
+            <SelectedHalo lat={selected.data.lat} lon={selected.data.lon} />
           )}
         </MapContainer>
 

@@ -22,6 +22,7 @@ import type { KommuneEntry, Suggestion } from "@/lib/map-utils";
 import { InfoModal } from "@/components/info-modal";
 import { TileToggle } from "@/components/tile-toggle";
 import { MapLoading } from "@/components/map-loading";
+import { SelectedHalo } from "@/components/selected-halo";
 
 interface WindFarm {
   id: unknown;
@@ -333,6 +334,9 @@ export function WindPowerMap() {
             maxZoom={17}
           />
           {farmMarkers}
+          {selected && (
+            <SelectedHalo lat={selected.lat} lon={selected.lon} />
+          )}
         </MapContainer>
 
         {/* Tile layer toggle */}
