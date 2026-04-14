@@ -330,7 +330,7 @@ export function IncomeMap() {
                 {selected.income != null && (() => {
                   const { vsMedian } = computeStats(incomeData, selected.kommunenummer);
                   return (
-                    <span className={`text-xs font-semibold shrink-0 ${vsMedian >= 0 ? "text-green-600" : "text-red-500"}`}>
+                    <span className={`text-xs font-semibold shrink-0 ${vsMedian >= 0 ? "text-green-700" : "text-red-600"}`}>
                       {vsMedian >= 0 ? "+" : ""}{vsMedian.toFixed(1)}% vs medianen
                     </span>
                   );

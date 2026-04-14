@@ -623,7 +623,7 @@ export function BoligMap() {
               </CompactCard.ContextLeft>
               <CompactCard.ContextRight>
                 {yoyChange != null && (
-                  <span className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-xs font-semibold ${yoyChange >= 0 ? "bg-green-50 text-green-700" : "bg-red-50 text-red-600"}`}>
+                  <span className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-xs font-semibold ${yoyChange >= 0 ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"}`}>
                     {yoyChange >= 0 ? "+" : ""}{yoyChange.toFixed(1)}% fra {prevYear}
                   </span>
                 )}
@@ -748,7 +748,7 @@ export function BoligMap() {
                       {[fylke, TYPE_LABELS[boligtype], year].filter(Boolean).join(" · ")}
                     </p>
                     {yoyChange != null && (
-                      <span className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-xs font-semibold shrink-0 ${yoyChange >= 0 ? "bg-green-50 text-green-700" : "bg-red-50 text-red-600"}`}>
+                      <span className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-xs font-semibold shrink-0 ${yoyChange >= 0 ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"}`}>
                         {yoyChange >= 0 ? "+" : ""}{yoyChange.toFixed(1)}% fra {prevYear}
                       </span>
                     )}
@@ -799,7 +799,7 @@ export function BoligMap() {
                         <div className="flex items-center justify-between mb-2">
                           <p className="text-xs font-semibold text-foreground/70">Prisutvikling ({years[0]}–{years[years.length - 1]})</p>
                           {totalChange != null && (
-                            <span className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-xs font-semibold ${totalChange >= 0 ? "bg-green-50 text-green-700" : "bg-red-50 text-red-600"}`}>
+                            <span className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-xs font-semibold ${totalChange >= 0 ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"}`}>
                               {totalChange >= 0 ? "+" : ""}{totalChange.toFixed(0)}%
                             </span>
                           )}
@@ -843,7 +843,7 @@ export function BoligMap() {
                         {price != null && median > 0 && (
                           <div className="flex items-center justify-between">
                             <span className="text-xs text-foreground/70">vs. medianen</span>
-                            <span className={`text-xs font-semibold ${price >= median ? "text-green-600" : "text-red-500"}`}>
+                            <span className={`text-xs font-semibold ${price >= median ? "text-green-700" : "text-red-600"}`}>
                               {price >= median ? "+" : ""}{(((price - median) / median) * 100).toFixed(1)}%
                             </span>
                           </div>
@@ -1011,7 +1011,7 @@ export function BoligMap() {
                             <span className="text-xs font-bold tabular-nums text-right w-20" style={{ color: pB ? "var(--kv-blue)" : undefined }}>
                               {pB?.toLocaleString("nb-NO") ?? "–"}
                             </span>
-                            <span className={`text-xs font-semibold tabular-nums text-right w-16 ${d != null ? (d > 0 ? "text-orange-600" : d < 0 ? "text-green-600" : "text-muted-foreground") : "text-muted-foreground"}`}>
+                            <span className={`text-xs font-semibold tabular-nums text-right w-16 ${d != null ? (d > 0 ? "text-orange-700" : d < 0 ? "text-green-700" : "text-foreground/70") : "text-foreground/70"}`}>
                               {d != null ? `${d > 0 ? "+" : ""}${d.toLocaleString("nb-NO")}` : "–"}
                             </span>
                           </button>
@@ -1034,7 +1034,7 @@ export function BoligMap() {
                               <div className="flex items-center justify-between mb-1">
                                 <span className="text-[10px] font-medium truncate">{item.name}</span>
                                 {change != null && (
-                                  <span className={`text-xs font-semibold ${change >= 0 ? "text-green-600" : "text-red-500"}`}>
+                                  <span className={`text-xs font-semibold ${change >= 0 ? "text-green-700" : "text-red-600"}`}>
                                     {change >= 0 ? "+" : ""}{change.toFixed(0)}%
                                   </span>
                                 )}

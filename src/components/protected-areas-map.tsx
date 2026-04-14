@@ -59,13 +59,42 @@ function getFylke(kommunenummer: string): string | null {
 
 // ─── Qualitative label ─────────────────────────────────────
 
-function vernLabel(pct: number): { text: string; color: string } {
-  if (pct === 0) return { text: "Ingen vernet natur", color: "#6b7280" };
-  if (pct < 5) return { text: "Lav andel vernet natur", color: "var(--kv-negative)" };
-  if (pct < 15) return { text: "Under landsgjennomsnittet", color: "var(--kv-warning)" };
-  if (pct < 25) return { text: "Rundt landsgjennomsnittet", color: "var(--kv-positive)" };
-  if (pct < 50) return { text: "Godt over landsgjennomsnittet", color: "var(--kv-positive)" };
-  return { text: "Blant de mest vernede i Norge", color: "var(--kv-positive)" };
+// `color` is used for the progress-bar fill where saturation matters and
+// there's no text contrast concern. `textColor` is used anywhere the label
+// drives foreground text on white — it steps to the 800-family so the
+// same semantic family still passes WCAG AA (≥4.5:1 on white / card bg).
+function vernLabel(pct: number): { text: string; color: string; textColor: string } {
+  if (pct === 0)
+    return { text: "Ingen vernet natur", color: "#6b7280", textColor: "#4b5563" };
+  if (pct < 5)
+    return {
+      text: "Lav andel vernet natur",
+      color: "var(--kv-negative)",
+      textColor: "var(--kv-negative-dark)",
+    };
+  if (pct < 15)
+    return {
+      text: "Under landsgjennomsnittet",
+      color: "var(--kv-warning)",
+      textColor: "var(--kv-warning-dark)",
+    };
+  if (pct < 25)
+    return {
+      text: "Rundt landsgjennomsnittet",
+      color: "var(--kv-positive)",
+      textColor: "var(--kv-positive-dark)",
+    };
+  if (pct < 50)
+    return {
+      text: "Godt over landsgjennomsnittet",
+      color: "var(--kv-positive)",
+      textColor: "var(--kv-positive-dark)",
+    };
+  return {
+    text: "Blant de mest vernede i Norge",
+    color: "var(--kv-positive)",
+    textColor: "var(--kv-positive-dark)",
+  };
 }
 
 // ─── Types ──────────────────────────────────────────────────
@@ -395,7 +424,7 @@ export function ProtectedAreasMap() {
                 title={selected.kommunenavn}
                 metric={vernTotal > 0 ? `${pct.toFixed(1).replace(".", ",")}%` : undefined}
                 metricUnit={vernTotal > 0 ? "vernet" : undefined}
-                metricColor={label.color}
+                metricColor={label.textColor}
               />
               <CompactCard.Context>
                 <CompactCard.ContextLeft>
@@ -436,12 +465,12 @@ export function ProtectedAreasMap() {
                   {vernTotal > 0 ? (
                     <div className="mt-4 pt-4 border-t">
                       <div className="flex items-baseline gap-2">
-                        <p className="text-3xl font-extrabold tabular-nums" style={{ color: label.color }}>
+                        <p className="text-3xl font-extrabold tabular-nums" style={{ color: label.textColor }}>
                           {pct.toFixed(1).replace(".", ",")}%
                         </p>
                         <p className="text-sm text-muted-foreground">av kommunen er vernet</p>
                       </div>
-                      <p className="text-xs mt-1" style={{ color: label.color }}>{label.text}</p>
+                      <p className="text-xs mt-1" style={{ color: label.textColor }}>{label.text}</p>
 
                       {/* National comparison */}
                       <div className="mt-4 flex items-center gap-3">

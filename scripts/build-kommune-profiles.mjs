@@ -21,8 +21,10 @@ const STATIONS_PATH = join(ROOT, "public", "data", "stations.json");
 const CABINS_PATH = join(ROOT, "public", "data", "cabins.json");
 const RESERVOIRS_PATH = join(ROOT, "public", "data", "reservoirs.json");
 const SCHOOLS_PATH = join(ROOT, "public", "data", "schools.json");
+const HEALTH_PATH = join(ROOT, "public", "data", "health.json");
 const FINN_LOCATIONS_PATH = join(ROOT, "public", "data", "finn-locations.json");
 const OUT_PATH = join(ROOT, "public", "data", "kommune-profiles.json");
+const FASTLEGE_OUT_PATH = join(ROOT, "public", "data", "fastlege.json");
 
 // ─── Geometry helpers ────────────────────────────────────────
 
@@ -328,6 +330,107 @@ async function fetchBolig() {
   return result;
 }
 
+// ─── SSB 12005: Fastlege (general practitioner) data ────────
+//
+// Authoritative kommune-level data from SSB — covers the whole
+// fastlegekrise story far better than OSM markers ever could. 18
+// metrics per kommune per year, 2015–2025. We keep all 18 for the
+// latest year (for the /helse detail sheet) and a full trend for the
+// three metrics used on the /helse choropleth + Stedsprofil sparkline.
+
+const FASTLEGE_METRICS = [
+  { code: "KOSantallavtaler0001", label: "Antall fastlegeavtaler", unit: "antall" },
+  { code: "KOSantallpasient0000", label: "Pasienter på liste med lege", unit: "antall" },
+  { code: "KOSantallavtaler0000", label: "Fastlegelister uten lege", unit: "antall" },
+  { code: "KOSantallpasient0001", label: "Pasienter på liste uten lege", unit: "antall" },
+  { code: "KOSandelpasiente0000", label: "Andel pasienter på liste uten lege", unit: "prosent", primary: true, invertColor: true },
+  { code: "KOSaapnelister0000", label: "Antall åpne fastlegelister", unit: "antall" },
+  { code: "KOSgjsnlisteleng0000", label: "Gjennomsnittlig listelengde", unit: "antall", primary: true, invertColor: true },
+  { code: "KOSgjsnllkomm0000", label: "Gj.sn. listelengde korr. kommunale timer", unit: "antall" },
+  { code: "KOSantallkvinnel0000", label: "Antall kvinnelige leger", unit: "antall" },
+  { code: "KOSandelkvinnele0000", label: "Andel kvinnelige leger", unit: "prosent" },
+  { code: "KOSkapasitet0000", label: "Kapasitet hos fastlegene", unit: "antall" },
+  { code: "KOSkapasitetbere0000", label: "Beregnet kapasitet", unit: "antall" },
+  { code: "KOSreservekapasi0000", label: "Ledig kapasitet hos fastlegen", unit: "antall", primary: true },
+  { code: "KOSkonsultpasien0000", label: "Konsultasjoner (bostedskommune)", unit: "antall" },
+  { code: "KOSkonsultlegeko0000", label: "Konsultasjoner (praksiskommune)", unit: "antall" },
+  { code: "KOSkonspasientpr0000", label: "Konsultasjoner per person (bosted)", unit: "antall" },
+  { code: "KOSkonslegeprper0000", label: "Konsultasjoner per person (praksis)", unit: "antall" },
+  { code: "KOSantallavtaler0002", label: "Avtaler totalt inkl. lister uten lege", unit: "antall" },
+];
+
+const FASTLEGE_YEARS = ["2015", "2016", "2017", "2018", "2019", "2020", "2021", "2022", "2023", "2024", "2025"];
+
+async function fetchFastlege() {
+  console.log("  Fetching SSB 12005 (fastlege)...");
+  const res = await fetch("https://data.ssb.no/api/v0/no/table/12005", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      query: [
+        { code: "KOKkommuneregion0000", selection: { filter: "all", values: ["*"] } },
+        {
+          code: "ContentsCode",
+          selection: { filter: "item", values: FASTLEGE_METRICS.map((m) => m.code) },
+        },
+        { code: "Tid", selection: { filter: "item", values: FASTLEGE_YEARS } },
+      ],
+      response: { format: "json-stat2" },
+    }),
+  });
+  if (!res.ok) throw new Error(`SSB 12005: HTTP ${res.status}`);
+  const data = await res.json();
+
+  const ids = data.id;
+  const sizes = data.size;
+  const values = data.value;
+  const strides = new Array(ids.length).fill(1);
+  for (let i = ids.length - 2; i >= 0; i--) {
+    strides[i] = strides[i + 1] * sizes[i + 1];
+  }
+  const regionIndex = data.dimension.KOKkommuneregion0000.category.index;
+  const contentsIndex = data.dimension.ContentsCode.category.index;
+  const tidIndex = data.dimension.Tid.category.index;
+  const rStride = strides[ids.indexOf("KOKkommuneregion0000")];
+  const cStride = strides[ids.indexOf("ContentsCode")];
+  const tStride = strides[ids.indexOf("Tid")];
+
+  // First pass: decode into a nested map { knr: { code: { year: value } } }.
+  // Only keep four-digit kommune codes — SSB also returns regional aggregates.
+  const byKnr = {};
+  for (const [knr, rI] of Object.entries(regionIndex)) {
+    if (!/^\d{4}$/.test(knr)) continue;
+    const perCode = {};
+    for (const [code, cI] of Object.entries(contentsIndex)) {
+      const perYear = {};
+      for (const [year, tI] of Object.entries(tidIndex)) {
+        const v = values[rI * rStride + cI * cStride + tI * tStride];
+        if (v != null) perYear[year] = v;
+      }
+      if (Object.keys(perYear).length > 0) perCode[code] = perYear;
+    }
+    if (Object.keys(perCode).length > 0) byKnr[knr] = perCode;
+  }
+
+  // Pick the most recent year that has data for the majority of kommuner —
+  // SSB sometimes publishes thin preview data for the current year before
+  // the full release lands. "Latest" = the youngest year where at least
+  // half the kommuner have a Reservekapasitet value.
+  let latestYear = FASTLEGE_YEARS[0];
+  for (const year of [...FASTLEGE_YEARS].reverse()) {
+    const populated = Object.values(byKnr).filter(
+      (k) => k.KOSreservekapasi0000?.[year] != null
+    ).length;
+    if (populated >= 150) {
+      latestYear = year;
+      break;
+    }
+  }
+  console.log(`    → latest usable year: ${latestYear} (${Object.keys(byKnr).length} kommuner total)`);
+
+  return { byKnr, latestYear };
+}
+
 // ─── NVE energy fetcher (hydro + operational wind only) ──────
 
 function utmToLatLon(easting, northing) {
@@ -516,18 +619,25 @@ async function main() {
     : { schools: [], kindergartens: [] };
   const schools = schoolsFile.schools ?? [];
   const kindergartens = schoolsFile.kindergartens ?? [];
+  const healthFile = existsSync(HEALTH_PATH)
+    ? JSON.parse(readFileSync(HEALTH_PATH, "utf8"))
+    : { sykehus: [], legevakt: [], privatklinikker: [] };
+  const healthSykehus = healthFile.sykehus ?? [];
+  const healthLegevakt = healthFile.legevakt ?? [];
+  const healthPrivat = healthFile.privatklinikker ?? [];
 
-  console.log(`  Loaded ${geo.features.length} kommuner, ${stations.length} stations, ${cabins.length} cabins, ${reservoirs.length} reservoirs, ${schools.length} schools, ${kindergartens.length} barnehager, ${Object.keys(finnLocations).length} Finn codes`);
+  console.log(`  Loaded ${geo.features.length} kommuner, ${stations.length} stations, ${cabins.length} cabins, ${reservoirs.length} reservoirs, ${schools.length} schools, ${kindergartens.length} barnehager, ${Object.keys(finnLocations).length} Finn codes, ${healthSykehus.length} sykehus, ${healthLegevakt.length} legevakt, ${healthPrivat.length} klinikker`);
 
   // Fetch external data in parallel
-  let population, income, bolig, protectedAreas, plants;
+  let population, income, bolig, protectedAreas, plants, fastlege;
   try {
-    [population, income, bolig, protectedAreas, plants] = await Promise.all([
+    [population, income, bolig, protectedAreas, plants, fastlege] = await Promise.all([
       fetchPopulation(),
       fetchIncome(),
       fetchBolig(),
       fetchProtectedAreas(),
       fetchEnergyPlants(),
+      fetchFastlege(),
     ]);
   } catch (err) {
     console.error(`  ✗ Failed fetching external data: ${err.message}`);
@@ -597,6 +707,10 @@ async function main() {
   const reservoirsByKnr = assignPoints(reservoirs, (r) => r.center);
   console.log("  Spatial join: energy plants...");
   const plantsByKnr = assignPoints(plants, (p) => ({ lat: p.lat, lon: p.lon }));
+  console.log("  Spatial join: health (sykehus + legevakt + klinikker)...");
+  const sykehusByKnr = assignPoints(healthSykehus, (h) => ({ lat: h.lat, lon: h.lon }));
+  const legevaktByKnr = assignPoints(healthLegevakt, (h) => ({ lat: h.lat, lon: h.lon }));
+  const privatByKnr = assignPoints(healthPrivat, (h) => ({ lat: h.lat, lon: h.lon }));
 
   // Build profiles
   const profiles = {};
@@ -615,6 +729,9 @@ async function main() {
     const totalMW = plantList.reduce((sum, p) => sum + (p.capacityMW ?? 0), 0);
     const schoolList = schoolsByKnr[knr] ?? [];
     const kindergartenList = kindergartensByKnr[knr] ?? [];
+    const sykehusList = sykehusByKnr[knr] ?? [];
+    const legevaktList = legevaktByKnr[knr] ?? [];
+    const privatList = privatByKnr[knr] ?? [];
     const totalStudents = schoolList.reduce(
       (sum, s) => sum + (s.students ?? 0),
       0
@@ -840,6 +957,38 @@ async function main() {
             lon: k.lon,
           })),
       },
+      health: (() => {
+        const fl = fastlege.byKnr[knr] ?? {};
+        // Latest year's value per metric (flat object, all 18 metrics)
+        const latest = {};
+        for (const m of FASTLEGE_METRICS) {
+          const v = fl[m.code]?.[fastlege.latestYear];
+          if (v != null) latest[m.code] = v;
+        }
+        // Trend for the three primary metrics only — keeps per-profile
+        // footprint tight while still supporting the Stedsprofil sparkline.
+        const trend = {};
+        for (const m of FASTLEGE_METRICS.filter((m) => m.primary)) {
+          const series = fl[m.code];
+          if (!series) continue;
+          trend[m.code] = Object.entries(series)
+            .sort(([a], [b]) => a.localeCompare(b))
+            .map(([year, value]) => ({ year, value }));
+        }
+        return {
+          year: fastlege.latestYear,
+          latest,
+          trend,
+          // OSM markers (sykehus + legevakt) reference count, kept so the
+          // /helse optional OSM overlay badge and Stedsprofil can surface
+          // "X sykehus i OSM" without fetching the full marker file.
+          osm: {
+            sykehusCount: sykehusList.length,
+            legevaktCount: legevaktList.length,
+            privatklinikkerCount: privatList.length,
+          },
+        };
+      })(),
     };
   }
 
@@ -853,6 +1002,23 @@ async function main() {
   const verneRanks = rankBy(profiles, (p) => p.vernePct);
   const energyRanks = rankBy(profiles, (p) => p.energy.totalMW);
   const affordabilityRanks = rankBy(profiles, (p) => p.affordability, false); // lower = better
+  // Fastlege rankings — for "reservekapasitet" higher is better, for the
+  // other two primary metrics LOWER is better (you don't want overcrowded
+  // lists or a large andel without a GP).
+  const reservekapasitetRanks = rankBy(
+    profiles,
+    (p) => p.health.latest.KOSreservekapasi0000
+  );
+  const andelUtenLegeRanks = rankBy(
+    profiles,
+    (p) => p.health.latest.KOSandelpasiente0000,
+    false
+  );
+  const listelengdeRanks = rankBy(
+    profiles,
+    (p) => p.health.latest.KOSgjsnlisteleng0000,
+    false
+  );
 
   for (const [knr, profile] of Object.entries(profiles)) {
     profile.ranks = {
@@ -862,8 +1028,52 @@ async function main() {
       verne: verneRanks.ranks[knr] ?? null,
       energy: energyRanks.ranks[knr] ?? null,
       affordability: affordabilityRanks.ranks[knr] ?? null,
+      reservekapasitet: reservekapasitetRanks.ranks[knr] ?? null,
+      andelUtenLege: andelUtenLegeRanks.ranks[knr] ?? null,
+      listelengde: listelengdeRanks.ranks[knr] ?? null,
     };
   }
+
+  // Write public/data/fastlege.json — consumed by /helse choropleth. Each
+  // kommune row carries the latest-year value for ALL 18 metrics (small
+  // enough: 357 × 18 = 6.4k numbers) so the detail sheet can show the
+  // full stat grid without another fetch. Trend series are only stored
+  // for the three primary metrics used in sparklines.
+  const fastlegeOut = {
+    generatedAt: new Date().toISOString(),
+    latestYear: fastlege.latestYear,
+    metrics: FASTLEGE_METRICS.map((m) => ({
+      code: m.code,
+      label: m.label,
+      unit: m.unit,
+      primary: m.primary ?? false,
+      invertColor: m.invertColor ?? false,
+    })),
+    kommuner: Object.fromEntries(
+      Object.entries(fastlege.byKnr)
+        .map(([knr, series]) => {
+          const latest = {};
+          for (const m of FASTLEGE_METRICS) {
+            const v = series[m.code]?.[fastlege.latestYear];
+            if (v != null) latest[m.code] = v;
+          }
+          const trend = {};
+          for (const m of FASTLEGE_METRICS.filter((m) => m.primary)) {
+            if (!series[m.code]) continue;
+            trend[m.code] = Object.entries(series[m.code])
+              .sort(([a], [b]) => a.localeCompare(b))
+              .map(([year, value]) => ({ year, value }));
+          }
+          return [knr, { latest, trend }];
+        })
+        .filter(([, entry]) => Object.keys(entry.latest).length > 0)
+    ),
+  };
+  writeFileSync(FASTLEGE_OUT_PATH, JSON.stringify(fastlegeOut));
+  const fastlegeKb = (Buffer.byteLength(JSON.stringify(fastlegeOut)) / 1024).toFixed(0);
+  console.log(
+    `  ✓ ${Object.keys(fastlegeOut.kommuner).length} fastlege rows (${fastlegeKb} KB) → ${FASTLEGE_OUT_PATH}`
+  );
 
   // Write
   const output = {

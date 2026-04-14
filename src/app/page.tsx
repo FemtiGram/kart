@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowRight, ChevronDown, Mountain, DollarSign, Shield, Zap, Home as HomeIcon, BatteryCharging, Waves, Database, Globe, Code, TrendingUp, BarChart3, MapPinned, GraduationCap } from "lucide-react";
+import { ArrowRight, ChevronDown, Mountain, DollarSign, Shield, Zap, Home as HomeIcon, BatteryCharging, Waves, Database, Globe, Code, TrendingUp, BarChart3, MapPinned, GraduationCap, HeartPulse } from "lucide-react";
 import { FadeIn, FadeInView, HoverLift } from "@/components/motion";
 
 const featured = [
@@ -81,6 +81,12 @@ const groups = [
         description: "Alle 3 100+ skoler og 5 500+ barnehager i Norge med elev- og barnetall.",
         href: "/skoler",
         icon: GraduationCap,
+      },
+      {
+        title: "Helsetilbud",
+        description: "Sykehus, legevakt og privatklinikker fra OpenStreetMap — verifiser alltid før bruk.",
+        href: "/helse",
+        icon: HeartPulse,
       },
       {
         title: "Inntektskart",

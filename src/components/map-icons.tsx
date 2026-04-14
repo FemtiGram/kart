@@ -156,6 +156,67 @@ export function kindergartenIcon(
   return icon;
 }
 
+// ─── Health icons ────────────────────────────────────────────
+//
+// All health markers use `--kv-negative` (#dc2626) rather than brand
+// blue. Health data is higher-stakes than anything else on the site and
+// the red color is an explicit break from the house style so users read
+// these markers as "be careful, verify".
+
+export type HealthType = "sykehus" | "legevakt" | "privatklinikk";
+
+export const HEALTH_COLOR = "#dc2626";
+
+const healthIconCache = new Map<string, L.DivIcon>();
+
+export function healthIcon(
+  type: HealthType,
+  isSelected: boolean,
+  inverted: boolean
+): L.DivIcon {
+  const key = `${type}-${isSelected}-${inverted}`;
+  const cached = healthIconCache.get(key);
+  if (cached) return cached;
+
+  const size = type === "sykehus" ? 30 : type === "legevakt" ? 26 : 22;
+  const baseColor = HEALTH_COLOR;
+  const bg = inverted ? (isSelected ? "#24374c" : baseColor) : "white";
+  const iconColor = inverted ? "white" : isSelected ? "#24374c" : baseColor;
+  const border = isSelected
+    ? "#24374c"
+    : inverted
+      ? "rgba(255,255,255,0.3)"
+      : "rgba(0,0,0,0.15)";
+
+  // Three glyphs:
+  //   sykehus       — filled cross (highest urgency, inpatient care)
+  //   legevakt      — plus inside a heart (walk-in emergency)
+  //   privatklinikk — thin plus outline (non-emergency clinic)
+  let glyph: string;
+  if (type === "sykehus") {
+    // Filled medical cross
+    const s = 14;
+    glyph = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="${s}" height="${s}" fill="${iconColor}"><path d="M9 3h6v6h6v6h-6v6H9v-6H3V9h6z"/></svg>`;
+  } else if (type === "legevakt") {
+    // Lucide heart-pulse — emergency plus heartbeat
+    const s = 14;
+    glyph = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="${s}" height="${s}" fill="none" stroke="${iconColor}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.29 1.51 4.04 3 5.5l7 7Z"/><path d="M3.22 12H9.5l.5-1 2 4.5 2-7 1.5 3.5h5.27"/></svg>`;
+  } else {
+    // Thin plus outline — lighter, non-emergency clinic
+    const s = 12;
+    glyph = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="${s}" height="${s}" fill="none" stroke="${iconColor}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>`;
+  }
+
+  const icon = L.divIcon({
+    className: "",
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
+    html: `<div style="width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;line-height:0;background:${bg};border-radius:50%;box-shadow:0 1px 4px rgba(0,0,0,0.25);border:2.5px solid ${border}">${glyph}</div>`,
+  });
+  healthIconCache.set(key, icon);
+  return icon;
+}
+
 // ─── Reservoir icon ──────────────────────────────────────────
 
 const reservoirIconCache = new Map<string, L.DivIcon>();

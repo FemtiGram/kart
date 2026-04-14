@@ -154,6 +154,32 @@ export interface KindergartenSummary {
   all: KindergartenMarker[];
 }
 
+/**
+ * Fastlege (general practitioner) data per kommune, sourced from SSB
+ * table 12005. This is authoritative NLOD-licensed data — very different
+ * in character from the OSM marker data that /helse also shows.
+ *
+ * `latest` is a flat map of metric code → value for the most recent year
+ * SSB has published (see `year`). `trend` carries the full 2015→latest
+ * series, but only for the three primary metrics used on the /helse
+ * choropleth and the Stedsprofil sparkline — the rest would bloat the
+ * profile JSON unnecessarily.
+ *
+ * `osm` carries reference counts from the OpenStreetMap markers that
+ * /helse uses as an optional overlay. These are crowd-sourced and
+ * incomplete — good for context, bad as a single source of truth.
+ */
+export interface HealthSummary {
+  year: string;
+  latest: Record<string, number>;
+  trend: Record<string, Array<{ year: string; value: number }>>;
+  osm: {
+    sykehusCount: number;
+    legevaktCount: number;
+    privatklinikkerCount: number;
+  };
+}
+
 export interface KommuneProfile {
   knr: string;
   name: string;
@@ -181,6 +207,7 @@ export interface KommuneProfile {
   energy: EnergySummary;
   schools: SchoolSummary;
   kindergartens: KindergartenSummary;
+  health: HealthSummary;
   ranks: {
     population: number | null;
     income: number | null;
@@ -188,6 +215,9 @@ export interface KommuneProfile {
     verne: number | null;
     energy: number | null;
     affordability: number | null;
+    reservekapasitet: number | null;
+    andelUtenLege: number | null;
+    listelengde: number | null;
   };
 }
 

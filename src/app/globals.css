@@ -58,13 +58,27 @@ html {
   --kv-blue-dark: #0f1923;
   --kv-blue-light: #eae8e3;
 
-  /* Semantic colors — use these instead of hardcoded hex */
+  /* Semantic colors — use these instead of hardcoded hex.
+   *
+   * -light   : tinted background for pills / banners
+   * base     : icon, border, and solid-fill-on-white color (contrast vs white is fine)
+   * -dark    : text color on the matching -light background (≥ 6.8:1 WCAG AA)
+   *
+   * Rule: never put the base color as text on its own -light background —
+   * `#d97706` on `#fffbeb` is 3.07:1 (fail). Use the -dark variant instead.
+   */
   --kv-positive: #16a34a;
   --kv-positive-light: #f0fdf4;
+  --kv-positive-dark: #166534;
   --kv-negative: #dc2626;
   --kv-negative-light: #fef2f2;
+  --kv-negative-dark: #991b1b;
   --kv-warning: #d97706;
   --kv-warning-light: #fffbeb;
+  --kv-warning-dark: #92400e;
+  --kv-info: #2563eb;
+  --kv-info-light: #eff6ff;
+  --kv-info-dark: #1e40af;
   --kv-metric: #24374c;
   --kv-muted-fill: #e3ddd4;
 }

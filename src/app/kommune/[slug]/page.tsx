@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
-import { ArrowLeft, TrendingUp, Home, Shield, Zap, BatteryCharging, Mountain, Waves, Cloud, ExternalLink, Briefcase, Compass, GraduationCap } from "lucide-react";
+import { ArrowLeft, TrendingUp, Home, Shield, Zap, BatteryCharging, Mountain, Waves, Cloud, ExternalLink, Briefcase, Compass, GraduationCap, HeartPulse } from "lucide-react";
 import {
   getAllKommuner,
   getProfileBySlug,
@@ -10,6 +10,7 @@ import {
 } from "@/lib/kommune-profiles";
 import { KommuneWeather } from "@/components/kommune-weather";
 import { KommuneMiniMap } from "@/components/kommune-mini-map-loader";
+import { synthesizeHealth, type HealthTone } from "@/lib/health-summary";
 import { Map as MapIcon } from "lucide-react";
 
 // ─── Static params ───────────────────────────────────────────
@@ -69,6 +70,44 @@ function fmtCurrency(n: number | null | undefined): string {
 function fmtRank(rank: number | null, total: number): string {
   if (rank == null) return "–";
   return `#${rank} av ${total}`;
+}
+
+/**
+ * SSB's `Reservekapasitet fastlege` is an index where 100 = kapasitet and
+ * listelengde are balanced, >100 = headroom, <100 = overbooked. Displayed
+ * as a signed percentage so the reader can see at a glance whether there
+ * is room on the lists (+5 %) or whether they are overbooked (−2 %).
+ */
+function formatKapasitet(rawValue: number): string {
+  const delta = rawValue - 100;
+  const sign = delta > 0 ? "+" : delta < 0 ? "−" : "";
+  return `${sign}${Math.abs(delta).toLocaleString("nb-NO", { maximumFractionDigits: 0 })}\u00a0%`;
+}
+
+function HealthSynthLine({
+  tone,
+  sentence,
+}: {
+  tone: HealthTone;
+  sentence: string;
+}) {
+  // Uses the -dark variants for WCAG AA — base semantic tokens on tinted
+  // backgrounds only hit ~3:1 and fail normal text contrast.
+  const { bg, fg } =
+    tone === "good"
+      ? { bg: "var(--kv-positive-light)", fg: "var(--kv-positive-dark)" }
+      : tone === "bad"
+        ? { bg: "var(--kv-negative-light)", fg: "var(--kv-negative-dark)" }
+        : tone === "mixed"
+          ? { bg: "var(--kv-warning-light)", fg: "var(--kv-warning-dark)" }
+          : { bg: "var(--kv-info-light)", fg: "var(--kv-info-dark)" };
+  return (
+    <div className="rounded-xl p-3" style={{ background: bg }}>
+      <p className="text-sm font-medium leading-snug" style={{ color: fg }}>
+        {sentence}
+      </p>
+    </div>
+  );
 }
 
 // ─── Section: Hero ───────────────────────────────────────────
@@ -523,6 +562,125 @@ function SkoleSection({ profile }: { profile: KommuneProfile }) {
   );
 }
 
+// ─── Section: Helsetilbud ────────────────────────────────────
+//
+// Powered by SSB table 12005 — authoritative fastlege data per kommune.
+// Three primary stats: reservekapasitet, andel på liste uten fastlege,
+// gjennomsnittlig listelengde. Each links to /helse with the matching
+// metric pre-selected.
+
+function HelseSection({ profile }: { profile: KommuneProfile }) {
+  const { health } = profile;
+  const totals = getTotals();
+  const href = `/helse#kommune-${profile.knr}`;
+
+  const reservekapasitet = health.latest.KOSreservekapasi0000;
+  const andelUtenLege = health.latest.KOSandelpasiente0000;
+  const listelengde = health.latest.KOSgjsnlisteleng0000;
+  const fastlegeCount = health.latest.KOSantallavtaler0001;
+
+  const hasAny =
+    reservekapasitet != null ||
+    andelUtenLege != null ||
+    listelengde != null;
+
+  if (!hasAny) {
+    return (
+      <Section title="Helsetilbud" icon={HeartPulse} href={href}>
+        <p className="text-sm text-muted-foreground">
+          Ingen fastlegedata i SSB for denne kommunen.
+        </p>
+      </Section>
+    );
+  }
+
+  // Trend delta on reservekapasitet — is the kommune's situation improving
+  // or getting worse since 2018? 7 years back is a good crisis-era anchor.
+  const series = health.trend.KOSreservekapasi0000 ?? [];
+  const start = series.find((p) => p.year === "2018")?.value ?? series[0]?.value;
+  const end = series[series.length - 1]?.value;
+  const trendDelta =
+    start != null && end != null ? end - start : null;
+
+  const synth = synthesizeHealth({
+    reservekapasitet,
+    andelUtenLege,
+    listelengde,
+  });
+
+  return (
+    <Section title="Helsetilbud" icon={HeartPulse} href={href}>
+      {synth && <HealthSynthLine tone={synth.tone} sentence={synth.sentence} />}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
+        <Stat
+          label="Ledig kapasitet"
+          value={
+            reservekapasitet != null
+              ? formatKapasitet(reservekapasitet)
+              : "–"
+          }
+          contextRight={fmtRank(profile.ranks.reservekapasitet, totals.kommuner)}
+        />
+        <Stat
+          label="Uten fastlege"
+          value={
+            andelUtenLege != null
+              ? `${andelUtenLege.toLocaleString("nb-NO", { maximumFractionDigits: 1 })}\u00a0%`
+              : "–"
+          }
+          contextRight={fmtRank(profile.ranks.andelUtenLege, totals.kommuner)}
+        />
+        <Stat
+          label="Pasienter per lege"
+          value={
+            listelengde != null ? fmtNumber(listelengde) : "–"
+          }
+          context={
+            fastlegeCount != null
+              ? `${fmtNumber(fastlegeCount)} fastleger totalt`
+              : undefined
+          }
+          contextRight={fmtRank(profile.ranks.listelengde, totals.kommuner)}
+        />
+      </div>
+
+      {trendDelta != null && series.length >= 3 && (
+        <p className="mt-3 text-xs text-foreground/70">
+          <span className="font-semibold">Utvikling siden 2018:</span>{" "}
+          <span
+            style={{
+              color:
+                trendDelta > 0
+                  ? "var(--kv-positive)"
+                  : trendDelta < 0
+                    ? "var(--kv-negative)"
+                    : undefined,
+            }}
+          >
+            {trendDelta > 0 ? "↗" : trendDelta < 0 ? "↘" : "→"}{" "}
+            {trendDelta > 0 ? "+" : ""}
+            {trendDelta.toLocaleString("nb-NO", { maximumFractionDigits: 0 })}{" "}
+            prosentpoeng ledig kapasitet
+          </span>
+        </p>
+      )}
+
+      <p className="mt-3 text-xs text-foreground/70">
+        Kilde:{" "}
+        <a
+          href="https://www.ssb.no/statbank/table/12005"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="underline hover:text-foreground"
+        >
+          SSB 12005
+        </a>{" "}
+        · {health.year}
+      </p>
+    </Section>
+  );
+}
+
 function InfraSection({ profile }: { profile: KommuneProfile }) {
   const { centroid } = profile;
   const ladingHref = `/lading?lat=${centroid.lat.toFixed(4)}&lon=${centroid.lon.toFixed(4)}&z=11`;
@@ -741,6 +899,7 @@ export default async function KommunePage({
         <KartSection profile={profile} />
         <BoligSection profile={profile} />
         <SkoleSection profile={profile} />
+        <HelseSection profile={profile} />
         <NaturSection profile={profile} />
         <EnergiSection profile={profile} />
         <InfraSection profile={profile} />

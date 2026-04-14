@@ -103,11 +103,13 @@ function targetBadge(val: number | null, target: number): { text: string; classN
 }
 
 function changeColor(val: number | null): string {
-  if (val == null) return "text-muted-foreground";
-  if (val > 4) return "text-red-600";
-  if (val > 2) return "text-orange-600";
-  if (val > 0) return "text-yellow-600";
-  return "text-green-600";
+  // 700-family so the text clears WCAG AA (≥4.5:1) on white backgrounds.
+  // 600 is 2.9–3.6:1 on white, which fails for normal text.
+  if (val == null) return "text-foreground/70";
+  if (val > 4) return "text-red-700";
+  if (val > 2) return "text-orange-700";
+  if (val > 0) return "text-yellow-700";
+  return "text-green-700";
 }
 
 function changeBg(val: number | null): string {
@@ -204,7 +206,7 @@ export function InflationDashboard() {
             <div className="flex items-baseline gap-1.5 min-w-0">
               <p className="text-xl font-extrabold" style={{ color: "var(--kv-blue)" }}>KPI</p>
               {current.total1m != null && (
-                <span className={`text-xs font-semibold ${current.total1m >= 0 ? "text-red-600" : "text-green-600"}`}>
+                <span className={`text-xs font-semibold ${current.total1m >= 0 ? "text-red-700" : "text-green-700"}`}>
                   ({current.total1m >= 0 ? "+" : ""}{current.total1m.toFixed(1)}%)
                 </span>
               )}
