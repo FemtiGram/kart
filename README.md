@@ -13,6 +13,7 @@ Live at: [datakart.no](https://datakart.no)
 | Stedsprofil | `/kommune/[slug]` | One dashboard per kommune (357 pages) combining population, income, housing, schools, energy, natur, charging, weather, and an interactive locator map with 6 toggleable layers | |
 | Boligpriser | `/bolig` | Housing prices (kr/m²) per municipality — bubble map with kommune comparison and Finn.no deep-links | |
 | Skoler og barnehager | `/skoler` | All 3 100+ skoler and 5 500+ barnehager in Norge with student/child counts, type and ownership. Data from Utdanningsdirektoratet (NSR + NBR) | |
+| Helsetilbud | `/helse` | Kommune choropleth of fastlege data — ledig kapasitet, andel uten fastlege, gjennomsnittlig listelengde. SSB tabell 12005. Optional OSM overlay for sykehus and legevakt | |
 | Energikart | `/energi` | Wind, hydro, offshore wind, oil and gas | [docs/maps/energi.md](docs/maps/energi.md) |
 | Magasinkart | `/magasin` | Regulated water reservoirs with live fill levels | [docs/maps/magasin.md](docs/maps/magasin.md) |
 | Ladestasjoner | `/lading` | All EV charging stations in Norway | [docs/maps/lading.md](docs/maps/lading.md) |
@@ -60,6 +61,7 @@ node scripts/fetch-reservoirs.mjs
 node scripts/fetch-kommuner.mjs
 node scripts/fetch-finn-locations.mjs
 node scripts/fetch-schools.mjs
+node scripts/fetch-health.mjs
 node scripts/build-kommune-profiles.mjs
 
 npm run dev
@@ -88,6 +90,8 @@ The seed scripts are also run automatically as a `prebuild` hook when deploying.
 | Income | SSB InntektStruk13 | 24-hour server cache |
 | Schools | Utdanningsdirektoratet NSR (`data-nsr.udir.no`) | Build-time static JSON |
 | Kindergartens | Utdanningsdirektoratet NBR (`data-nbr.udir.no`) | Build-time static JSON |
+| Fastlege data | SSB table 12005 (Fastlegelister og fastlegekonsultasjoner) | Build-time static JSON |
+| Sykehus and legevakt | OpenStreetMap (Overpass, `amenity=hospital`/`clinic` scoped to Norway) | Build-time static JSON |
 | Finn.no location codes | Scraped from `finn.no/realestate/homes/search.html` | Build-time static JSON |
 | Inflation (KPI) | SSB tables 03013 + 05327 | Loaded once on mount |
 | Policy rate | Norges Bank API | Loaded once on mount |
