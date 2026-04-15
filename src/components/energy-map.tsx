@@ -437,6 +437,13 @@ export function EnergyMap() {
     [filteredOilGas, inverted, selectOilGas]
   );
 
+  const statusLabel = (() => {
+    const parts = [`${filteredPlants.length} kraftverk`];
+    if (filteredOilGas.length > 0) parts.push(`${filteredOilGas.length} anlegg`);
+    if (filteredHavvindZones.length > 0) parts.push(`${filteredHavvindZones.length} havvind`);
+    return `${parts.join(" + ")} · Kilde: NVE / Sodir · oppdateres ukentlig`;
+  })();
+
   return (
     <div className="flex flex-col" style={{ height: MAP_HEIGHT }}>
       {/* Search bar */}
@@ -559,7 +566,7 @@ export function EnergyMap() {
             {loading
               ? "Henter kraftverk..."
               : plants.length > 0
-                ? `${filteredPlants.length} kraftverk${filteredOilGas.length > 0 ? ` + ${filteredOilGas.length} anlegg` : ""}${filteredHavvindZones.length > 0 ? ` + ${filteredHavvindZones.length} havvind` : ""} · Kilde: NVE / Sodir · oppdateres ukentlig`}
+                ? statusLabel
                 : "Ingen kraftverk funnet"}
           </p>
           <button
