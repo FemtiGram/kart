@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
-import { ArrowLeft, TrendingUp, Home, Shield, Zap, BatteryCharging, Mountain, Waves, Cloud, ExternalLink, Briefcase, Compass, GraduationCap, HeartPulse, Wallet } from "lucide-react";
+import { ArrowLeft, TrendingUp, Home, Shield, Zap, BatteryCharging, Mountain, Waves, Cloud, ExternalLink, Briefcase, Compass, GraduationCap, HeartPulse, Wallet, Users, ArrowRight } from "lucide-react";
 import {
   getAllKommuner,
   getProfileBySlug,
@@ -889,6 +889,99 @@ function VaerSection({ profile }: { profile: KommuneProfile }) {
   );
 }
 
+// ─── Section: Lignende kommuner ─────────────────────────────
+//
+// Find the 3 kommuner with the closest combined population + income
+// ranks, so a reader landing on one profile can discover similar
+// places as a jumping-off point. Rank-space distance (Manhattan on
+// pop-rank and income-rank) is cheap and scale-free — it doesn't
+// matter that population is in raw count and income in kroner, both
+// are already normalized to [1, 357].
+
+function findSimilar(profile: KommuneProfile, k: number): KommuneProfile[] {
+  const pr = profile.ranks.population;
+  const ir = profile.ranks.income;
+  if (pr == null || ir == null) return [];
+  const all = getAllKommuner();
+  return all
+    .filter(
+      (p) =>
+        p.knr !== profile.knr &&
+        p.ranks.population != null &&
+        p.ranks.income != null
+    )
+    .map((p) => ({
+      p,
+      score:
+        Math.abs((p.ranks.population as number) - pr) +
+        Math.abs((p.ranks.income as number) - ir),
+    }))
+    .sort((a, b) => a.score - b.score)
+    .slice(0, k)
+    .map((s) => s.p);
+}
+
+function SimilarSection({ profile }: { profile: KommuneProfile }) {
+  const similar = findSimilar(profile, 3);
+  if (similar.length === 0) return null;
+  return (
+    <Section title="Lignende kommuner" icon={Users}>
+      <p className="text-xs text-foreground/70 mb-4">
+        Kommuner med tilsvarende befolkning og inntekt
+      </p>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {similar.map((s) => (
+          <SimilarCard key={s.knr} profile={s} />
+        ))}
+      </div>
+    </Section>
+  );
+}
+
+function SimilarCard({ profile }: { profile: KommuneProfile }) {
+  return (
+    <Link
+      href={`/kommune/${profile.slug}`}
+      className="group flex flex-col rounded-2xl border bg-card hover:bg-muted/60 px-5 py-4 transition-colors"
+    >
+      <div className="flex items-start justify-between gap-2">
+        <p
+          className="font-bold text-base leading-snug truncate"
+          style={{ color: "var(--kv-blue)" }}
+        >
+          {profile.displayName}
+        </p>
+        <ArrowRight className="h-4 w-4 text-foreground/50 shrink-0 mt-0.5 group-hover:text-foreground group-hover:translate-x-0.5 transition-all" />
+      </div>
+      {profile.fylke && (
+        <p className="text-xs text-muted-foreground mt-0.5 truncate">
+          {profile.fylke}
+        </p>
+      )}
+      <div className="mt-3 pt-3 border-t flex items-baseline justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-[10px] font-semibold uppercase tracking-wide text-foreground/70">
+            Innbyggere
+          </p>
+          <p className="text-sm font-extrabold tabular-nums" style={{ color: "var(--kv-blue)" }}>
+            {fmtNumber(profile.population)}
+          </p>
+        </div>
+        <div className="min-w-0 text-right">
+          <p className="text-[10px] font-semibold uppercase tracking-wide text-foreground/70">
+            Inntekt
+          </p>
+          <p className="text-sm font-extrabold tabular-nums" style={{ color: "var(--kv-blue)" }}>
+            {profile.income != null
+              ? `${Math.round(profile.income / 1000).toLocaleString("nb-NO")}k`
+              : "–"}
+          </p>
+        </div>
+      </div>
+    </Link>
+  );
+}
+
 // ─── Section wrapper ─────────────────────────────────────────
 
 function Section({
@@ -1029,6 +1122,7 @@ export default async function KommunePage({
         <EnergiSection profile={profile} />
         <InfraSection profile={profile} />
         <VaerSection profile={profile} />
+        <SimilarSection profile={profile} />
         <p className="text-xs text-muted-foreground mt-12 pt-6 border-t">
           Kilder: Kartverket, SSB, NVE, Utdanningsdirektoratet (UDIR),
           NOBIL/Enova, MET Norway og OpenStreetMap. Tallene er oppdatert så
