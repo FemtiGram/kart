@@ -239,7 +239,7 @@ export default function Home() {
                 </p>
               </FadeIn>
               <div
-                className={`grid grid-cols-2 gap-3 ${group.items.length === 4 ? "md:grid-cols-4" : "md:grid-cols-3"}`}
+                className={`grid grid-cols-1 sm:grid-cols-2 gap-3 ${group.items.length === 4 ? "md:grid-cols-4" : "md:grid-cols-3"}`}
               >
                 {group.items.map((item, i) => (
                   <CompactCardLink key={item.href} {...item} index={i} />
