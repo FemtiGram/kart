@@ -1,27 +1,48 @@
 import Link from "next/link";
 import { Separator } from "@/components/ui/separator";
 
-const footerLinks = {
-  Utforsk: [
-    { label: "Boligpriser", href: "/bolig" },
-    { label: "Skoler og barnehager", href: "/skoler" },
-    { label: "Energikart", href: "/energi" },
-    { label: "Magasinkart", href: "/magasin" },
-    { label: "Ladestasjoner", href: "/lading" },
-    { label: "Prisvekst", href: "/prisvekst" },
-    { label: "Inntektskart", href: "/lonn" },
-    { label: "Turisthytter", href: "/hytter" },
-    { label: "Høydekart", href: "/map" },
-    { label: "Verneområder", href: "/vern" },
-  ],
-  Ressurser: [
-    { label: "Datakilder og lisenser", href: "/kilder" },
-    { label: "Personvern", href: "/personvern" },
-    { label: "Åpen kildekode", href: "https://github.com/FemtiGram/kart", external: true },
-    { label: "kartverket.no", href: "https://www.kartverket.no", external: true },
-    { label: "Geonorge", href: "https://geonorge.no", external: true },
-  ],
-};
+/**
+ * Utforsk column is sub-grouped by theme (Energi / Natur / Samfunn) to
+ * match the navbar dropdowns. Keeps the 3-column footer layout while
+ * fitting 12 map links in one column without turning into a wall of text.
+ */
+const utforskGroups = [
+  {
+    label: "Energi",
+    links: [
+      { label: "Energikart", href: "/energi" },
+      { label: "Magasinkart", href: "/magasin" },
+      { label: "Ladestasjoner", href: "/lading" },
+    ],
+  },
+  {
+    label: "Natur",
+    links: [
+      { label: "Høydekart", href: "/map" },
+      { label: "Turisthytter", href: "/hytter" },
+      { label: "Verneområder", href: "/vern" },
+    ],
+  },
+  {
+    label: "Samfunn",
+    links: [
+      { label: "Stedsprofil", href: "/kommune" },
+      { label: "Skoler og barnehager", href: "/skoler" },
+      { label: "Helsetilbud", href: "/helse" },
+      { label: "Inntektskart", href: "/lonn" },
+      { label: "Boligpriser", href: "/bolig" },
+      { label: "Prisvekst", href: "/prisvekst" },
+    ],
+  },
+];
+
+const ressurserLinks = [
+  { label: "Datakilder og lisenser", href: "/kilder" },
+  { label: "Personvern", href: "/personvern" },
+  { label: "Åpen kildekode", href: "https://github.com/FemtiGram/kart", external: true },
+  { label: "kartverket.no", href: "https://www.kartverket.no", external: true },
+  { label: "Geonorge", href: "https://geonorge.no", external: true },
+];
 
 export function Footer() {
   return (
@@ -48,39 +69,73 @@ export function Footer() {
             <p className="text-sm text-muted-foreground max-w-xs leading-relaxed">
               Interaktive kart og visualiseringer bygget på åpne norske data fra SSB, NVE, Kartverket og flere.
             </p>
+            <p className="text-sm text-muted-foreground max-w-xs leading-relaxed">
+              Har du forslag? Et kart du savner?{" "}
+              <a
+                href="mailto:anders.gram83@gmail.com?subject=Forslag%20til%20Datakart"
+                className="underline underline-offset-2 hover:text-foreground transition-colors"
+              >
+                Send meg en e-post
+              </a>
+              .
+            </p>
           </div>
 
-          {/* Link columns */}
-          {Object.entries(footerLinks).map(([group, links]) => (
-            <div key={group} className="flex flex-col gap-3">
-              <h3 className="text-xs font-bold uppercase tracking-widest text-foreground/70">
-                {group}
-              </h3>
-              <ul className="flex flex-col gap-2">
-                {links.map((link) => (
-                  <li key={link.label}>
-                    {"external" in link && link.external ? (
-                      <a
-                        href={link.href}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-sm text-foreground/70 hover:text-foreground transition-colors"
-                      >
-                        {link.label} ↗
-                      </a>
-                    ) : (
+          {/* Utforsk — sub-grouped by theme */}
+          <div className="flex flex-col gap-5">
+            <h3 className="text-xs font-bold uppercase tracking-widest text-foreground/70">
+              Utforsk
+            </h3>
+            {utforskGroups.map((group) => (
+              <div key={group.label} className="flex flex-col gap-2">
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-foreground/50">
+                  {group.label}
+                </p>
+                <ul className="flex flex-col gap-1.5">
+                  {group.links.map((link) => (
+                    <li key={link.href}>
                       <Link
                         href={link.href}
                         className="text-sm text-foreground/70 hover:text-foreground transition-colors"
                       >
                         {link.label}
                       </Link>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+
+          {/* Ressurser — flat list */}
+          <div className="flex flex-col gap-3">
+            <h3 className="text-xs font-bold uppercase tracking-widest text-foreground/70">
+              Ressurser
+            </h3>
+            <ul className="flex flex-col gap-2">
+              {ressurserLinks.map((link) => (
+                <li key={link.label}>
+                  {"external" in link && link.external ? (
+                    <a
+                      href={link.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-foreground/70 hover:text-foreground transition-colors"
+                    >
+                      {link.label} ↗
+                    </a>
+                  ) : (
+                    <Link
+                      href={link.href}
+                      className="text-sm text-foreground/70 hover:text-foreground transition-colors"
+                    >
+                      {link.label}
+                    </Link>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
 
         <Separator className="my-8" />

@@ -27,6 +27,8 @@ import {
   Gauge,
   UserX,
   Users,
+  SlidersHorizontal,
+  Check,
 } from "lucide-react";
 import { kommuneSlug } from "@/lib/kommune-slug";
 import {
@@ -34,7 +36,9 @@ import {
   SheetContent,
   SheetHeader,
   SheetTitle,
+  SheetTrigger,
 } from "@/components/ui/sheet";
+import { Button } from "@/components/ui/button";
 import { MapSearchBar, type MapSearchBarHandle } from "@/components/map-search";
 import {
   FlyTo,
@@ -268,6 +272,7 @@ export function HealthMap() {
   const [showBase, setShowBase] = useState(true);
   const [showInfo, setShowInfo] = useState(false);
   const [showInfoSheet, setShowInfoSheet] = useState(false);
+  const [showFilter, setShowFilter] = useState(false);
 
   const fastlegeRef = useRef<FastlegeData | null>(null);
   const metricCodeRef = useRef(metricCode);
@@ -572,51 +577,102 @@ export function HealthMap() {
 
   return (
     <div className="flex flex-col" style={{ height: MAP_HEIGHT }}>
-      {/* Search bar + filters — structure mirrors /bolig so the top
-          controls look and behave the same across maps. */}
-      <div className="relative z-[1000] px-4 py-3 md:px-8 shrink-0 bg-background border-b">
-        <div className="max-w-xl mx-auto">
+      {/* Search bar + filter sheet — matches /skoler pattern: filter
+          button inline with search, metric options live in a bottom
+          sheet instead of a segmented control row. */}
+      <div className="relative z-[1000] px-4 py-4 md:px-8 shrink-0 bg-background border-b">
+        <div className="max-w-xl mx-auto relative flex flex-col gap-2">
           <MapSearchBar
             ref={searchBarRef}
             kommuneList={() => geoFeaturesRef.current}
             onSelect={handleSearchSelect}
             placeholder="Søk etter kommune, fylke eller adresse..."
-          />
-
-          {/* Filter row */}
-          <div className="flex items-center gap-3 mt-2">
-            <div className="flex rounded-lg border overflow-hidden">
-              {PRIMARY_METRIC_CODES.map((code) => {
-                const Icon = METRIC_ICON[code];
-                const active = metricCode === code;
-                return (
-                  <button
-                    key={code}
-                    onClick={() => setMetricCode(code)}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold transition-colors ${active ? "text-white" : "text-muted-foreground hover:bg-muted"}`}
-                    style={active ? { background: "var(--kv-blue)" } : {}}
-                  >
-                    <Icon className="h-3.5 w-3.5" />
-                    <span className="hidden sm:inline">{METRIC_SHORT_LABEL[code]}</span>
-                  </button>
-                );
-              })}
-            </div>
-            <button
-              onClick={() => setShowInfo(true)}
-              className="ml-auto inline-flex items-center gap-1 text-xs px-3 py-1.5 rounded-full border bg-muted text-foreground/70 hover:text-foreground transition-colors shrink-0"
+          >
+            <Sheet
+              open={showFilter}
+              onOpenChange={(open) => {
+                setShowFilter(open);
+                if (open) setShowInfoSheet(false);
+              }}
             >
-              <Info className="h-3 w-3" /> Om
-            </button>
-          </div>
+              <SheetTrigger
+                render={
+                  <Button
+                    variant="secondary"
+                    size="icon"
+                    className="relative shadow-lg shrink-0 h-11 w-11 rounded-xl"
+                  >
+                    <SlidersHorizontal className="h-4 w-4" />
+                  </Button>
+                }
+              />
+              <SheetContent
+                side="bottom"
+                className="rounded-t-2xl max-h-[70svh] overflow-y-auto"
+              >
+                <div className="mx-auto w-full max-w-md px-2">
+                  <SheetHeader>
+                    <SheetTitle className="text-left">
+                      Velg metrikk
+                    </SheetTitle>
+                  </SheetHeader>
+                  <div className="flex flex-col gap-4 py-4">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-foreground/70 mb-2">
+                        Fargelegg kommunene etter
+                      </p>
+                      <div className="rounded-xl border overflow-hidden">
+                        {PRIMARY_METRIC_CODES.map((code) => {
+                          const Icon = METRIC_ICON[code];
+                          const active = metricCode === code;
+                          return (
+                            <button
+                              key={code}
+                              onClick={() => setMetricCode(code)}
+                              className={`flex items-center gap-3 w-full px-4 py-3 text-sm transition-colors border-b last:border-0 ${active ? "bg-background" : "bg-muted/40 text-muted-foreground"}`}
+                            >
+                              <div
+                                className={`h-5 w-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${active ? "border-primary bg-primary" : "border-muted-foreground/30 bg-background"}`}
+                              >
+                                {active && (
+                                  <Check className="h-3 w-3 text-primary-foreground" />
+                                )}
+                              </div>
+                              <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
+                              <span className="font-medium flex-1 text-left">
+                                {METRIC_SHORT_LABEL[code]}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                    <Button
+                      className="w-full"
+                      onClick={() => setShowFilter(false)}
+                    >
+                      Ferdig
+                    </Button>
+                  </div>
+                </div>
+              </SheetContent>
+            </Sheet>
+          </MapSearchBar>
 
           {/* Stats summary */}
-          <div className="flex items-center justify-between mt-2">
+          <div className="flex items-center justify-between">
             <p className="text-xs text-foreground/70">
               {loading
                 ? "Henter fastlegedata..."
-                : `${loadedCount} kommuner med data · ${METRIC_SHORT_LABEL[metricCode]} · ${fastlege?.latestYear} · Kilde: SSB 12005`}
+                : `${loadedCount} kommuner · ${METRIC_SHORT_LABEL[metricCode]} · ${fastlege?.latestYear} · Kilde: SSB 12005`}
             </p>
+            <button
+              onClick={() => setShowInfo(true)}
+              className="inline-flex items-center gap-1 text-xs px-3 py-1 rounded-full border bg-muted text-foreground/70 hover:text-foreground transition-colors shrink-0"
+            >
+              <Info className="h-3 w-3" />
+              Om data
+            </button>
           </div>
         </div>
       </div>
@@ -856,24 +912,23 @@ export function HealthMap() {
               <HeartPulse className="h-3.5 w-3.5" />
               OSM-markører
             </button>
-          </div>
-        )}
 
-        {/* Floating pill explaining the OSM overlay when it's active. Info-blue
-            so it reads as "heads up" not "danger" — the caveat is scoped to
-            the markers, not the whole page. */}
-        {showOsm && !loading && (
-          <div
-            className="absolute top-3 left-1/2 -translate-x-1/2 z-[999] bg-background/95 backdrop-blur-sm border rounded-full px-4 py-2 shadow-lg flex items-center gap-2 max-w-[calc(100%-1rem)]"
-            style={{ borderColor: "var(--kv-info)" }}
-          >
-            <Info
-              className="h-3.5 w-3.5 shrink-0"
-              style={{ color: "var(--kv-info)" }}
-            />
-            <p className="text-xs font-medium leading-tight" style={{ color: "var(--kv-info)" }}>
-              OSM-markører er dugnadsdata — ring 113 eller sjekk helsenorge.no ved behov
-            </p>
+            {/* Tiny "OSM data quality" note attached to the toggle stack
+                so it sits right under the button that activates it.
+                Short text, no floating absolute position. */}
+            {showOsm && (
+              <div
+                className="max-w-[180px] bg-card border rounded-lg px-2.5 py-1 shadow-sm text-right"
+                style={{ borderColor: "var(--kv-info)" }}
+              >
+                <p
+                  className="text-[10px] font-medium leading-tight"
+                  style={{ color: "var(--kv-info-dark)" }}
+                >
+                  OSM er dugnadsdata
+                </p>
+              </div>
+            )}
           </div>
         )}
       </div>

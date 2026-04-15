@@ -18,11 +18,10 @@ const featured = [
     icon: TrendingUp,
   },
   {
-    title: "Prisvekst",
-    description: "Konsumprisindeksen med kategorifordeling og nordisk sammenligning.",
-    href: "/prisvekst",
-    icon: BarChart3,
-    cta: "Åpne oversikt",
+    title: "Skoler og barnehager",
+    description: "Alle 3 100+ skoler og 5 500+ barnehager i Norge med elev- og barnetall, trinn og eierskap.",
+    href: "/skoler",
+    icon: GraduationCap,
   },
 ];
 
@@ -77,14 +76,8 @@ const groups = [
     label: "Samfunn",
     items: [
       {
-        title: "Skoler og barnehager",
-        description: "Alle 3 100+ skoler og 5 500+ barnehager i Norge med elev- og barnetall.",
-        href: "/skoler",
-        icon: GraduationCap,
-      },
-      {
         title: "Helsetilbud",
-        description: "Sykehus, legevakt og privatklinikker fra OpenStreetMap — verifiser alltid før bruk.",
+        description: "Fastlegedekning per kommune — ledig kapasitet, andel uten fastlege og listelengde. Data fra SSB tabell 12005.",
         href: "/helse",
         icon: HeartPulse,
       },
@@ -93,6 +86,12 @@ const groups = [
         description: "Median inntekt etter skatt per husholdning i alle kommuner.",
         href: "/lonn",
         icon: DollarSign,
+      },
+      {
+        title: "Prisvekst",
+        description: "Konsumprisindeksen med kategorifordeling og nordisk sammenligning.",
+        href: "/prisvekst",
+        icon: BarChart3,
       },
     ],
   },
@@ -206,8 +205,8 @@ export default function Home() {
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-8">
             {[
-              { icon: Database, label: "7 datakilder", desc: "NVE, Sodir, SSB, Kartverket, MET.no, Geonorge og OpenStreetMap" },
-              { icon: Globe, label: "9 interaktive visualiseringer", desc: "Energi, boligpriser, lading, magasin, hytter, høyde, inntekt og verneområder" },
+              { icon: Database, label: "12 datakilder", desc: "SSB, NVE, Kartverket, Geonorge, MET.no, Sodir, UDIR, NOBIL, Norges Bank, Eurostat, OpenStreetMap og Finn.no" },
+              { icon: Globe, label: "12 interaktive visualiseringer", desc: "Kart og dashboards for bolig, skoler, helse, energi, natur, inntekt og mer — pluss detaljerte kommuneprofiler" },
               { icon: Code, label: "Åpen kildekode", desc: "Next.js, React, Leaflet og Tailwind. Hostet på Vercel." },
             ].map((item, i) => (
               <FadeInView key={item.label} delay={i * 0.1}>
