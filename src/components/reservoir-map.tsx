@@ -217,7 +217,7 @@ export function ReservoirMap() {
           />
         </div>
         <p className="text-xs text-foreground/70 mt-2 max-w-xl mx-auto">
-          {loading ? "Henter magasindata..." : `${stats.total} magasiner${stats.totalVolume > 0 ? ` · ${stats.totalVolume.toLocaleString("nb-NO")} Mm³ total kapasitet` : ""} · Kilde: NVE`}
+          {loading ? "Henter magasindata..." : `${stats.total} magasiner${stats.totalVolume > 0 ? ` · ${stats.totalVolume.toLocaleString("nb-NO")} Mm³ total kapasitet` : ""} · Kilde: NVE · fyllingsgrad oppdateres ukentlig`}
         </p>
       </div>
 

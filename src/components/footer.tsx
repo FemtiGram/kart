@@ -31,6 +31,7 @@ const utforskGroups = [
       { label: "Helsetilbud", href: "/helse" },
       { label: "Inntektskart", href: "/lonn" },
       { label: "Boligpriser", href: "/bolig" },
+      { label: "Kostnader", href: "/kostnader" },
       { label: "Prisvekst", href: "/prisvekst" },
     ],
   },

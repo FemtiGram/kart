@@ -36,12 +36,12 @@ const sources = [
   },
   {
     name: "Statistisk sentralbyra (SSB)",
-    description: "Inntektsstatistikk, befolkningsstatistikk, boligpriser (tabell 06035), konsumprisindeks og arealstatistikk for verneomrader.",
+    description: "Inntektsstatistikk, befolkningsstatistikk, boligpriser (tabell 06035), fastlegedata (tabell 12005), kommunale gebyrer (tabell 12842), eiendomsskatt (tabell 14674), konsumprisindeks og arealstatistikk for verneomrader.",
     license: "CC BY 4.0",
     licenseUrl: "https://creativecommons.org/licenses/by/4.0/",
     attribution: "\u00a9 Statistisk sentralbyra (SSB)",
     url: "https://www.ssb.no",
-    usedIn: ["Inntektskart", "Verneomrader", "Boligkart", "Prisvekst", "Stedsprofil"],
+    usedIn: ["Inntektskart", "Verneomrader", "Boligkart", "Prisvekst", "Helsetilbud", "Kostnader", "Stedsprofil"],
   },
   {
     name: "Meteorologisk institutt (MET)",
@@ -63,12 +63,12 @@ const sources = [
   },
   {
     name: "OpenStreetMap",
-    description: "Turisthytter hentet via Overpass API.",
+    description: "Turisthytter og valgfri overlay av sykehus/legevakt hentet via Overpass API.",
     license: "ODbL 1.0",
     licenseUrl: "https://opendatacommons.org/licenses/odbl/",
     attribution: "\u00a9 OpenStreetMap contributors",
     url: "https://www.openstreetmap.org/copyright",
-    usedIn: ["Turisthytter", "Stedsprofil"],
+    usedIn: ["Turisthytter", "Helsetilbud", "Stedsprofil"],
   },
   {
     name: "OpenTopoMap",

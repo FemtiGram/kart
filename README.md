@@ -21,6 +21,7 @@ Live at: [datakart.no](https://datakart.no)
 | Høydekart | `/map` | Click anywhere for elevation (m.o.h.) and live weather | [docs/maps/hoyde.md](docs/maps/hoyde.md) |
 | Inntektskart | `/lonn` | Choropleth: median household income per municipality with kommune comparison | [docs/maps/inntekt.md](docs/maps/inntekt.md) |
 | Verneområder | `/vern` | Choropleth: protected nature area per municipality (km²) | [docs/maps/vern.md](docs/maps/vern.md) |
+| Kostnader | `/kostnader` | Choropleth of what it costs to live in each municipality: kommunale årsgebyr (water, sewage, waste, chimney) and eiendomsskatt (property tax) with Sammenlign comparison feature. SSB tables 12842 + 14674 | |
 | Prisvekst | `/prisvekst` | Inflation dashboard: KPI, categories, trends, Nordic comparison | |
 
 ---
@@ -91,6 +92,8 @@ The seed scripts are also run automatically as a `prebuild` hook when deploying.
 | Schools | Utdanningsdirektoratet NSR (`data-nsr.udir.no`) | Build-time static JSON |
 | Kindergartens | Utdanningsdirektoratet NBR (`data-nbr.udir.no`) | Build-time static JSON |
 | Fastlege data | SSB table 12005 (Fastlegelister og fastlegekonsultasjoner) | Build-time static JSON |
+| Kommunale gebyrer | SSB table 12842 (vann, avløp, avfall, feiing) | Build-time static JSON |
+| Eiendomsskatt | SSB table 14674 (Eiendomsskatt per kommune) | Build-time static JSON |
 | Sykehus and legevakt | OpenStreetMap (Overpass, `amenity=hospital`/`clinic` scoped to Norway) | Build-time static JSON |
 | Finn.no location codes | Scraped from `finn.no/realestate/homes/search.html` | Build-time static JSON |
 | Inflation (KPI) | SSB tables 03013 + 05327 | Loaded once on mount |

@@ -656,7 +656,7 @@ export function SchoolsMap() {
           <p className="text-xs text-foreground/70">
             {loading
               ? "Henter skoler og barnehager..."
-              : `${filteredSchools.length} skoler · ${filteredKindergartens.length} barnehager · Kilde: UDIR`}
+              : `${filteredSchools.length} skoler · ${filteredKindergartens.length} barnehager · Kilde: UDIR · oppdateres daglig`}
           </p>
           <button
             onClick={() => setShowInfo(true)}

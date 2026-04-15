@@ -36,6 +36,8 @@ src/app/
   kommune/[slug]/opengraph-image.tsx — Dynamic OG image per kommune
   skoler/page.tsx       — Schools and kindergartens map (NSR + NBR from UDIR)
   helse/page.tsx        — Fastlege choropleth (SSB 12005) with optional OSM overlay for sykehus/legevakt
+  kostnader/page.tsx    — Cost-of-living choropleth: kommunale gebyrer (SSB 12842) + eiendomsskatt (SSB 14674) with Sammenlign feature
+  kostnader/opengraph-image.tsx — Dynamic OG image for /kostnader
   personvern/page.tsx   — Privacy policy page
   api/
     bolig/route.ts      — SSB housing price data (table 06035)
@@ -64,6 +66,10 @@ src/components/
   schools-map-loader.tsx — Dynamic wrapper for schools-map (ssr: false)
   health-map.tsx        — /helse map: fastlege choropleth (3 metric segmented control) + optional OSM marker overlay with click-to-details compact card
   health-map-loader.tsx — Dynamic wrapper for health-map (ssr: false)
+  kostnader-map.tsx     — /kostnader map: cost-of-living choropleth (2 metric segmented control: gebyrer total + eiendomsskatt 120 m²) + Sammenlign comparison sheet + detail sheet with gebyr breakdown. "Ingen eiendomsskatt" rendered as positive light-green fill
+  kostnader-map-loader.tsx — Dynamic wrapper for kostnader-map (ssr: false)
+  home-kommune-search.tsx — Client component on landing hero: diacritic-aware autocomplete over all 357 kommuner, keyboard nav, routes directly to /kommune/[slug]. Data loaded at build time via server-component prop passing
+  footer.tsx            — Shared footer with three-column layout (brand / Utforsk grouped by theme / Ressurser)
   map-icons.tsx         — Shared L.divIcon factories: chargingIcon, cabinIcon, reservoirIcon, schoolIcon, kindergartenIcon, healthIcon + re-exports of energyIcon from energy-map-helpers
   ui/                   — shadcn/ui primitives (includes chart.tsx for Recharts wrappers)
 
@@ -87,7 +93,7 @@ scripts/
   fetch-finn-locations.mjs — Build-time: scrapes Finn.no realestate page, extracts hierarchical location codes, matches each kommune → public/data/finn-locations.json
   fetch-schools.mjs     — Build-time: lists active schools (NSR) and barnehager (NBR) from UDIR, fetches per-orgnr detail for coordinates and stats in a 20-wide pool → public/data/schools.json
   fetch-health.mjs      — Build-time: Overpass query (scoped to Norway via `area["ISO3166-1"="NO"]`) for `amenity=hospital` and `amenity=clinic`, classifies into sykehus / legevakt / privatklinikker → public/data/health.json
-  build-kommune-profiles.mjs — Build-time: composes SSB population/income/bolig/vern/fastlege (12005) + NVE plants + UDIR schools/barnehager + static files via point-in-polygon and kommunenummer grouping into one profile per kommune → public/data/kommune-profiles.json + public/data/fastlege.json (all 357 kommuner × 18 metrics for latest year, used by /helse)
+  build-kommune-profiles.mjs — Build-time: composes SSB population/income/bolig/vern/fastlege (12005) + kommunale gebyrer (12842) + eiendomsskatt (14674) + NVE plants + UDIR schools/barnehager + static files via point-in-polygon and kommunenummer grouping into one profile per kommune → public/data/kommune-profiles.json + public/data/fastlege.json (all 357 kommuner × 18 metrics for latest year, used by /helse) + public/data/kostnader.json (all 357 kommuner × 3 cost metrics, used by /kostnader)
 
 public/data/
   stations.json         — Pre-built charging station data (committed to repo)
@@ -99,6 +105,7 @@ public/data/
   schools.json          — Pre-built NSR + NBR data (schools and barnehager with coordinates)
   health.json           — Pre-built OSM health data (sykehus + legevakt + privatklinikker, optional overlay on /helse)
   fastlege.json         — Pre-built SSB 12005 fastlege data — all 357 kommuner, 18 metrics latest year + trend for 3 primary. Consumed by /helse choropleth
+  kostnader.json        — Pre-built cost-of-living data — all 357 kommuner, gebyrerTotal (SSB 12842) + eiendomsskatt120m2 / Promille (SSB 14674) + full gebyr breakdown per kommune. Consumed by /kostnader choropleth
   kommune-profiles.json — Pre-built per-kommune profile data for Stedsprofil (committed to repo)
 ```
 
@@ -212,6 +219,15 @@ All maps use a **compact floating card + expandable bottom Sheet** pattern:
 - **Trend bar chart** mirrors the bolig detail sheet's inline div pattern (`flex items-end gap-[2px] h-12`). Raw SSB values are rebased to `value - min` per series so the year-to-year shape is visible within the narrow 85–120 band. Latest-year bar at full opacity, others at 0.3.
 - **18-metric stat table** in the detail sheet — each row shows the SSB label, a one-line plain-Norwegian description from `METRIC_DESCRIPTION` (inline in `health-map.tsx`), and the formatted value. Primary metric rows get a muted background tint.
 
+### Kostnader map (kostnader):
+- **Kommune choropleth** built from `kostnader.json` (SSB 12842 + 14674). Two-metric segmented control via a bottom sheet (same pattern as /helse):
+  - `gebyrerTotal` — sum of vann + avløp + avfall + feiing årsgebyr in kr/year. Every kommune has this.
+  - `eiendomsskatt120m2` — SSB's standardized annual bill for a 120 m² enebolig. ~250/357 kommuner have this number; the rest either have the tax but not the standardized calc (fall back to promille in the detail sheet) or don't levy it on homes at all.
+- **"Ingen eiendomsskatt" as a positive fill**: kommuner with `hasEiendomsskatt === false` render in `--kv-positive-light` with full opacity — distinct from "no data" (muted gray) — because "no property tax" is good news for the reader, not missing data. Dedicated legend swatch explains this on the eiendomsskatt metric view.
+- **Sammenlign (comparison) sheet** mirrors the bolig/lonn pattern via `compareModeRef` + `selectedRef` refs so the GeoJSON click handler can switch between "replace A" and "pick B" without re-binding. The combined-total diff (`gebyrerTotal + eiendomsskatt120m2`) is the hero of the compare sheet — answers "how much more or less would you pay per year in X vs Y?" Kommuner without eiendomsskatt contribute 0 to the combined total (correct behavior — they save you that money).
+- **Detail sheet** shows 2 primary stat cards + the four-fee breakdown (Vann/Avløp/Avfall/Feiing) as a mini stat list. Eiendomsskatt card has three render states: "Ingen" (positive-dark text on card), kr/år for a 120 m² house, or promille-only fallback with an italic "Kun promille rapportert" note.
+- **Year mismatch is intentional**: gebyrer uses the latest year with ≥150 kommuner populated (typically current year's preliminary SSB release); eiendomsskatt uses the latest year where `KOSskattenebolig0000` has coverage (stopped publishing after 2024). Both years are surfaced in the header strip and detail-sheet footer so the reader can see which data vintage they're looking at.
+
 ### Inflation dashboard (prisvekst):
 - **Not a map** — standalone dashboard page at `/prisvekst`
 - Hero stat cards: KPI, KPI-JAE, Styringsrente with contextual target badges ("Over målet", "Nær målet") relative to Norges Bank's 2% target
@@ -252,12 +268,14 @@ Not a map — a portrait of a place. One pre-rendered dashboard per kommune at `
 2. **Utforsk muligheter i <kommune>** — two Finn.no external-link cards (boliger + ledige jobber) with kommune-level location filter. Jobs use a separate URL format `/job/search?location=2.20001.<fylke>.<kommune>` derived from the boliger code at render time.
 3. **Plassering** — interactive Leaflet map with kommune polygon highlighted, 6 toggleable layer pills below the map (Skoler, Barnehager, Kraftverk, Lading, Hytter, Magasiner). Default empty. Real `L.divIcon` markers with hover tooltips. Kart/Gråtone tile toggle top-right. `scrollWheelZoom={false}` so page scrolling isn't hijacked.
 4. **Boligmarked** — 3 dwelling-type cards (Enebolig/Småhus/Blokk) with kr/m², yoy badge, sales count. Deep-links to `/bolig#kommune-<knr>`.
-5. **Skoler og barnehager** — 3 stat cards (Grunnskoler, Videregående, Barnehager) with totalStudents/totalChildren context. Største skoler list with top 5. Deep-links to `/skoler?lat=&lon=&z=12`.
-6. **Helsetilbud** — Plain-language synthesis line (from `synthesizeHealth()`) + 3 stat cards (Ledig kapasitet, Uten fastlege, Pasienter per lege) with ranks, plus an "Utvikling siden 2018" delta. Deep-links to `/helse#kommune-<knr>`. Source: SSB 12005.
-7. **Natur og verneområder** — verne % + DNT/fjellhytter count. Deep-links to `/vern#kommune-<knr>`.
-8. **Energi** — installert MW, kraftverk count by type, magasiner, top 5 plants list. Deep-links to `/energi?lat=&lon=&z=10`.
-9. **Infrastruktur** — charging stations (total + ≥50 kW), cabins. Deep-links to `/lading?lat=&lon=&z=11`.
-10. **Vær akkurat nå** — client-fetched MET.no for the kommune centroid. Deep-links to `/map?lat=&lon=&z=12`.
+5. **Hva koster det å bo her?** — Eiendomsskatt card (kr for a standardized 120 m² enebolig, with "Ingen" pill when a kommune has not introduced property tax on homes) + Kommunale årsgebyr card (sum of vann/avløp/avfall/feiing, with a breakdown context line). Sources: SSB 12842 + 14674.
+6. **Skoler og barnehager** — 3 stat cards (Grunnskoler, Videregående, Barnehager) with totalStudents/totalChildren context. Største skoler list with top 5. Deep-links to `/skoler?lat=&lon=&z=12`.
+7. **Helsetilbud** — Plain-language synthesis line (from `synthesizeHealth()`) + 3 stat cards (Ledig kapasitet, Uten fastlege, Pasienter per lege) with ranks, plus an "Utvikling siden 2018" delta. Deep-links to `/helse#kommune-<knr>`. Source: SSB 12005.
+8. **Natur og verneområder** — verne % + DNT/fjellhytter count. Deep-links to `/vern#kommune-<knr>`.
+9. **Energi** — installert MW, kraftverk count by type, magasiner, top 5 plants list. Deep-links to `/energi?lat=&lon=&z=10`.
+10. **Infrastruktur** — charging stations (total + ≥50 kW), cabins. Deep-links to `/lading?lat=&lon=&z=11`.
+11. **Vær akkurat nå** — client-fetched MET.no for the kommune centroid. Deep-links to `/map?lat=&lon=&z=12`.
+12. **Lignende kommuner** — 3 compact cards showing kommuner with the closest combined (population rank, income rank) distance using Manhattan on rank-space. Uses `findSimilar()` helper inline in `kommune/[slug]/page.tsx`. Each card links to that kommune's Stedsprofil — discovery feature for users to jump to comparable places.
 
 ### Card pattern (different from the maps!)
 Stedsprofil cards are **vertically stacked** (value on top, label caption, context row). Intentionally distinct from the horizontal Z-pattern used on map compact cards:
@@ -380,6 +398,8 @@ Three-tier convention: `-light` for the background tint, base for icons/borders/
 | Schools | Utdanningsdirektoratet NSR (`data-nsr.udir.no/v3`) — list + per-orgnr detail calls for coords | Build-time static JSON |
 | Kindergartens | Utdanningsdirektoratet NBR (`data-nbr.udir.no/v3`) — same shape as NSR | Build-time static JSON |
 | Fastlege data | SSB tabell 12005 (Fastlegelister og fastlegekonsultasjoner) — 18 metrics per kommune 2015–2025 | Build-time static JSON |
+| Kommunale gebyrer | SSB tabell 12842 (vann, avløp, avfall, feiing) — årsgebyr ekskl. mva. per kommune | Build-time static JSON |
+| Eiendomsskatt | SSB tabell 14674 (KOSTRA-data) — has-skatt flag + standardized 120 m² bill + promille per kommune | Build-time static JSON |
 | Sykehus + legevakt | OpenStreetMap (Overpass, `amenity=hospital`/`clinic`, classified via name + tags, scoped to Norway via `area["ISO3166-1"="NO"]`) | Build-time static JSON |
 | Finn.no location codes | Scraped from `finn.no/realestate/homes/search.html` (embedded JSON) | Build-time static JSON |
 | Weather | MET.no locationforecast | 30min server cache |

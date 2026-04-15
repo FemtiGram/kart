@@ -559,7 +559,7 @@ export function EnergyMap() {
             {loading
               ? "Henter kraftverk..."
               : plants.length > 0
-                ? `${filteredPlants.length} kraftverk${filteredOilGas.length > 0 ? ` + ${filteredOilGas.length} anlegg` : ""}${filteredHavvindZones.length > 0 ? ` + ${filteredHavvindZones.length} havvind` : ""} · Kilde: NVE / Sodir`
+                ? `${filteredPlants.length} kraftverk${filteredOilGas.length > 0 ? ` + ${filteredOilGas.length} anlegg` : ""}${filteredHavvindZones.length > 0 ? ` + ${filteredHavvindZones.length} havvind` : ""} · Kilde: NVE / Sodir · oppdateres ukentlig`}
                 : "Ingen kraftverk funnet"}
           </p>
           <button

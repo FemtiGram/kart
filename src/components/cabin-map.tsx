@@ -446,7 +446,7 @@ export function CabinMap() {
         </div>
         <div className="flex items-center justify-between mt-2">
           <p className="text-xs text-foreground/70">
-            {loading ? "Henter hytter..." : norwayCabins.length > 0 ? `${filteredCabins.length} av ${norwayCabins.length} hytter · Kilde: OpenStreetMap` : "Ingen hytter funnet"}
+            {loading ? "Henter hytter..." : norwayCabins.length > 0 ? `${filteredCabins.length} av ${norwayCabins.length} hytter · Kilde: OpenStreetMap · oppdateres månedlig` : "Ingen hytter funnet"}
           </p>
         </div>
       </div>

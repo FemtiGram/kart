@@ -58,7 +58,7 @@ const navGroups: NavGroup[] = [
       { href: "/lonn", label: "Inntektskart", icon: DollarSign, description: "Median inntekt per kommune" },
       { href: "/bolig", label: "Boligpriser", icon: TrendingUp, description: "Kvadratmeterpris per kommune" },
       { href: "/kostnader", label: "Kostnader", icon: Wallet, description: "Gebyrer og eiendomsskatt" },
-      { href: "/prisvekst", label: "Prisvekst", icon: BarChart3, description: "Konsumprisindeksen i Norge" },
+      { href: "/prisvekst", label: "Prisvekst", icon: BarChart3, description: "Dashboard · Konsumprisindeksen" },
     ],
   },
 ];

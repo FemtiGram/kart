@@ -59,8 +59,9 @@ const groups: Array<{ label: string; items: GroupItem[] }> = [
     items: [
       { title: "Helsetilbud", description: "Fastleger, sykehus og legevakt", href: "/helse", icon: HeartPulse },
       { title: "Inntektskart", description: "Median inntekt per kommune", href: "/lonn", icon: DollarSign },
+      // TODO: remove `isNew: true` after 2026-10 — Kostnader is no longer new by then.
       { title: "Kostnader", description: "Gebyrer og eiendomsskatt", href: "/kostnader", icon: Wallet, isNew: true },
-      { title: "Prisvekst", description: "Konsumprisindeksen i Norge", href: "/prisvekst", icon: BarChart3 },
+      { title: "Prisvekst", description: "Dashboard for konsumprisindeksen", href: "/prisvekst", icon: BarChart3 },
     ],
   },
 ];

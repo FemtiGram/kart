@@ -270,17 +270,30 @@ export function IncomeMap() {
 
   return (
     <div className="flex flex-col" style={{ height: MAP_HEIGHT }}>
-      {/* Search bar */}
+      {/* Search bar + data freshness strip */}
       <div className="relative z-[1000] px-4 py-4 md:px-8 shrink-0 bg-background border-b">
-        <div className="max-w-xl mx-auto relative">
+        <div className="max-w-xl mx-auto relative flex flex-col gap-2">
           <MapSearchBar
             ref={searchBarRef}
             kommuneList={() => geoFeaturesRef.current}
             onSelect={handleSearchSelect}
             placeholder="Søk etter en adresse for å finne kommunen..."
           />
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-foreground/70">
+              {loading
+                ? "Henter inntektsdata..."
+                : `${loadedCount} kommuner · Median inntekt etter skatt · Kilde: SSB InntektStruk13 · 2024`}
+            </p>
+            <button
+              onClick={() => setShowInfo(true)}
+              className="inline-flex items-center gap-1 text-xs px-3 py-1 rounded-full border bg-muted text-foreground/70 hover:text-foreground transition-colors shrink-0"
+            >
+              <Info className="h-3 w-3" />
+              Om data
+            </button>
+          </div>
         </div>
-
       </div>
 
       {/* Map */}

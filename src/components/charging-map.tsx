@@ -321,7 +321,7 @@ export function ChargingMap() {
         </div>
         <div className="flex items-center justify-between mt-2">
           <p className="text-xs text-foreground/70">
-            {loading ? loadingMessage : stations.length > 0 ? `${filteredStations.length}${filterConnectors.size > 0 ? ` av ${stations.length}` : ""} ladestasjoner i Norge · Kilde: NOBIL / Enova` : "Ingen ladestasjoner funnet"}
+            {loading ? loadingMessage : stations.length > 0 ? `${filteredStations.length}${filterConnectors.size > 0 ? ` av ${stations.length}` : ""} ladestasjoner i Norge · Kilde: NOBIL / Enova · oppdateres daglig` : "Ingen ladestasjoner funnet"}
           </p>
           <button
             disabled
