@@ -16,6 +16,7 @@
 
 import { writeFileSync, readFileSync, existsSync } from "fs";
 import { join } from "path";
+import { generateSnapshot } from "./generate-snapshot.mjs";
 
 const ROOT = process.cwd();
 const GEOJSON_PATH = join(ROOT, "public", "data", "kommuner.geojson");
@@ -632,6 +633,174 @@ async function fetchFastlege() {
   return { byKnr, latestYear };
 }
 
+// ─── Demografi fetchers (SSB 11084 + 09429 + 06265) ──────────
+//
+// Three separate tables, all requested at once and then merged into a
+// `demografi` sub-object per kommune. Each sub-fetch asks for the last
+// few years and picks the most populated year with reasonable coverage.
+// Output shape per knr:
+//   {
+//     eierstatus: { selveier: 0.72, andelseier: 0.14, leier: 0.14, year: "2024" },
+//     utdanning:  { grunnskole: 0.22, vgs: 0.38, hoyere: 0.38, year: "2024" },
+//     boliger:    { enebolig: 0.58, tomannsbolig: 0.08, rekkehus: 0.18,
+//                   blokk: 0.12, annet: 0.04, year: "2024" }
+//   }
+// All fractions are 0..1 (decimal); the render layer formats as percent.
+
+const DEMOGRAFI_YEARS = ["2021", "2022", "2023", "2024"];
+
+async function fetchEierstatus() {
+  console.log("  Fetching SSB 11084 (eierstatus)...");
+  const res = await fetch("https://data.ssb.no/api/v0/no/table/11084", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      query: [
+        { code: "Region", selection: { filter: "all", values: ["*"] } },
+        // Values: 1=I alt, 2=Selveier, 3=Andels-/aksjeeier, 4=Leier
+        { code: "EierStatus", selection: { filter: "item", values: ["2", "3", "4"] } },
+        { code: "ContentsCode", selection: { filter: "item", values: ["HusholdningProsent"] } },
+        { code: "Tid", selection: { filter: "item", values: DEMOGRAFI_YEARS } },
+      ],
+      response: { format: "json-stat2" },
+    }),
+  });
+  if (!res.ok) throw new Error(`SSB 11084: HTTP ${res.status}`);
+  const data = await res.json();
+  return decodeDemografi(data, "EierStatus", {
+    "2": "selveier",
+    "3": "andelseier",
+    "4": "leier",
+  });
+}
+
+async function fetchUtdanning() {
+  console.log("  Fetching SSB 09429 (utdanningsnivå)...");
+  const res = await fetch("https://data.ssb.no/api/v0/no/table/09429", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      query: [
+        { code: "Region", selection: { filter: "all", values: ["*"] } },
+        // Levels: 01=grunnskole, 02a=vgs, 11=fagskole,
+        //        03a=UH kort, 04a=UH lang, 09a=uoppgitt (skipped)
+        {
+          code: "Nivaa",
+          selection: {
+            filter: "item",
+            values: ["01", "02a", "11", "03a", "04a"],
+          },
+        },
+        // Kjonn 0 = Begge kjønn (total)
+        { code: "Kjonn", selection: { filter: "item", values: ["0"] } },
+        { code: "ContentsCode", selection: { filter: "item", values: ["PersonerProsent"] } },
+        { code: "Tid", selection: { filter: "item", values: DEMOGRAFI_YEARS } },
+      ],
+      response: { format: "json-stat2" },
+    }),
+  });
+  if (!res.ok) throw new Error(`SSB 09429: HTTP ${res.status}`);
+  const data = await res.json();
+  return decodeDemografi(data, "Nivaa", {
+    "01": "grunnskole",
+    "02a": "vgs",
+    "11": "fagskole",
+    "03a": "hoyereKort",
+    "04a": "hoyereLang",
+  });
+}
+
+async function fetchBoligtyper() {
+  console.log("  Fetching SSB 06265 (boligtyper)...");
+  // 06265 publishes absolute dwelling counts per building type; we
+  // compute percentages ourselves (in decodeBoligtyper below).
+  const res = await fetch("https://data.ssb.no/api/v0/no/table/06265", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      query: [
+        { code: "Region", selection: { filter: "all", values: ["*"] } },
+        {
+          code: "BygnType",
+          selection: { filter: "item", values: ["01", "02", "03", "04", "05", "999"] },
+        },
+        { code: "ContentsCode", selection: { filter: "item", values: ["Boliger"] } },
+        { code: "Tid", selection: { filter: "item", values: DEMOGRAFI_YEARS } },
+      ],
+      response: { format: "json-stat2" },
+    }),
+  });
+  if (!res.ok) throw new Error(`SSB 06265: HTTP ${res.status}`);
+  const data = await res.json();
+  // Raw counts — convert to percentages per kommune.
+  const raw = decodeDemografi(data, "BygnType", {
+    "01": "enebolig",
+    "02": "tomannsbolig",
+    "03": "rekkehus",
+    "04": "blokk",
+    "05": "bofellesskap",
+    "999": "annet",
+  });
+  const byKnr = {};
+  for (const [knr, row] of Object.entries(raw.byKnr)) {
+    const total = Object.values(row).reduce((a, b) => a + b, 0);
+    if (total === 0) continue;
+    const pct = {};
+    for (const [k, v] of Object.entries(row)) {
+      pct[k] = (v / total) * 100;
+    }
+    byKnr[knr] = pct;
+  }
+  return { latestYear: raw.latestYear, byKnr };
+}
+
+// Shared json-stat2 decoder: returns { latestYear, byKnr: { knr: { <label>: value } } }.
+// Picks the most recent year that has values for at least 150 kommuner.
+function decodeDemografi(data, breakdownDim, labelMap) {
+  const ids = data.id;
+  const sizes = data.size;
+  const values = data.value;
+  const strides = new Array(ids.length).fill(1);
+  for (let i = ids.length - 2; i >= 0; i--) {
+    strides[i] = strides[i + 1] * sizes[i + 1];
+  }
+  const regionIndex = data.dimension.Region.category.index;
+  const breakIndex = data.dimension[breakdownDim].category.index;
+  const tidIndex = data.dimension.Tid.category.index;
+  const rStride = strides[ids.indexOf("Region")];
+  const bStride = strides[ids.indexOf(breakdownDim)];
+  const tStride = strides[ids.indexOf("Tid")];
+
+  // Try years newest-first; first year with decent coverage wins.
+  const years = Object.entries(tidIndex).sort((a, b) => Number(b[0]) - Number(a[0]));
+  let latestYear = null;
+  let picked = null;
+  for (const [year, tI] of years) {
+    const byKnr = {};
+    for (const [knr, rI] of Object.entries(regionIndex)) {
+      if (!/^\d{4}$/.test(knr)) continue;
+      const row = {};
+      let any = false;
+      for (const [code, bI] of Object.entries(breakIndex)) {
+        const label = labelMap[code];
+        if (!label) continue;
+        const v = values[rI * rStride + bI * bStride + tI * tStride];
+        if (v != null) {
+          row[label] = v;
+          any = true;
+        }
+      }
+      if (any) byKnr[knr] = row;
+    }
+    if (Object.keys(byKnr).length >= 150) {
+      latestYear = year;
+      picked = byKnr;
+      break;
+    }
+  }
+  return { latestYear, byKnr: picked ?? {} };
+}
+
 // ─── NVE energy fetcher (hydro + operational wind only) ──────
 
 function utmToLatLon(easting, northing) {
@@ -831,6 +1000,7 @@ async function main() {
 
   // Fetch external data in parallel
   let population, income, bolig, protectedAreas, plants, fastlege, eiendomsskatt, gebyrer;
+  let eierstatus, utdanning, boligtyper;
   try {
     [
       population,
@@ -841,6 +1011,9 @@ async function main() {
       fastlege,
       eiendomsskatt,
       gebyrer,
+      eierstatus,
+      utdanning,
+      boligtyper,
     ] = await Promise.all([
       fetchPopulation(),
       fetchIncome(),
@@ -850,6 +1023,9 @@ async function main() {
       fetchFastlege(),
       fetchEiendomsskatt(),
       fetchKommunaleGebyrer(),
+      fetchEierstatus(),
+      fetchUtdanning(),
+      fetchBoligtyper(),
     ]);
   } catch (err) {
     console.error(`  ✗ Failed fetching external data: ${err.message}`);
@@ -1215,6 +1391,17 @@ async function main() {
             }
           : null,
       },
+      demografi: {
+        eierstatus: eierstatus.byKnr[knr]
+          ? { ...eierstatus.byKnr[knr], year: eierstatus.latestYear }
+          : null,
+        utdanning: utdanning.byKnr[knr]
+          ? { ...utdanning.byKnr[knr], year: utdanning.latestYear }
+          : null,
+        boliger: boligtyper.byKnr[knr]
+          ? { ...boligtyper.byKnr[knr], year: boligtyper.latestYear }
+          : null,
+      },
     };
   }
 
@@ -1224,6 +1411,13 @@ async function main() {
   const boligRanks = rankBy(
     profiles,
     (p) => p.bolig?.["03"]?.price ?? p.bolig?.["02"]?.price ?? p.bolig?.["01"]?.price
+  );
+  // Enebolig-first rank — used by the snapshot generator so the kr/m²
+  // figure and the "#X av Y" reference stay consistent when we prefer
+  // the enebolig price as the reader's anchor.
+  const eneboligRanks = rankBy(
+    profiles,
+    (p) => p.bolig?.["01"]?.price ?? p.bolig?.["02"]?.price ?? p.bolig?.["03"]?.price
   );
   const verneRanks = rankBy(profiles, (p) => p.vernePct);
   const energyRanks = rankBy(profiles, (p) => p.energy.totalMW);
@@ -1248,11 +1442,26 @@ async function main() {
   // Cheapest kommunale gebyrer first (rank 1 = lowest total).
   const gebyrTotalRanks = rankBy(profiles, (p) => p.cost?.gebyrer?.total, false);
 
+  const rankTotals = {
+    kommuner: Object.keys(profiles).length,
+    popTotal: popRanks.total,
+    incomeTotal: incomeRanks.total,
+    boligTotal: boligRanks.total,
+    eneboligTotal: eneboligRanks.total,
+    verneTotal: verneRanks.total,
+    energyTotal: energyRanks.total,
+    reservekapasitetTotal: reservekapasitetRanks.total,
+    andelUtenLegeTotal: andelUtenLegeRanks.total,
+    listelengdeTotal: listelengdeRanks.total,
+    gebyrTotalTotal: gebyrTotalRanks.total,
+  };
+
   for (const [knr, profile] of Object.entries(profiles)) {
     profile.ranks = {
       population: popRanks.ranks[knr] ?? null,
       income: incomeRanks.ranks[knr] ?? null,
       bolig: boligRanks.ranks[knr] ?? null,
+      boligEnebolig: eneboligRanks.ranks[knr] ?? null,
       verne: verneRanks.ranks[knr] ?? null,
       energy: energyRanks.ranks[knr] ?? null,
       affordability: affordabilityRanks.ranks[knr] ?? null,
@@ -1261,6 +1470,7 @@ async function main() {
       listelengde: listelengdeRanks.ranks[knr] ?? null,
       gebyrTotal: gebyrTotalRanks.ranks[knr] ?? null,
     };
+    profile.snapshot = generateSnapshot(profile, rankTotals);
   }
 
   // Write public/data/fastlege.json — consumed by /helse choropleth. Each

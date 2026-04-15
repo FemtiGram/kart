@@ -1,4 +1,4 @@
-import { readFileSync } from "fs";
+import { readFileSync, statSync } from "fs";
 import { join } from "path";
 
 // ─── Types ───────────────────────────────────────────────────
@@ -193,6 +193,43 @@ export interface HealthSummary {
  * `gebyrer.total` is the sum of the four fees (any null summands
  * excluded), the single headline number for the card.
  */
+/**
+ * Demografi — household ownership, education level, and dwelling type
+ * distribution per kommune. Sourced from three SSB tables:
+ *   - 11084 (Eierstatus): % selveier / andelseier / leier (households)
+ *   - 09429 (Utdanningsnivå): % grunnskole / vgs / fagskole / UH kort/lang
+ *   - 06265 (Boliger etter bygningstype): % enebolig / tomannsbolig /
+ *           rekkehus / blokk / bofellesskap / annet (share of dwellings)
+ *
+ * All values are percentages (0..100). A sub-object is null when SSB
+ * has no data for that kommune.
+ */
+export interface DemografiSummary {
+  eierstatus: {
+    selveier: number;
+    andelseier: number;
+    leier: number;
+    year: string;
+  } | null;
+  utdanning: {
+    grunnskole: number;
+    vgs: number;
+    fagskole: number;
+    hoyereKort: number;
+    hoyereLang: number;
+    year: string;
+  } | null;
+  boliger: {
+    enebolig: number;
+    tomannsbolig: number;
+    rekkehus: number;
+    blokk: number;
+    bofellesskap: number;
+    annet: number;
+    year: string;
+  } | null;
+}
+
 export interface CostSummary {
   eiendomsskatt: {
     has: boolean;
@@ -239,10 +276,14 @@ export interface KommuneProfile {
   kindergartens: KindergartenSummary;
   health: HealthSummary;
   cost: CostSummary;
+  demografi: DemografiSummary;
   ranks: {
     population: number | null;
     income: number | null;
     bolig: number | null;
+    /** Enebolig-first bolig rank (01 → 02 → 03), used by the snapshot
+     *  generator so price + rank labels stay consistent. */
+    boligEnebolig: number | null;
     verne: number | null;
     energy: number | null;
     affordability: number | null;
@@ -251,6 +292,9 @@ export interface KommuneProfile {
     listelengde: number | null;
     gebyrTotal: number | null;
   };
+  /** Auto-generated 3-sentence narrative summary, built in
+   *  scripts/generate-snapshot.mjs. Baked in at build time. */
+  snapshot: string[];
 }
 
 interface ProfilesFile {
@@ -264,13 +308,24 @@ interface ProfilesFile {
   profiles: Record<string, KommuneProfile>;
 }
 
-// ─── Loader (read once at build time) ────────────────────────
+// ─── Loader ──────────────────────────────────────────────────
+//
+// Cached in a module-level variable for performance (the JSON is ~3.7
+// MB and parsed once), but invalidated when the file's mtime changes.
+// In production/SSG the file never changes mid-build so the cache is
+// populated once. In dev, running `build-kommune-profiles.mjs`
+// rewrites the JSON and the next request picks up the new mtime and
+// reloads — no dev-server restart needed.
 
 let cached: ProfilesFile | null = null;
+let cachedMtimeMs = 0;
+
 function load(): ProfilesFile {
-  if (cached) return cached;
   const path = join(process.cwd(), "public", "data", "kommune-profiles.json");
+  const mtimeMs = statSync(path).mtimeMs;
+  if (cached && cachedMtimeMs === mtimeMs) return cached;
   cached = JSON.parse(readFileSync(path, "utf8"));
+  cachedMtimeMs = mtimeMs;
   return cached!;
 }
 

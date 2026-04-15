@@ -98,7 +98,7 @@ const PILLS: PillConfig[] = [
 
 export function KommuneMiniMap({ outline, bbox, name, layers, totals }: Props) {
   const [active, setActive] = useState<Set<LayerKey>>(new Set());
-  const [tileLayer, setTileLayer] = useState<TileLayerKey>("kart");
+  const [tileLayer, setTileLayer] = useState<TileLayerKey>("gråtone");
 
   if (outline.length === 0) return null;
 
@@ -138,10 +138,10 @@ export function KommuneMiniMap({ outline, bbox, name, layers, totals }: Props) {
           <Polygon
             positions={outline}
             pathOptions={{
-              color: "#24374c",
+              color: "#2563eb",
               weight: 2.5,
-              fillColor: "#24374c",
-              fillOpacity: 0.12,
+              fillColor: "#2563eb",
+              fillOpacity: 0.18,
             }}
           />
 

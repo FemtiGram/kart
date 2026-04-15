@@ -94,6 +94,9 @@ The seed scripts are also run automatically as a `prebuild` hook when deploying.
 | Fastlege data | SSB table 12005 (Fastlegelister og fastlegekonsultasjoner) | Build-time static JSON |
 | Kommunale gebyrer | SSB table 12842 (vann, avløp, avfall, feiing) | Build-time static JSON |
 | Eiendomsskatt | SSB table 14674 (Eiendomsskatt per kommune) | Build-time static JSON |
+| Eierstatus (boforhold) | SSB table 11084 (selveier, andelseier, leier per kommune) | Build-time static JSON |
+| Boligtyper | SSB table 06265 (enebolig, småhus, blokk, ...) | Build-time static JSON |
+| Utdanningsnivå | SSB table 09429 (grunnskole / vgs / høyere utdanning) | Build-time static JSON |
 | Sykehus and legevakt | OpenStreetMap (Overpass, `amenity=hospital`/`clinic` scoped to Norway) | Build-time static JSON |
 | Finn.no location codes | Scraped from `finn.no/realestate/homes/search.html` | Build-time static JSON |
 | Inflation (KPI) | SSB tables 03013 + 05327 | Loaded once on mount |

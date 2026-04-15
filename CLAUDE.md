@@ -78,7 +78,7 @@ src/lib/
   map-utils.tsx         — FlyTo, interpolateColor, DataDisclaimer, shared types (Suggestion, Address, KommuneEntry), useDebounceRef, useSearchAbort
   use-hash-selection.ts — URL hash deep linking hook for selection state (#kommune-<id>, #station-<id>, etc.)
   use-initial-position.ts — Reads ?lat=&lon=&z= on mount and fires a callback (deep linking from Stedsprofil to maps)
-  kommune-profiles.ts   — Reads public/data/kommune-profiles.json at build time, exports getProfileBySlug / getAllKommuner / getTotals
+  kommune-profiles.ts   — Reads public/data/kommune-profiles.json, exports getProfileBySlug / getAllKommuner / getTotals. Module-level cache is **mtime-invalidated** — re-stats the file on each load and reloads when the JSON's mtime changes, so rebuilding profiles via `build-kommune-profiles.mjs` in a running dev server is picked up automatically.
   kommune-slug.ts       — Pure function that mirrors the build-time slugify logic (knr-name) for client-side URL construction
   health-summary.ts     — Shared `synthesizeHealth()` helper used on /helse and Stedsprofil — turns 3 fastlege metrics into a plain-Norwegian one-line sentence with good/mixed/bad/neutral tone
   utm.ts                — UTM zone 33N → WGS84 conversion (for NVE ArcGIS data)
@@ -93,7 +93,8 @@ scripts/
   fetch-finn-locations.mjs — Build-time: scrapes Finn.no realestate page, extracts hierarchical location codes, matches each kommune → public/data/finn-locations.json
   fetch-schools.mjs     — Build-time: lists active schools (NSR) and barnehager (NBR) from UDIR, fetches per-orgnr detail for coordinates and stats in a 20-wide pool → public/data/schools.json
   fetch-health.mjs      — Build-time: Overpass query (scoped to Norway via `area["ISO3166-1"="NO"]`) for `amenity=hospital` and `amenity=clinic`, classifies into sykehus / legevakt / privatklinikker → public/data/health.json
-  build-kommune-profiles.mjs — Build-time: composes SSB population/income/bolig/vern/fastlege (12005) + kommunale gebyrer (12842) + eiendomsskatt (14674) + NVE plants + UDIR schools/barnehager + static files via point-in-polygon and kommunenummer grouping into one profile per kommune → public/data/kommune-profiles.json + public/data/fastlege.json (all 357 kommuner × 18 metrics for latest year, used by /helse) + public/data/kostnader.json (all 357 kommuner × 3 cost metrics, used by /kostnader)
+  build-kommune-profiles.mjs — Build-time: composes SSB population/income/bolig/vern/fastlege (12005) + kommunale gebyrer (12842) + eiendomsskatt (14674) + eierstatus (11084) + boligtyper (06265) + utdanningsnivå (09429) + NVE plants + UDIR schools/barnehager + static files via point-in-polygon and kommunenummer grouping into one profile per kommune → public/data/kommune-profiles.json + public/data/fastlege.json + public/data/kostnader.json. Also calls `generateSnapshot()` from `generate-snapshot.mjs` for each profile so the 3-sentence narrative is baked into the output JSON.
+  generate-snapshot.mjs — Pure (no fetches) helper imported by build-kommune-profiles.mjs. Takes a profile + rank totals and returns a `string[]` of 3 sentences: rule-based notability scoring picks the top 3 distinct themes from ~12 candidates (bolig / gebyr / income / vern / hytter / sykehus / fastlege / skoler / demografi-eier / demografi-boliger / demografi-utdanning / geografisk filler). Templates are deliberately factual — never LLM-generated.
 
 public/data/
   stations.json         — Pre-built charging station data (committed to repo)
@@ -257,25 +258,28 @@ All maps use a **compact floating card + expandable bottom Sheet** pattern:
 Not a map — a portrait of a place. One pre-rendered dashboard per kommune at `/kommune/[slug]`, all 357 generated via `generateStaticParams`. Sits alongside the maps as a cross-cutting "what is this place?" view.
 
 ### Data pipeline
-- `scripts/build-kommune-profiles.mjs` runs in `prebuild`. Fetches SSB population (07459), income (InntektStruk13), housing prices (06035), protected areas (08936), fastlege data (12005), and NVE hydro + operational wind. Reads the pre-built static files (`stations.json`, `cabins.json`, `reservoirs.json`, `schools.json`, `health.json`, `kommuner.geojson`, `finn-locations.json`) for the join.
+- `scripts/build-kommune-profiles.mjs` runs in `prebuild`. Fetches SSB population (07459), income (InntektStruk13), housing prices (06035), protected areas (08936), fastlege (12005), kommunale gebyrer (12842), eiendomsskatt (14674), eierstatus (11084), boligtyper (06265), utdanningsnivå (09429), and NVE hydro + operational wind. Reads the pre-built static files (`stations.json`, `cabins.json`, `reservoirs.json`, `schools.json`, `health.json`, `kommuner.geojson`, `finn-locations.json`) for the join.
 - **Point-in-polygon** (inline ray-casting + bbox pre-filter, no turf dependency) assigns cabins, reservoirs, plants, and OSM health markers to kommuner. Charging stations, schools, and kindergartens skip PIP — NOBIL and UDIR both provide `kommunenummer` / `municipalityId` directly.
-- Output: `public/data/kommune-profiles.json` (~3.6 MB after fastlege added) and `public/data/fastlege.json` (~340 KB, flat 357-kommuner × 18-metric table consumed by the /helse choropleth). Imported at build time by `src/lib/kommune-profiles.ts`; only the current kommune's subset (~5–10 KB) is inlined into each pre-rendered HTML page.
-- **Rankings** (pop, income, bolig, verne, energy, reservekapasitet, andelUtenLege, listelengde) are computed once at build time and stored per profile, not at runtime.
+- Output: `public/data/kommune-profiles.json` (~3.9 MB after fastlege + demografi added) and `public/data/fastlege.json` (~340 KB, flat 357-kommuner × 18-metric table consumed by the /helse choropleth). Imported at build time by `src/lib/kommune-profiles.ts`; only the current kommune's subset (~5–10 KB) is inlined into each pre-rendered HTML page.
+- **Rankings** (pop, income, bolig, boligEnebolig, verne, energy, reservekapasitet, andelUtenLege, listelengde, gebyrTotal) are computed once at build time and stored per profile, not at runtime. `boligEnebolig` uses the 01→02→03 priority so the enebolig price shown in the snapshot stays consistent with its rank label.
 - Simplified kommune outline (~40 points) is stored per profile for the Plassering mini-map, so no client-side GeoJSON fetch is needed.
+- **Snapshot** is generated at build time via `scripts/generate-snapshot.mjs`. Rule-based notability scoring picks the 3 most distinctive facts per kommune from ~12 candidate templates across themes `economy / boforhold / utdanning / services / health / nature / energy / geography`. Baked into `profile.snapshot: string[]` so it's pre-rendered HTML with zero runtime cost. Never LLM — templates only, deliberately factual voice.
+- `src/lib/kommune-profiles.ts` caches the JSON in a module-level variable **with mtime invalidation** — it re-stats the file on each `load()` call and reloads when the mtime changes. Rebuilding profiles no longer requires a dev-server restart.
 
 ### Page sections (top to bottom)
-1. **Hero** — kommune name (H1, 4xl/5xl), metadata row (fylke · knr · km²), 2 stat cards (Innbyggere, Median inntekt)
+1. **Hero** — kommune name (H1, 4xl/5xl), metadata row (fylke · knr · km²), 2 stat cards (Innbyggere, Median inntekt), followed by an **Automatisk sammendrag** card: Sparkles icon + 3-sentence narrative generated at build time from `profile.snapshot`, plus a "kan inneholde feil" disclaimer. Deliberately not LLM — rule-based templates.
 2. **Utforsk muligheter i <kommune>** — two Finn.no external-link cards (boliger + ledige jobber) with kommune-level location filter. Jobs use a separate URL format `/job/search?location=2.20001.<fylke>.<kommune>` derived from the boliger code at render time.
-3. **Plassering** — interactive Leaflet map with kommune polygon highlighted, 6 toggleable layer pills below the map (Skoler, Barnehager, Kraftverk, Lading, Hytter, Magasiner). Default empty. Real `L.divIcon` markers with hover tooltips. Kart/Gråtone tile toggle top-right. `scrollWheelZoom={false}` so page scrolling isn't hijacked.
-4. **Boligmarked** — 3 dwelling-type cards (Enebolig/Småhus/Blokk) with kr/m², yoy badge, sales count. Deep-links to `/bolig#kommune-<knr>`.
-5. **Hva koster det å bo her?** — Eiendomsskatt card (kr for a standardized 120 m² enebolig, with "Ingen" pill when a kommune has not introduced property tax on homes) + Kommunale årsgebyr card (sum of vann/avløp/avfall/feiing, with a breakdown context line). Sources: SSB 12842 + 14674.
-6. **Skoler og barnehager** — 3 stat cards (Grunnskoler, Videregående, Barnehager) with totalStudents/totalChildren context. Største skoler list with top 5. Deep-links to `/skoler?lat=&lon=&z=12`.
-7. **Helsetilbud** — Plain-language synthesis line (from `synthesizeHealth()`) + 3 stat cards (Ledig kapasitet, Uten fastlege, Pasienter per lege) with ranks, plus an "Utvikling siden 2018" delta. Deep-links to `/helse#kommune-<knr>`. Source: SSB 12005.
-8. **Natur og verneområder** — verne % + DNT/fjellhytter count. Deep-links to `/vern#kommune-<knr>`.
-9. **Energi** — installert MW, kraftverk count by type, magasiner, top 5 plants list. Deep-links to `/energi?lat=&lon=&z=10`.
-10. **Infrastruktur** — charging stations (total + ≥50 kW), cabins. Deep-links to `/lading?lat=&lon=&z=11`.
-11. **Vær akkurat nå** — client-fetched MET.no for the kommune centroid. Deep-links to `/map?lat=&lon=&z=12`.
-12. **Lignende kommuner** — 3 compact cards showing kommuner with the closest combined (population rank, income rank) distance using Manhattan on rank-space. Uses `findSimilar()` helper inline in `kommune/[slug]/page.tsx`. Each card links to that kommune's Stedsprofil — discovery feature for users to jump to comparable places.
+3. **Plassering** — interactive Leaflet map with kommune polygon highlighted, 6 toggleable layer pills below the map (Skoler, Barnehager, Kraftverk, Lading, Hytter, Magasiner). Default empty. Real `L.divIcon` markers with hover tooltips. **Defaults to Gråtone tile** with a Kart/Gråtone toggle top-right, blue polygon (`#2563eb` stroke + 18% fill) so the kommune pops against the muted basemap. `scrollWheelZoom={false}` so page scrolling isn't hijacked.
+4. **Boligmarked** — 3 dwelling-type cards (Enebolig/Småhus/Blokk) with kr/m², `YoyBadge` showing `±X % fra <prevYear>` (same format as the /bolig chip), and sales count with the latest SSB year. Deep-links to `/bolig#kommune-<knr>`.
+5. **Hva koster det å bo her?** — Eiendomsskatt card (kr for a standardized 120 m² enebolig, with "Ingen" pill when a kommune has not introduced property tax on homes) + `GebyrCard` (dedicated card that replaces the truncating generic Stat — 2×2 grid showing Vann/Avløp/Avfall/Feiing with `kr` suffix so no fee gets cut off). Sources: SSB 12842 + 14674.
+6. **Demografi** — three stacked-bar cards (Eierforhold / Boligtyper / Utdanningsnivå) with blue-gradient segments and a legend showing each category's exact percent. Not derived — reads straight from `profile.demografi` (SSB 11084 + 06265 + 09429). Mirrors the raw data the snapshot generator samples from, so the reader can see the full distribution, not just the surfaced outlier.
+7. **Skoler og barnehager** — 3 stat cards (Grunnskoler, Videregående, Barnehager) with totalStudents/totalChildren context. Største skoler list with top 5. Deep-links to `/skoler?lat=&lon=&z=12`.
+8. **Helsetilbud** — Plain-language synthesis line (from `synthesizeHealth()`) + 3 stat cards (Ledig kapasitet, Uten fastlege, Pasienter per lege) with ranks, plus an "Utvikling siden 2018" delta. Deep-links to `/helse#kommune-<knr>`. Source: SSB 12005.
+9. **Natur og verneområder** — verne % + DNT/fjellhytter count. Deep-links to `/vern#kommune-<knr>`.
+10. **Energi** — installert MW, kraftverk count by type, magasiner, top 5 plants list. Deep-links to `/energi?lat=&lon=&z=10`.
+11. **Infrastruktur** — charging stations (total + ≥50 kW), cabins. Deep-links to `/lading?lat=&lon=&z=11`.
+12. **Vær akkurat nå** — client-fetched MET.no for the kommune centroid. Deep-links to `/map?lat=&lon=&z=12`.
+13. **Lignende kommuner** — 3 compact cards showing kommuner with the closest combined (population rank, income rank) distance using Manhattan on rank-space. Uses `findSimilar()` helper inline in `kommune/[slug]/page.tsx`. Each card links to that kommune's Stedsprofil — discovery feature for users to jump to comparable places.
 
 ### Card pattern (different from the maps!)
 Stedsprofil cards are **vertically stacked** (value on top, label caption, context row). Intentionally distinct from the horizontal Z-pattern used on map compact cards:
@@ -401,6 +405,9 @@ Three-tier convention: `-light` for the background tint, base for icons/borders/
 | Kommunale gebyrer | SSB tabell 12842 (vann, avløp, avfall, feiing) — årsgebyr ekskl. mva. per kommune | Build-time static JSON |
 | Eiendomsskatt | SSB tabell 14674 (KOSTRA-data) — has-skatt flag + standardized 120 m² bill + promille per kommune | Build-time static JSON |
 | Sykehus + legevakt | OpenStreetMap (Overpass, `amenity=hospital`/`clinic`, classified via name + tags, scoped to Norway via `area["ISO3166-1"="NO"]`) | Build-time static JSON |
+| Eierstatus (boforhold) | SSB tabell 11084 — % selveier / andelseier / leier per kommune | Build-time static JSON |
+| Boligtyper | SSB tabell 06265 — antall boliger per bygningstype (enebolig/småhus/blokk/...) per kommune, konvertert til prosent på byggetidspunktet | Build-time static JSON |
+| Utdanningsnivå | SSB tabell 09429 — % grunnskole / vgs / fagskole / UH kort / UH lang per kommune | Build-time static JSON |
 | Finn.no location codes | Scraped from `finn.no/realestate/homes/search.html` (embedded JSON) | Build-time static JSON |
 | Weather | MET.no locationforecast | 30min server cache |
 | Elevation | Kartverket høyde-API | Per-request |

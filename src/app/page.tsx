@@ -72,7 +72,7 @@ function CardLink({ href, icon: Icon, title, description, cta = "Åpne kart", in
   href: string; icon: typeof Mountain; title: string; description: string; cta?: string; index?: number;
 }) {
   return (
-    <FadeInView delay={index * 0.08}>
+    <FadeIn delay={index * 0.08}>
       <HoverLift className="h-full">
         <Link
           href={href}
@@ -93,7 +93,7 @@ function CardLink({ href, icon: Icon, title, description, cta = "Åpne kart", in
           </div>
         </Link>
       </HoverLift>
-    </FadeInView>
+    </FadeIn>
   );
 }
 
@@ -120,7 +120,7 @@ function CompactCardLink({
   index?: number;
 }) {
   return (
-    <FadeInView delay={index * 0.04}>
+    <FadeIn delay={index * 0.04}>
       <HoverLift className="h-full">
         <Link
           href={href}
@@ -154,7 +154,7 @@ function CompactCardLink({
           <ArrowRight className="h-4 w-4 text-foreground/50 shrink-0 group-hover:text-foreground group-hover:translate-x-0.5 transition-all" />
         </Link>
       </HoverLift>
-    </FadeInView>
+    </FadeIn>
   );
 }
 
@@ -220,11 +220,11 @@ export default function Home() {
         <div className="space-y-8">
           {/* Featured */}
           <div>
-            <FadeInView>
+            <FadeIn>
               <p className="text-xs font-semibold uppercase tracking-widest text-foreground/70 mb-3">
                 Aktuelt
               </p>
-            </FadeInView>
+            </FadeIn>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {featured.map((item, i) => (
                 <CardLink key={item.href} {...item} index={i} />
@@ -233,11 +233,11 @@ export default function Home() {
           </div>
           {groups.map((group) => (
             <div key={group.label}>
-              <FadeInView>
+              <FadeIn>
                 <p className="text-xs font-semibold uppercase tracking-widest text-foreground/70 mb-3">
                   {group.label}
                 </p>
-              </FadeInView>
+              </FadeIn>
               <div
                 className={`grid grid-cols-2 gap-3 ${group.items.length === 4 ? "md:grid-cols-4" : "md:grid-cols-3"}`}
               >

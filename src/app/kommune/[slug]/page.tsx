@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
-import { ArrowLeft, TrendingUp, Home, Shield, Zap, BatteryCharging, Mountain, Waves, Cloud, ExternalLink, Briefcase, Compass, GraduationCap, HeartPulse, Wallet, Users, ArrowRight } from "lucide-react";
+import { ArrowLeft, TrendingUp, Home, Shield, Zap, BatteryCharging, Mountain, Waves, Cloud, ExternalLink, Briefcase, Compass, GraduationCap, HeartPulse, Wallet, Users, ArrowRight, Sparkles, PieChart } from "lucide-react";
 import {
   getAllKommuner,
   getProfileBySlug,
@@ -150,6 +150,25 @@ function Hero({ profile }: { profile: KommuneProfile }) {
           context={fmtRank(ranks.income, totals.incomeTotal)}
         />
       </div>
+      {profile.snapshot && profile.snapshot.length > 0 && (
+        <div className="mt-4 rounded-2xl border bg-card px-5 py-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Sparkles
+              className="h-4 w-4 shrink-0"
+              style={{ color: "var(--kv-blue)" }}
+            />
+            <span className="text-xs font-semibold uppercase tracking-wide text-foreground/70">
+              Automatisk sammendrag
+            </span>
+          </div>
+          <p className="text-sm leading-relaxed text-foreground">
+            {profile.snapshot.join(" ")}
+          </p>
+          <p className="mt-3 text-[11px] text-muted-foreground leading-snug">
+            Sammendraget er automatisk generert og kan inneholde feil.
+          </p>
+        </div>
+      )}
       {displayName !== name && (
         <p className="mt-4 text-xs text-muted-foreground">
           Kommunen har både et norsk og samisk navn. Begge er offisielle.
@@ -197,7 +216,7 @@ function Stat({
 
 // ─── Yoy helper ──────────────────────────────────────────────
 
-function YoyBadge({ value }: { value: number }) {
+function YoyBadge({ value, fromYear }: { value: number; fromYear?: string }) {
   const positive = value >= 0;
   return (
     <span
@@ -208,7 +227,7 @@ function YoyBadge({ value }: { value: number }) {
       }}
     >
       {positive ? "+" : ""}
-      {value.toFixed(1)} %
+      {value.toFixed(1)} %{fromYear ? ` fra ${fromYear}` : ""}
     </span>
   );
 }
@@ -252,13 +271,13 @@ function BoligSection({ profile }: { profile: KommuneProfile }) {
               );
             }
             const trend = entry.trend ?? [];
-            const prices = trend.map((t) => t.price);
-            const last = prices[prices.length - 1];
-            const prev = prices[prices.length - 2];
+            const lastEntry = trend[trend.length - 1];
+            const prevEntry = trend[trend.length - 2];
             const yoy =
-              prev != null && last != null
-                ? ((last - prev) / prev) * 100
+              prevEntry && lastEntry
+                ? ((lastEntry.price - prevEntry.price) / prevEntry.price) * 100
                 : null;
+            const prevYear = prevEntry?.year;
             return (
               <div key={code} className="rounded-2xl border bg-card px-5 py-4">
                 <p
@@ -277,10 +296,10 @@ function BoligSection({ profile }: { profile: KommuneProfile }) {
                 <div className="mt-1 flex items-baseline justify-between gap-3 text-xs text-muted-foreground">
                   <span className="truncate">
                     {entry.count
-                      ? `${fmtNumber(entry.count)} salg i 2024`
+                      ? `${fmtNumber(entry.count)} salg${lastEntry?.year ? ` i ${lastEntry.year}` : ""}`
                       : "Ingen salg"}
                   </span>
-                  {yoy != null && <YoyBadge value={yoy} />}
+                  {yoy != null && <YoyBadge value={yoy} fromYear={prevYear} />}
                 </div>
               </div>
             );
@@ -325,15 +344,9 @@ function KostnadSection({ profile }: { profile: KommuneProfile }) {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {eiendomsskatt && <EiendomsskattCard data={eiendomsskatt} />}
         {gebyrer && (
-          <Stat
-            label="Kommunale årsgebyr"
-            value={
-              gebyrer.total != null
-                ? `${fmtNumber(gebyrer.total)} kr`
-                : "–"
-            }
-            context={gebyrBreakdown(gebyrer)}
-            contextRight={fmtRank(profile.ranks.gebyrTotal, totals.kommuner)}
+          <GebyrCard
+            gebyrer={gebyrer}
+            rank={fmtRank(profile.ranks.gebyrTotal, totals.kommuner)}
           />
         )}
       </div>
@@ -413,15 +426,54 @@ function EiendomsskattCard({
  * context row. Skips any fee the kommune does not report (rural kommuner
  * sometimes have no sewer hookup, for instance).
  */
-function gebyrBreakdown(
-  g: NonNullable<KommuneProfile["cost"]["gebyrer"]>
-): string {
-  const parts: string[] = [];
-  if (g.vann != null) parts.push(`${fmtNumber(g.vann)} vann`);
-  if (g.avlop != null) parts.push(`${fmtNumber(g.avlop)} avløp`);
-  if (g.avfall != null) parts.push(`${fmtNumber(g.avfall)} avfall`);
-  if (g.feiing != null) parts.push(`${fmtNumber(g.feiing)} feiing`);
-  return parts.length > 0 ? parts.join(" · ") : "Ingen data";
+/**
+ * Dedicated card for kommunale årsgebyr. The old Stat card truncated the
+ * four-fee breakdown because the generic Stat uses `truncate` on its
+ * context row — losing feiing (and sometimes avfall) on narrower mobile
+ * widths. This card gives each fee its own labelled cell in a 2×2 grid
+ * so all four stay visible regardless of viewport.
+ */
+function GebyrCard({
+  gebyrer,
+  rank,
+}: {
+  gebyrer: NonNullable<KommuneProfile["cost"]["gebyrer"]>;
+  rank?: string;
+}) {
+  const fees: Array<{ label: string; value: number | null }> = [
+    { label: "Vann", value: gebyrer.vann },
+    { label: "Avløp", value: gebyrer.avlop },
+    { label: "Avfall", value: gebyrer.avfall },
+    { label: "Feiing", value: gebyrer.feiing },
+  ];
+  return (
+    <div className="rounded-2xl border bg-card px-5 py-4">
+      <div className="flex items-baseline justify-between gap-3">
+        <p
+          className="text-2xl font-extrabold tabular-nums leading-none whitespace-nowrap"
+          style={{ color: "var(--kv-blue)" }}
+        >
+          {gebyrer.total != null ? `${fmtNumber(gebyrer.total)} kr` : "–"}
+        </p>
+        {rank && (
+          <span className="text-xs text-muted-foreground shrink-0">{rank}</span>
+        )}
+      </div>
+      <p className="mt-2 text-xs font-semibold uppercase tracking-wide text-foreground/70">
+        Kommunale årsgebyr
+      </p>
+      <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
+        {fees.map((fee) => (
+          <div key={fee.label} className="flex justify-between gap-2">
+            <span className="text-muted-foreground">{fee.label}</span>
+            <span className="tabular-nums text-foreground">
+              {fee.value != null ? `${fmtNumber(fee.value)} kr` : "–"}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 // ─── Section: Utforsk muligheter (external Finn.no links) ──
@@ -618,6 +670,164 @@ function EnergiSection({ profile }: { profile: KommuneProfile }) {
           </div>
         </div>
       )}
+    </Section>
+  );
+}
+
+// ─── Section: Demografi ──────────────────────────────────────
+//
+// Three stacked-bar cards built from SSB tables 11084 (eierstatus),
+// 06265 (boligtyper) and 09429 (utdanningsnivå). Same percentages the
+// automatisk sammendrag samples from, but shown in full so the reader
+// can see the whole distribution, not just the one surfaced outlier.
+
+const DEMO_SHADES = [
+  "#1e3a8a",
+  "#1e40af",
+  "#2563eb",
+  "#3b82f6",
+  "#60a5fa",
+  "#93c5fd",
+];
+
+interface Segment {
+  label: string;
+  value: number;
+}
+
+function StackedCard({
+  label,
+  segments,
+  year,
+}: {
+  label: string;
+  segments: Segment[];
+  year: string;
+}) {
+  // Filter out zero-width segments so the bar and legend stay tidy
+  // (e.g. a kommune with no blokk entries drops that row entirely).
+  const visible = segments.filter((s) => s.value > 0);
+  return (
+    <div className="rounded-2xl border bg-card px-5 py-4">
+      <p className="text-xs font-semibold uppercase tracking-wide text-foreground/70">
+        {label}
+      </p>
+      <div className="mt-3 flex h-2 rounded-full overflow-hidden bg-muted">
+        {visible.map((s, i) => (
+          <div
+            key={s.label}
+            style={{
+              width: `${s.value}%`,
+              background: DEMO_SHADES[i % DEMO_SHADES.length],
+            }}
+            title={`${s.label}: ${s.value.toFixed(1)} %`}
+          />
+        ))}
+      </div>
+      <div className="mt-3 space-y-1.5 text-xs">
+        {visible.map((s, i) => (
+          <div
+            key={s.label}
+            className="flex items-center justify-between gap-2"
+          >
+            <div className="flex items-center gap-2 min-w-0">
+              <span
+                className="w-2 h-2 rounded-full shrink-0"
+                style={{
+                  background: DEMO_SHADES[i % DEMO_SHADES.length],
+                }}
+              />
+              <span className="truncate text-foreground">{s.label}</span>
+            </div>
+            <span className="tabular-nums shrink-0 font-medium text-foreground">
+              {s.value.toFixed(1)} %
+            </span>
+          </div>
+        ))}
+      </div>
+      <p className="mt-3 text-[10px] text-muted-foreground">SSB ({year})</p>
+    </div>
+  );
+}
+
+function DemografiSection({ profile }: { profile: KommuneProfile }) {
+  const { eierstatus, boliger, utdanning } = profile.demografi;
+  if (!eierstatus && !boliger && !utdanning) return null;
+
+  return (
+    <Section title="Demografi" icon={PieChart}>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {eierstatus && (
+          <StackedCard
+            label="Eierforhold"
+            segments={[
+              { label: "Selveier", value: eierstatus.selveier },
+              { label: "Andels-/aksjeeier", value: eierstatus.andelseier },
+              { label: "Leier", value: eierstatus.leier },
+            ]}
+            year={eierstatus.year}
+          />
+        )}
+        {boliger && (
+          <StackedCard
+            label="Boligtyper"
+            segments={[
+              { label: "Enebolig", value: boliger.enebolig },
+              { label: "Rekkehus", value: boliger.rekkehus },
+              { label: "Tomannsbolig", value: boliger.tomannsbolig },
+              { label: "Blokk", value: boliger.blokk },
+              {
+                label: "Annet",
+                value: boliger.bofellesskap + boliger.annet,
+              },
+            ]}
+            year={boliger.year}
+          />
+        )}
+        {utdanning && (
+          <StackedCard
+            label="Utdanningsnivå"
+            segments={[
+              { label: "Grunnskole", value: utdanning.grunnskole },
+              { label: "Videregående", value: utdanning.vgs },
+              { label: "Fagskole", value: utdanning.fagskole },
+              { label: "Høyere (kort)", value: utdanning.hoyereKort },
+              { label: "Høyere (lang)", value: utdanning.hoyereLang },
+            ]}
+            year={utdanning.year}
+          />
+        )}
+      </div>
+      <p className="mt-4 text-xs text-foreground/70">
+        Kilder:{" "}
+        <a
+          href="https://www.ssb.no/statbank/table/11084"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="underline hover:text-foreground"
+        >
+          SSB 11084
+        </a>{" "}
+        (eierstatus),{" "}
+        <a
+          href="https://www.ssb.no/statbank/table/06265"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="underline hover:text-foreground"
+        >
+          SSB 06265
+        </a>{" "}
+        (boligtyper) og{" "}
+        <a
+          href="https://www.ssb.no/statbank/table/09429"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="underline hover:text-foreground"
+        >
+          SSB 09429
+        </a>{" "}
+        (utdanningsnivå).
+      </p>
     </Section>
   );
 }
@@ -1116,6 +1326,7 @@ export default async function KommunePage({
         <KartSection profile={profile} />
         <BoligSection profile={profile} />
         <KostnadSection profile={profile} />
+        <DemografiSection profile={profile} />
         <SkoleSection profile={profile} />
         <HelseSection profile={profile} />
         <NaturSection profile={profile} />
