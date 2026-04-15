@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowRight, ChevronDown, Mountain, DollarSign, Shield, Zap, Home as HomeIcon, BatteryCharging, Waves, Database, Globe, Code, TrendingUp, BarChart3, MapPinned, GraduationCap, HeartPulse } from "lucide-react";
+import { ArrowRight, ChevronDown, Mountain, DollarSign, Shield, Zap, Home as HomeIcon, BatteryCharging, Waves, Database, Globe, Code, TrendingUp, BarChart3, MapPinned, GraduationCap, HeartPulse, Wallet } from "lucide-react";
 import { FadeIn, FadeInView, HoverLift } from "@/components/motion";
 
 const featured = [
@@ -25,74 +25,42 @@ const featured = [
   },
 ];
 
-const groups = [
+// Group items are shown as compact cards — icon + title + one-line
+// description + arrow. Descriptions mirror the navbar dropdown wording
+// so the two surfaces read consistently. Entries with `isNew: true`
+// get a green "Ny" pill next to the title.
+interface GroupItem {
+  title: string;
+  description: string;
+  href: string;
+  icon: typeof Mountain;
+  isNew?: boolean;
+}
+
+const groups: Array<{ label: string; items: GroupItem[] }> = [
   {
     label: "Energi",
     items: [
-      {
-        title: "Energikart",
-        description: "Vindkraft, vannkraft, havvind og olje- og gassanlegg med produksjonsdata.",
-        href: "/energi",
-        icon: BatteryCharging,
-      },
-      {
-        title: "Magasinkart",
-        description: "Regulerte vannmagasiner med nasjonal fyllingsgrad og polygon-visning.",
-        href: "/magasin",
-        icon: Waves,
-      },
-      {
-        title: "Ladestasjoner",
-        description: "Alle elbilladestasjoner i Norge med kontakttyper, kapasitet og veibeskrivelse.",
-        href: "/lading",
-        icon: Zap,
-      },
+      { title: "Energikart", description: "Vind, vann, olje og gass", href: "/energi", icon: BatteryCharging },
+      { title: "Magasinkart", description: "Vannmagasiner og fyllingsgrad", href: "/magasin", icon: Waves },
+      { title: "Ladestasjoner", description: "Elbil-lading i hele Norge", href: "/lading", icon: Zap },
     ],
   },
   {
     label: "Natur",
     items: [
-      {
-        title: "Høydekart",
-        description: "Klikk hvor som helst for høyde over havet, vær og terrengkart.",
-        href: "/map",
-        icon: Mountain,
-      },
-      {
-        title: "Turisthytter",
-        description: "DNT-hytter og fjellhytter med sengeplasser, høyde og vær.",
-        href: "/hytter",
-        icon: HomeIcon,
-      },
-      {
-        title: "Verneområder",
-        description: "Nasjonalparker, naturreservater og andre verneområder.",
-        href: "/vern",
-        icon: Shield,
-      },
+      { title: "Høydekart", description: "Høydedata og værforhold", href: "/map", icon: Mountain },
+      { title: "Turisthytter", description: "DNT-hytter og fjellstuer", href: "/hytter", icon: HomeIcon },
+      { title: "Verneområder", description: "Nasjonalparker og naturreservater", href: "/vern", icon: Shield },
     ],
   },
   {
     label: "Samfunn",
     items: [
-      {
-        title: "Helsetilbud",
-        description: "Fastlegedekning per kommune — ledig kapasitet, andel uten fastlege og listelengde. Data fra SSB tabell 12005.",
-        href: "/helse",
-        icon: HeartPulse,
-      },
-      {
-        title: "Inntektskart",
-        description: "Median inntekt etter skatt per husholdning i alle kommuner.",
-        href: "/lonn",
-        icon: DollarSign,
-      },
-      {
-        title: "Prisvekst",
-        description: "Konsumprisindeksen med kategorifordeling og nordisk sammenligning.",
-        href: "/prisvekst",
-        icon: BarChart3,
-      },
+      { title: "Helsetilbud", description: "Fastleger, sykehus og legevakt", href: "/helse", icon: HeartPulse },
+      { title: "Inntektskart", description: "Median inntekt per kommune", href: "/lonn", icon: DollarSign },
+      { title: "Kostnader", description: "Gebyrer og eiendomsskatt", href: "/kostnader", icon: Wallet, isNew: true },
+      { title: "Prisvekst", description: "Konsumprisindeksen i Norge", href: "/prisvekst", icon: BarChart3 },
     ],
   },
 ];
@@ -120,6 +88,67 @@ function CardLink({ href, icon: Icon, title, description, cta = "Åpne kart", in
             {cta}
             <ArrowRight className="h-3.5 w-3.5 -translate-x-1 group-hover:translate-x-0 transition-transform" />
           </div>
+        </Link>
+      </HoverLift>
+    </FadeInView>
+  );
+}
+
+/**
+ * Compact row card for the grouped sections: icon tile + title + a
+ * one-line description underneath + arrow. Denser than CardLink but
+ * still gives enough hint text so the grid reads at a glance. Used
+ * under Energi/Natur/Samfunn; Aktuelt still uses the larger CardLink
+ * so the flagship row keeps its selling space.
+ */
+function CompactCardLink({
+  href,
+  icon: Icon,
+  title,
+  description,
+  isNew = false,
+  index = 0,
+}: {
+  href: string;
+  icon: typeof Mountain;
+  title: string;
+  description: string;
+  isNew?: boolean;
+  index?: number;
+}) {
+  return (
+    <FadeInView delay={index * 0.04}>
+      <HoverLift className="h-full">
+        <Link
+          href={href}
+          className="group flex items-center gap-3 rounded-xl border border-border bg-card hover:shadow-md transition-shadow px-3.5 py-3 h-full"
+        >
+          <div
+            className="flex items-center justify-center rounded-lg h-10 w-10 shrink-0"
+            style={{ background: "#24374c" }}
+          >
+            <Icon className="h-5 w-5 text-white" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <h3 className="font-bold text-sm truncate">{title}</h3>
+              {isNew && (
+                <span
+                  className="text-[10px] font-bold uppercase tracking-wide rounded-full px-1.5 py-0.5 shrink-0"
+                  style={{
+                    background: "var(--kv-positive-light)",
+                    color: "var(--kv-positive-dark)",
+                  }}
+                >
+                  Ny
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground truncate mt-0.5">
+              {description}
+            </p>
+          </div>
+          <ArrowRight className="h-4 w-4 text-foreground/50 shrink-0 group-hover:text-foreground group-hover:translate-x-0.5 transition-all" />
         </Link>
       </HoverLift>
     </FadeInView>
@@ -186,9 +215,11 @@ export default function Home() {
                   {group.label}
                 </p>
               </FadeInView>
-              <div className={`grid grid-cols-1 gap-4 ${group.items.length >= 3 ? "sm:grid-cols-3" : "sm:grid-cols-2"}`}>
+              <div
+                className={`grid grid-cols-2 gap-3 ${group.items.length === 4 ? "md:grid-cols-4" : "md:grid-cols-3"}`}
+              >
                 {group.items.map((item, i) => (
-                  <CardLink key={item.href} {...item} index={i} />
+                  <CompactCardLink key={item.href} {...item} index={i} />
                 ))}
               </div>
             </div>
@@ -206,7 +237,7 @@ export default function Home() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-8">
             {[
               { icon: Database, label: "12 datakilder", desc: "SSB, NVE, Kartverket, Geonorge, MET.no, Sodir, UDIR, NOBIL, Norges Bank, Eurostat, OpenStreetMap og Finn.no" },
-              { icon: Globe, label: "12 interaktive visualiseringer", desc: "Kart og dashboards for bolig, skoler, helse, energi, natur, inntekt og mer — pluss detaljerte kommuneprofiler" },
+              { icon: Globe, label: "13 interaktive visualiseringer", desc: "Kart og dashboards for bolig, skoler, helse, energi, natur, inntekt, kostnader og mer — pluss detaljerte kommuneprofiler" },
               { icon: Code, label: "Åpen kildekode", desc: "Next.js, React, Leaflet og Tailwind. Hostet på Vercel." },
             ].map((item, i) => (
               <FadeInView key={item.label} delay={i * 0.1}>

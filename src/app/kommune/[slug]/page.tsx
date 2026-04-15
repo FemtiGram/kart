@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
-import { ArrowLeft, TrendingUp, Home, Shield, Zap, BatteryCharging, Mountain, Waves, Cloud, ExternalLink, Briefcase, Compass, GraduationCap, HeartPulse } from "lucide-react";
+import { ArrowLeft, TrendingUp, Home, Shield, Zap, BatteryCharging, Mountain, Waves, Cloud, ExternalLink, Briefcase, Compass, GraduationCap, HeartPulse, Wallet } from "lucide-react";
 import {
   getAllKommuner,
   getProfileBySlug,
@@ -293,6 +293,135 @@ function BoligSection({ profile }: { profile: KommuneProfile }) {
       )}
     </Section>
   );
+}
+
+// ─── Section: Hva koster det å bo her? ──────────────────────
+//
+// Cost-of-living surface built from two SSB KOSTRA tables:
+//   - 14674 (eiendomsskatt): whether the kommune levies it at all, and
+//            the standardized bill for a 120 m² enebolig — the best
+//            apples-to-apples number across kommuner.
+//   - 12842 (kommunale gebyrer): annual fees for vann, avløp, avfall,
+//            feiing. The four together range from ~8k to 20k+ kr/year
+//            between kommuner and are almost never surfaced in one place.
+
+function KostnadSection({ profile }: { profile: KommuneProfile }) {
+  const totals = getTotals();
+  const { eiendomsskatt, gebyrer } = profile.cost;
+  const hasAny = eiendomsskatt != null || gebyrer != null;
+
+  if (!hasAny) {
+    return (
+      <Section title="Hva koster det å bo her?" icon={Wallet}>
+        <p className="text-sm text-muted-foreground">
+          Ingen eiendomsskatt- eller gebyrdata i SSB for denne kommunen.
+        </p>
+      </Section>
+    );
+  }
+
+  return (
+    <Section title="Hva koster det å bo her?" icon={Wallet}>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {eiendomsskatt && <EiendomsskattCard data={eiendomsskatt} />}
+        {gebyrer && (
+          <Stat
+            label="Kommunale årsgebyr"
+            value={
+              gebyrer.total != null
+                ? `${fmtNumber(gebyrer.total)} kr`
+                : "–"
+            }
+            context={gebyrBreakdown(gebyrer)}
+            contextRight={fmtRank(profile.ranks.gebyrTotal, totals.kommuner)}
+          />
+        )}
+      </div>
+      <p className="mt-4 text-xs text-foreground/70">
+        Kilde:{" "}
+        <a
+          href="https://www.ssb.no/statbank/table/14674"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="underline hover:text-foreground"
+        >
+          SSB 14674
+        </a>{" "}
+        (eiendomsskatt) og{" "}
+        <a
+          href="https://www.ssb.no/statbank/table/12842"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="underline hover:text-foreground"
+        >
+          SSB 12842
+        </a>{" "}
+        (kommunale gebyrer). Tallene er eksklusiv mva. og oppdateres årlig.
+      </p>
+    </Section>
+  );
+}
+
+/**
+ * Eiendomsskatt has two meaningfully-different empty states:
+ *   1. The kommune has not introduced property tax at all — show a
+ *      positive "Ingen eiendomsskatt" pill, since that's good news for
+ *      the reader and a headline stat in its own right.
+ *   2. The kommune has it, but no standardized 120 m² figure is
+ *      reported — fall back to the promille with a short note.
+ */
+function EiendomsskattCard({
+  data,
+}: {
+  data: NonNullable<KommuneProfile["cost"]["eiendomsskatt"]>;
+}) {
+  if (!data.has) {
+    return (
+      <div className="rounded-2xl border bg-card px-5 py-4">
+        <p
+          className="text-2xl font-extrabold leading-none whitespace-nowrap"
+          style={{ color: "var(--kv-positive-dark)" }}
+        >
+          Ingen
+        </p>
+        <p className="mt-2 text-xs font-semibold uppercase tracking-wide text-foreground/70">
+          Eiendomsskatt
+        </p>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Kommunen har ikke innført eiendomsskatt på bolig
+        </p>
+      </div>
+    );
+  }
+  const value =
+    data.annualFor120m2 != null
+      ? `${fmtNumber(data.annualFor120m2)} kr`
+      : data.promille != null
+        ? `${data.promille.toLocaleString("nb-NO", { maximumFractionDigits: 1 })} ‰`
+        : "–";
+  const context =
+    data.annualFor120m2 != null
+      ? `For en enebolig på 120 m²${data.promille != null ? ` · ${data.promille.toLocaleString("nb-NO", { maximumFractionDigits: 1 })} ‰` : ""}`
+      : "Promille av takst";
+  return (
+    <Stat label="Eiendomsskatt" value={value} context={context} />
+  );
+}
+
+/**
+ * Compact "vann · avløp · avfall · feiing" line for the gebyrer card's
+ * context row. Skips any fee the kommune does not report (rural kommuner
+ * sometimes have no sewer hookup, for instance).
+ */
+function gebyrBreakdown(
+  g: NonNullable<KommuneProfile["cost"]["gebyrer"]>
+): string {
+  const parts: string[] = [];
+  if (g.vann != null) parts.push(`${fmtNumber(g.vann)} vann`);
+  if (g.avlop != null) parts.push(`${fmtNumber(g.avlop)} avløp`);
+  if (g.avfall != null) parts.push(`${fmtNumber(g.avfall)} avfall`);
+  if (g.feiing != null) parts.push(`${fmtNumber(g.feiing)} feiing`);
+  return parts.length > 0 ? parts.join(" · ") : "Ingen data";
 }
 
 // ─── Section: Utforsk muligheter (external Finn.no links) ──
@@ -774,15 +903,10 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <section className="pt-12 mt-12 border-t first:border-t-0 first:pt-0 first:mt-0">
+    <section className="mt-16 first:mt-12">
       <div className="flex items-center justify-between mb-5 gap-4">
         <div className="flex items-center gap-3 min-w-0">
-          <div
-            className="flex items-center justify-center h-9 w-9 rounded-lg shrink-0"
-            style={{ background: "var(--kv-blue)" }}
-          >
-            <Icon className="h-4 w-4 text-white" />
-          </div>
+          <Icon className="h-5 w-5 shrink-0" style={{ color: "var(--kv-blue)" }} />
           <h2 className="text-title truncate" style={{ color: "var(--kv-blue)" }}>
             {title}
           </h2>
@@ -898,6 +1022,7 @@ export default async function KommunePage({
         <MuligheterSection profile={profile} />
         <KartSection profile={profile} />
         <BoligSection profile={profile} />
+        <KostnadSection profile={profile} />
         <SkoleSection profile={profile} />
         <HelseSection profile={profile} />
         <NaturSection profile={profile} />

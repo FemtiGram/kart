@@ -180,6 +180,36 @@ export interface HealthSummary {
   };
 }
 
+/**
+ * Cost-of-living stats. Eiendomsskatt (SSB 14674) and the four annual
+ * kommunale gebyrer — vann, avløp, avfall, feiing (SSB 12842). Both
+ * carry the SSB reporting year so the detail copy can cite it.
+ *
+ * `eiendomsskatt.has === false` means the kommune has not introduced
+ * property tax at all (≈ 1/3 of kommuner). `annualFor120m2` is SSB's
+ * standardized figure for a 120 m² enebolig — the single comparable
+ * number across kommuner, independent of valuation practice.
+ *
+ * `gebyrer.total` is the sum of the four fees (any null summands
+ * excluded), the single headline number for the card.
+ */
+export interface CostSummary {
+  eiendomsskatt: {
+    has: boolean;
+    annualFor120m2: number | null;
+    promille: number | null;
+    year: string;
+  } | null;
+  gebyrer: {
+    vann: number | null;
+    avlop: number | null;
+    avfall: number | null;
+    feiing: number | null;
+    total: number | null;
+    year: string;
+  } | null;
+}
+
 export interface KommuneProfile {
   knr: string;
   name: string;
@@ -208,6 +238,7 @@ export interface KommuneProfile {
   schools: SchoolSummary;
   kindergartens: KindergartenSummary;
   health: HealthSummary;
+  cost: CostSummary;
   ranks: {
     population: number | null;
     income: number | null;
@@ -218,6 +249,7 @@ export interface KommuneProfile {
     reservekapasitet: number | null;
     andelUtenLege: number | null;
     listelengde: number | null;
+    gebyrTotal: number | null;
   };
 }
 

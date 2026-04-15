@@ -4,6 +4,8 @@
 //   - SSB InntektStruk13 (median household income)
 //   - SSB 06035 (housing prices per dwelling type, 10 years)
 //   - SSB 08936 (protected areas)
+//   - SSB 14674 (eiendomsskatt per kommune)
+//   - SSB 12842 (kommunale gebyrer: vann, avløp, avfall, feiing)
 //   - NVE Vannkraft1/0 + Vindkraft2/0 (hydro + operational wind plants)
 //   - public/data/stations.json (charging stations, grouped by municipalityId)
 //   - public/data/cabins.json (DNT cabins, point-in-polygon)
@@ -25,6 +27,7 @@ const HEALTH_PATH = join(ROOT, "public", "data", "health.json");
 const FINN_LOCATIONS_PATH = join(ROOT, "public", "data", "finn-locations.json");
 const OUT_PATH = join(ROOT, "public", "data", "kommune-profiles.json");
 const FASTLEGE_OUT_PATH = join(ROOT, "public", "data", "fastlege.json");
+const KOSTNADER_OUT_PATH = join(ROOT, "public", "data", "kostnader.json");
 
 // ─── Geometry helpers ────────────────────────────────────────
 
@@ -330,6 +333,204 @@ async function fetchBolig() {
   return result;
 }
 
+// ─── SSB 14674: Eiendomsskatt (per kommune, KOSTRA) ─────────
+//
+// Three variables matter for Stedsprofil:
+//   - KOShareskatt0000   — has the kommune introduced eiendomsskatt at all? (1/0)
+//   - KOSskattenebolig0000 — eiendomsskatt for a STANDARDIZED enebolig på 120 m²
+//                          (kr/year). SSB normalizes for house size so this is the
+//                          single best apples-to-apples number between kommuner.
+//   - KOSgenskatt0000    — general tax rate (promille, per 1000)
+//
+// Request a range of years and pick the latest with reasonable coverage —
+// KOSTRA publishes preliminary numbers in March each year, so by April the
+// previous year should be populated. We ask for the last 3 years to be safe.
+
+const EIENDOMSSKATT_YEARS = ["2023", "2024", "2025", "2026"];
+const EIENDOMSSKATT_VARS = [
+  "KOShareskatt0000",
+  "KOSskattenebolig0000",
+  "KOSgenskatt0000",
+];
+
+async function fetchEiendomsskatt() {
+  console.log("  Fetching SSB 14674 (eiendomsskatt)...");
+  const res = await fetch("https://data.ssb.no/api/v0/no/table/14674", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      query: [
+        { code: "KOKkommuneregion0000", selection: { filter: "all", values: ["*"] } },
+        { code: "ContentsCode", selection: { filter: "item", values: EIENDOMSSKATT_VARS } },
+        { code: "Tid", selection: { filter: "item", values: EIENDOMSSKATT_YEARS } },
+      ],
+      response: { format: "json-stat2" },
+    }),
+  });
+  if (!res.ok) throw new Error(`SSB 14674: HTTP ${res.status}`);
+  const data = await res.json();
+
+  const ids = data.id;
+  const sizes = data.size;
+  const values = data.value;
+  const strides = new Array(ids.length).fill(1);
+  for (let i = ids.length - 2; i >= 0; i--) {
+    strides[i] = strides[i + 1] * sizes[i + 1];
+  }
+  const regionIndex = data.dimension.KOKkommuneregion0000.category.index;
+  const contentsIndex = data.dimension.ContentsCode.category.index;
+  const tidIndex = data.dimension.Tid.category.index;
+  const rStride = strides[ids.indexOf("KOKkommuneregion0000")];
+  const cStride = strides[ids.indexOf("ContentsCode")];
+  const tStride = strides[ids.indexOf("Tid")];
+
+  // Decode into { knr: { code: { year: value } } } for 4-digit kommune codes only.
+  const byKnr = {};
+  for (const [knr, rI] of Object.entries(regionIndex)) {
+    if (!/^\d{4}$/.test(knr)) continue;
+    const perCode = {};
+    for (const [code, cI] of Object.entries(contentsIndex)) {
+      const perYear = {};
+      for (const [year, tI] of Object.entries(tidIndex)) {
+        const v = values[rI * rStride + cI * cStride + tI * tStride];
+        if (v != null) perYear[year] = v;
+      }
+      if (Object.keys(perYear).length > 0) perCode[code] = perYear;
+    }
+    byKnr[knr] = perCode;
+  }
+
+  // Pick the latest year with good coverage of KOSskattenebolig0000 —
+  // the standardized 120 m² bill is the headline kr number. SSB stopped
+  // publishing this variable after 2024, so the picker lands on 2024
+  // for recent runs rather than 2026 (where only the promille is set).
+  let latestYear = EIENDOMSSKATT_YEARS[0];
+  for (const year of [...EIENDOMSSKATT_YEARS].reverse()) {
+    const populated = Object.values(byKnr).filter(
+      (k) => k.KOSskattenebolig0000?.[year] != null
+    ).length;
+    if (populated >= 150) {
+      latestYear = year;
+      break;
+    }
+  }
+  console.log(`    → latest usable year: ${latestYear}`);
+
+  // Collapse to { knr: { has, annualFor120m2, promille } } for the picked year.
+  const out = {};
+  for (const [knr, series] of Object.entries(byKnr)) {
+    const hasRaw = series.KOShareskatt0000?.[latestYear];
+    if (hasRaw == null) continue;
+    out[knr] = {
+      has: hasRaw === 1,
+      annualFor120m2: series.KOSskattenebolig0000?.[latestYear] ?? null,
+      promille: series.KOSgenskatt0000?.[latestYear] ?? null,
+    };
+  }
+  return { byKnr: out, year: latestYear };
+}
+
+// ─── SSB 12842: Kommunale gebyrer (vann, avløp, avfall, feiing) ──
+//
+// Annual fees households pay to the kommune for basic infrastructure.
+// The four together range from ~8 000 kr (cheap rural) to 20 000+ kr
+// (expensive coastal) — a huge and almost-never-surfaced spread.
+//
+// Variables (all in NOK, excl. VAT):
+//   - KOSaarsgebyrvann0000 — Årsgebyr vannforsyning
+//   - KOSaarsgebyravlo0000 — Årsgebyr avløp
+//   - KOSaarsgebyravfa0000 — Årsgebyr avfall
+//   - KOSfeiingtilsyn0000  — Årsgebyr feiing og tilsyn
+
+const GEBYR_YEARS = ["2023", "2024", "2025", "2026"];
+const GEBYR_VARS = [
+  "KOSaarsgebyrvann0000",
+  "KOSaarsgebyravlo0000",
+  "KOSaarsgebyravfa0000",
+  "KOSfeiingtilsyn0000",
+];
+
+async function fetchKommunaleGebyrer() {
+  console.log("  Fetching SSB 12842 (kommunale gebyrer)...");
+  const res = await fetch("https://data.ssb.no/api/v0/no/table/12842", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      query: [
+        { code: "KOKkommuneregion0000", selection: { filter: "all", values: ["*"] } },
+        { code: "ContentsCode", selection: { filter: "item", values: GEBYR_VARS } },
+        { code: "Tid", selection: { filter: "item", values: GEBYR_YEARS } },
+      ],
+      response: { format: "json-stat2" },
+    }),
+  });
+  if (!res.ok) throw new Error(`SSB 12842: HTTP ${res.status}`);
+  const data = await res.json();
+
+  const ids = data.id;
+  const sizes = data.size;
+  const values = data.value;
+  const strides = new Array(ids.length).fill(1);
+  for (let i = ids.length - 2; i >= 0; i--) {
+    strides[i] = strides[i + 1] * sizes[i + 1];
+  }
+  const regionIndex = data.dimension.KOKkommuneregion0000.category.index;
+  const contentsIndex = data.dimension.ContentsCode.category.index;
+  const tidIndex = data.dimension.Tid.category.index;
+  const rStride = strides[ids.indexOf("KOKkommuneregion0000")];
+  const cStride = strides[ids.indexOf("ContentsCode")];
+  const tStride = strides[ids.indexOf("Tid")];
+
+  const byKnr = {};
+  for (const [knr, rI] of Object.entries(regionIndex)) {
+    if (!/^\d{4}$/.test(knr)) continue;
+    const perCode = {};
+    for (const [code, cI] of Object.entries(contentsIndex)) {
+      const perYear = {};
+      for (const [year, tI] of Object.entries(tidIndex)) {
+        const v = values[rI * rStride + cI * cStride + tI * tStride];
+        if (v != null) perYear[year] = v;
+      }
+      if (Object.keys(perYear).length > 0) perCode[code] = perYear;
+    }
+    byKnr[knr] = perCode;
+  }
+
+  // Pick latest year with ≥ 150 kommuner reporting all four fees.
+  let latestYear = GEBYR_YEARS[0];
+  for (const year of [...GEBYR_YEARS].reverse()) {
+    const populated = Object.values(byKnr).filter((k) =>
+      GEBYR_VARS.every((v) => k[v]?.[year] != null)
+    ).length;
+    if (populated >= 150) {
+      latestYear = year;
+      break;
+    }
+  }
+  console.log(`    → latest usable year: ${latestYear}`);
+
+  const out = {};
+  for (const [knr, series] of Object.entries(byKnr)) {
+    const vann = series.KOSaarsgebyrvann0000?.[latestYear] ?? null;
+    const avlop = series.KOSaarsgebyravlo0000?.[latestYear] ?? null;
+    const avfall = series.KOSaarsgebyravfa0000?.[latestYear] ?? null;
+    const feiing = series.KOSfeiingtilsyn0000?.[latestYear] ?? null;
+    if (vann == null && avlop == null && avfall == null && feiing == null) continue;
+    const total = [vann, avlop, avfall, feiing].reduce(
+      (sum, v) => (v != null ? sum + v : sum),
+      0
+    );
+    out[knr] = {
+      vann,
+      avlop,
+      avfall,
+      feiing,
+      total: total > 0 ? Math.round(total) : null,
+    };
+  }
+  return { byKnr: out, year: latestYear };
+}
+
 // ─── SSB 12005: Fastlege (general practitioner) data ────────
 //
 // Authoritative kommune-level data from SSB — covers the whole
@@ -629,15 +830,26 @@ async function main() {
   console.log(`  Loaded ${geo.features.length} kommuner, ${stations.length} stations, ${cabins.length} cabins, ${reservoirs.length} reservoirs, ${schools.length} schools, ${kindergartens.length} barnehager, ${Object.keys(finnLocations).length} Finn codes, ${healthSykehus.length} sykehus, ${healthLegevakt.length} legevakt, ${healthPrivat.length} klinikker`);
 
   // Fetch external data in parallel
-  let population, income, bolig, protectedAreas, plants, fastlege;
+  let population, income, bolig, protectedAreas, plants, fastlege, eiendomsskatt, gebyrer;
   try {
-    [population, income, bolig, protectedAreas, plants, fastlege] = await Promise.all([
+    [
+      population,
+      income,
+      bolig,
+      protectedAreas,
+      plants,
+      fastlege,
+      eiendomsskatt,
+      gebyrer,
+    ] = await Promise.all([
       fetchPopulation(),
       fetchIncome(),
       fetchBolig(),
       fetchProtectedAreas(),
       fetchEnergyPlants(),
       fetchFastlege(),
+      fetchEiendomsskatt(),
+      fetchKommunaleGebyrer(),
     ]);
   } catch (err) {
     console.error(`  ✗ Failed fetching external data: ${err.message}`);
@@ -989,6 +1201,20 @@ async function main() {
           },
         };
       })(),
+      cost: {
+        eiendomsskatt: eiendomsskatt.byKnr[knr]
+          ? {
+              ...eiendomsskatt.byKnr[knr],
+              year: eiendomsskatt.year,
+            }
+          : null,
+        gebyrer: gebyrer.byKnr[knr]
+          ? {
+              ...gebyrer.byKnr[knr],
+              year: gebyrer.year,
+            }
+          : null,
+      },
     };
   }
 
@@ -1019,6 +1245,8 @@ async function main() {
     (p) => p.health.latest.KOSgjsnlisteleng0000,
     false
   );
+  // Cheapest kommunale gebyrer first (rank 1 = lowest total).
+  const gebyrTotalRanks = rankBy(profiles, (p) => p.cost?.gebyrer?.total, false);
 
   for (const [knr, profile] of Object.entries(profiles)) {
     profile.ranks = {
@@ -1031,6 +1259,7 @@ async function main() {
       reservekapasitet: reservekapasitetRanks.ranks[knr] ?? null,
       andelUtenLege: andelUtenLegeRanks.ranks[knr] ?? null,
       listelengde: listelengdeRanks.ranks[knr] ?? null,
+      gebyrTotal: gebyrTotalRanks.ranks[knr] ?? null,
     };
   }
 
@@ -1073,6 +1302,83 @@ async function main() {
   const fastlegeKb = (Buffer.byteLength(JSON.stringify(fastlegeOut)) / 1024).toFixed(0);
   console.log(
     `  ✓ ${Object.keys(fastlegeOut.kommuner).length} fastlege rows (${fastlegeKb} KB) → ${FASTLEGE_OUT_PATH}`
+  );
+
+  // Write public/data/kostnader.json — flat cost-of-living dataset consumed
+  // by the /kostnader choropleth. Mirrors fastlege.json's structure: a
+  // shared metric definition + one row per kommune. Kept tiny (~40 KB)
+  // because the values are single-year snapshots with no trend series.
+  const KOSTNAD_METRICS = [
+    {
+      code: "gebyrerTotal",
+      label: "Kommunale årsgebyr",
+      shortLabel: "Årsgebyr",
+      unit: "kr",
+      primary: true,
+      invertColor: true, // lower = better (greener)
+      description:
+        "Sum av årsgebyr for vann, avløp, avfall og feiing — ekskl. mva. Fra SSB tabell 12842.",
+    },
+    {
+      code: "eiendomsskatt120m2",
+      label: "Eiendomsskatt (enebolig 120 m²)",
+      shortLabel: "Eiendomsskatt",
+      unit: "kr",
+      primary: true,
+      invertColor: true, // lower = better
+      description:
+        "SSBs standardiserte årlige eiendomsskatt for en enebolig på 120 m². Fra SSB tabell 14674. Kommuner uten eiendomsskatt på bolig vises som «Ingen».",
+    },
+    {
+      code: "eiendomsskattPromille",
+      label: "Eiendomsskatt (promille)",
+      shortLabel: "Promille",
+      unit: "‰",
+      primary: false,
+      invertColor: true,
+      description:
+        "Generell eiendomsskattesats i promille av takst. Fra SSB tabell 14674.",
+    },
+  ];
+
+  const kostnaderOut = {
+    generatedAt: new Date().toISOString(),
+    gebyrerYear: gebyrer.year,
+    eiendomsskattYear: eiendomsskatt.year,
+    metrics: KOSTNAD_METRICS,
+    kommuner: Object.fromEntries(
+      Object.entries(profiles)
+        .map(([knr, p]) => {
+          const cost = p.cost;
+          const latest = {};
+          if (cost.gebyrer?.total != null) latest.gebyrerTotal = cost.gebyrer.total;
+          if (cost.eiendomsskatt?.annualFor120m2 != null)
+            latest.eiendomsskatt120m2 = cost.eiendomsskatt.annualFor120m2;
+          if (cost.eiendomsskatt?.promille != null)
+            latest.eiendomsskattPromille = cost.eiendomsskatt.promille;
+          return [
+            knr,
+            {
+              latest,
+              // Explicit "no eiendomsskatt on homes" flag so the UI can show
+              // the positive "Ingen" pill instead of an empty cell. A null
+              // means we don't know, a false means kommunen confirmed no
+              // eiendomsskatt.
+              hasEiendomsskatt:
+                cost.eiendomsskatt == null ? null : cost.eiendomsskatt.has,
+              gebyrer: cost.gebyrer ?? null,
+              displayName: p.displayName,
+              fylke: p.fylke,
+            },
+          ];
+        })
+        .filter(([, entry]) => Object.keys(entry.latest).length > 0 || entry.hasEiendomsskatt === false)
+    ),
+  };
+  writeFileSync(KOSTNADER_OUT_PATH, JSON.stringify(kostnaderOut));
+  const kostnaderKb = (Buffer.byteLength(JSON.stringify(kostnaderOut)) / 1024).toFixed(0);
+  console.log(
+    `  ✓ ${Object.keys(kostnaderOut.kommuner).length} kostnader rows (${kostnaderKb} KB) → ${KOSTNADER_OUT_PATH}`
   );
 
   // Write

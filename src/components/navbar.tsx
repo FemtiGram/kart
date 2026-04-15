@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { Menu, X, Mountain, DollarSign, Shield, Zap, Home, BatteryCharging, Waves, TrendingUp, BarChart3, MapPinned, GraduationCap, HeartPulse } from "lucide-react";
+import { Menu, X, Mountain, DollarSign, Shield, Zap, Home, BatteryCharging, Waves, TrendingUp, BarChart3, MapPinned, GraduationCap, HeartPulse, Wallet } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -57,6 +57,7 @@ const navGroups: NavGroup[] = [
       { href: "/helse", label: "Helsetilbud", icon: HeartPulse, description: "Sykehus, legevakt og klinikker" },
       { href: "/lonn", label: "Inntektskart", icon: DollarSign, description: "Median inntekt per kommune" },
       { href: "/bolig", label: "Boligpriser", icon: TrendingUp, description: "Kvadratmeterpris per kommune" },
+      { href: "/kostnader", label: "Kostnader", icon: Wallet, description: "Gebyrer og eiendomsskatt" },
       { href: "/prisvekst", label: "Prisvekst", icon: BarChart3, description: "Konsumprisindeksen i Norge" },
     ],
   },
