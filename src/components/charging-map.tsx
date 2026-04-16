@@ -284,7 +284,7 @@ export function ChargingMap() {
                 </div>
               </SheetContent>
             </Sheet>
-            <Button onClick={handleLocate} disabled={locating || loading} variant="secondary" size="icon" className="shadow-lg shrink-0 h-11 w-11 rounded-xl">
+            <Button onClick={handleLocate} disabled={locating || loading} variant="secondary" size="icon" aria-label="Min posisjon" className="shadow-lg shrink-0 h-11 w-11 rounded-xl">
               {locating ? <Loader2 className="h-4 w-4 animate-spin" /> : <LocateFixed className="h-4 w-4" />}
             </Button>
             </MapSearchBar>
@@ -296,11 +296,11 @@ export function ChargingMap() {
           <button
             disabled
             title="Krever sanntidsdata, kommer snart"
-            className="relative inline-flex items-center gap-1.5 text-xs px-3 py-1 rounded-full border bg-muted text-foreground/70 opacity-50 cursor-not-allowed shrink-0"
+            className="relative inline-flex items-center gap-1.5 text-xs px-3 py-1 rounded-full border bg-muted text-foreground/70 opacity-70 cursor-not-allowed shrink-0"
           >
             <Zap className="h-3 w-3" />
             Kun ledige
-            <span className="absolute -top-1.5 -right-1.5 text-[9px] px-1 rounded-full bg-foreground text-background font-bold leading-4">Snart</span>
+            <span className="absolute -top-1.5 -right-1.5 text-[10px] px-1 rounded-full bg-foreground text-background font-bold leading-4">Snart</span>
           </button>
         </div>
       </div>
@@ -438,13 +438,13 @@ export function ChargingMap() {
                       <span className="text-3xl font-extrabold" style={{ color: "var(--kv-blue)" }}>
                         {selected.maxKw ?? "–"}
                       </span>
-                      <p className="text-[10px] text-foreground/70">maks kW</p>
+                      <p className="text-[10px] text-muted-foreground">maks kW</p>
                     </div>
                     <div>
                       <span className="text-3xl font-extrabold" style={{ color: "var(--kv-blue)" }}>
                         {selected.numPoints ?? "–"}
                       </span>
-                      <p className="text-[10px] text-foreground/70">ladepunkter</p>
+                      <p className="text-[10px] text-muted-foreground">ladepunkter</p>
                     </div>
                   </div>
                 </div>

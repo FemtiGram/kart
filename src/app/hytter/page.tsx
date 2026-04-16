@@ -48,6 +48,7 @@ const jsonLd = {
 export default function HytterPage() {
   return (
     <>
+      <h1 className="sr-only">Turisthytter</h1>
       <CabinMapLoader />
       <section className="bg-background border-t">
         <div className="container mx-auto px-6 md:px-16 pt-5 pb-12 md:pb-16 max-w-3xl">

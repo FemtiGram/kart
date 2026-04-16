@@ -100,7 +100,7 @@ export function OilGasSheet({
                     <li><strong>Funksjoner</strong> – Hva anlegget gjør: produksjon, injeksjon, prosessering, boring osv.</li>
                     <li><strong>Status</strong> – Om anlegget er i aktiv drift, fjernet eller nedlagt</li>
                   </ul>
-                  <p className="text-[10px] text-foreground/70 mt-2">Kilde: Sokkeldirektoratet (Sodir)</p>
+                  <p className="text-[10px] text-muted-foreground mt-2">Kilde: Sokkeldirektoratet (Sodir)</p>
                 </div>
               )}
               <div className="flex flex-col gap-2">
@@ -153,17 +153,17 @@ export function OilGasSheet({
                         <li><strong>Olje</strong> – Netto salgbar råolje (mill Sm³)</li>
                         <li><strong>Gass</strong> – Netto salgbar naturgass (mrd Sm³)</li>
                       </ul>
-                      <p className="text-[10px] text-foreground/70 mt-2">Kilde: Sokkeldirektoratet, årlig feltproduksjon{productionFetchedAt && ` · Hentet ${new Date(productionFetchedAt).toLocaleDateString("nb-NO")}`}</p>
+                      <p className="text-[10px] text-muted-foreground mt-2">Kilde: Sokkeldirektoratet, årlig feltproduksjon{productionFetchedAt && ` · Hentet ${new Date(productionFetchedAt).toLocaleDateString("nb-NO")}`}</p>
                     </div>
                   )}
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <span className="text-2xl font-extrabold" style={{ color: OILGAS_COLOR }}>{totalOe.toFixed(1)}</span>
-                      <p className="text-[10px] text-foreground/70">mill Sm³ o.e. totalt</p>
+                      <p className="text-[10px] text-muted-foreground">mill Sm³ o.e. totalt</p>
                     </div>
                     <div>
                       <span className="text-2xl font-extrabold" style={{ color: OILGAS_COLOR }}>{latest.oe.toFixed(2)}</span>
-                      <p className="text-[10px] text-foreground/70">mill Sm³ o.e. ({latest.year})</p>
+                      <p className="text-[10px] text-muted-foreground">mill Sm³ o.e. ({latest.year})</p>
                     </div>
                   </div>
                   <div className="flex items-center justify-between text-sm mt-2">
@@ -190,8 +190,8 @@ export function OilGasSheet({
                     ))}
                   </div>
                   <div className="flex justify-between mt-0.5">
-                    <span className="text-[10px] text-foreground/70">{fieldProd[0].year}</span>
-                    <span className="text-[10px] text-foreground/70">{latest.year}</span>
+                    <span className="text-[10px] text-muted-foreground">{fieldProd[0].year}</span>
+                    <span className="text-[10px] text-muted-foreground">{latest.year}</span>
                   </div>
                 </div>
               );
@@ -424,7 +424,7 @@ export function EnergyPlantSheet({
                       <span className="text-xs font-semibold uppercase tracking-wide text-foreground/70">
                         Målestasjon: {hydroStation.station.name}
                       </span>
-                      <span className="text-[10px] text-foreground/70">
+                      <span className="text-[10px] text-muted-foreground">
                         ({hydroStation.station.distanceKm} km unna)
                       </span>
                     </div>
@@ -465,7 +465,7 @@ export function EnergyPlantSheet({
                             }}
                           />
                         </div>
-                        <div className="flex justify-between mt-0.5 text-[10px] text-foreground/70">
+                        <div className="flex justify-between mt-0.5 text-[10px] text-muted-foreground">
                           <span>Lavt</span>
                           <span>{hydroStation.percentile.p50 != null ? `Median: ${hydroStation.percentile.p50.toFixed(1)} m³/s` : ""}</span>
                           <span>Høyt</span>

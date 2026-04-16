@@ -412,7 +412,7 @@ export function ReservoirMap() {
                         }}
                       />
                     </div>
-                    <p className="text-[10px] text-foreground/70 mt-1">
+                    <p className="text-[10px] text-muted-foreground mt-1">
                       {nationalFill.fylling_TWh.toFixed(1)} av {nationalFill.kapasitet_TWh.toFixed(1)} TWh
                     </p>
                   </div>

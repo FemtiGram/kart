@@ -155,13 +155,13 @@ export function KommuneIndex({
               highlightedIndex >= 0 ? `kommune-result-${highlightedIndex}` : undefined
             }
             placeholder="Søk etter kommune, fylke eller kommunenummer..."
-            className="flex-1 bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground text-[16px] sm:text-sm"
+            className="flex-1 bg-transparent outline-none focus-visible:ring-2 focus-visible:ring-ring text-sm text-foreground placeholder:text-muted-foreground text-[16px] sm:text-sm"
           />
           {query && (
             <button
               type="button"
               onClick={() => setQuery("")}
-              className="shrink-0 p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              className="shrink-0 p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
               aria-label="Tøm søk"
             >
               <X className="h-4 w-4" />
@@ -184,7 +184,7 @@ export function KommuneIndex({
                 {filtered.length === 50 && kommuner.length > 50
                   ? " (viser de første 50)"
                   : ""}
-                <span className="ml-2 font-normal normal-case tracking-normal text-foreground/50">
+                <span className="ml-2 font-normal normal-case tracking-normal text-muted-foreground">
                   · ↑↓ Enter for å velge
                 </span>
               </p>

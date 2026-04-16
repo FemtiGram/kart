@@ -1161,7 +1161,7 @@ function SimilarCard({ profile }: { profile: KommuneProfile }) {
         >
           {profile.displayName}
         </p>
-        <ArrowRight className="h-4 w-4 text-foreground/50 shrink-0 mt-0.5 group-hover:text-foreground group-hover:translate-x-0.5 transition-all" />
+        <ArrowRight className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5 group-hover:text-foreground group-hover:translate-x-0.5 transition-all" />
       </div>
       {profile.fylke && (
         <p className="text-xs text-muted-foreground mt-0.5 truncate">
@@ -1170,7 +1170,7 @@ function SimilarCard({ profile }: { profile: KommuneProfile }) {
       )}
       <div className="mt-3 pt-3 border-t flex items-baseline justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-[10px] font-semibold uppercase tracking-wide text-foreground/70">
+          <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
             Innbyggere
           </p>
           <p className="text-sm font-extrabold tabular-nums" style={{ color: "var(--kv-blue)" }}>
@@ -1178,7 +1178,7 @@ function SimilarCard({ profile }: { profile: KommuneProfile }) {
           </p>
         </div>
         <div className="min-w-0 text-right">
-          <p className="text-[10px] font-semibold uppercase tracking-wide text-foreground/70">
+          <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
             Inntekt
           </p>
           <p className="text-sm font-extrabold tabular-nums" style={{ color: "var(--kv-blue)" }}>

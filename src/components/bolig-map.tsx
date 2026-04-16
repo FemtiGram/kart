@@ -559,8 +559,8 @@ export function BoligMap() {
               <p className="text-xs font-semibold text-foreground/70 mb-1.5">kr/m² ({TYPE_LABELS[boligtype]})</p>
               <div className="h-3 w-24 rounded-sm" style={{ background: "linear-gradient(to right, #3b82f6, #f97316, #ef4444)" }} />
               <div className="flex justify-between mt-0.5">
-                <span className="text-[10px] text-foreground/70">{minPrice.toLocaleString("nb-NO")}</span>
-                <span className="text-[10px] text-foreground/70">{maxPrice.toLocaleString("nb-NO")}</span>
+                <span className="text-[10px] text-muted-foreground">{minPrice.toLocaleString("nb-NO")}</span>
+                <span className="text-[10px] text-muted-foreground">{maxPrice.toLocaleString("nb-NO")}</span>
               </div>
             </div>
           )}
@@ -614,7 +614,7 @@ export function BoligMap() {
                     autoCapitalize="off"
                     spellCheck={false}
                     enterKeyHint="search"
-                    className="w-full bg-muted border rounded-xl px-3 py-2.5 text-sm outline-none placeholder:text-muted-foreground text-[16px] sm:text-sm"
+                    className="w-full bg-muted border rounded-xl px-3 py-2.5 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring placeholder:text-muted-foreground text-[16px] sm:text-sm"
                   />
                   {compareResults.length > 0 && (
                     <ul className="absolute top-full mt-1 left-0 right-0 bg-background rounded-xl shadow-xl border overflow-hidden z-50">
@@ -630,7 +630,7 @@ export function BoligMap() {
                             className={`w-full text-left px-3 py-2.5 text-sm transition-colors border-b last:border-0 ${compareHighlight === i ? "bg-muted" : "hover:bg-muted"}`}
                           >
                             <p className="font-medium">{k.properties.navn}</p>
-                            <p className="text-[10px] text-foreground/70">{getFylke(k.properties.kommunenummer)}</p>
+                            <p className="text-[10px] text-muted-foreground">{getFylke(k.properties.kommunenummer)}</p>
                           </button>
                         </li>
                       ))}
@@ -769,11 +769,11 @@ export function BoligMap() {
                           ))}
                         </div>
                         <div className="flex justify-between mt-0.5">
-                          <span className="text-[10px] text-foreground/70">{years[0]}</span>
-                          <span className="text-[10px] text-foreground/70">{years[years.length - 1]}</span>
+                          <span className="text-[10px] text-muted-foreground">{years[0]}</span>
+                          <span className="text-[10px] text-muted-foreground">{years[years.length - 1]}</span>
                         </div>
                         {mergedKommuner.has(nr) && (
-                          <p className="text-[10px] text-foreground/70 mt-2 italic">
+                          <p className="text-[10px] text-muted-foreground mt-2 italic">
                             * Kommunen endret grenser i 2020. Data før 2020 gjelder tidligere kommuneinndeling og er ikke direkte sammenlignbar.
                           </p>
                         )}
@@ -916,13 +916,13 @@ export function BoligMap() {
                         <span className="text-2xl font-extrabold" style={{ color: "var(--kv-blue)" }}>
                           {priceA?.toLocaleString("nb-NO") ?? "–"}
                         </span>
-                        <p className="text-[10px] text-foreground/70">kr/m²</p>
+                        <p className="text-[10px] text-muted-foreground">kr/m²</p>
                       </div>
                       <div>
                         <span className="text-2xl font-extrabold" style={{ color: "var(--kv-blue)" }}>
                           {priceB?.toLocaleString("nb-NO") ?? "–"}
                         </span>
-                        <p className="text-[10px] text-foreground/70">kr/m²</p>
+                        <p className="text-[10px] text-muted-foreground">kr/m²</p>
                       </div>
                     </div>
                     {diff != null && (
@@ -1004,15 +1004,15 @@ export function BoligMap() {
                                 ))}
                               </div>
                               <div className="flex justify-between mt-0.5">
-                                <span className="text-[10px] text-foreground/70">{years[0]}</span>
-                                <span className="text-[10px] text-foreground/70">{years[years.length - 1]}</span>
+                                <span className="text-[10px] text-muted-foreground">{years[0]}</span>
+                                <span className="text-[10px] text-muted-foreground">{years[years.length - 1]}</span>
                               </div>
                             </div>
                           );
                         })}
                       </div>
                       {(mergedKommuner.has(a.kommunenummer) || mergedKommuner.has(b.kommunenummer)) && (
-                        <p className="col-span-2 text-[10px] text-foreground/70 mt-1 italic">
+                        <p className="col-span-2 text-[10px] text-muted-foreground mt-1 italic">
                           * {[mergedKommuner.has(a.kommunenummer) ? a.kommunenavn : null, mergedKommuner.has(b.kommunenummer) ? b.kommunenavn : null].filter(Boolean).join(" og ")} endret grenser i 2020. Data før 2020 gjelder tidligere kommuneinndeling.
                         </p>
                       )}
@@ -1034,16 +1034,16 @@ export function BoligMap() {
                           <div key={item.nr} className="space-y-1">
                             <p className="text-xs font-medium mb-1">{item.name}</p>
                             <div className="flex items-center justify-between">
-                              <span className="text-[10px] text-foreground/70">Nasjonalt</span>
+                              <span className="text-[10px] text-muted-foreground">Nasjonalt</span>
                               <span className="text-xs font-semibold">#{item.rank.rank} av {item.rank.total}</span>
                             </div>
                             <div className="flex items-center justify-between">
-                              <span className="text-[10px] text-foreground/70">Dyrere enn</span>
+                              <span className="text-[10px] text-muted-foreground">Dyrere enn</span>
                               <span className="text-xs font-semibold">{pct}%</span>
                             </div>
                             {fy && fR.total > 1 && (
                               <div className="flex items-center justify-between">
-                                <span className="text-[10px] text-foreground/70">{fy}</span>
+                                <span className="text-[10px] text-muted-foreground">{fy}</span>
                                 <span className="text-xs font-semibold">#{fR.rank} av {fR.total}</span>
                               </div>
                             )}

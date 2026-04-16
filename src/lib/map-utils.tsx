@@ -316,7 +316,7 @@ export function MapError({ message, onRetry }: { message: string; onRetry: () =>
 
 export function DataDisclaimer() {
   return (
-    <p className="text-[10px] text-foreground/70 text-center mt-2">
+    <p className="text-[10px] text-muted-foreground text-center mt-2">
       Data kan inneholde feil og bør ikke brukes som eneste kilde for beslutninger.
     </p>
   );

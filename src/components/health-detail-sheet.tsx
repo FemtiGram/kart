@@ -242,10 +242,10 @@ function PrimaryStat({
       >
         {value != null ? valueFormatter(value) : "–"}
       </p>
-      <p className="mt-1.5 text-[10px] font-semibold uppercase tracking-wide text-foreground/70">
+      <p className="mt-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
         {label}
       </p>
-      <p className="mt-0.5 text-[10px] text-foreground/70 tabular-nums">
+      <p className="mt-0.5 text-[10px] text-muted-foreground tabular-nums">
         #{rank.rank}/{rank.total}
       </p>
     </div>
@@ -364,8 +364,8 @@ function KapasitetTrend({
         })}
       </div>
       <div className="flex justify-between mt-0.5">
-        <span className="text-[10px] text-foreground/70">{first.year}</span>
-        <span className="text-[10px] text-foreground/70">{latestYear}</span>
+        <span className="text-[10px] text-muted-foreground">{first.year}</span>
+        <span className="text-[10px] text-muted-foreground">{latestYear}</span>
       </div>
     </div>
   );

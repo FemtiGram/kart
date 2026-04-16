@@ -754,12 +754,12 @@ export function HealthMap() {
                 }}
               />
               <div className="flex justify-between mt-0.5">
-                <span className="text-[10px] text-foreground/70">
+                <span className="text-[10px] text-muted-foreground">
                   {metricCode === "KOSreservekapasi0000"
                     ? "−15 % (overbooket)"
                     : formatMetric(metricValues.min, currentMetric)}
                 </span>
-                <span className="text-[10px] text-foreground/70">
+                <span className="text-[10px] text-muted-foreground">
                   {metricCode === "KOSreservekapasi0000"
                     ? "+15 % (ledig plass)"
                     : formatMetric(metricValues.max, currentMetric)}

@@ -320,10 +320,24 @@ The big number reads first so the eye lands on the data, not the label. `whitesp
 - Covers 356/357 kommuner (Drammen missing from Finn's taxonomy, falls back to `?q=` text search)
 - Bolig detail sheet surfaces a "Boliger til salgs" card next to "Se full stedsprofil", linking to `finn.no/realestate/homes/search.html?q=<name>&location=<code>`
 
-### WCAG contrast:
-- No `/60` or `/40` opacity modifiers on text elements
+### WCAG & accessibility:
+
+**Contrast rules:**
+- No `/60`, `/50`, or `/40` opacity modifiers on text elements — use `text-muted-foreground` instead
+- No `/70` on `text-[10px]` — at the project's minimum font size, use `text-muted-foreground` for full contrast
 - Metric numbers use `#0e7490` (cyan-700, 4.6:1) not `#0891b2` (cyan-600, 2.1:1)
 - Badges use `text-foreground` on `bg-muted`, not `text-muted-foreground`
+- Minimum text size: `text-[10px]` (no `text-[9px]` anywhere)
+
+**Screen reader support:**
+- All icon-only buttons MUST have `aria-label` (e.g. `aria-label="Min posisjon"`, `aria-label="Lukk"`)
+- All map pages have `<h1 className="sr-only">Page Title</h1>` for heading hierarchy
+- `MapSearchBar` implements full ARIA combobox pattern (`role="combobox"`, `aria-expanded`, `aria-activedescendant`, listbox + options)
+- Sheet close button sr-only text is "Lukk" (Norwegian), not "Close"
+
+**Focus & keyboard:**
+- All search inputs with `outline-none` MUST also have `focus-visible:ring-2 focus-visible:ring-ring`
+- Icon-only buttons minimum touch target: `p-2` (32px) — prefer `p-2.5` (36px)
 
 ## SEO & AI Discoverability
 
