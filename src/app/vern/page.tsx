@@ -2,7 +2,7 @@ import { ProtectedAreasMapLoader } from "@/components/protected-areas-map-loader
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 
 export const metadata = {
-  title: "Verneområder – Datakart",
+  title: "Verneområder",
   description:
     "Utforsk vernet natur i alle norske kommuner. Nasjonalparker, naturreservater og landskapsvernområder med andel og rangering.",
   alternates: { canonical: "/vern" },

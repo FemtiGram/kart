@@ -17,7 +17,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { MapSearchBar, type MapSearchBarHandle } from "@/components/map-search";
 import { isInNorway, OSLO } from "@/lib/fylker";
-import { FlyTo, DataDisclaimer, MapError, MAP_HEIGHT } from "@/lib/map-utils";
+import { FlyTo, DataDisclaimer, MapError, MAP_HEIGHT, TILE_LAYERS, useMapCore, useGeolocation } from "@/lib/map-utils";
 import type { KommuneEntry, Suggestion } from "@/lib/map-utils";
 import { InfoModal } from "@/components/info-modal";
 import { TileToggle } from "@/components/tile-toggle";
@@ -38,22 +38,6 @@ interface WindFarm {
   status: string;
 }
 
-const TILE_LAYERS = {
-  kart: {
-    label: "Kart",
-    url: "https://cache.kartverket.no/v1/wmts/1.0.0/topo/default/webmercator/{z}/{y}/{x}.png",
-    attribution:
-      '&copy; <a href="https://www.kartverket.no/">Kartverket</a>',
-  },
-  gråtone: {
-    label: "Gråtone",
-    url: "https://cache.kartverket.no/v1/wmts/1.0.0/topograatone/default/webmercator/{z}/{y}/{x}.png",
-    attribution:
-      '&copy; <a href="https://www.kartverket.no/">Kartverket</a>',
-  },
-} as const;
-
-type TileLayerKey = keyof typeof TILE_LAYERS;
 
 function windFarmIcon(
   isSelected: boolean,
@@ -107,12 +91,10 @@ function PanToSelected({ farm }: { farm: WindFarm | null }) {
 }
 
 export function WindPowerMap() {
+  const { loading, setLoading, error, setError, tileLayer, setTileLayer } = useMapCore();
   const [farms, setFarms] = useState<WindFarm[]>([]);
-  const [loading, setLoading] = useState(true);
   const [counting, setCounting] = useState(false);
   const [loadedCount, setLoadedCount] = useState(0);
-  const [error, setError] = useState(false);
-  const [locating, setLocating] = useState(false);
   const [showInfo, setShowInfo] = useState(false);
   const [selected, setSelected] = useState<WindFarm | null>(null);
   const [center, setCenter] = useState<{
@@ -121,7 +103,6 @@ export function WindPowerMap() {
     zoom?: number;
     _t?: number;
   } | null>(null);
-  const [tileLayer, setTileLayer] = useState<TileLayerKey>("gråtone");
 
   const kommunerRef = useRef<KommuneEntry[]>([]);
   const searchBarRef = useRef<MapSearchBarHandle>(null);
@@ -211,29 +192,16 @@ export function WindPowerMap() {
     }
   }, []);
 
-  const handleLocate = () => {
-    if (!navigator.geolocation) return;
-    setLocating(true);
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setLocating(false);
-        setSelected(null);
-        const { latitude: lat, longitude: lon } = pos.coords;
-        if (isInNorway(lat, lon)) {
-          setCenter({ lat, lon, zoom: 10, _t: Date.now() });
-        } else {
-          setCenter({
-            lat: OSLO.lat,
-            lon: OSLO.lon,
-            zoom: OSLO.zoom,
-            _t: Date.now(),
-          });
-        }
-      },
-      () => setLocating(false),
-      { timeout: 15000, maximumAge: 60000 }
-    );
-  };
+  const { locating, locate: handleLocate } = useGeolocation(
+    useCallback((lat, lon) => {
+      setSelected(null);
+      if (isInNorway(lat, lon)) {
+        setCenter({ lat, lon, zoom: 10, _t: Date.now() });
+      } else {
+        setCenter({ lat: OSLO.lat, lon: OSLO.lon, zoom: OSLO.zoom, _t: Date.now() });
+      }
+    }, []),
+  );
 
   // Stats for display
   const totalCapacity = useMemo(

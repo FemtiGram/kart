@@ -8,7 +8,7 @@ import { Search, MapPin, Mountain, Loader2, X, ChevronUp, LocateFixed, Wind, Dro
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import type { LucideIcon } from "lucide-react";
-import { FlyTo, DataDisclaimer, useDebounceRef, MAP_HEIGHT } from "@/lib/map-utils";
+import { FlyTo, DataDisclaimer, useDebounceRef, MAP_HEIGHT, TILE_URL_KART, KV_ATTRIBUTION, useGeolocation } from "@/lib/map-utils";
 import { InfoModal } from "@/components/info-modal";
 import { TileToggle } from "@/components/tile-toggle";
 import { DriveLink } from "@/components/drive-link";
@@ -42,8 +42,8 @@ L.Icon.Default.mergeOptions({
 const TILE_LAYERS = {
   kart: {
     label: "Kart",
-    url: "https://cache.kartverket.no/v1/wmts/1.0.0/topo/default/webmercator/{z}/{y}/{x}.png",
-    attribution: '&copy; <a href="https://www.kartverket.no/">Kartverket</a>',
+    url: TILE_URL_KART,
+    attribution: KV_ATTRIBUTION,
   },
   terreng: {
     label: "Terreng",
@@ -99,8 +99,6 @@ export function ElevationMap() {
   const [showDropdown, setShowDropdown] = useState(false);
   const [showInfo, setShowInfo] = useState(false);
   const [tileLayer, setTileLayer] = useState<TileLayerKey>("terreng");
-  const [locating, setLocating] = useState(false);
-  const [locateError, setLocateError] = useState(false);
   const [showInfoSheet, setShowInfoSheet] = useState(false);
 
   const debounceRef = useDebounceRef();
@@ -175,26 +173,6 @@ export function ElevationMap() {
       setHighlightedIndex(-1);
     }
   };
-
-  const handleLocate = () => {
-    if (!navigator.geolocation) return;
-    setLocating(true);
-    setLocateError(false);
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setLocating(false);
-        handleMapClick(pos.coords.latitude, pos.coords.longitude);
-      },
-      () => {
-        setLocating(false);
-        handleMapClick(59.91, 10.75);
-        setLocateError(true);
-        setTimeout(() => setLocateError(false), 4000);
-      },
-      { timeout: 15000, maximumAge: 60000 }
-    );
-  };
-
 
   const isWithinNorway = (lat: number, lon: number) =>
     lat >= 57.0 && lat <= 81.0 && lon >= 4.0 && lon <= 32.0;
@@ -292,7 +270,7 @@ export function ElevationMap() {
     setLoadingWeather(false);
   }, [devFetch]);
 
-  const handleMapClick = async (lat: number, lon: number) => {
+  const handleMapClick = useCallback(async (lat: number, lon: number) => {
     setShowDropdown(false);
     setSuggestions([]);
 
@@ -322,7 +300,16 @@ export function ElevationMap() {
       yrSearchName: nearest.name,
       mapsCoords: nearest.roadCoords ?? { lat, lon },
     });
-  };
+  }, [fetchNearestName, fetchLocationData]);
+
+  const { locating, locateError, locate: handleLocate } = useGeolocation(
+    useCallback((lat, lon) => {
+      handleMapClick(lat, lon);
+    }, [handleMapClick]),
+    useCallback(() => {
+      handleMapClick(59.91, 10.75);
+    }, [handleMapClick]),
+  );
 
   // Deep link from /kommune/[slug]: ?lat=&lon=&z= triggers an elevation+weather
   // fetch at that point. The existing <FlyTo> inside MapContainer picks up the

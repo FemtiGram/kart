@@ -1,7 +1,7 @@
 import { WindPowerMapLoader } from "@/components/wind-power-map-loader";
 
 export const metadata = {
-  title: "Vindkraft – Datakart",
+  title: "Vindkraft",
   description:
     "Vindkraftverk i Norge. Se installert kapasitet, antall turbiner og årlig produksjon på kart.",
   alternates: { canonical: "/vindkraft" },

@@ -3,6 +3,15 @@
 import { Wind, Droplets, Fuel } from "lucide-react";
 import L from "leaflet";
 
+// ─── Shared compound types ─────────────────────────────────
+
+export interface HydroStationData {
+  station: { id: string; name: string; river: string | null; distanceKm: number } | null;
+  discharge: number | null;
+  waterLevel: number | null;
+  percentile: { p25: number | null; p50: number | null; p75: number | null; p90: number | null; min: number | null; max: number | null } | null;
+}
+
 // ─── Types ──────────────────────────────────────────────────
 
 export type EnergyType = "vind" | "vann" | "havvind" | "oilgas";
@@ -104,20 +113,7 @@ export const WIND_STATUS_META: Record<WindStatus, { label: string; color: string
   rejected: { label: "Avslått", color: "var(--kv-negative)" },
 };
 
-export const TILE_LAYERS = {
-  kart: {
-    label: "Kart",
-    url: "https://cache.kartverket.no/v1/wmts/1.0.0/topo/default/webmercator/{z}/{y}/{x}.png",
-    attribution: '&copy; <a href="https://www.kartverket.no/">Kartverket</a>',
-  },
-  gråtone: {
-    label: "Gråtone",
-    url: "https://cache.kartverket.no/v1/wmts/1.0.0/topograatone/default/webmercator/{z}/{y}/{x}.png",
-    attribution: '&copy; <a href="https://www.kartverket.no/">Kartverket</a>',
-  },
-} as const;
-
-export type TileLayerKey = keyof typeof TILE_LAYERS;
+export { TILE_LAYERS, type TileLayerKey } from "@/lib/map-utils";
 
 // ─── Label formatters ───────────────────────────────────────
 

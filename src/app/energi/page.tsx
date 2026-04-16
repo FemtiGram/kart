@@ -2,7 +2,7 @@ import { EnergyMapLoader } from "@/components/energy-map-loader";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 
 export const metadata = {
-  title: "Energikart – Datakart",
+  title: "Energikart",
   description:
     "Norges kraftverk på kart. Over 1 700 vannkraftverk, vindkraftanlegg, planlagt havvind og olje- og gassanlegg med produksjonsdata.",
   alternates: { canonical: "/energi" },

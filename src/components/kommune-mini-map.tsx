@@ -14,6 +14,8 @@ import {
   type CabinType,
 } from "@/components/map-icons";
 import { TileToggle } from "@/components/tile-toggle";
+import { TILE_LAYERS } from "@/lib/map-utils";
+import type { TileLayerKey } from "@/lib/map-utils";
 import type {
   CabinMarker,
   ChargingMarker,
@@ -33,18 +35,6 @@ export type LayerKey =
   | "school"
   | "kindergarten";
 
-const TILE_LAYERS = {
-  kart: {
-    label: "Kart",
-    url: "https://cache.kartverket.no/v1/wmts/1.0.0/topo/default/webmercator/{z}/{y}/{x}.png",
-  },
-  gråtone: {
-    label: "Gråtone",
-    url: "https://cache.kartverket.no/v1/wmts/1.0.0/topograatone/default/webmercator/{z}/{y}/{x}.png",
-  },
-} as const;
-
-type TileLayerKey = keyof typeof TILE_LAYERS;
 
 interface Props {
   /** Simplified outline as [lat, lon] rings. */
