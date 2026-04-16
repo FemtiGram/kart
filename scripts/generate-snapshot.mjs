@@ -164,6 +164,39 @@ function candidates(profile, totals) {
     });
   }
 
+  // Nasjonale prøver — grunnskolepoeng is a genuinely useful quality
+  // signal for families. Only fires when the kommune ranks in the top
+  // or bottom ~25%, so the sentence actually tells the reader something
+  // distinctive. The reading/math percentage is secondary — grunnskolepoeng
+  // is the single number parents care about for VGS admissions.
+  if (
+    profile.nasjonaleProver?.grunnskolepoeng != null &&
+    ranks.grunnskolepoeng &&
+    totals.grunnskolepoengTotal
+  ) {
+    const gp = profile.nasjonaleProver.grunnskolepoeng;
+    const r = ranks.grunnskolepoeng;
+    const t = totals.grunnskolepoengTotal;
+    const extremity = rankExtremity(r, t);
+    if (extremity >= 0.45) {
+      cats.push({
+        theme: "services",
+        key: "nasjonaleprover",
+        score: extremity * 0.85,
+        render: () => {
+          const gpStr = gp.toFixed(1).replace(".", ",");
+          if (r <= 30)
+            return `Elevene scorer høyt på nasjonale prøver — snitt ${gpStr} grunnskolepoeng (#${r} av ${t}).`;
+          if (r <= Math.round(t * 0.35))
+            return `Grunnskolepoengene ligger over landsgjennomsnittet med ${gpStr} poeng (#${r} av ${t}).`;
+          if (r >= t - 30)
+            return `Grunnskolepoengene ligger i nedre sjikt nasjonalt med ${gpStr} poeng (#${r} av ${t}).`;
+          return `Elevene har i snitt ${gpStr} grunnskolepoeng (#${r} av ${t}).`;
+        },
+      });
+    }
+  }
+
   // Sykehus + legevakt — OSM-sourced, so we only make POSITIVE claims
   // (has sykehus / has legevakt). Never say "has no sykehus" because
   // OSM can be incomplete. When both exist, one sentence covers both.

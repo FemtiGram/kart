@@ -6,6 +6,7 @@
 //   - SSB 08936 (protected areas)
 //   - SSB 14674 (eiendomsskatt per kommune)
 //   - SSB 12842 (kommunale gebyrer: vann, avløp, avfall, feiing)
+//   - SSB 12255 (nasjonale prøver: lesing, regning, grunnskolepoeng)
 //   - NVE Vannkraft1/0 + Vindkraft2/0 (hydro + operational wind plants)
 //   - public/data/stations.json (charging stations, grouped by municipalityId)
 //   - public/data/cabins.json (DNT cabins, point-in-polygon)
@@ -801,6 +802,87 @@ function decodeDemografi(data, breakdownDim, labelMap) {
   return { latestYear, byKnr: picked ?? {} };
 }
 
+// ─── SSB 12255: Nasjonale prøver (8. trinn, KOSTRA) ─────────
+//
+// Kommune-level test scores from SSB's KOSTRA table 12255 (Utvalgte
+// nøkkeltall for grunnskole). Three metrics:
+//   - KOSandles080000  — % elever på mestringsnivå 3–5, lesing 8. trinn
+//   - KOSandreg080000  — % elever på mestringsnivå 3–5, regning 8. trinn
+//   - KOSgrunnskolepoe0000 — gjennomsnittlig grunnskolepoeng
+//
+// ~320/357 kommuner have data; the rest are suppressed for privacy
+// (too few students). We request 2019–2025 for trend + latest.
+
+const NASJONALEPROVER_YEARS = ["2019", "2020", "2021", "2022", "2023", "2024", "2025"];
+const NASJONALEPROVER_VARS = [
+  "KOSandles080000",
+  "KOSandreg080000",
+  "KOSgrunnskolepoe0000",
+];
+
+async function fetchNasjonaleProver() {
+  console.log("  Fetching SSB 12255 (nasjonale prøver)...");
+  const res = await fetch("https://data.ssb.no/api/v0/no/table/12255", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      query: [
+        { code: "KOKkommuneregion0000", selection: { filter: "all", values: ["*"] } },
+        { code: "ContentsCode", selection: { filter: "item", values: NASJONALEPROVER_VARS } },
+        { code: "Tid", selection: { filter: "item", values: NASJONALEPROVER_YEARS } },
+      ],
+      response: { format: "json-stat2" },
+    }),
+  });
+  if (!res.ok) throw new Error(`SSB 12255: HTTP ${res.status}`);
+  const data = await res.json();
+
+  const ids = data.id;
+  const sizes = data.size;
+  const values = data.value;
+  const strides = new Array(ids.length).fill(1);
+  for (let i = ids.length - 2; i >= 0; i--) {
+    strides[i] = strides[i + 1] * sizes[i + 1];
+  }
+  const regionIndex = data.dimension.KOKkommuneregion0000.category.index;
+  const contentsIndex = data.dimension.ContentsCode.category.index;
+  const tidIndex = data.dimension.Tid.category.index;
+  const rStride = strides[ids.indexOf("KOKkommuneregion0000")];
+  const cStride = strides[ids.indexOf("ContentsCode")];
+  const tStride = strides[ids.indexOf("Tid")];
+
+  // Decode into { knr: { code: { year: value } } } for 4-digit kommune codes.
+  const byKnr = {};
+  for (const [knr, rI] of Object.entries(regionIndex)) {
+    if (!/^\d{4}$/.test(knr)) continue;
+    const perCode = {};
+    for (const [code, cI] of Object.entries(contentsIndex)) {
+      const perYear = {};
+      for (const [year, tI] of Object.entries(tidIndex)) {
+        const v = values[rI * rStride + cI * cStride + tI * tStride];
+        if (v != null) perYear[year] = v;
+      }
+      if (Object.keys(perYear).length > 0) perCode[code] = perYear;
+    }
+    if (Object.keys(perCode).length > 0) byKnr[knr] = perCode;
+  }
+
+  // Pick latest year where at least 150 kommuner have reading data.
+  let latestYear = NASJONALEPROVER_YEARS[0];
+  for (const year of [...NASJONALEPROVER_YEARS].reverse()) {
+    const populated = Object.values(byKnr).filter(
+      (k) => k.KOSandles080000?.[year] != null
+    ).length;
+    if (populated >= 150) {
+      latestYear = year;
+      break;
+    }
+  }
+  console.log(`    → latest usable year: ${latestYear} (${Object.keys(byKnr).length} kommuner total)`);
+
+  return { byKnr, latestYear };
+}
+
 // ─── NVE energy fetcher (hydro + operational wind only) ──────
 
 function utmToLatLon(easting, northing) {
@@ -1000,7 +1082,7 @@ async function main() {
 
   // Fetch external data in parallel
   let population, income, bolig, protectedAreas, plants, fastlege, eiendomsskatt, gebyrer;
-  let eierstatus, utdanning, boligtyper;
+  let eierstatus, utdanning, boligtyper, nasjonaleProver;
   try {
     [
       population,
@@ -1014,6 +1096,7 @@ async function main() {
       eierstatus,
       utdanning,
       boligtyper,
+      nasjonaleProver,
     ] = await Promise.all([
       fetchPopulation(),
       fetchIncome(),
@@ -1026,6 +1109,7 @@ async function main() {
       fetchEierstatus(),
       fetchUtdanning(),
       fetchBoligtyper(),
+      fetchNasjonaleProver(),
     ]);
   } catch (err) {
     console.error(`  ✗ Failed fetching external data: ${err.message}`);
@@ -1320,6 +1404,33 @@ async function main() {
             lon: s.lon,
           })),
       },
+      nasjonaleProver: (() => {
+        const np = nasjonaleProver.byKnr[knr];
+        if (!np) return null;
+        const lesing = np.KOSandles080000?.[nasjonaleProver.latestYear] ?? null;
+        const regning = np.KOSandreg080000?.[nasjonaleProver.latestYear] ?? null;
+        const grunnskolepoeng = np.KOSgrunnskolepoe0000?.[nasjonaleProver.latestYear] ?? null;
+        if (lesing == null && regning == null && grunnskolepoeng == null) return null;
+        // Trend for lesing + regning (the two charted metrics)
+        const lesingTrend = np.KOSandles080000
+          ? Object.entries(np.KOSandles080000)
+              .sort(([a], [b]) => a.localeCompare(b))
+              .map(([year, value]) => ({ year, value }))
+          : [];
+        const regningTrend = np.KOSandreg080000
+          ? Object.entries(np.KOSandreg080000)
+              .sort(([a], [b]) => a.localeCompare(b))
+              .map(([year, value]) => ({ year, value }))
+          : [];
+        return {
+          year: nasjonaleProver.latestYear,
+          lesing,
+          regning,
+          grunnskolepoeng,
+          lesingTrend,
+          regningTrend,
+        };
+      })(),
       kindergartens: {
         total: kindergartenList.length,
         totalChildren,
@@ -1441,6 +1552,8 @@ async function main() {
   );
   // Cheapest kommunale gebyrer first (rank 1 = lowest total).
   const gebyrTotalRanks = rankBy(profiles, (p) => p.cost?.gebyrer?.total, false);
+  // Grunnskolepoeng — higher is better.
+  const grunnskolepoengRanks = rankBy(profiles, (p) => p.nasjonaleProver?.grunnskolepoeng);
 
   const rankTotals = {
     kommuner: Object.keys(profiles).length,
@@ -1454,6 +1567,7 @@ async function main() {
     andelUtenLegeTotal: andelUtenLegeRanks.total,
     listelengdeTotal: listelengdeRanks.total,
     gebyrTotalTotal: gebyrTotalRanks.total,
+    grunnskolepoengTotal: grunnskolepoengRanks.total,
   };
 
   for (const [knr, profile] of Object.entries(profiles)) {
@@ -1469,6 +1583,7 @@ async function main() {
       andelUtenLege: andelUtenLegeRanks.ranks[knr] ?? null,
       listelengde: listelengdeRanks.ranks[knr] ?? null,
       gebyrTotal: gebyrTotalRanks.ranks[knr] ?? null,
+      grunnskolepoeng: grunnskolepoengRanks.ranks[knr] ?? null,
     };
     profile.snapshot = generateSnapshot(profile, rankTotals);
   }
@@ -1599,6 +1714,7 @@ async function main() {
       popTotal: popRanks.total,
       incomeTotal: incomeRanks.total,
       boligTotal: boligRanks.total,
+      grunnskolepoengTotal: grunnskolepoengRanks.total,
     },
     profiles,
   };
