@@ -8,7 +8,7 @@ import "leaflet/dist/leaflet.css";
 import "react-leaflet-cluster/dist/assets/MarkerCluster.css";
 import "react-leaflet-cluster/dist/assets/MarkerCluster.Default.css";
 import { Loader2, ExternalLink, Map as MapIcon, Layers, LocateFixed, Mountain, Wind, Droplets, Sun, Cloud, CloudSun, CloudRain, CloudSnow, CloudLightning, CloudFog, CloudHail, CloudDrizzle, Moon, SlidersHorizontal, Check, ChevronUp, Navigation } from "lucide-react";
-import { FlyTo, DataDisclaimer, MapError, MAP_HEIGHT } from "@/lib/map-utils";
+import { FlyTo, DataDisclaimer, MapError, MAP_HEIGHT, TILE_LAYERS, useMapCore, useGeolocation } from "@/lib/map-utils";
 import { CompactCard } from "@/components/compact-card";
 import { InfoModal } from "@/components/info-modal";
 import { TileToggle } from "@/components/tile-toggle";
@@ -79,21 +79,6 @@ const CABIN_LABELS: Record<Cabin["cabinType"], string> = {
   ubetjent: "Ubetjent hytte",
 };
 
-const TILE_LAYERS = {
-  kart: {
-    label: "Kart",
-    url: "https://cache.kartverket.no/v1/wmts/1.0.0/topo/default/webmercator/{z}/{y}/{x}.png",
-    attribution: '&copy; <a href="https://www.kartverket.no/">Kartverket</a>',
-  },
-  gråtone: {
-    label: "Gråtone",
-    url: "https://cache.kartverket.no/v1/wmts/1.0.0/topograatone/default/webmercator/{z}/{y}/{x}.png",
-    attribution: '&copy; <a href="https://www.kartverket.no/">Kartverket</a>',
-  },
-} as const;
-
-type TileLayerKey = keyof typeof TILE_LAYERS;
-
 
 function PanToSelected({ cabin }: { cabin: Cabin | null }) {
   const map = useMap();
@@ -105,16 +90,12 @@ function PanToSelected({ cabin }: { cabin: Cabin | null }) {
 }
 
 export function CabinMap() {
+  const { loading, setLoading, error, setError, tileLayer, setTileLayer } = useMapCore();
   const [cabins, setCabins] = useState<Cabin[]>([]);
-  const [loading, setLoading] = useState(true);
   const [counting, setCounting] = useState(false);
   const [loadedCount, setLoadedCount] = useState(0);
-  const [locating, setLocating] = useState(false);
-  const [locateError, setLocateError] = useState(false);
-  const [error, setError] = useState(false);
   const [selected, setSelected] = useState<Cabin | null>(null);
   const [center, setCenter] = useState<{ lat: number; lon: number; zoom?: number; _t?: number } | null>(null);
-  const [tileLayer, setTileLayer] = useState<TileLayerKey>("gråtone");
   const [showInfo, setShowInfo] = useState(false);
   const [showFilter, setShowFilter] = useState(false);
   const [showInfoSheet, setShowInfoSheet] = useState(false);
@@ -158,30 +139,19 @@ export function CabinMap() {
     }
   }, []);
 
-  const handleLocate = () => {
-    if (!navigator.geolocation) return;
-    setLocating(true);
-    setLocateError(false);
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setLocating(false);
-        setSelected(null);
-        const { latitude: lat, longitude: lon } = pos.coords;
-        if (isInNorway(lat, lon)) {
-          setCenter({ lat, lon, zoom: 12, _t: Date.now() });
-        } else {
-          setCenter({ lat: 61.5, lon: 8.3, zoom: 9, _t: Date.now() });
-        }
-      },
-      () => {
-        setLocating(false);
+  const { locating, locateError, locate: handleLocate } = useGeolocation(
+    useCallback((lat, lon) => {
+      setSelected(null);
+      if (isInNorway(lat, lon)) {
+        setCenter({ lat, lon, zoom: 12, _t: Date.now() });
+      } else {
         setCenter({ lat: 61.5, lon: 8.3, zoom: 9, _t: Date.now() });
-        setLocateError(true);
-        setTimeout(() => setLocateError(false), 4000);
-      },
-      { timeout: 15000, maximumAge: 60000 }
-    );
-  };
+      }
+    }, []),
+    useCallback(() => {
+      setCenter({ lat: 61.5, lon: 8.3, zoom: 9, _t: Date.now() });
+    }, []),
+  );
 
   // Load cabins from pre-built static JSON, fallback to live Overpass
   const loadCabins = useCallback(async () => {

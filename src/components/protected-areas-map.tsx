@@ -12,7 +12,7 @@ import { kommuneSlug } from "@/lib/kommune-slug";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { MapSearchBar, type MapSearchBarHandle } from "@/components/map-search";
 import { FYLKER } from "@/lib/fylker";
-import { FlyTo, DataDisclaimer, MapError, interpolateColor, MAP_HEIGHT } from "@/lib/map-utils";
+import { FlyTo, DataDisclaimer, MapError, interpolateColor, MAP_HEIGHT, TILE_URL_GRAATONE, KV_ATTRIBUTION, useMapCore } from "@/lib/map-utils";
 import { CompactCard } from "@/components/compact-card";
 import { InfoModal } from "@/components/info-modal";
 import { MapLoading } from "@/components/map-loading";
@@ -169,10 +169,9 @@ function computeVerneStats(
 export function ProtectedAreasMap() {
   const [geoData, setGeoData] = useState<GeoJsonObject | null>(null);
   const [verneData, setVerneData] = useState<Record<string, VerneData>>({});
-  const [loading, setLoading] = useState(true);
+  const { loading, setLoading, error, setError } = useMapCore();
   const [counting, setCounting] = useState(false);
   const [loadedCount, setLoadedCount] = useState(0);
-  const [error, setError] = useState(false);
 
   const [selected, setSelected] = useState<SelectedKommune | null>(null);
   const [flyTarget, setFlyTarget] = useState<{ lat: number; lon: number; zoom?: number } | null>(null);
@@ -391,8 +390,8 @@ export function ProtectedAreasMap() {
           <MapContainer center={[65, 14]} zoom={5} style={{ height: "100%", width: "100%" }}>
             {showBase && (
               <TileLayer
-                url="https://cache.kartverket.no/v1/wmts/1.0.0/topograatone/default/webmercator/{z}/{y}/{x}.png"
-                attribution='&copy; <a href="https://www.kartverket.no/">Kartverket</a>'
+                url={TILE_URL_GRAATONE}
+                attribution={KV_ATTRIBUTION}
               />
             )}
             {flyTarget && <FlyTo lat={flyTarget.lat} lon={flyTarget.lon} zoom={flyTarget.zoom} />}

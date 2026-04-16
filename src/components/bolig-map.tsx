@@ -13,7 +13,7 @@ import { kommuneSlug } from "@/lib/kommune-slug";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { MapSearchBar, type MapSearchBarHandle } from "@/components/map-search";
 import { FYLKER } from "@/lib/fylker";
-import { FlyTo, DataDisclaimer, MapError, MAP_HEIGHT } from "@/lib/map-utils";
+import { FlyTo, DataDisclaimer, MapError, MAP_HEIGHT, TILE_LAYERS, useMapCore, useCompare } from "@/lib/map-utils";
 import type { Suggestion } from "@/lib/map-utils";
 import { CompactCard } from "@/components/compact-card";
 import { InfoModal } from "@/components/info-modal";
@@ -50,16 +50,6 @@ const TYPE_ICONS: Record<string, typeof Home> = {
 };
 const TYPE_KEYS = ["01", "02", "03"] as const;
 
-const TILE_LAYERS = {
-  kart: {
-    url: "https://cache.kartverket.no/v1/wmts/1.0.0/topo/default/webmercator/{z}/{y}/{x}.png",
-    attribution: '&copy; <a href="https://www.kartverket.no/">Kartverket</a>',
-  },
-  gråtone: {
-    url: "https://cache.kartverket.no/v1/wmts/1.0.0/topograatone/default/webmercator/{z}/{y}/{x}.png",
-    attribution: '&copy; <a href="https://www.kartverket.no/">Kartverket</a>',
-  },
-};
 
 // ─── Color scale: blue → orange → red ──────────────────────
 function priceColor(t: number): string {
@@ -186,16 +176,17 @@ function ZoomTracker({ onZoom }: { onZoom: (z: number) => void }) {
 // Main component
 // ═══════════════════════════════════════════════════════════
 export function BoligMap() {
+  // Core map state
+  const { loading, setLoading, error, setError, tileLayer, setTileLayer } = useMapCore();
+
   // Data
   const [boligData, setBoligData] = useState<BoligData>({});
   const [years, setYears] = useState<string[]>([]);
   const [mergedKommuner, setMergedKommuner] = useState<Set<string>>(new Set());
   const [centroids, setCentroids] = useState<Map<string, { lat: number; lon: number }>>(new Map());
   const [geoData, setGeoData] = useState<GeoJsonObject | null>(null);
-  const [loading, setLoading] = useState(true);
   const [counting, setCounting] = useState(false);
   const [loadedCount, setLoadedCount] = useState(0);
-  const [error, setError] = useState(false);
   const finnLocationsRef = useRef<Record<string, string>>({});
 
   // Filters
@@ -207,26 +198,22 @@ export function BoligMap() {
   const [showInfoSheet, setShowInfoSheet] = useState(false);
   const [showInfo, setShowInfo] = useState(false);
 
-  // Comparison
-  const [compareMode, setCompareMode] = useState(false);
-  const [compareQuery, setCompareQuery] = useState("");
-  const [compareHighlight, setCompareHighlight] = useState(-1);
-  const [compareTarget, setCompareTarget] = useState<SelectedKommune | null>(null);
-  const [showCompare, setShowCompare] = useState(false);
-
   // Map
-  const [tileLayer, setTileLayer] = useState<"kart" | "gråtone">("gråtone");
   const [center, setCenter] = useState<{ lat: number; lon: number; zoom?: number; _t?: number } | null>(null);
   const [zoomLevel, setZoomLevel] = useState(5);
 
-  // Refs for GeoJSON click handlers (closures capture stale state otherwise)
-  const compareModeRef = useRef(false);
-  const selectedRef = useRef<SelectedKommune | null>(null);
-  compareModeRef.current = compareMode;
-  selectedRef.current = selected;
-
   // Search
-  const geoFeaturesRef = useRef<Array<{ kommunenummer: string; kommunenavn: string }>>([]);
+  const geoFeaturesRef = useRef<Array<{ properties: { kommunenummer: string; navn: string } }>>([]);
+
+  // Comparison state machine
+  const getSelectedId = useCallback((s: SelectedKommune) => s.kommunenummer, []);
+  const hasBoligData = useCallback((knr: string) => !!boligData[knr], [boligData]);
+  const {
+    compareMode, compareQuery, setCompareQuery, compareHighlight, setCompareHighlight,
+    compareTarget, showCompare, compareResults,
+    activateCompare, selectTarget, cancelCompare, resetCompare, closeCompareSheet,
+    handleCompareClick, selectedRef,
+  } = useCompare<SelectedKommune>(selected, getSelectedId, useCallback(() => geoFeaturesRef.current ?? [], []), hasBoligData);
   const searchBarRef = useRef<MapSearchBarHandle>(null);
 
   const handleSearchSelect = useCallback((s: Suggestion) => {
@@ -245,8 +232,8 @@ export function BoligMap() {
     } else if (s.type === "adresse") {
       const addr = s.addr;
       searchBarRef.current?.setQuery(addr.kommunenavn);
-      const match = geoFeaturesRef.current.find((f) => f.kommunenavn.toLowerCase() === addr.kommunenavn.toLowerCase());
-      const nr = match?.kommunenummer;
+      const match = geoFeaturesRef.current.find((f) => f.properties.navn.toLowerCase() === addr.kommunenavn.toLowerCase());
+      const nr = match?.properties.kommunenummer;
       if (nr) {
         const c = centroids.get(nr);
         if (c) {
@@ -279,8 +266,7 @@ export function BoligMap() {
       setYears(boligRes.years ?? []);
       setMergedKommuner(new Set(boligRes.merged ?? []));
       geoFeaturesRef.current = (geoRes.features ?? []).map((f: { properties: { kommunenummer: string; kommunenavn: string } }) => ({
-        kommunenummer: f.properties.kommunenummer,
-        kommunenavn: f.properties.kommunenavn,
+        properties: { kommunenummer: f.properties.kommunenummer, navn: f.properties.kommunenavn },
       }));
 
       // Count kommuner with data for default type (eneboliger) and latest year
@@ -301,7 +287,7 @@ export function BoligMap() {
   const restoreKommune = useCallback((nr: string) => {
     const c = centroids.get(nr);
     if (!c) return;
-    const name = geoFeaturesRef.current.find((f) => f.kommunenummer === nr)?.kommunenavn ?? nr;
+    const name = geoFeaturesRef.current.find((f) => f.properties.kommunenummer === nr)?.properties.navn ?? nr;
     setSelected({ kommunenummer: nr, kommunenavn: name, lat: c.lat, lon: c.lon });
     setShowInfoSheet(true);
     setCenter({ lat: c.lat, lon: c.lon, zoom: 10 });
@@ -320,7 +306,7 @@ export function BoligMap() {
       const entry = types[boligtype]?.[year];
       const c = centroids.get(nr);
       if (!c) continue;
-      const name = geoFeaturesRef.current.find((f) => f.kommunenummer === nr)?.kommunenavn ?? nr;
+      const name = geoFeaturesRef.current.find((f) => f.properties.kommunenummer === nr)?.properties.navn ?? nr;
       arr.push({ nr, name, lat: c.lat, lon: c.lon, price: entry?.price ?? null, count: entry?.count ?? null });
     }
     return arr;
@@ -344,18 +330,9 @@ export function BoligMap() {
   type MarkerInfo = (typeof visibleMarkers)[number];
   const markerClickRef = useRef<(m: MarkerInfo) => void>(() => {});
   markerClickRef.current = (m) => {
-    const kommun = { kommunenummer: m.nr, kommunenavn: m.name, lat: m.lat, lon: m.lon };
-    if (compareMode && selected && selected.kommunenummer !== m.nr) {
-      setCompareTarget(kommun);
-      setShowCompare(true);
-      setCompareMode(false);
-      setCompareQuery("");
-    } else {
-      setSelected((prev) => (prev?.kommunenummer === m.nr ? null : kommun));
-      setShowInfoSheet(false);
-      setCompareMode(false);
-      setCompareQuery("");
-    }
+    if (handleCompareClick(m.nr, () => ({ kommunenummer: m.nr, kommunenavn: m.name, lat: m.lat, lon: m.lon }))) return;
+    setSelected((prev) => (prev?.kommunenummer === m.nr ? null : { kommunenummer: m.nr, kommunenavn: m.name, lat: m.lat, lon: m.lon }));
+    setShowInfoSheet(false);
   };
 
   // Memoize the marker list. Deps exclude `selected` / `compareMode` —
@@ -375,22 +352,12 @@ export function BoligMap() {
     [visibleMarkers, sortedPrices]
   );
 
-  // Compare search results
-  const compareResults = useMemo(() => {
-    if (!compareMode || compareQuery.length < 1) return [];
-    const q = compareQuery.toLowerCase();
-    return geoFeaturesRef.current
-      .filter((f) => f.kommunenavn.toLowerCase().includes(q) && f.kommunenummer !== selected?.kommunenummer && boligData[f.kommunenummer])
-      .slice(0, 6);
-  }, [compareMode, compareQuery, selected?.kommunenummer, boligData]);
-
   const clearSelection = useCallback(() => {
     setSelected(null);
     setShowInfoSheet(false);
-    setCompareMode(false);
-    setCompareQuery("");
+    resetCompare();
     searchBarRef.current?.setQuery("");
-  }, []);
+  }, [resetCompare]);
 
   // ─── Card data helpers ──────────────────────────────────
   const getPrice = (nr: string, type: string, yr: string) => boligData[nr]?.[type]?.[yr]?.price ?? null;
@@ -411,7 +378,7 @@ export function BoligMap() {
         <div className="max-w-xl mx-auto">
           <MapSearchBar
             ref={searchBarRef}
-            kommuneList={() => geoFeaturesRef.current}
+            kommuneList={() => geoFeaturesRef.current.map((f) => ({ kommunenummer: f.properties.kommunenummer, kommunenavn: f.properties.navn }))}
             onSelect={handleSearchSelect}
             placeholder="Søk etter kommune eller adresse..."
           />
@@ -514,18 +481,9 @@ export function BoligMap() {
                   click() {
                     const c = centroids.get(nr);
                     if (!c) return;
-                    const kommun = { kommunenummer: nr, kommunenavn: name, lat: c.lat, lon: c.lon };
-                    if (compareModeRef.current && selectedRef.current && selectedRef.current.kommunenummer !== nr) {
-                      setCompareTarget(kommun);
-                      setShowCompare(true);
-                      setCompareMode(false);
-                      setCompareQuery("");
-                    } else {
-                      setSelected((prev) => prev?.kommunenummer === nr ? null : kommun);
-                      setShowInfoSheet(false);
-                      setCompareMode(false);
-                      setCompareQuery("");
-                    }
+                    if (handleCompareClick(nr, () => ({ kommunenummer: nr, kommunenavn: name, lat: c.lat, lon: c.lon }))) return;
+                    setSelected((prev) => prev?.kommunenummer === nr ? null : { kommunenummer: nr, kommunenavn: name, lat: c.lat, lon: c.lon });
+                    setShowInfoSheet(false);
                   },
                   mouseover(e) {
                     const l = e.target as L.Path;
@@ -643,16 +601,12 @@ export function BoligMap() {
                       else if (e.key === "Enter" && compareHighlight >= 0) {
                         e.preventDefault();
                         const k = compareResults[compareHighlight];
-                        const c = centroids.get(k.kommunenummer);
+                        const c = centroids.get(k.properties.kommunenummer);
                         if (c) {
-                          setCompareTarget({ kommunenummer: k.kommunenummer, kommunenavn: k.kommunenavn, lat: c.lat, lon: c.lon });
-                          setShowCompare(true);
-                          setCompareMode(false);
-                          setCompareQuery("");
-                          setCompareHighlight(-1);
+                          selectTarget({ kommunenummer: k.properties.kommunenummer, kommunenavn: k.properties.navn, lat: c.lat, lon: c.lon });
                         }
                       }
-                      else if (e.key === "Escape") { setCompareMode(false); setCompareQuery(""); setCompareHighlight(-1); }
+                      else if (e.key === "Escape") { cancelCompare(); }
                     }}
                     placeholder="Sammenlign med..."
                     autoComplete="off"
@@ -665,22 +619,18 @@ export function BoligMap() {
                   {compareResults.length > 0 && (
                     <ul className="absolute top-full mt-1 left-0 right-0 bg-background rounded-xl shadow-xl border overflow-hidden z-50">
                       {compareResults.map((k, i) => (
-                        <li key={k.kommunenummer}>
+                        <li key={k.properties.kommunenummer}>
                           <button
                             onMouseDown={() => {
-                              const c = centroids.get(k.kommunenummer);
+                              const c = centroids.get(k.properties.kommunenummer);
                               if (c) {
-                                setCompareTarget({ kommunenummer: k.kommunenummer, kommunenavn: k.kommunenavn, lat: c.lat, lon: c.lon });
-                                setShowCompare(true);
-                                setCompareMode(false);
-                                setCompareQuery("");
-                                setCompareHighlight(-1);
+                                selectTarget({ kommunenummer: k.properties.kommunenummer, kommunenavn: k.properties.navn, lat: c.lat, lon: c.lon });
                               }
                             }}
                             className={`w-full text-left px-3 py-2.5 text-sm transition-colors border-b last:border-0 ${compareHighlight === i ? "bg-muted" : "hover:bg-muted"}`}
                           >
-                            <p className="font-medium">{k.kommunenavn}</p>
-                            <p className="text-[10px] text-foreground/70">{getFylke(k.kommunenummer)}</p>
+                            <p className="font-medium">{k.properties.navn}</p>
+                            <p className="text-[10px] text-foreground/70">{getFylke(k.properties.kommunenummer)}</p>
                           </button>
                         </li>
                       ))}
@@ -688,7 +638,7 @@ export function BoligMap() {
                   )}
                 </div>
                 <button
-                  onClick={() => { setCompareMode(false); setCompareQuery(""); }}
+                  onClick={cancelCompare}
                   className="mt-2 text-xs text-foreground/70 hover:text-foreground transition-colors"
                 >
                   Avbryt
@@ -697,7 +647,7 @@ export function BoligMap() {
             ) : (
               <CompactCard.Actions>
                 <CompactCard.Action primary onClick={() => setShowInfoSheet(true)} icon={<ChevronUp className="h-3.5 w-3.5" />}>Vis mer</CompactCard.Action>
-                <CompactCard.Action onClick={() => setCompareMode(true)} icon={<ArrowLeftRight className="h-3.5 w-3.5" />}>Sammenlign</CompactCard.Action>
+                <CompactCard.Action onClick={activateCompare} icon={<ArrowLeftRight className="h-3.5 w-3.5" />}>Sammenlign</CompactCard.Action>
               </CompactCard.Actions>
             )}
           </>)}
@@ -919,7 +869,7 @@ export function BoligMap() {
         </Sheet>
 
         {/* Comparison sheet */}
-        <Sheet open={showCompare && !!selected && !!compareTarget} onOpenChange={(open) => { if (!open) { setShowCompare(false); setCompareTarget(null); } }}>
+        <Sheet open={showCompare && !!selected && !!compareTarget} onOpenChange={(open) => { if (!open) closeCompareSheet(); }}>
           <SheetContent side="bottom" className="rounded-t-2xl max-h-[85svh] overflow-y-auto">
             {selected && compareTarget && (() => {
               const a = selected;

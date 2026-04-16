@@ -2,7 +2,7 @@ import { ElevationMapLoader } from "@/components/elevation-map-loader";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 
 export const metadata = {
-  title: "Høydekart – Datakart",
+  title: "Høydekart",
   description:
     "Finn høyden over havet for ethvert punkt i Norge. Søk på adresse, se terrengkart og få sanntids værdata fra Kartverket og MET.no.",
   alternates: { canonical: "/map" },

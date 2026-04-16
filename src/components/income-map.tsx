@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { MapContainer, GeoJSON, TileLayer } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -12,7 +12,7 @@ import { kommuneSlug } from "@/lib/kommune-slug";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { MapSearchBar, type MapSearchBarHandle } from "@/components/map-search";
-import { FlyTo, DataDisclaimer, MapError, interpolateColor, MAP_HEIGHT } from "@/lib/map-utils";
+import { FlyTo, DataDisclaimer, MapError, interpolateColor, MAP_HEIGHT, TILE_URL_GRAATONE, KV_ATTRIBUTION, useMapCore, useCompare } from "@/lib/map-utils";
 import { FYLKER } from "@/lib/fylker";
 import { CompactCard } from "@/components/compact-card";
 import { InfoModal } from "@/components/info-modal";
@@ -65,10 +65,9 @@ function getFylke(kommunenummer: string): string | null {
 export function IncomeMap() {
   const [geoData, setGeoData] = useState<GeoJsonObject | null>(null);
   const [incomeData, setIncomeData] = useState<Record<string, number>>({});
-  const [loading, setLoading] = useState(true);
+  const { loading, setLoading, error, setError } = useMapCore();
   const [counting, setCounting] = useState(false);
   const [loadedCount, setLoadedCount] = useState(0);
-  const [error, setError] = useState(false);
 
   const [selected, setSelected] = useState<SelectedKommune | null>(null);
   const [flyTarget, setFlyTarget] = useState<{ lat: number; lon: number; zoom?: number } | null>(null);
@@ -76,21 +75,18 @@ export function IncomeMap() {
   const [showBase, setShowBase] = useState(false);
   const [showInfoSheet, setShowInfoSheet] = useState(false);
 
-  // Comparison
-  const [compareMode, setCompareMode] = useState(false);
-  const [compareQuery, setCompareQuery] = useState("");
-  const [compareHighlight, setCompareHighlight] = useState(-1);
-  const [compareTarget, setCompareTarget] = useState<SelectedKommune | null>(null);
-  const [showCompare, setShowCompare] = useState(false);
-
-  // Refs for GeoJSON click handlers (closures capture stale state otherwise)
-  const compareModeRef = useRef(false);
-  const selectedRef = useRef<SelectedKommune | null>(null);
-  compareModeRef.current = compareMode;
-  selectedRef.current = selected;
-
   const incomeRef = useRef<Record<string, number>>({});
-  const geoFeaturesRef = useRef<Array<{ kommunenummer: string; kommunenavn: string }>>([]);
+  const geoFeaturesRef = useRef<Array<{ properties: { kommunenummer: string; navn: string } }>>([]);
+
+  // Comparison state machine
+  const getSelectedId = useCallback((s: SelectedKommune) => s.kommunenummer, []);
+  const hasIncomeData = useCallback((knr: string) => incomeRef.current[knr] > 0, []);
+  const {
+    compareMode, compareQuery, setCompareQuery, compareHighlight, setCompareHighlight,
+    compareTarget, showCompare, compareResults,
+    activateCompare, selectTarget, cancelCompare, resetCompare, closeCompareSheet,
+    handleCompareClick,
+  } = useCompare<SelectedKommune>(selected, getSelectedId, useCallback(() => geoFeaturesRef.current ?? [], []), hasIncomeData);
   const layerRefs = useRef<Map<string, L.Path>>(new Map());
   const selectedKommuneRef = useRef<string | null>(null);
   const searchBarRef = useRef<MapSearchBarHandle>(null);
@@ -105,8 +101,7 @@ export function IncomeMap() {
       ]);
       incomeRef.current = income;
       geoFeaturesRef.current = (geo.features ?? []).map((f: { properties: { kommunenummer: string; kommunenavn: string } }) => ({
-        kommunenummer: f.properties.kommunenummer,
-        kommunenavn: f.properties.kommunenavn,
+        properties: { kommunenummer: f.properties.kommunenummer, navn: f.properties.kommunenavn },
       }));
       setGeoData(geo);
       setIncomeData(income);
@@ -149,12 +144,12 @@ export function IncomeMap() {
 
   // Deep linking: sync selected kommune ↔ URL hash (#kommune-<nr>)
   const restoreKommune = useCallback((nr: string) => {
-    const match = geoFeaturesRef.current.find((f) => f.kommunenummer === nr);
+    const match = geoFeaturesRef.current.find((f) => f.properties.kommunenummer === nr);
     if (!match) return;
     highlightKommune(nr);
     setSelected({
       kommunenummer: nr,
-      kommunenavn: match.kommunenavn,
+      kommunenavn: match.properties.navn,
       income: incomeRef.current[nr] ?? null,
       coords: { lat: 0, lon: 0 },
     });
@@ -170,14 +165,6 @@ export function IncomeMap() {
     readyToRestore: !loading && geoData != null,
   });
 
-  const compareResults = useMemo(() => {
-    if (!compareMode || compareQuery.length < 1) return [];
-    const q = compareQuery.toLowerCase();
-    return geoFeaturesRef.current
-      .filter((f) => f.kommunenavn.toLowerCase().includes(q) && f.kommunenummer !== selected?.kommunenummer && incomeRef.current[f.kommunenummer] > 0)
-      .slice(0, 6);
-  }, [compareMode, compareQuery, selected?.kommunenummer]);
-
   const clearSelection = useCallback(() => {
     if (selectedKommuneRef.current) {
       const layer = layerRefs.current.get(selectedKommuneRef.current);
@@ -188,12 +175,9 @@ export function IncomeMap() {
       selectedKommuneRef.current = null;
     }
     setSelected(null);
-    setCompareMode(false);
-    setCompareQuery("");
-    setCompareTarget(null);
-    setShowCompare(false);
+    resetCompare();
     searchBarRef.current?.setQuery("");
-  }, []);
+  }, [resetCompare]);
 
 
   const handleSearchSelect = useCallback((s: Suggestion) => {
@@ -249,13 +233,7 @@ export function IncomeMap() {
         }
       },
       click() {
-        if (compareModeRef.current && selectedRef.current && selectedRef.current.kommunenummer !== nr && incomeRef.current[nr] > 0) {
-          setCompareTarget({ kommunenummer: nr, kommunenavn: navn, income: incomeRef.current[nr] ?? null, coords: { lat: 0, lon: 0 } });
-          setShowCompare(true);
-          setCompareMode(false);
-          setCompareQuery("");
-          return;
-        }
+        if (handleCompareClick(nr, () => ({ kommunenummer: nr, kommunenavn: navn, income: incomeRef.current[nr] ?? null, coords: { lat: 0, lon: 0 } }))) return;
         highlightKommune(nr);
         setSelected({
           kommunenummer: nr,
@@ -275,7 +253,7 @@ export function IncomeMap() {
         <div className="max-w-xl mx-auto relative flex flex-col gap-2">
           <MapSearchBar
             ref={searchBarRef}
-            kommuneList={() => geoFeaturesRef.current}
+            kommuneList={() => geoFeaturesRef.current.map((f) => ({ kommunenummer: f.properties.kommunenummer, kommunenavn: f.properties.navn }))}
             onSelect={handleSearchSelect}
             placeholder="Søk etter en adresse for å finne kommunen..."
           />
@@ -317,8 +295,8 @@ export function IncomeMap() {
           >
             {showBase && (
               <TileLayer
-                url="https://cache.kartverket.no/v1/wmts/1.0.0/topograatone/default/webmercator/{z}/{y}/{x}.png"
-                attribution='&copy; <a href="https://www.kartverket.no/">Kartverket</a>'
+                url={TILE_URL_GRAATONE}
+                attribution={KV_ATTRIBUTION}
               />
             )}
             {flyTarget && <FlyTo lat={flyTarget.lat} lon={flyTarget.lon} zoom={flyTarget.zoom} />}
@@ -365,13 +343,9 @@ export function IncomeMap() {
                       else if (e.key === "Enter" && compareHighlight >= 0) {
                         e.preventDefault();
                         const k = compareResults[compareHighlight];
-                        setCompareTarget({ kommunenummer: k.kommunenummer, kommunenavn: k.kommunenavn, income: incomeRef.current[k.kommunenummer] ?? null, coords: { lat: 0, lon: 0 } });
-                        setShowCompare(true);
-                        setCompareMode(false);
-                        setCompareQuery("");
-                        setCompareHighlight(-1);
+                        selectTarget({ kommunenummer: k.properties.kommunenummer, kommunenavn: k.properties.navn, income: incomeRef.current[k.properties.kommunenummer] ?? null, coords: { lat: 0, lon: 0 } });
                       }
-                      else if (e.key === "Escape") { setCompareMode(false); setCompareQuery(""); setCompareHighlight(-1); }
+                      else if (e.key === "Escape") { cancelCompare(); }
                     }}
                     placeholder="Sammenlign med..."
                     autoComplete="off"
@@ -384,19 +358,15 @@ export function IncomeMap() {
                   {compareResults.length > 0 && (
                     <ul className="absolute top-full mt-1 left-0 right-0 bg-background rounded-xl shadow-xl border overflow-hidden z-50">
                       {compareResults.map((k, i) => (
-                        <li key={k.kommunenummer}>
+                        <li key={k.properties.kommunenummer}>
                           <button
                             onMouseDown={() => {
-                              setCompareTarget({ kommunenummer: k.kommunenummer, kommunenavn: k.kommunenavn, income: incomeRef.current[k.kommunenummer] ?? null, coords: { lat: 0, lon: 0 } });
-                              setShowCompare(true);
-                              setCompareMode(false);
-                              setCompareQuery("");
-                              setCompareHighlight(-1);
+                              selectTarget({ kommunenummer: k.properties.kommunenummer, kommunenavn: k.properties.navn, income: incomeRef.current[k.properties.kommunenummer] ?? null, coords: { lat: 0, lon: 0 } });
                             }}
                             className={`w-full text-left px-3 py-2.5 text-sm transition-colors border-b last:border-0 ${compareHighlight === i ? "bg-muted" : "hover:bg-muted"}`}
                           >
-                            <p className="font-medium">{k.kommunenavn}</p>
-                            <p className="text-[10px] text-foreground/70">{getFylke(k.kommunenummer)}</p>
+                            <p className="font-medium">{k.properties.navn}</p>
+                            <p className="text-[10px] text-foreground/70">{getFylke(k.properties.kommunenummer)}</p>
                           </button>
                         </li>
                       ))}
@@ -404,7 +374,7 @@ export function IncomeMap() {
                   )}
                 </div>
                 <button
-                  onClick={() => { setCompareMode(false); setCompareQuery(""); }}
+                  onClick={cancelCompare}
                   className="mt-2 text-xs text-foreground/70 hover:text-foreground transition-colors"
                 >
                   Avbryt
@@ -414,7 +384,7 @@ export function IncomeMap() {
               <CompactCard.Actions>
                 <CompactCard.Action primary onClick={() => setShowInfoSheet(true)} icon={<ChevronUp className="h-3.5 w-3.5" />}>Vis mer</CompactCard.Action>
                 {selected.income != null && (
-                  <CompactCard.Action onClick={() => setCompareMode(true)} icon={<ArrowLeftRight className="h-3.5 w-3.5" />}>Sammenlign</CompactCard.Action>
+                  <CompactCard.Action onClick={activateCompare} icon={<ArrowLeftRight className="h-3.5 w-3.5" />}>Sammenlign</CompactCard.Action>
                 )}
               </CompactCard.Actions>
             )}
@@ -510,7 +480,7 @@ export function IncomeMap() {
         </Sheet>
 
         {/* Comparison sheet */}
-        <Sheet open={showCompare && !!selected && !!compareTarget} onOpenChange={(open) => { if (!open) { setShowCompare(false); setCompareTarget(null); } }}>
+        <Sheet open={showCompare && !!selected && !!compareTarget} onOpenChange={(open) => { if (!open) closeCompareSheet(); }}>
           <SheetContent side="bottom" className="rounded-t-2xl max-h-[85svh] overflow-y-auto">
             {selected && compareTarget && (() => {
               const a = selected;

@@ -17,7 +17,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { MapSearchBar, type MapSearchBarHandle } from "@/components/map-search";
-import { FlyTo, DataDisclaimer, MapError, MAP_HEIGHT } from "@/lib/map-utils";
+import { FlyTo, DataDisclaimer, MapError, MAP_HEIGHT, TILE_LAYERS, useMapCore } from "@/lib/map-utils";
 import { CompactCard } from "@/components/compact-card";
 import { InfoModal } from "@/components/info-modal";
 import { TileToggle } from "@/components/tile-toggle";
@@ -41,20 +41,6 @@ interface Reservoir {
   center: { lat: number; lon: number };
 }
 
-const TILE_LAYERS = {
-  kart: {
-    label: "Kart",
-    url: "https://cache.kartverket.no/v1/wmts/1.0.0/topo/default/webmercator/{z}/{y}/{x}.png",
-    attribution: '&copy; <a href="https://www.kartverket.no/">Kartverket</a>',
-  },
-  gråtone: {
-    label: "Gråtone",
-    url: "https://cache.kartverket.no/v1/wmts/1.0.0/topograatone/default/webmercator/{z}/{y}/{x}.png",
-    attribution: '&copy; <a href="https://www.kartverket.no/">Kartverket</a>',
-  },
-} as const;
-
-type TileLayerKey = keyof typeof TILE_LAYERS;
 
 const RESERVOIR_COLOR = "var(--kv-metric)";
 
@@ -107,17 +93,15 @@ function PanToSelected({ reservoir }: { reservoir: Reservoir | null }) {
 }
 
 export function ReservoirMap() {
+  const { loading, setLoading, error, setError, tileLayer, setTileLayer } = useMapCore();
   const [reservoirs, setReservoirs] = useState<Reservoir[]>([]);
-  const [loading, setLoading] = useState(true);
   const [counting, setCounting] = useState(false);
   const [loadedCount, setLoadedCount] = useState(0);
-  const [error, setError] = useState(false);
   const [showInfo, setShowInfo] = useState(false);
   const [showInfoSheet, setShowInfoSheet] = useState(false);
   const [selected, setSelected] = useState<Reservoir | null>(null);
   const [nationalFill, setNationalFill] = useState<{ fyllingsgrad: number; kapasitet_TWh: number; fylling_TWh: number; iso_uke: number; endring: number } | null>(null);
   const [center, setCenter] = useState<{ lat: number; lon: number; zoom?: number; _t?: number } | null>(null);
-  const [tileLayer, setTileLayer] = useState<TileLayerKey>("gråtone");
   const [zoomLevel, setZoomLevel] = useState(5);
 
   const searchBarRef = useRef<MapSearchBarHandle>(null);

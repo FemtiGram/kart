@@ -145,7 +145,7 @@ export function Footer() {
           <p>© {new Date().getFullYear()} Datakart</p>
           <p>
             Bygd med{" "}
-            <span style={{ color: "var(--kv-green)" }}>&#9829;</span>
+            <span style={{ color: "var(--kv-positive)" }}>&#9829;</span>
             {" "}og{" "}
             <Link
               href="/kilder"

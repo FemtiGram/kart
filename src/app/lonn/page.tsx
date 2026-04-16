@@ -2,7 +2,7 @@ import { IncomeMapLoader } from "@/components/income-map-loader";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 
 export const metadata = {
-  title: "Inntektskart – Datakart",
+  title: "Inntektskart",
   description:
     "Median inntekt etter skatt per husholdning i alle norske kommuner. Se rangering, sammenlign kommuner og finn inntektsforskjellene på kart.",
   alternates: { canonical: "/lonn" },

@@ -30,7 +30,7 @@ src/app/
   energi/page.tsx       — Energy (wind + hydro) map
   magasin/page.tsx      — Reservoir monitor map
   prisvekst/page.tsx    — Inflation dashboard (KPI, categories, trends)
-  vindkraft/page.tsx    — Wind power plants map (standalone)
+  vindkraft/page.tsx    — Wind power plants map (unlisted deep link, not in nav/sitemap)
   kommune/page.tsx      — Kommuner index (searchable list grouped by fylke, keyboard nav)
   kommune/[slug]/page.tsx — Stedsprofil (dashboard per kommune, SSG at build time)
   kommune/[slug]/opengraph-image.tsx — Dynamic OG image per kommune
@@ -56,7 +56,13 @@ src/app/
 src/components/
   navbar.tsx            — Shared nav with grouped dropdowns (Energi/Natur/Samfunn) + mobile sheet
   *-map.tsx             — Map components (one per page)
-  *-map-loader.tsx      — Dynamic import wrappers (ssr: false)
+  *-map-loader.tsx      — Dynamic import wrappers (ssr: false), all include MapLoading skeleton
+  energy-detail-sheets.tsx — Extracted detail sheets for energy plant, oil/gas, and havvind
+  energy-map-helpers.tsx — Shared energy map helpers, icon factories, and re-exports shared TILE_LAYERS/TileLayerKey
+  health-detail-sheet.tsx — Extracted detail sheet + sub-components for /helse
+  health-map-helpers.ts — Shared types, constants, and helpers for /helse
+  kostnader-detail-sheets.tsx — Extracted detail + comparison sheets for /kostnader
+  kostnader-map-helpers.ts — Shared types, constants, and helpers for /kostnader
   inflation-dashboard.tsx — Prisvekst dashboard (Recharts charts, target badges, category breakdown)
   kommune-index.tsx     — Client component for /kommune index search + list (keyboard nav, Sami-aware)
   kommune-mini-map.tsx  — Interactive Leaflet map for Stedsprofil "Plassering" section (polygon + 6 layer pills)
@@ -64,9 +70,9 @@ src/components/
   kommune-weather.tsx   — Client weather card for Stedsprofil (fetches /api/weather)
   schools-map.tsx       — /skoler map: schools + kindergartens with independent cluster toggles
   schools-map-loader.tsx — Dynamic wrapper for schools-map (ssr: false)
-  health-map.tsx        — /helse map: fastlege choropleth (3 metric segmented control) + optional OSM marker overlay with click-to-details compact card
+  health-map.tsx        — /helse map: fastlege choropleth (3 metric segmented control) + optional OSM marker overlay with click-to-details compact card. Detail sheet in health-detail-sheet.tsx
   health-map-loader.tsx — Dynamic wrapper for health-map (ssr: false)
-  kostnader-map.tsx     — /kostnader map: cost-of-living choropleth (2 metric segmented control: gebyrer total + eiendomsskatt 120 m²) + Sammenlign comparison sheet + detail sheet with gebyr breakdown. "Ingen eiendomsskatt" rendered as positive light-green fill
+  kostnader-map.tsx     — /kostnader map: cost-of-living choropleth (2 metric segmented control: gebyrer total + eiendomsskatt 120 m²). "Ingen eiendomsskatt" rendered as positive light-green fill. Detail + comparison sheets in kostnader-detail-sheets.tsx
   kostnader-map-loader.tsx — Dynamic wrapper for kostnader-map (ssr: false)
   home-kommune-search.tsx — Client component on landing hero: diacritic-aware autocomplete over all 357 kommuner, keyboard nav, routes directly to /kommune/[slug]. Data loaded at build time via server-component prop passing
   footer.tsx            — Shared footer with three-column layout (brand / Utforsk grouped by theme / Ressurser)
@@ -75,7 +81,7 @@ src/components/
 
 src/lib/
   fylker.ts             — Hardcoded 15 counties with coords + zoom, isInNorway(), OSLO default
-  map-utils.tsx         — FlyTo, interpolateColor, DataDisclaimer, shared types (Suggestion, Address, KommuneEntry), useDebounceRef, useSearchAbort
+  map-utils.tsx         — Shared map infrastructure: TILE_LAYERS + KV_ATTRIBUTION (tile URL constants), useMapCore (loading/error/tile state), useGeolocation (navigator + fallback), useCompare<T> (Sammenlign state machine), FlyTo, interpolateColor, DataDisclaimer, shared types (Suggestion, Address, KommuneEntry, TileLayerKey), useDebounceRef, useSearchAbort
   use-hash-selection.ts — URL hash deep linking hook for selection state (#kommune-<id>, #station-<id>, etc.)
   use-initial-position.ts — Reads ?lat=&lon=&z= on mount and fires a callback (deep linking from Stedsprofil to maps)
   kommune-profiles.ts   — Reads public/data/kommune-profiles.json, exports getProfileBySlug / getAllKommuner / getTotals. Module-level cache is **mtime-invalidated** — re-stats the file on each load and reloads when the JSON's mtime changes, so rebuilding profiles via `build-kommune-profiles.mjs` in a running dev server is picked up automatically.
@@ -207,7 +213,7 @@ All maps use a **compact floating card + expandable bottom Sheet** pattern:
 - Red = low/bad, green = high/good
 - Optional "Bakgrunnskart" toggle (gråtone base layer)
 - Skeleton shimmer loading on initial data fetch
-- **Income comparison:** "Sammenlign" button on compact card opens inline search or accepts map click for second kommune. Two-column comparison sheet shows income diff, percentile bars, and vs-median stats (same pattern as bolig comparison). Uses refs (`compareModeRef`, `selectedRef`) for GeoJSON click handlers to avoid stale closures.
+- **Income comparison:** "Sammenlign" button on compact card opens inline search or accepts map click for second kommune. Two-column comparison sheet shows income diff, percentile bars, and vs-median stats (same pattern as bolig comparison). Uses the shared `useCompare<T>` hook from `map-utils.tsx` which manages comparison state, refs for GeoJSON click handlers, and inline search filtering.
 
 ### Helsetilbud map (helse):
 - **Kommune choropleth** built from SSB 12005 (`fastlege.json`). Segmented-control metric selector at the top — same visual pattern as /bolig's boligtype toggle. Three primary metrics:
@@ -218,14 +224,14 @@ All maps use a **compact floating card + expandable bottom Sheet** pattern:
 - **Optional OSM overlay** toggled via the map legend's "OSM-markører" button. When active, sykehus + legevakt markers from `health.json` render on top of the choropleth. Clicking a marker **steals the compact card slot** from any active kommune selection and shows an OSM compact card (type, operator, OSM timestamp, Ring + Se i OSM actions). Toggling the overlay off clears any pending OSM selection. Privatklinikker are in the data file but not in the overlay.
 - **Detail sheet** on "Vis mer" uses `initialFocus={detailSheetTopRef}` on the base-ui Dialog Popup — this is critical because base-ui's default focus trap focuses the first tabbable link which is near the bottom, scrolling the hero off-screen. Structural fix, not a scroll-reset race.
 - **Trend bar chart** mirrors the bolig detail sheet's inline div pattern (`flex items-end gap-[2px] h-12`). Raw SSB values are rebased to `value - min` per series so the year-to-year shape is visible within the narrow 85–120 band. Latest-year bar at full opacity, others at 0.3.
-- **18-metric stat table** in the detail sheet — each row shows the SSB label, a one-line plain-Norwegian description from `METRIC_DESCRIPTION` (inline in `health-map.tsx`), and the formatted value. Primary metric rows get a muted background tint.
+- **18-metric stat table** in the detail sheet — each row shows the SSB label, a one-line plain-Norwegian description from `METRIC_DESCRIPTION` (in `health-map-helpers.ts`), and the formatted value. Primary metric rows get a muted background tint.
 
 ### Kostnader map (kostnader):
 - **Kommune choropleth** built from `kostnader.json` (SSB 12842 + 14674). Two-metric segmented control via a bottom sheet (same pattern as /helse):
   - `gebyrerTotal` — sum of vann + avløp + avfall + feiing årsgebyr in kr/year. Every kommune has this.
   - `eiendomsskatt120m2` — SSB's standardized annual bill for a 120 m² enebolig. ~250/357 kommuner have this number; the rest either have the tax but not the standardized calc (fall back to promille in the detail sheet) or don't levy it on homes at all.
 - **"Ingen eiendomsskatt" as a positive fill**: kommuner with `hasEiendomsskatt === false` render in `--kv-positive-light` with full opacity — distinct from "no data" (muted gray) — because "no property tax" is good news for the reader, not missing data. Dedicated legend swatch explains this on the eiendomsskatt metric view.
-- **Sammenlign (comparison) sheet** mirrors the bolig/lonn pattern via `compareModeRef` + `selectedRef` refs so the GeoJSON click handler can switch between "replace A" and "pick B" without re-binding. The combined-total diff (`gebyrerTotal + eiendomsskatt120m2`) is the hero of the compare sheet — answers "how much more or less would you pay per year in X vs Y?" Kommuner without eiendomsskatt contribute 0 to the combined total (correct behavior — they save you that money).
+- **Sammenlign (comparison) sheet** uses the shared `useCompare<T>` hook from `map-utils.tsx` for the full comparison state machine (same as bolig/lonn). The combined-total diff (`gebyrerTotal + eiendomsskatt120m2`) is the hero of the compare sheet — answers "how much more or less would you pay per year in X vs Y?" Kommuner without eiendomsskatt contribute 0 to the combined total (correct behavior — they save you that money).
 - **Detail sheet** shows 2 primary stat cards + the four-fee breakdown (Vann/Avløp/Avfall/Feiing) as a mini stat list. Eiendomsskatt card has three render states: "Ingen" (positive-dark text on card), kr/år for a 120 m² house, or promille-only fallback with an italic "Kun promille rapportert" note.
 - **Year mismatch is intentional**: gebyrer uses the latest year with ≥150 kommuner populated (typically current year's preliminary SSB release); eiendomsskatt uses the latest year where `KOSskattenebolig0000` has coverage (stopped publishing after 2024). Both years are surfaced in the header strip and detail-sheet footer so the reader can see which data vintage they're looking at.
 
@@ -252,6 +258,12 @@ All maps use a **compact floating card + expandable bottom Sheet** pattern:
 - **DataDisclaimer:** Shared disclaimer component in map-utils.tsx, shown after every Kilde attribution in all detail sheets
 - **MapError:** Shared error toast with retry button, used across all maps
 - **Navigation:** Grouped dropdown nav (Energi/Natur/Samfunn) with matching landing page structure
+
+### Shared map hooks (src/lib/map-utils.tsx):
+- **TILE_LAYERS / TILE_URL_KART / TILE_URL_GRAATONE / KV_ATTRIBUTION** — Single source of truth for Kartverket tile URLs and attribution. All 12 maps import from here instead of defining local copies. Elevation map composes its custom `terreng` layer from the shared kart URL.
+- **useMapCore(defaultTile?)** — Returns `{ loading, setLoading, error, setError, tileLayer, setTileLayer }`. Used by 11/12 maps (elevation is the exception — it has granular per-action loading). Choropleths destructure only `loading`/`error` and manage `showBase` locally.
+- **useGeolocation(onSuccess, onError?)** — Returns `{ locating, locateError, locate }`. Handles navigator.geolocation with auto-dismiss error toast (4s). Used by 6 marker maps. Each caller provides its own success/error callbacks for map-specific zoom and fallback (OSLO vs Jotunheimen vs handleMapClick).
+- **useCompare<T>(selected, getId, getFeatures, hasData)** — Full comparison state machine for "Sammenlign" feature. Returns compare state, refs for GeoJSON closures, filtered search results, and action functions (activateCompare, selectTarget, cancelCompare, resetCompare, closeCompareSheet, handleCompareClick). Used by bolig, income, and kostnader maps. Generic over T so each map uses its own selected-kommune type.
 
 ## Stedsprofil (kommune pages)
 
@@ -330,7 +342,7 @@ Every new page MUST be rigged for Google Search and AI search (ChatGPT, Perplexi
 - `src/app/layout.tsx` — global metadata (title template, description, metadataBase, canonical default, openGraph, twitter card), JSON-LD WebSite schema
 - `src/app/sitemap.ts` — all pages with priority/frequency + 357 kommune URLs pulled from `getAllKommuner()`
 - `src/app/robots.ts` — allows all crawlers, points to sitemap
-- `src/app/*/opengraph-image.tsx` — dynamic OG images per page (including per-slug for kommune pages)
+- `src/app/*/opengraph-image.tsx` — dynamic OG images per page (including root landing page and per-slug for kommune pages)
 - Canonical URLs site-wide via `alternates.canonical` (resolves against `metadataBase`)
 - Google Analytics (G-T8XDP59WNK) — dedicated property for datakart.no
 - Google Search Console — site verified, sitemap submitted

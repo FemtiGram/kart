@@ -2,7 +2,7 @@ import { CabinMapLoader } from "@/components/cabin-map-loader";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 
 export const metadata = {
-  title: "Turisthytter – Datakart",
+  title: "Turisthytter",
   description:
     "Over 2 300 turisthytter og fjellhytter i Norge på kart. Se type, sengeplasser, høyde og vær fra DNT og OpenStreetMap.",
   alternates: { canonical: "/hytter" },

@@ -1,15 +1,16 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { Loader2 } from "lucide-react";
+import { MapLoading } from "@/components/map-loading";
+import { MAP_HEIGHT } from "@/lib/map-utils";
 
 const ReservoirMap = dynamic(
   () => import("@/components/reservoir-map").then((mod) => ({ default: mod.ReservoirMap })),
   {
     ssr: false,
     loading: () => (
-      <div className="flex items-center justify-center" style={{ height: "calc(100svh - 57px)" }}>
-        <Loader2 className="h-8 w-8 animate-spin" style={{ color: "var(--kv-blue)" }} />
+      <div className="flex flex-col" style={{ height: MAP_HEIGHT }}>
+        <MapLoading visible loading loadingMessage="Laster kart..." />
       </div>
     ),
   }

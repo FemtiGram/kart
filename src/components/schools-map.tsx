@@ -33,7 +33,7 @@ import { schoolIcon, kindergartenIcon, type SchoolType } from "@/components/map-
 import { SelectedHalo } from "@/components/selected-halo";
 import { useInitialPosition } from "@/lib/use-initial-position";
 import { isInNorway, OSLO } from "@/lib/fylker";
-import { FlyTo, DataDisclaimer, MapError, MAP_HEIGHT } from "@/lib/map-utils";
+import { FlyTo, DataDisclaimer, MapError, MAP_HEIGHT, TILE_LAYERS, useMapCore, useGeolocation } from "@/lib/map-utils";
 import { CompactCard } from "@/components/compact-card";
 import { InfoModal } from "@/components/info-modal";
 import { TileToggle } from "@/components/tile-toggle";
@@ -77,20 +77,6 @@ type Selected =
   | { kind: "kindergarten"; data: Kindergarten }
   | null;
 
-const TILE_LAYERS = {
-  kart: {
-    label: "Kart",
-    url: "https://cache.kartverket.no/v1/wmts/1.0.0/topo/default/webmercator/{z}/{y}/{x}.png",
-    attribution: '&copy; <a href="https://www.kartverket.no/">Kartverket</a>',
-  },
-  gråtone: {
-    label: "Gråtone",
-    url: "https://cache.kartverket.no/v1/wmts/1.0.0/topograatone/default/webmercator/{z}/{y}/{x}.png",
-    attribution: '&copy; <a href="https://www.kartverket.no/">Kartverket</a>',
-  },
-} as const;
-
-type TileLayerKey = keyof typeof TILE_LAYERS;
 
 const SCHOOL_CLUSTER_COLOR = "#6d28d9"; // purple-700
 const KINDERGARTEN_CLUSTER_COLOR = "#c2410c"; // orange-700
@@ -134,12 +120,11 @@ const SCHOOL_TYPE_LABEL: Record<SchoolType, string> = {
 };
 
 export function SchoolsMap() {
+  const { loading, setLoading, error, setError, tileLayer, setTileLayer } = useMapCore();
   const [schools, setSchools] = useState<School[]>([]);
   const [kindergartens, setKindergartens] = useState<Kindergarten[]>([]);
-  const [loading, setLoading] = useState(true);
   const [counting, setCounting] = useState(false);
   const [loadedCount, setLoadedCount] = useState(0);
-  const [error, setError] = useState(false);
 
   const [showSchools, setShowSchools] = useState(true);
   const [showKindergartens, setShowKindergartens] = useState(true);
@@ -157,13 +142,9 @@ export function SchoolsMap() {
     zoom?: number;
     _t?: number;
   } | null>(null);
-  const [tileLayer, setTileLayer] = useState<TileLayerKey>("gråtone");
   const [showFilter, setShowFilter] = useState(false);
   const [showInfo, setShowInfo] = useState(false);
   const [showInfoSheet, setShowInfoSheet] = useState(false);
-  const [locating, setLocating] = useState(false);
-  const [locateError, setLocateError] = useState(false);
-
   const kommunerRef = useRef<KommuneEntry[]>([]);
   const searchBarRef = useRef<MapSearchBarHandle>(null);
   const restoredRef = useRef(false);
@@ -348,30 +329,19 @@ export function SchoolsMap() {
     [schools, kindergartens]
   );
 
-  const handleLocate = () => {
-    if (!navigator.geolocation) return;
-    setLocating(true);
-    setLocateError(false);
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setLocating(false);
-        setSelected(null);
-        const { latitude: lat, longitude: lon } = pos.coords;
-        if (isInNorway(lat, lon)) {
-          setCenter({ lat, lon, zoom: 13, _t: Date.now() });
-        } else {
-          setCenter({ lat: OSLO.lat, lon: OSLO.lon, zoom: OSLO.zoom, _t: Date.now() });
-        }
-      },
-      () => {
-        setLocating(false);
+  const { locating, locateError, locate: handleLocate } = useGeolocation(
+    useCallback((lat, lon) => {
+      setSelected(null);
+      if (isInNorway(lat, lon)) {
+        setCenter({ lat, lon, zoom: 13, _t: Date.now() });
+      } else {
         setCenter({ lat: OSLO.lat, lon: OSLO.lon, zoom: OSLO.zoom, _t: Date.now() });
-        setLocateError(true);
-        setTimeout(() => setLocateError(false), 4000);
-      },
-      { timeout: 15000, maximumAge: 60000 }
-    );
-  };
+      }
+    }, []),
+    useCallback(() => {
+      setCenter({ lat: OSLO.lat, lon: OSLO.lon, zoom: OSLO.zoom, _t: Date.now() });
+    }, []),
+  );
 
   const filteredSchools = useMemo(() => {
     if (!showSchools) return [] as School[];
