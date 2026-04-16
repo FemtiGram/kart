@@ -835,7 +835,8 @@ function DemografiSection({ profile }: { profile: KommuneProfile }) {
 // ─── Section: Infrastruktur ──────────────────────────────────
 
 function SkoleSection({ profile }: { profile: KommuneProfile }) {
-  const { schools, kindergartens, centroid } = profile;
+  const { schools, kindergartens, nasjonaleProver, centroid } = profile;
+  const totals = getTotals();
   const href = `/skoler?lat=${centroid.lat.toFixed(4)}&lon=${centroid.lon.toFixed(4)}&z=12`;
   if (schools.total === 0 && kindergartens.total === 0) {
     return (
@@ -873,9 +874,51 @@ function SkoleSection({ profile }: { profile: KommuneProfile }) {
           }
         />
       </div>
+
+      {/* ── Nasjonale prøver ── */}
+      {nasjonaleProver && (
+        <div className="mt-5">
+          <div className="flex items-baseline gap-2 mb-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Nasjonale prøver — 8. trinn ({nasjonaleProver.year})
+            </p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {nasjonaleProver.grunnskolepoeng != null && (
+              <Stat
+                label="Grunnskolepoeng"
+                value={nasjonaleProver.grunnskolepoeng.toFixed(1).replace(".", ",")}
+                context="Snitt alle fag"
+                contextRight={fmtRank(profile.ranks.grunnskolepoeng, totals.grunnskolepoengTotal)}
+              />
+            )}
+            {nasjonaleProver.lesing != null && (
+              <Stat
+                label="Lesing"
+                value={`${nasjonaleProver.lesing.toFixed(1).replace(".", ",")}\u00a0%`}
+                context="Mestringsnivå 3–5"
+              />
+            )}
+            {nasjonaleProver.regning != null && (
+              <Stat
+                label="Regning"
+                value={`${nasjonaleProver.regning.toFixed(1).replace(".", ",")}\u00a0%`}
+                context="Mestringsnivå 3–5"
+              />
+            )}
+          </div>
+          <p className="text-xs text-muted-foreground mt-3 leading-relaxed">
+            Nasjonale prøver måler elevenes grunnleggende ferdigheter i lesing og regning på 8. trinn.
+            Andelen viser hvor mange som presterer på mestringsnivå 3–5 (av 5). Grunnskolepoeng
+            er snittet av alle standpunktkarakterer og eksamenskarakterer, og brukes ved opptak til videregående.
+            Kilde: SSB tabell 12255. Kommuner med få elever er skjermet av personvern.
+          </p>
+        </div>
+      )}
+
       {schools.top.length > 0 && (
         <div className="mt-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-foreground/70 mb-2">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
             Største skoler
           </p>
           <div className="rounded-2xl border bg-card overflow-hidden">
@@ -889,7 +932,7 @@ function SkoleSection({ profile }: { profile: KommuneProfile }) {
                   <GraduationCap className="h-4 w-4 shrink-0 text-muted-foreground" />
                   <span className="font-medium truncate">{s.name}</span>
                 </div>
-                <span className="tabular-nums text-foreground/70 shrink-0 ml-3">
+                <span className="tabular-nums text-muted-foreground shrink-0 ml-3">
                   {s.students != null ? `${fmtNumber(s.students)} elever` : "–"}
                 </span>
               </Link>

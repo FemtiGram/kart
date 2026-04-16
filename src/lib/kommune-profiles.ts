@@ -230,6 +230,26 @@ export interface DemografiSummary {
   } | null;
 }
 
+/**
+ * Nasjonale prøver — standardized test scores for 8th graders from SSB
+ * table 12255 (KOSTRA). Lesing and regning are the % of students at
+ * mestringsnivå 3–5. Grunnskolepoeng is the average total grade points.
+ *
+ * ~320/357 kommuner have data; the rest are suppressed by SSB because
+ * too few students participated (privacy). Null when no data exists.
+ */
+export interface NasjonaleProverSummary {
+  year: string;
+  /** % elever på mestringsnivå 3–5 i lesing, 8. trinn */
+  lesing: number | null;
+  /** % elever på mestringsnivå 3–5 i regning, 8. trinn */
+  regning: number | null;
+  /** Gjennomsnittlig grunnskolepoeng */
+  grunnskolepoeng: number | null;
+  lesingTrend: Array<{ year: string; value: number }>;
+  regningTrend: Array<{ year: string; value: number }>;
+}
+
 export interface CostSummary {
   eiendomsskatt: {
     has: boolean;
@@ -273,6 +293,7 @@ export interface KommuneProfile {
   reservoirs: ReservoirSummary;
   energy: EnergySummary;
   schools: SchoolSummary;
+  nasjonaleProver: NasjonaleProverSummary | null;
   kindergartens: KindergartenSummary;
   health: HealthSummary;
   cost: CostSummary;
@@ -291,6 +312,7 @@ export interface KommuneProfile {
     andelUtenLege: number | null;
     listelengde: number | null;
     gebyrTotal: number | null;
+    grunnskolepoeng: number | null;
   };
   /** Auto-generated 3-sentence narrative summary, built in
    *  scripts/generate-snapshot.mjs. Baked in at build time. */
@@ -304,6 +326,7 @@ interface ProfilesFile {
     popTotal: number;
     incomeTotal: number;
     boligTotal: number;
+    grunnskolepoengTotal: number;
   };
   profiles: Record<string, KommuneProfile>;
 }
