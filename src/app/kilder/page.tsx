@@ -190,7 +190,7 @@ export default function KilderPage() {
                     {source.usedIn.map((map) => (
                       <span
                         key={map}
-                        className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-muted text-foreground/70"
+                        className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground"
                       >
                         {map}
                       </span>

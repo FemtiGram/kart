@@ -151,7 +151,7 @@ function CompactCardLink({
               {description}
             </p>
           </div>
-          <ArrowRight className="h-4 w-4 text-foreground/50 shrink-0 group-hover:text-foreground group-hover:translate-x-0.5 transition-all" />
+          <ArrowRight className="h-4 w-4 text-muted-foreground shrink-0 group-hover:text-foreground group-hover:translate-x-0.5 transition-all" />
         </Link>
       </HoverLift>
     </FadeIn>

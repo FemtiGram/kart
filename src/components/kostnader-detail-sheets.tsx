@@ -93,10 +93,10 @@ export function DetailSheetBody({
             >
               Ingen
             </p>
-            <p className="mt-1.5 text-[10px] font-semibold uppercase tracking-wide text-foreground/70">
+            <p className="mt-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
               Eiendomsskatt
             </p>
-            <p className="mt-0.5 text-[10px] text-foreground/70">
+            <p className="mt-0.5 text-[10px] text-muted-foreground">
               Ikke innført
             </p>
           </div>
@@ -225,15 +225,15 @@ function PrimaryStat({
       >
         {displayValue}
       </p>
-      <p className="mt-1.5 text-[10px] font-semibold uppercase tracking-wide text-foreground/70">
+      <p className="mt-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
         {label}
       </p>
       {value != null && rank ? (
-        <p className="mt-0.5 text-[10px] text-foreground/70 tabular-nums">
+        <p className="mt-0.5 text-[10px] text-muted-foreground tabular-nums">
           #{rank.rank}/{rank.total}
         </p>
       ) : value == null && fallbackLabel ? (
-        <p className="mt-0.5 text-[10px] text-foreground/70">{fallbackLabel}</p>
+        <p className="mt-0.5 text-[10px] text-muted-foreground">{fallbackLabel}</p>
       ) : null}
     </div>
   );
@@ -333,7 +333,7 @@ export function CompareSheetBody({
                 ? `${totalA.toLocaleString("nb-NO", { maximumFractionDigits: 0 })}\u00a0kr`
                 : "–"}
             </span>
-            <p className="text-[10px] text-foreground/70">per år</p>
+            <p className="text-[10px] text-muted-foreground">per år</p>
           </div>
           <div>
             <span
@@ -344,7 +344,7 @@ export function CompareSheetBody({
                 ? `${totalB.toLocaleString("nb-NO", { maximumFractionDigits: 0 })}\u00a0kr`
                 : "–"}
             </span>
-            <p className="text-[10px] text-foreground/70">per år</p>
+            <p className="text-[10px] text-muted-foreground">per år</p>
           </div>
         </div>
         {diff != null && diff !== 0 && (
@@ -511,7 +511,7 @@ export function EiendomsskattCompareCell({
         >
           Ingen
         </span>
-        <p className="text-[10px] text-foreground/70 mt-0.5">Ikke innført</p>
+        <p className="text-[10px] text-muted-foreground mt-0.5">Ikke innført</p>
       </div>
     );
   }
@@ -522,7 +522,7 @@ export function EiendomsskattCompareCell({
     return (
       <div>
         <MetricCell value={entry.latest.eiendomsskattPromille} unit="‰" />
-        <p className="text-[10px] text-foreground/70 mt-0.5">
+        <p className="text-[10px] text-muted-foreground mt-0.5">
           Kun promille rapportert
         </p>
       </div>

@@ -500,8 +500,8 @@ export function ProtectedAreasMap() {
                         </div>
                       </div>
                       <div className="flex justify-between mt-1">
-                        <span className="text-[10px] text-foreground/70">0%</span>
-                        <span className="text-[10px] text-foreground/70 flex items-center gap-1">
+                        <span className="text-[10px] text-muted-foreground">0%</span>
+                        <span className="text-[10px] text-muted-foreground flex items-center gap-1">
                           <span className="inline-block w-2 h-0.5 rounded-full bg-foreground/50" />
                           Snitt {stats.nationalPct.toFixed(1).replace(".", ",")}%
                         </span>

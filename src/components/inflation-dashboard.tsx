@@ -199,7 +199,7 @@ export function InflationDashboard() {
       <div className="grid grid-cols-1 gap-3">
         {/* KPI */}
         <div className="relative rounded-2xl border bg-card p-5 shadow-sm">
-          <button onClick={() => setInfoModal("kpi")} className="absolute top-4 right-4 p-1.5 rounded-md text-muted-foreground/50 hover:text-muted-foreground transition-colors">
+          <button onClick={() => setInfoModal("kpi")} aria-label="Mer informasjon om KPI" className="absolute top-4 right-4 p-1.5 rounded-md text-muted-foreground/50 hover:text-muted-foreground transition-colors">
             <Info className="h-3.5 w-3.5" />
           </button>
           <div className="flex items-baseline justify-between gap-2 pr-7">
@@ -225,7 +225,7 @@ export function InflationDashboard() {
 
         {/* KPI-JAE */}
         <div className="relative rounded-2xl border bg-card p-5 shadow-sm">
-          <button onClick={() => setInfoModal("jae")} className="absolute top-4 right-4 p-1.5 rounded-md text-muted-foreground/50 hover:text-muted-foreground transition-colors">
+          <button onClick={() => setInfoModal("jae")} aria-label="Mer informasjon om KPI-JAE" className="absolute top-4 right-4 p-1.5 rounded-md text-muted-foreground/50 hover:text-muted-foreground transition-colors">
             <Info className="h-3.5 w-3.5" />
           </button>
           <div className="flex items-baseline justify-between gap-2 pr-7">
@@ -244,7 +244,7 @@ export function InflationDashboard() {
 
         {/* Styringsrente */}
         <div className="relative rounded-2xl border bg-card p-5 shadow-sm">
-          <button onClick={() => setInfoModal("rente")} className="absolute top-4 right-4 p-1.5 rounded-md text-muted-foreground/50 hover:text-muted-foreground transition-colors">
+          <button onClick={() => setInfoModal("rente")} aria-label="Mer informasjon om styringsrente" className="absolute top-4 right-4 p-1.5 rounded-md text-muted-foreground/50 hover:text-muted-foreground transition-colors">
             <Info className="h-3.5 w-3.5" />
           </button>
           <div className="flex items-baseline justify-between gap-2 pr-7">
@@ -288,7 +288,7 @@ export function InflationDashboard() {
                 {infoModal === "jae" && "Hva er KPI-JAE?"}
                 {infoModal === "rente" && "Hva er styringsrenten?"}
               </h2>
-              <button onClick={() => setInfoModal(null)} className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
+              <button onClick={() => setInfoModal(null)} aria-label="Lukk" className="p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
                 <X className="h-4 w-4" />
               </button>
             </div>
@@ -365,19 +365,19 @@ export function InflationDashboard() {
                   <div className="px-4 pb-3 border-t">
                     <div className="grid grid-cols-2 gap-3 mt-3">
                       <div>
-                        <p className="text-[10px] text-foreground/70">12-månedersendring</p>
+                        <p className="text-[10px] text-muted-foreground">12-månedersendring</p>
                         <p className={`text-lg font-bold ${changeColor(cat.change12m)}`}>
                           {cat.change12m != null ? `${cat.change12m > 0 ? "+" : ""}${cat.change12m.toFixed(1)}%` : "–"}
                         </p>
                       </div>
                       <div>
-                        <p className="text-[10px] text-foreground/70">Siste måned</p>
+                        <p className="text-[10px] text-muted-foreground">Siste måned</p>
                         <p className={`text-lg font-bold ${changeColor(cat.change1m)}`}>
                           {cat.change1m != null ? `${cat.change1m > 0 ? "+" : ""}${cat.change1m.toFixed(1)}%` : "–"}
                         </p>
                       </div>
                     </div>
-                    <p className="text-[10px] text-foreground/70 mt-2 italic">{cat.name}</p>
+                    <p className="text-[10px] text-muted-foreground mt-2 italic">{cat.name}</p>
                   </div>
                 )}
               </button>
@@ -489,7 +489,7 @@ export function InflationDashboard() {
         <p className="text-xs text-foreground/70 text-center">
           Kilder: <a href="https://www.ssb.no/statbank/table/03013/" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">SSB Tabell 03013</a> (KPI) · <a href="https://www.ssb.no/statbank/table/05327/" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">SSB Tabell 05327</a> (KPI-JAE) · <a href="https://www.norges-bank.no" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Norges Bank</a> (styringsrente) · <a href="https://ec.europa.eu/eurostat" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Eurostat</a> (HICP)
         </p>
-        <p className="text-[10px] text-foreground/70 text-center mt-1">
+        <p className="text-[10px] text-muted-foreground text-center mt-1">
           Data kan inneholde feil og bør ikke brukes som eneste kilde for beslutninger.
         </p>
       </div>

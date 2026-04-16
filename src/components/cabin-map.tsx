@@ -409,7 +409,7 @@ export function CabinMap() {
                 </div>
               </SheetContent>
             </Sheet>
-            <Button onClick={handleLocate} disabled={locating || loading} variant="secondary" size="icon" className="shadow-lg shrink-0 h-11 w-11 rounded-xl">
+            <Button onClick={handleLocate} disabled={locating || loading} variant="secondary" size="icon" aria-label="Min posisjon" className="shadow-lg shrink-0 h-11 w-11 rounded-xl">
               {locating ? <Loader2 className="h-4 w-4 animate-spin" /> : <LocateFixed className="h-4 w-4" />}
             </Button>
             </MapSearchBar>

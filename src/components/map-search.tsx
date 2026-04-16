@@ -254,14 +254,28 @@ export const MapSearchBar = forwardRef<MapSearchBarHandle, MapSearchBarProps>(
             autoCapitalize="off"
             spellCheck={false}
             enterKeyHint="search"
-            className="flex-1 bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground text-[16px] sm:text-sm"
+            role="combobox"
+            aria-expanded={showDropdown && deferredSuggestions.length > 0}
+            aria-controls="search-results"
+            aria-autocomplete="list"
+            aria-activedescendant={
+              highlightedIndex >= 0
+                ? `search-result-${highlightedIndex}`
+                : undefined
+            }
+            className="flex-1 bg-transparent outline-none focus-visible:ring-2 focus-visible:ring-ring text-sm text-foreground placeholder:text-muted-foreground text-[16px] sm:text-sm"
           />
         </div>
         {children}
         {showDropdown && deferredSuggestions.length > 0 && (
-          <ul className="absolute top-full mt-1 left-0 right-0 bg-background rounded-xl shadow-xl border overflow-hidden z-50">
+          <ul
+            id="search-results"
+            role="listbox"
+            aria-label="Søkeresultater"
+            className="absolute top-full mt-1 left-0 right-0 bg-background rounded-xl shadow-xl border overflow-hidden z-50"
+          >
             {deferredSuggestions.map((sug, i) => (
-              <li key={i}>
+              <li key={i} role="option" aria-selected={highlightedIndex === i} id={`search-result-${i}`}>
                 <button
                   onMouseDown={() => handleSelect(sug)}
                   className={`w-full text-left px-4 py-3 text-sm flex items-start gap-3 transition-colors border-b last:border-0 ${highlightedIndex === i ? "bg-muted" : "hover:bg-muted"}`}

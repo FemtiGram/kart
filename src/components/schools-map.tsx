@@ -612,6 +612,7 @@ export function SchoolsMap() {
               disabled={locating || loading}
               variant="secondary"
               size="icon"
+              aria-label="Min posisjon"
               className="shadow-lg shrink-0 h-11 w-11 rounded-xl"
             >
               {locating ? (
@@ -875,7 +876,7 @@ export function SchoolsMap() {
                           ? (selected.data.students ?? "–")
                           : (selected.data.children ?? "–")}
                       </span>
-                      <p className="text-[10px] text-foreground/70">
+                      <p className="text-[10px] text-muted-foreground">
                         {selected.kind === "school" ? "elever" : "barn"}
                       </p>
                     </div>
@@ -890,7 +891,7 @@ export function SchoolsMap() {
                             selected.data.gradeTo
                           )?.replace(" trinn", "") ?? "–"}
                         </span>
-                        <p className="text-[10px] text-foreground/70">trinn</p>
+                        <p className="text-[10px] text-muted-foreground">trinn</p>
                       </div>
                     )}
                   </div>

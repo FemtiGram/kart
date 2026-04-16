@@ -153,7 +153,7 @@ export function HomeKommuneSearch({
                   highlighted === i ? "bg-muted" : "hover:bg-muted"
                 }`}
               >
-                <MapPin className="h-4 w-4 shrink-0 text-foreground/50" />
+                <MapPin className="h-4 w-4 shrink-0 text-muted-foreground" />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold truncate">
                     {k.displayName}
@@ -164,7 +164,7 @@ export function HomeKommuneSearch({
                     </p>
                   )}
                 </div>
-                <ArrowRight className="h-4 w-4 shrink-0 text-foreground/40 group-hover:text-foreground transition-colors" />
+                <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground group-hover:text-foreground transition-colors" />
               </button>
             </li>
           ))}

@@ -89,7 +89,7 @@ export function Footer() {
             </h3>
             {utforskGroups.map((group) => (
               <div key={group.label} className="flex flex-col gap-2">
-                <p className="text-[11px] font-semibold uppercase tracking-wide text-foreground/50">
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                   {group.label}
                 </p>
                 <ul className="flex flex-col gap-1.5">

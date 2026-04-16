@@ -330,7 +330,7 @@ export function IncomeMap() {
             </CompactCard.Context>
             {compareMode ? (
               <CompactCard.Custom>
-                <p className="text-[10px] text-foreground/70 mb-1.5">Velg en kommune å sammenligne med, eller klikk på kartet.</p>
+                <p className="text-[10px] text-muted-foreground mb-1.5">Velg en kommune å sammenligne med, eller klikk på kartet.</p>
                 <div className="relative">
                   <input
                     autoFocus={typeof window !== "undefined" && window.innerWidth >= 640}
@@ -353,7 +353,7 @@ export function IncomeMap() {
                     autoCapitalize="off"
                     spellCheck={false}
                     enterKeyHint="search"
-                    className="w-full bg-muted border rounded-xl px-3 py-2.5 text-sm outline-none placeholder:text-muted-foreground text-[16px] sm:text-sm"
+                    className="w-full bg-muted border rounded-xl px-3 py-2.5 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring placeholder:text-muted-foreground text-[16px] sm:text-sm"
                   />
                   {compareResults.length > 0 && (
                     <ul className="absolute top-full mt-1 left-0 right-0 bg-background rounded-xl shadow-xl border overflow-hidden z-50">
@@ -366,7 +366,7 @@ export function IncomeMap() {
                             className={`w-full text-left px-3 py-2.5 text-sm transition-colors border-b last:border-0 ${compareHighlight === i ? "bg-muted" : "hover:bg-muted"}`}
                           >
                             <p className="font-medium">{k.properties.navn}</p>
-                            <p className="text-[10px] text-foreground/70">{getFylke(k.properties.kommunenummer)}</p>
+                            <p className="text-[10px] text-muted-foreground">{getFylke(k.properties.kommunenummer)}</p>
                           </button>
                         </li>
                       ))}
@@ -436,8 +436,8 @@ export function IncomeMap() {
                         />
                       </div>
                       <div className="flex justify-between mt-0.5">
-                        <span className="text-[10px] text-foreground/70">{formatKr(min)}</span>
-                        <span className="text-[10px] text-foreground/70">{formatKr(max)}</span>
+                        <span className="text-[10px] text-muted-foreground">{formatKr(min)}</span>
+                        <span className="text-[10px] text-muted-foreground">{formatKr(max)}</span>
                       </div>
                       <div className="mt-3 flex items-center justify-between gap-2">
                         <span className="text-xs text-foreground/70">#{rank} av {total} kommuner</span>
@@ -526,13 +526,13 @@ export function IncomeMap() {
                         <span className="text-2xl font-extrabold" style={{ color: "var(--kv-blue)" }}>
                           {incomeA ? formatKr(incomeA) : "–"}
                         </span>
-                        <p className="text-[10px] text-foreground/70">median inntekt</p>
+                        <p className="text-[10px] text-muted-foreground">median inntekt</p>
                       </div>
                       <div>
                         <span className="text-2xl font-extrabold" style={{ color: "var(--kv-blue)" }}>
                           {incomeB ? formatKr(incomeB) : "–"}
                         </span>
-                        <p className="text-[10px] text-foreground/70">median inntekt</p>
+                        <p className="text-[10px] text-muted-foreground">median inntekt</p>
                       </div>
                     </div>
                     {diff != null && (
@@ -581,7 +581,7 @@ export function IncomeMap() {
                           <span className="text-sm font-bold" style={{ color: item.stats.vsMedian >= 0 ? "var(--kv-positive)" : "var(--kv-negative)" }}>
                             {item.stats.vsMedian >= 0 ? "+" : ""}{item.stats.vsMedian.toFixed(1)}%
                           </span>
-                          <p className="text-[10px] text-foreground/70">vs. medianen ({formatKr(item.stats.medianIncome)})</p>
+                          <p className="text-[10px] text-muted-foreground">vs. medianen ({formatKr(item.stats.medianIncome)})</p>
                         </div>
                       ))}
                     </div>
@@ -613,8 +613,8 @@ export function IncomeMap() {
                 style={{ background: "linear-gradient(to right, var(--kv-negative), #facc15, var(--kv-positive))" }}
               />
               <div className="flex justify-between mt-0.5">
-                <span className="text-[10px] text-foreground/70">{formatKr(min)}</span>
-                <span className="text-[10px] text-foreground/70">{formatKr(max)}</span>
+                <span className="text-[10px] text-muted-foreground">{formatKr(min)}</span>
+                <span className="text-[10px] text-muted-foreground">{formatKr(max)}</span>
               </div>
             </div>
             <button
