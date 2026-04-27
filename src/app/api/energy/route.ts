@@ -1,6 +1,11 @@
 import { utmToLatLon } from "@/lib/utm";
 
-const NVE_BASE = "https://nve.geodataonline.no/arcgis/rest/services";
+// NVE migrated their ArcGIS REST endpoint from `nve.geodataonline.no` to
+// `kart.nve.no/enterprise/...` in 2026 — same layer numbering but all
+// attribute names are now lowercase (e.g. `anleggnavn` instead of
+// `anleggNavn`). Update both the URL and the field accessors below if
+// switching back to the old host for any reason.
+const NVE_BASE = "https://kart.nve.no/enterprise/rest/services";
 const SODIR_BASE = "https://factmaps.sodir.no/api/rest/services/Factmaps/FactMapsWGS84/MapServer";
 const QUERY = "query?where=1%3D1&outFields=*&returnGeometry=true&f=json&resultRecordCount=2000";
 
@@ -131,18 +136,18 @@ export async function GET() {
         const a = f.attributes;
         const { lat, lon } = utmToLatLon(f.geometry.x, f.geometry.y);
         plants.push({
-          id: a.OBJECTID as number,
-          name: (a.anleggNavn as string) ?? "Ukjent vindkraftverk",
+          id: a.objectid as number,
+          name: (a.anleggnavn as string) ?? "Ukjent vindkraftverk",
           owner: (a.eier as string) ?? null,
           municipality: (a.kommune as string) ?? null,
-          county: (a.fylkeNavn as string) ?? null,
+          county: (a.fylkenavn as string) ?? null,
           lat,
           lon,
-          capacityMW: (a.effekt_MW_idrift as number) ?? (a.effekt_MW as number) ?? null,
-          productionGWh: (a.forventetProduksjon_Gwh as number) ?? null,
+          capacityMW: (a.effekt_mw_idrift as number) ?? (a.effekt_mw as number) ?? null,
+          productionGWh: (a.forventetproduksjon_gwh as number) ?? null,
           type: "vind",
           windStatus: status,
-          turbineCount: (a.antallTurbiner as number) ?? null,
+          turbineCount: (a.antallturbiner as number) ?? null,
         });
       }
     }
@@ -161,10 +166,10 @@ export async function GET() {
         const a = f.attributes;
         const { lat, lon } = utmToLatLon(f.geometry.x, f.geometry.y);
         turbines.push({
-          id: a.OBJECTID as number,
+          id: a.objectid as number,
           lat,
           lon,
-          plantName: (a.anleggNavn as string) ?? null,
+          plantName: (a.anleggnavn as string) ?? null,
         });
       }
     }
@@ -179,19 +184,19 @@ export async function GET() {
         if (a.status !== "D") continue;
         const { lat, lon } = utmToLatLon(f.geometry.x, f.geometry.y);
         plants.push({
-          id: 100000 + ((a.OBJECTID as number) ?? (a.vannkraftverkNr as number)),
-          name: (a.vannkraftverkNavn as string) ?? "Ukjent vannkraftverk",
-          owner: (a.vannkraftverkEier as string) ?? null,
-          municipality: (a.kommuneNavn as string) ?? null,
+          id: 100000 + ((a.objectid as number) ?? (a.vannkraftverknr as number)),
+          name: (a.vannkraftverknavn as string) ?? "Ukjent vannkraftverk",
+          owner: (a.vannkraftverkeier as string) ?? null,
+          municipality: (a.kommunenavn as string) ?? null,
           county: (a.fylke as string) ?? null,
           lat,
           lon,
-          capacityMW: (a.maksYtelse_MW as number) ?? null,
+          capacityMW: (a.maksytelse_mw as number) ?? null,
           productionGWh: null, // not in hydro data
           type: "vann",
-          fallHeight: (a.bruttoFallhoyde_m as number) ?? null,
-          yearBuilt: (a.idriftsattAar as number) ?? null,
-          river: (a.elvenavnHierarki as string) ?? null,
+          fallHeight: (a.bruttofallhoyde_m as number) ?? null,
+          yearBuilt: (a.idriftsattaar as number) ?? null,
+          river: (a.elvenavnhierarki as string) ?? null,
         });
       }
     }
@@ -226,12 +231,12 @@ export async function GET() {
         const centerLon = firstRing.reduce((s, c) => s + c[1], 0) / firstRing.length;
 
         havvindZones.push({
-          id: a.OBJECTID,
+          id: a.objectid,
           name: a.navn ?? "Ukjent havvindområde",
-          typeAnlegg: a.typeAnlegg ?? "Ukjent",
+          typeAnlegg: a.typeanlegg ?? "Ukjent",
           arealKm2: a.areal_km2 ?? null,
-          minDistanceKm: a.minAvstandFastland_km ?? null,
-          nveUrl: a.nettsideURL ?? null,
+          minDistanceKm: a.minavstandfastland_km ?? null,
+          nveUrl: a.nettsideurl ?? null,
           center: { lat: centerLat, lon: centerLon },
           polygon: wgsRings,
         });
