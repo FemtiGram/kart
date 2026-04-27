@@ -934,7 +934,10 @@ function utmToLatLon(easting, northing) {
 
 async function fetchEnergyPlants() {
   console.log("  Fetching NVE hydro + operational wind...");
-  const NVE = "https://nve.geodataonline.no/arcgis/rest/services";
+  // NVE migrated their ArcGIS REST endpoint from `nve.geodataonline.no` to
+  // `kart.nve.no/enterprise/...` in 2026 — same layer numbering, but
+  // attribute names are now lowercase (anleggnavn, effekt_mw_idrift, etc.).
+  const NVE = "https://kart.nve.no/enterprise/rest/services";
   const QUERY =
     "query?where=1%3D1&outFields=*&returnGeometry=true&f=json&resultRecordCount=2000";
   const [windRes, hydroRes] = await Promise.all([
@@ -953,11 +956,11 @@ async function fetchEnergyPlants() {
       const a = f.attributes;
       const { lat, lon } = utmToLatLon(f.geometry.x, f.geometry.y);
       plants.push({
-        id: a.OBJECTID,
-        name: a.anleggNavn ?? "Ukjent vindkraftverk",
+        id: a.objectid,
+        name: a.anleggnavn ?? "Ukjent vindkraftverk",
         type: "vind",
         capacityMW:
-          a.effekt_MW_idrift ?? a.effekt_MW ?? null,
+          a.effekt_mw_idrift ?? a.effekt_mw ?? null,
         lat,
         lon,
       });
@@ -971,10 +974,10 @@ async function fetchEnergyPlants() {
       if (a.status !== "D") continue; // Drift (operational) only
       const { lat, lon } = utmToLatLon(f.geometry.x, f.geometry.y);
       plants.push({
-        id: 100000 + (a.OBJECTID ?? a.vannkraftverkNr ?? 0),
-        name: a.vannkraftverkNavn ?? "Ukjent vannkraftverk",
+        id: 100000 + (a.objectid ?? a.vannkraftverknr ?? 0),
+        name: a.vannkraftverknavn ?? "Ukjent vannkraftverk",
         type: "vann",
-        capacityMW: a.maksYtelse_MW ?? null,
+        capacityMW: a.maksytelse_mw ?? null,
         lat,
         lon,
       });

@@ -1047,7 +1047,7 @@ export function EnergyMap() {
                 </div>
                 <p className="text-xs text-foreground/70">
                   Data oppdateres hver time. Kilde:{" "}
-                  <a href="https://nve.geodataonline.no/arcgis/rest/services/" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">NVE Geodata</a>{" · "}
+                  <a href="https://kart.nve.no/enterprise/rest/services/" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">NVE Geodata</a>{" · "}
                   <a href="https://www.sodir.no/en/facts/data-and-analyses/open-data/" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Sodir</a>
                 </p>
                 <DataDisclaimer />

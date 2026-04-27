@@ -422,7 +422,7 @@ export function ReservoirMap() {
                 <div className="mt-4 pt-4 border-t flex flex-col gap-3">
                   <DriveLink lat={selected.center.lat} lon={selected.center.lon} />
                   <p className="text-xs text-foreground/70 text-center">
-                    Kilde: <a href="https://nve.geodataonline.no/arcgis/rest/services/" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">NVE Geodata</a>
+                    Kilde: <a href="https://kart.nve.no/enterprise/rest/services/" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">NVE Geodata</a>
                   </p>
                   <DataDisclaimer />
                 </div>
@@ -444,7 +444,7 @@ export function ReservoirMap() {
           <p className="text-muted-foreground">Magasinets totale lagringskapasitet i millioner kubikkmeter vann.</p>
         </div>
         <p className="text-xs text-foreground/70">
-          Kilde: <a href="https://nve.geodataonline.no/arcgis/rest/services/" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">NVE Geodata</a> · <a href="https://www.nve.no/energi/energisystem/magasinstatistikk/" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">NVE Magasinstatistikk</a>
+          Kilde: <a href="https://kart.nve.no/enterprise/rest/services/" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">NVE Geodata</a> · <a href="https://www.nve.no/energi/energisystem/magasinstatistikk/" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">NVE Magasinstatistikk</a>
         </p>
         <DataDisclaimer />
       </InfoModal>

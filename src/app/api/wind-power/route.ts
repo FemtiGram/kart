@@ -1,16 +1,20 @@
 import { utmToLatLon } from "@/lib/utm";
 
+// NVE migrated their ArcGIS REST endpoint from `nve.geodataonline.no` to
+// `kart.nve.no/enterprise/...` in 2026 — same layer numbering but all
+// attribute names are now lowercase (e.g. `anleggnavn` instead of
+// `anleggNavn`).
 interface ArcGISFeature {
   attributes: {
-    OBJECTID: number;
-    anleggNavn: string;
+    objectid: number;
+    anleggnavn: string;
     eier: string | null;
     kommune: string | null;
-    fylkeNavn: string | null;
-    effekt_MW: number | null;
-    effekt_MW_idrift: number | null;
-    forventetProduksjon_Gwh: number | null;
-    antallTurbiner: number | null;
+    fylkenavn: string | null;
+    effekt_mw: number | null;
+    effekt_mw_idrift: number | null;
+    forventetproduksjon_gwh: number | null;
+    antallturbiner: number | null;
     status: string | null;
   };
   geometry: {
@@ -23,7 +27,7 @@ export async function GET() {
   try {
     // Use NVE ArcGIS service — has exact coordinates (UTM zone 33N)
     const url =
-      "https://nve.geodataonline.no/arcgis/rest/services/Vindkraft2/MapServer/0/query" +
+      "https://kart.nve.no/enterprise/rest/services/Vindkraft2/MapServer/0/query" +
       "?where=1%3D1&outFields=*&returnGeometry=true&f=json&resultRecordCount=200";
 
     const res = await fetch(url, {
@@ -50,16 +54,16 @@ export async function GET() {
         const a = f.attributes;
         const { lat, lon } = utmToLatLon(f.geometry.x, f.geometry.y);
         return {
-          id: a.OBJECTID,
-          name: a.anleggNavn ?? "Ukjent",
+          id: a.objectid,
+          name: a.anleggnavn ?? "Ukjent",
           owner: a.eier ?? null,
           municipality: a.kommune ?? null,
-          county: a.fylkeNavn ?? null,
+          county: a.fylkenavn ?? null,
           lat,
           lon,
-          capacityMW: a.effekt_MW_idrift ?? a.effekt_MW ?? null,
-          turbineCount: a.antallTurbiner ?? null,
-          productionGWh: a.forventetProduksjon_Gwh ?? null,
+          capacityMW: a.effekt_mw_idrift ?? a.effekt_mw ?? null,
+          turbineCount: a.antallturbiner ?? null,
+          productionGWh: a.forventetproduksjon_gwh ?? null,
           status: "I drift",
         };
       });

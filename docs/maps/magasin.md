@@ -10,7 +10,7 @@ Route: `/magasin`
 
 | Source | Endpoint | Data | Cache |
 |--------|----------|------|-------|
-| NVE Vannkraft1 layer 6 | `nve.geodataonline.no/arcgis/rest/services/Vannkraft1/MapServer/6` | Reservoir polygons with HRV/LRV, volume, area | 1h server |
+| NVE Vannkraft1 layer 6 | `kart.nve.no/enterprise/rest/services/Vannkraft1/MapServer/6` | Reservoir polygons with HRV/LRV, volume, area | 1h server |
 | NVE Magasinstatistikk | `biapi.nve.no/magasinstatistikk/api/Magasinstatistikk/HentOffentligData` | National weekly fill level (%) and TWh | 1h server |
 | NVE HydAPI | `hydapi.nve.no` | Live discharge (m³/s), water level, percentiles | Per-request (requires `NVE_API_KEY`) |
 

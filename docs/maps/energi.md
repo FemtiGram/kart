@@ -10,7 +10,7 @@ Route: `/energi`
 
 | Source | Endpoint | Data | Cache |
 |--------|----------|------|-------|
-| NVE Vindkraft2 layer 0 | `nve.geodataonline.no/arcgis/rest/services/Vindkraft2/MapServer/0` | Operational wind farms | 1h server |
+| NVE Vindkraft2 layer 0 | `kart.nve.no/enterprise/rest/services/Vindkraft2/MapServer/0` | Operational wind farms | 1h server |
 | NVE Vindkraft2 layer 1 | `.../Vindkraft2/MapServer/1` | Wind farms under construction | 1h server |
 | NVE Vindkraft2 layer 2 | `.../Vindkraft2/MapServer/2` | Approved wind farms | 1h server |
 | NVE Vindkraft2 layer 8 | `.../Vindkraft2/MapServer/8` | Rejected wind farm applications | 1h server |

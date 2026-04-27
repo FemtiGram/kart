@@ -303,7 +303,7 @@ export function HavvindSheet({
                 </a>
               )}
               <p className="text-xs text-foreground/70 text-center">
-                Kilde: <a href="https://nve.geodataonline.no/arcgis/rest/services/" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">NVE Geodata</a> · Havvind 2023
+                Kilde: <a href="https://kart.nve.no/enterprise/rest/services/" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">NVE Geodata</a> · Havvind 2023
               </p>
               <DataDisclaimer />
             </div>
@@ -481,7 +481,7 @@ export function EnergyPlantSheet({
             <div className="mt-4 pt-4 border-t flex flex-col gap-3">
               <DriveLink lat={selected.lat} lon={selected.lon} />
               <p className="text-xs text-foreground/70 text-center">
-                Kilde: <a href="https://nve.geodataonline.no/arcgis/rest/services/" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">NVE Geodata</a> · Oppdateres hver time
+                Kilde: <a href="https://kart.nve.no/enterprise/rest/services/" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">NVE Geodata</a> · Oppdateres hver time
               </p>
               <DataDisclaimer />
             </div>

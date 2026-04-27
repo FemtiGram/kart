@@ -2,7 +2,7 @@
 
 Comprehensive catalog of geospatial services available from NVE (Norwegian Water Resources and Energy Directorate) via their ArcGIS REST endpoint. Documented for potential use in the MapGram portfolio project.
 
-**Base URL:** `https://nve.geodataonline.no/arcgis/rest/services/`
+**Base URL:** `https://kart.nve.no/enterprise/rest/services/`
 
 **Coordinate system:** UTM zone 33N (EPSG:25833) — must be reprojected to WGS84 (EPSG:4326) for Leaflet.
 
@@ -383,7 +383,7 @@ These are separate JSON REST APIs from NVE, not part of the ArcGIS service.
 
 ### Fetch all built wind power plants
 ```
-GET https://nve.geodataonline.no/arcgis/rest/services/Vindkraft2/MapServer/0/query
+GET https://kart.nve.no/enterprise/rest/services/Vindkraft2/MapServer/0/query
   ?where=1%3D1
   &outFields=*
   &f=json
@@ -392,7 +392,7 @@ GET https://nve.geodataonline.no/arcgis/rest/services/Vindkraft2/MapServer/0/que
 
 ### Fetch hydropower plants over 100 MW
 ```
-GET https://nve.geodataonline.no/arcgis/rest/services/Vannkraft1/MapServer/0/query
+GET https://kart.nve.no/enterprise/rest/services/Vannkraft1/MapServer/0/query
   ?where=maksYtelse_MW>100
   &outFields=*
   &f=json
@@ -401,7 +401,7 @@ GET https://nve.geodataonline.no/arcgis/rest/services/Vannkraft1/MapServer/0/que
 
 ### Fetch individual wind turbines in a bounding box
 ```
-GET https://nve.geodataonline.no/arcgis/rest/services/Vindkraft2/MapServer/4/query
+GET https://kart.nve.no/enterprise/rest/services/Vindkraft2/MapServer/4/query
   ?geometry=4,58,12,63
   &geometryType=esriGeometryEnvelope
   &inSR=4326

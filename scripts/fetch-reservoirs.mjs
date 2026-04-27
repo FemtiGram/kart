@@ -10,12 +10,15 @@ import { fileURLToPath } from "url";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const OUT_PATH = join(__dirname, "..", "public", "data", "reservoirs.json");
 
+// NVE migrated their ArcGIS REST endpoint from `nve.geodataonline.no` to
+// `kart.nve.no/enterprise/...` in 2026 — same layer numbering, but field
+// names are now lowercase (anleggnavn, magasinnavn, etc.).
 const NVE_BASE =
-  "https://nve.geodataonline.no/arcgis/rest/services/Vannkraft1/MapServer/6/query?" +
-  "where=status%3D'D'+AND+volumOppdemt_Mm3+IS+NOT+NULL" +
-  "&outFields=OBJECTID,magasinNavn,vannkraftverkNavn,elvenavnHierarki," +
-  "hoyesteRegulerteVannstand_moh,lavesteRegulerteVannstand_moh," +
-  "volumOppdemt_Mm3,magasinArealHRV_km2,idriftsattAar,magasinFormal_Liste" +
+  "https://kart.nve.no/enterprise/rest/services/Vannkraft1/MapServer/6/query?" +
+  "where=status%3D'D'+AND+volumoppdemt_mm3+IS+NOT+NULL" +
+  "&outFields=objectid,magasinnavn,vannkraftverknavn,elvenavnhierarki," +
+  "hoyesteregulertevannstand_moh,lavesteregulertevannstand_moh," +
+  "volumoppdemt_mm3,magasinarealhrv_km2,idriftsattaar,magasinformal_liste" +
   "&returnGeometry=true&f=json";
 const PAGE_SIZE = 50;
 
@@ -129,16 +132,16 @@ async function main() {
       const centerLon = firstRing.reduce((s, c) => s + c[1], 0) / firstRing.length;
 
       reservoirs.push({
-        id: a.OBJECTID,
-        name: a.magasinNavn ?? "Ukjent magasin",
-        plantName: a.vannkraftverkNavn ?? null,
-        river: a.elvenavnHierarki ?? null,
-        hrv: a.hoyesteRegulerteVannstand_moh ?? null,
-        lrv: a.lavesteRegulerteVannstand_moh ?? null,
-        volumeMm3: a.volumOppdemt_Mm3 ?? null,
-        areaKm2: a.magasinArealHRV_km2 ?? null,
-        yearBuilt: a.idriftsattAar ?? null,
-        purpose: a.magasinFormal_Liste ?? null,
+        id: a.objectid,
+        name: a.magasinnavn ?? "Ukjent magasin",
+        plantName: a.vannkraftverknavn ?? null,
+        river: a.elvenavnhierarki ?? null,
+        hrv: a.hoyesteregulertevannstand_moh ?? null,
+        lrv: a.lavesteregulertevannstand_moh ?? null,
+        volumeMm3: a.volumoppdemt_mm3 ?? null,
+        areaKm2: a.magasinarealhrv_km2 ?? null,
+        yearBuilt: a.idriftsattaar ?? null,
+        purpose: a.magasinformal_liste ?? null,
         polygon: wgsRings,
         center: {
           lat: Math.round(centerLat * 100000) / 100000,
