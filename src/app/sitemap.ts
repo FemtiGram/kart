@@ -18,6 +18,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { path: "/skoler", priority: 0.8, changeFrequency: "weekly" as const },
     { path: "/helse", priority: 0.8, changeFrequency: "weekly" as const },
     { path: "/kostnader", priority: 0.8, changeFrequency: "yearly" as const },
+    { path: "/valg", priority: 0.8, changeFrequency: "yearly" as const },
     { path: "/kommune", priority: 0.8, changeFrequency: "weekly" as const },
     { path: "/kilder", priority: 0.3, changeFrequency: "monthly" as const },
     { path: "/personvern", priority: 0.2, changeFrequency: "yearly" as const },

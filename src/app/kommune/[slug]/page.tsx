@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
-import { ArrowLeft, TrendingUp, Home, Shield, Zap, BatteryCharging, Mountain, Waves, Cloud, ExternalLink, Briefcase, Compass, GraduationCap, HeartPulse, Wallet, Users, ArrowRight, Sparkles, PieChart } from "lucide-react";
+import { ArrowLeft, TrendingUp, Home, Shield, Zap, BatteryCharging, Mountain, Waves, Cloud, ExternalLink, Briefcase, Compass, GraduationCap, HeartPulse, Wallet, Users, ArrowRight, Sparkles, PieChart, Vote } from "lucide-react";
 import {
   getAllKommuner,
   getProfileBySlug,
@@ -11,6 +11,7 @@ import {
 import { KommuneWeather } from "@/components/kommune-weather";
 import { KommuneMiniMap } from "@/components/kommune-mini-map-loader";
 import { synthesizeHealth, type HealthTone } from "@/lib/health-summary";
+import { partyFill, partyText } from "@/lib/party-colors";
 import { Map as MapIcon } from "lucide-react";
 
 // ─── Static params ───────────────────────────────────────────
@@ -1063,6 +1064,105 @@ function HelseSection({ profile }: { profile: KommuneProfile }) {
   );
 }
 
+function PolitikkSection({ profile }: { profile: KommuneProfile }) {
+  const p = profile.politikk;
+  if (!p || (!p.stortingsvalg && !p.kommunestyrevalg)) return null;
+
+  const href = `/valg#kommune-${profile.knr}`;
+
+  const formatPct = (v: number, d = 1) =>
+    `${v.toFixed(d).replace(".", ",")} %`;
+
+  const ValgCard = ({
+    label,
+    valg,
+  }: {
+    label: string;
+    valg: NonNullable<typeof p.stortingsvalg>;
+  }) => {
+    const maxBar = Math.max(...valg.partier.map((x) => x.prosent), 1);
+    return (
+      <div className="rounded-2xl border bg-card px-5 py-4">
+        <p className="text-xs font-semibold uppercase tracking-wide text-foreground/70">
+          {label} {valg.år}
+        </p>
+        <div className="mt-2 flex items-baseline gap-2">
+          <span
+            className="text-2xl font-extrabold leading-none"
+            style={{ color: partyText(valg.vinner.kode) }}
+          >
+            {valg.vinner.kode}
+          </span>
+          <span className="text-sm font-semibold text-foreground/80">
+            {formatPct(valg.vinner.prosent)}
+          </span>
+        </div>
+        <p className="mt-0.5 text-xs text-muted-foreground truncate">
+          {valg.vinner.navn} — størst
+        </p>
+
+        <ul className="mt-3 space-y-1.5">
+          {valg.partier.slice(0, 3).map((part) => (
+            <li key={part.kode} className="flex items-center gap-2">
+              <span
+                className="inline-block w-2 h-2 rounded-sm shrink-0"
+                style={{ background: partyFill(part.kode) }}
+              />
+              <span className="text-xs font-medium w-10 shrink-0">{part.kode}</span>
+              <div className="h-1 grow rounded-full bg-muted overflow-hidden">
+                <div
+                  className="h-full rounded-full"
+                  style={{
+                    width: `${(part.prosent / maxBar) * 100}%`,
+                    background: partyFill(part.kode),
+                  }}
+                />
+              </div>
+              <span className="text-[11px] font-semibold tabular-nums w-10 text-right">
+                {formatPct(part.prosent)}
+              </span>
+            </li>
+          ))}
+        </ul>
+
+        {valg.frammote != null && (
+          <p className="mt-3 text-[11px] text-muted-foreground">
+            Frammøte:{" "}
+            <span className="font-semibold text-foreground/80">
+              {formatPct(valg.frammote)}
+            </span>
+          </p>
+        )}
+      </div>
+    );
+  };
+
+  return (
+    <Section title="Politikk" icon={Vote} href={href}>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {p.stortingsvalg && (
+          <ValgCard label="Stortingsvalg" valg={p.stortingsvalg} />
+        )}
+        {p.kommunestyrevalg && (
+          <ValgCard label="Kommunestyrevalg" valg={p.kommunestyrevalg} />
+        )}
+      </div>
+      <p className="mt-3 text-xs text-foreground/70">
+        Kilde:{" "}
+        <a
+          href="https://valgresultat.no"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="underline hover:text-foreground"
+        >
+          Valgdirektoratet
+        </a>
+        . Resultatene viser kun hvilket parti som fikk flest stemmer i kommunen — ikke setefordeling, mandater eller koalisjoner.
+      </p>
+    </Section>
+  );
+}
+
 function InfraSection({ profile }: { profile: KommuneProfile }) {
   const { centroid } = profile;
   const ladingHref = `/lading?lat=${centroid.lat.toFixed(4)}&lon=${centroid.lon.toFixed(4)}&z=11`;
@@ -1320,6 +1420,22 @@ function buildJsonLd(profile: KommuneProfile) {
       unitText: "MW",
     });
   }
+  const stVinner = profile.politikk?.stortingsvalg;
+  if (stVinner) {
+    additionalProperty.push({
+      "@type": "PropertyValue",
+      name: `Største parti ved Stortingsvalg ${stVinner.år}`,
+      value: `${stVinner.vinner.navn} (${stVinner.vinner.prosent.toFixed(1).replace(".", ",")} %)`,
+    });
+  }
+  const koVinner = profile.politikk?.kommunestyrevalg;
+  if (koVinner) {
+    additionalProperty.push({
+      "@type": "PropertyValue",
+      name: `Største parti ved Kommunestyrevalg ${koVinner.år}`,
+      value: `${koVinner.vinner.navn} (${koVinner.vinner.prosent.toFixed(1).replace(".", ",")} %)`,
+    });
+  }
 
   return {
     "@context": "https://schema.org",
@@ -1372,6 +1488,7 @@ export default async function KommunePage({
         <DemografiSection profile={profile} />
         <SkoleSection profile={profile} />
         <HelseSection profile={profile} />
+        <PolitikkSection profile={profile} />
         <NaturSection profile={profile} />
         <EnergiSection profile={profile} />
         <InfraSection profile={profile} />

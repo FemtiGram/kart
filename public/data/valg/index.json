@@ -1,0 +1,30 @@
+[
+  {
+    "type": "st",
+    "year": 2025,
+    "label": "Stortingsvalg 2025",
+    "file": "st-2025.json",
+    "kommuner": 357
+  },
+  {
+    "type": "st",
+    "year": 2021,
+    "label": "Stortingsvalg 2021",
+    "file": "st-2021.json",
+    "kommuner": 356
+  },
+  {
+    "type": "ko",
+    "year": 2023,
+    "label": "Kommunestyrevalg 2023",
+    "file": "ko-2023.json",
+    "kommuner": 357
+  },
+  {
+    "type": "ko",
+    "year": 2019,
+    "label": "Kommunestyrevalg 2019",
+    "file": "ko-2019.json",
+    "kommuner": 356
+  }
+]

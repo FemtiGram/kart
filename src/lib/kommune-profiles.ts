@@ -317,6 +317,27 @@ export interface KommuneProfile {
   /** Auto-generated 3-sentence narrative summary, built in
    *  scripts/generate-snapshot.mjs. Baked in at build time. */
   snapshot: string[];
+  politikk: PolitikkSummary | null;
+}
+
+interface PolitikkPartier {
+  kode: string;
+  navn: string;
+  prosent: number;
+  stemmer: number;
+  endring: number | null;
+}
+
+interface PolitikkValg {
+  år: number;
+  vinner: { kode: string; navn: string; prosent: number };
+  partier: PolitikkPartier[];
+  frammote: number | null;
+}
+
+export interface PolitikkSummary {
+  stortingsvalg: PolitikkValg | null;
+  kommunestyrevalg: PolitikkValg | null;
 }
 
 interface ProfilesFile {

@@ -27,6 +27,8 @@ const RESERVOIRS_PATH = join(ROOT, "public", "data", "reservoirs.json");
 const SCHOOLS_PATH = join(ROOT, "public", "data", "schools.json");
 const HEALTH_PATH = join(ROOT, "public", "data", "health.json");
 const FINN_LOCATIONS_PATH = join(ROOT, "public", "data", "finn-locations.json");
+const VALG_ST_PATH = join(ROOT, "public", "data", "valg", "st-2025.json");
+const VALG_KO_PATH = join(ROOT, "public", "data", "valg", "ko-2023.json");
 const OUT_PATH = join(ROOT, "public", "data", "kommune-profiles.json");
 const FASTLEGE_OUT_PATH = join(ROOT, "public", "data", "fastlege.json");
 const KOSTNADER_OUT_PATH = join(ROOT, "public", "data", "kostnader.json");
@@ -1081,7 +1083,16 @@ async function main() {
   const healthLegevakt = healthFile.legevakt ?? [];
   const healthPrivat = healthFile.privatklinikker ?? [];
 
-  console.log(`  Loaded ${geo.features.length} kommuner, ${stations.length} stations, ${cabins.length} cabins, ${reservoirs.length} reservoirs, ${schools.length} schools, ${kindergartens.length} barnehager, ${Object.keys(finnLocations).length} Finn codes, ${healthSykehus.length} sykehus, ${healthLegevakt.length} legevakt, ${healthPrivat.length} klinikker`);
+  // Pre-built valg results (latest stortingsvalg + kommunestyrevalg).
+  // Optional — politikk section is just hidden if these don't exist yet.
+  const valgSt = existsSync(VALG_ST_PATH)
+    ? JSON.parse(readFileSync(VALG_ST_PATH, "utf8"))
+    : null;
+  const valgKo = existsSync(VALG_KO_PATH)
+    ? JSON.parse(readFileSync(VALG_KO_PATH, "utf8"))
+    : null;
+
+  console.log(`  Loaded ${geo.features.length} kommuner, ${stations.length} stations, ${cabins.length} cabins, ${reservoirs.length} reservoirs, ${schools.length} schools, ${kindergartens.length} barnehager, ${Object.keys(finnLocations).length} Finn codes, ${healthSykehus.length} sykehus, ${healthLegevakt.length} legevakt, ${healthPrivat.length} klinikker${valgSt ? `, ${Object.keys(valgSt.data).length} valg-st` : ""}${valgKo ? `, ${Object.keys(valgKo.data).length} valg-ko` : ""}`);
 
   // Fetch external data in parallel
   let population, income, bolig, protectedAreas, plants, fastlege, eiendomsskatt, gebyrer;
@@ -1516,6 +1527,27 @@ async function main() {
           ? { ...boligtyper.byKnr[knr], year: boligtyper.latestYear }
           : null,
       },
+      politikk: (() => {
+        const compact = (entry) =>
+          entry
+            ? {
+                vinner: entry.vinner,
+                partier: entry.partier.slice(0, 5),
+                frammote: entry.frammote,
+              }
+            : null;
+        const stEntry = valgSt?.data?.[knr] ?? null;
+        const koEntry = valgKo?.data?.[knr] ?? null;
+        if (!stEntry && !koEntry) return null;
+        return {
+          stortingsvalg: stEntry
+            ? { år: valgSt.meta.valgår, ...compact(stEntry) }
+            : null,
+          kommunestyrevalg: koEntry
+            ? { år: valgKo.meta.valgår, ...compact(koEntry) }
+            : null,
+        };
+      })(),
     };
   }
 
