@@ -119,57 +119,57 @@ export default function Home() {
       </section>
 
       <div id="utforsk" className="relative container mx-auto px-6 md:px-16 py-16 md:py-24 max-w-5xl">
-        {/* Three category cards — primary navigation */}
+        {/* Mest populært — handpicked starting points */}
         <FadeIn>
           <p className="text-xs font-bold uppercase tracking-widest text-foreground/60 mb-4">
-            Velg en kategori
+            Mest populært
           </p>
         </FadeIn>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {categories.map((c, i) => (
-            <FadeIn key={c.href} delay={i * 0.08}>
-              <HoverLift className="h-full">
-                <HomeCategoryCard {...c} />
-              </HoverLift>
-            </FadeIn>
-          ))}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {popular.map((p, i) => {
+            const Icon = p.icon;
+            return (
+              <FadeIn key={p.href} delay={i * 0.05}>
+                <HoverLift className="h-full">
+                  <Link
+                    href={p.href}
+                    className="group flex items-center gap-3 rounded-xl border bg-card hover:shadow-md transition-shadow px-3.5 py-3 h-full"
+                  >
+                    <div
+                      className="flex items-center justify-center rounded-lg h-10 w-10 shrink-0"
+                      style={{ background: "var(--kv-blue)" }}
+                    >
+                      <Icon className="h-5 w-5 text-white" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-sm truncate">{p.title}</p>
+                      <p className="text-xs text-muted-foreground truncate mt-0.5">
+                        {p.description}
+                      </p>
+                    </div>
+                    <ArrowRight className="h-4 w-4 text-muted-foreground shrink-0 group-hover:text-foreground group-hover:translate-x-0.5 transition-all" />
+                  </Link>
+                </HoverLift>
+              </FadeIn>
+            );
+          })}
         </div>
 
-        {/* Mest populært — handpicked starting points */}
+        {/* Three category cards — full browse */}
         <div className="mt-14">
           <FadeIn>
             <p className="text-xs font-bold uppercase tracking-widest text-foreground/60 mb-4">
-              Mest populært
+              Utforsk per kategori
             </p>
           </FadeIn>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {popular.map((p, i) => {
-              const Icon = p.icon;
-              return (
-                <FadeIn key={p.href} delay={i * 0.05}>
-                  <HoverLift className="h-full">
-                    <Link
-                      href={p.href}
-                      className="group flex items-center gap-3 rounded-xl border bg-card hover:shadow-md transition-shadow px-3.5 py-3 h-full"
-                    >
-                      <div
-                        className="flex items-center justify-center rounded-lg h-10 w-10 shrink-0"
-                        style={{ background: "var(--kv-blue)" }}
-                      >
-                        <Icon className="h-5 w-5 text-white" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-bold text-sm truncate">{p.title}</p>
-                        <p className="text-xs text-muted-foreground truncate mt-0.5">
-                          {p.description}
-                        </p>
-                      </div>
-                      <ArrowRight className="h-4 w-4 text-muted-foreground shrink-0 group-hover:text-foreground group-hover:translate-x-0.5 transition-all" />
-                    </Link>
-                  </HoverLift>
-                </FadeIn>
-              );
-            })}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {categories.map((c, i) => (
+              <FadeIn key={c.href} delay={i * 0.08}>
+                <HoverLift className="h-full">
+                  <HomeCategoryCard {...c} />
+                </HoverLift>
+              </FadeIn>
+            ))}
           </div>
         </div>
 
