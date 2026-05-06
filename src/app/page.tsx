@@ -1,162 +1,66 @@
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowRight, ChevronDown, Mountain, DollarSign, Shield, Zap, Home as HomeIcon, BatteryCharging, Waves, Database, Globe, Code, TrendingUp, BarChart3, MapPinned, GraduationCap, HeartPulse, Wallet } from "lucide-react";
+import { ArrowRight, ChevronDown, BatteryCharging, Mountain, MapPinned, TrendingUp, Vote, Database, Globe, Code } from "lucide-react";
 import { FadeIn, FadeInView, HoverLift } from "@/components/motion";
 import { HomeKommuneSearch } from "@/components/home-kommune-search";
+import { HomeCategoryCard } from "@/components/home-category-card";
 import { getAllKommuner } from "@/lib/kommune-profiles";
 
-const featured = [
+const categories = [
   {
-    title: "Stedsprofil",
-    description: "Alle 357 kommuner i ett sammendrag: befolkning, økonomi, energi, natur og infrastruktur.",
-    href: "/kommune",
-    icon: MapPinned,
-    cta: "Utforsk kommuner",
+    href: "/energi",
+    label: "Energi",
+    tagline: "Hvor kommer Norges strøm fra, og hvor kan du lade elbilen?",
+    examples: ["Energikart", "Magasinkart", "Ladestasjoner"],
+    count: "3 kart",
+    icon: BatteryCharging,
   },
   {
-    title: "Boligpriser",
-    description: "Kvadratmeterpris for eneboliger, småhus og blokkleiligheter i alle kommuner.",
+    href: "/natur",
+    label: "Natur",
+    tagline: "Fjell, fjellhytter og verneområder fra Lindesnes til Nordkapp.",
+    examples: ["Høydekart", "Turisthytter", "Verneområder"],
+    count: "3 kart",
+    icon: Mountain,
+  },
+  {
+    href: "/samfunn",
+    label: "Samfunn",
+    tagline: "Bolig, inntekt, helse, skoler og valg — kommune for kommune.",
+    examples: ["Stedsprofil", "Boligpriser", "Valgkart", "Helsetilbud"],
+    count: "8 kart",
+    icon: MapPinned,
+  },
+];
+
+// Curated by hand — these surface what the audience actually opens first.
+// Kept small (4) so the eye lands here and doesn't have to scan further.
+const popular = [
+  {
     href: "/bolig",
+    title: "Boligpriser",
+    description: "Kvadratmeterpris per kommune",
     icon: TrendingUp,
   },
   {
-    title: "Skoler og barnehager",
-    description: "Alle 3 100+ skoler og 5 500+ barnehager i Norge med elev- og barnetall, trinn og eierskap.",
-    href: "/skoler",
-    icon: GraduationCap,
+    href: "/kommune",
+    title: "Stedsprofil",
+    description: "Alle 357 kommuner i ett blikk",
+    icon: MapPinned,
+  },
+  {
+    href: "/valg",
+    title: "Valgkart",
+    description: "Stortingsvalget 2025 per kommune",
+    icon: Vote,
+  },
+  {
+    href: "/energikart",
+    title: "Energikart",
+    description: "1 700+ kraftverk i Norge",
+    icon: BatteryCharging,
   },
 ];
-
-// Group items are shown as compact cards — icon + title + one-line
-// description + arrow. Descriptions mirror the navbar dropdown wording
-// so the two surfaces read consistently. Entries with `isNew: true`
-// get a green "Ny" pill next to the title.
-interface GroupItem {
-  title: string;
-  description: string;
-  href: string;
-  icon: typeof Mountain;
-  isNew?: boolean;
-}
-
-const groups: Array<{ label: string; items: GroupItem[] }> = [
-  {
-    label: "Energi",
-    items: [
-      { title: "Energikart", description: "Vind, vann, olje og gass", href: "/energikart", icon: BatteryCharging },
-      { title: "Magasinkart", description: "Vannmagasiner og fyllingsgrad", href: "/magasin", icon: Waves },
-      { title: "Ladestasjoner", description: "Elbil-lading i hele Norge", href: "/lading", icon: Zap },
-    ],
-  },
-  {
-    label: "Natur",
-    items: [
-      { title: "Høydekart", description: "Høydedata og værforhold", href: "/map", icon: Mountain },
-      { title: "Turisthytter", description: "DNT-hytter og fjellstuer", href: "/hytter", icon: HomeIcon },
-      { title: "Verneområder", description: "Nasjonalparker og naturreservater", href: "/vern", icon: Shield },
-    ],
-  },
-  {
-    label: "Samfunn",
-    items: [
-      { title: "Helsetilbud", description: "Fastleger, sykehus og legevakt", href: "/helse", icon: HeartPulse },
-      { title: "Inntektskart", description: "Median inntekt per kommune", href: "/lonn", icon: DollarSign },
-      // TODO: remove `isNew: true` after 2026-10 — Kostnader is no longer new by then.
-      { title: "Kostnader", description: "Gebyrer og eiendomsskatt", href: "/kostnader", icon: Wallet, isNew: true },
-      { title: "Prisvekst", description: "Dashboard for konsumprisindeksen", href: "/prisvekst", icon: BarChart3 },
-    ],
-  },
-];
-
-function CardLink({ href, icon: Icon, title, description, cta = "Åpne kart", index = 0 }: {
-  href: string; icon: typeof Mountain; title: string; description: string; cta?: string; index?: number;
-}) {
-  return (
-    <FadeIn delay={index * 0.08}>
-      <HoverLift className="h-full">
-        <Link
-          href={href}
-          className="group flex flex-col justify-between rounded-2xl border border-border bg-card shadow-sm hover:shadow-md transition-shadow p-5 h-full"
-        >
-          <div>
-            <div className="flex items-center gap-2.5 mb-2">
-              <div className="flex items-center justify-center rounded-lg h-8 w-8" style={{ background: "#24374c" }}>
-                <Icon className="h-4 w-4 text-white" />
-              </div>
-              <h2 className="font-bold text-base">{title}</h2>
-            </div>
-            <p className="text-sm text-muted-foreground leading-relaxed">{description}</p>
-          </div>
-          <div className="flex items-center gap-1.5 mt-4 font-medium text-foreground/70 group-hover:text-foreground transition-colors text-xs">
-            {cta}
-            <ArrowRight className="h-3.5 w-3.5 -translate-x-1 group-hover:translate-x-0 transition-transform" />
-          </div>
-        </Link>
-      </HoverLift>
-    </FadeIn>
-  );
-}
-
-/**
- * Compact row card for the grouped sections: icon tile + title + a
- * one-line description underneath + arrow. Denser than CardLink but
- * still gives enough hint text so the grid reads at a glance. Used
- * under Energi/Natur/Samfunn; Aktuelt still uses the larger CardLink
- * so the flagship row keeps its selling space.
- */
-function CompactCardLink({
-  href,
-  icon: Icon,
-  title,
-  description,
-  isNew = false,
-  index = 0,
-}: {
-  href: string;
-  icon: typeof Mountain;
-  title: string;
-  description: string;
-  isNew?: boolean;
-  index?: number;
-}) {
-  return (
-    <FadeIn delay={index * 0.04}>
-      <HoverLift className="h-full">
-        <Link
-          href={href}
-          className="group flex items-center gap-3 rounded-xl border border-border bg-card hover:shadow-md transition-shadow px-3.5 py-3 h-full"
-        >
-          <div
-            className="flex items-center justify-center rounded-lg h-10 w-10 shrink-0"
-            style={{ background: "#24374c" }}
-          >
-            <Icon className="h-5 w-5 text-white" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <h3 className="font-bold text-sm truncate">{title}</h3>
-              {isNew && (
-                <span
-                  className="text-[10px] font-bold uppercase tracking-wide rounded-full px-1.5 py-0.5 shrink-0"
-                  style={{
-                    background: "var(--kv-positive-light)",
-                    color: "var(--kv-positive-dark)",
-                  }}
-                >
-                  Ny
-                </span>
-              )}
-            </div>
-            <p className="text-xs text-muted-foreground truncate mt-0.5">
-              {description}
-            </p>
-          </div>
-          <ArrowRight className="h-4 w-4 text-muted-foreground shrink-0 group-hover:text-foreground group-hover:translate-x-0.5 transition-all" />
-        </Link>
-      </HoverLift>
-    </FadeIn>
-  );
-}
 
 export default function Home() {
   // Trimmed kommune list for the hero search — only the fields the
@@ -214,44 +118,64 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Content */}
       <div id="utforsk" className="relative container mx-auto px-6 md:px-16 py-16 md:py-24 max-w-5xl">
-        {/* All card groups */}
-        <div className="space-y-8">
-          {/* Featured */}
-          <div>
-            <FadeIn>
-              <p className="text-xs font-semibold uppercase tracking-widest text-foreground/70 mb-3">
-                Aktuelt
-              </p>
+        {/* Three category cards — primary navigation */}
+        <FadeIn>
+          <p className="text-xs font-bold uppercase tracking-widest text-foreground/60 mb-4">
+            Velg en kategori
+          </p>
+        </FadeIn>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {categories.map((c, i) => (
+            <FadeIn key={c.href} delay={i * 0.08}>
+              <HoverLift className="h-full">
+                <HomeCategoryCard {...c} />
+              </HoverLift>
             </FadeIn>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              {featured.map((item, i) => (
-                <CardLink key={item.href} {...item} index={i} />
-              ))}
-            </div>
-          </div>
-          {groups.map((group) => (
-            <div key={group.label}>
-              <FadeIn>
-                <p className="text-xs font-semibold uppercase tracking-widest text-foreground/70 mb-3">
-                  {group.label}
-                </p>
-              </FadeIn>
-              <div
-                className={`grid grid-cols-1 sm:grid-cols-2 gap-3 ${group.items.length === 4 ? "md:grid-cols-4" : "md:grid-cols-3"}`}
-              >
-                {group.items.map((item, i) => (
-                  <CompactCardLink key={item.href} {...item} index={i} />
-                ))}
-              </div>
-            </div>
           ))}
+        </div>
+
+        {/* Mest populært — handpicked starting points */}
+        <div className="mt-14">
+          <FadeIn>
+            <p className="text-xs font-bold uppercase tracking-widest text-foreground/60 mb-4">
+              Mest populært
+            </p>
+          </FadeIn>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {popular.map((p, i) => {
+              const Icon = p.icon;
+              return (
+                <FadeIn key={p.href} delay={i * 0.05}>
+                  <HoverLift className="h-full">
+                    <Link
+                      href={p.href}
+                      className="group flex items-center gap-3 rounded-xl border bg-card hover:shadow-md transition-shadow px-3.5 py-3 h-full"
+                    >
+                      <div
+                        className="flex items-center justify-center rounded-lg h-10 w-10 shrink-0"
+                        style={{ background: "var(--kv-blue)" }}
+                      >
+                        <Icon className="h-5 w-5 text-white" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-bold text-sm truncate">{p.title}</p>
+                        <p className="text-xs text-muted-foreground truncate mt-0.5">
+                          {p.description}
+                        </p>
+                      </div>
+                      <ArrowRight className="h-4 w-4 text-muted-foreground shrink-0 group-hover:text-foreground group-hover:translate-x-0.5 transition-all" />
+                    </Link>
+                  </HoverLift>
+                </FadeIn>
+              );
+            })}
+          </div>
         </div>
 
         {/* About section */}
         <FadeInView className="mt-16 pt-12 border-t">
-          <h2 className="text-2xl font-extrabold tracking-tight" style={{ color: "#24374c" }}>Om prosjektet</h2>
+          <h2 className="text-2xl font-extrabold tracking-tight" style={{ color: "var(--kv-blue)" }}>Om prosjektet</h2>
           <p className="mt-3 text-muted-foreground leading-relaxed max-w-2xl">
             Datakart er et prosjekt der jeg utforsker hva som er mulig med åpne norske geodata. Alle kartene er bygget
             utelukkende på gratis, offentlige datakilder, uten betalte API-er eller autentisering.
@@ -260,12 +184,12 @@ export default function Home() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-8">
             {[
               { icon: Database, label: "12 datakilder", desc: "SSB, NVE, Kartverket, Geonorge, MET.no, Sodir, UDIR, NOBIL, Norges Bank, Eurostat, OpenStreetMap og Finn.no" },
-              { icon: Globe, label: "13 interaktive visualiseringer", desc: "Kart og dashboards for bolig, skoler, helse, energi, natur, inntekt, kostnader og mer — pluss detaljerte kommuneprofiler" },
+              { icon: Globe, label: "14 interaktive visualiseringer", desc: "Kart og dashboards for bolig, skoler, helse, energi, natur, inntekt, kostnader, valg og mer — pluss detaljerte kommuneprofiler" },
               { icon: Code, label: "Åpen kildekode", desc: "Next.js, React, Leaflet og Tailwind. Hostet på Vercel." },
             ].map((item, i) => (
               <FadeInView key={item.label} delay={i * 0.1}>
                 <div className="flex gap-3">
-                  <div className="flex items-center justify-center h-9 w-9 rounded-lg shrink-0" style={{ background: "#24374c" }}>
+                  <div className="flex items-center justify-center h-9 w-9 rounded-lg shrink-0" style={{ background: "var(--kv-blue)" }}>
                     <item.icon className="h-4 w-4 text-white" />
                   </div>
                   <div>
