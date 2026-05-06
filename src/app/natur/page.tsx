@@ -114,7 +114,7 @@ export default function NaturCategoryPage() {
           <div className="mt-10 rounded-2xl border bg-muted/40 px-5 py-4 flex items-center justify-between gap-3 flex-wrap">
             <div>
               <p className="text-sm font-semibold">Også relevant: stedsprofil og energi</p>
-              <p className="text-xs text-foreground/70 mt-0.5">
+              <p className="text-xs text-foreground/80 mt-0.5">
                 Stedsprofilen viser hyttebestand og verneandel per kommune. Energikart viser kraftverk i naturområder.
               </p>
             </div>
@@ -151,7 +151,7 @@ export default function NaturCategoryPage() {
               </AccordionItem>
             ))}
           </Accordion>
-          <p className="text-xs text-foreground/70 mt-8">
+          <p className="text-xs text-foreground/80 mt-8">
             Data fra <a href="https://www.kartverket.no" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Kartverket</a>, <a href="https://www.met.no" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">MET Norway</a>, <a href="https://www.ssb.no" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">SSB</a> og <a href="https://www.openstreetmap.org" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">OpenStreetMap</a>.
           </p>
         </div>

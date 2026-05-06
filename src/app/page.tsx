@@ -8,6 +8,14 @@ import { getAllKommuner } from "@/lib/kommune-profiles";
 
 const categories = [
   {
+    href: "/samfunn",
+    label: "Samfunn",
+    tagline: "Bolig, inntekt, helse, skoler og valg — kommune for kommune.",
+    examples: ["Stedsprofil", "Boligpriser", "Valgkart", "Helsetilbud"],
+    count: "8 kart",
+    icon: MapPinned,
+  },
+  {
     href: "/energi",
     label: "Energi",
     tagline: "Hvor kommer Norges strøm fra, og hvor kan du lade elbilen?",
@@ -22,14 +30,6 @@ const categories = [
     examples: ["Høydekart", "Turisthytter", "Verneområder"],
     count: "3 kart",
     icon: Mountain,
-  },
-  {
-    href: "/samfunn",
-    label: "Samfunn",
-    tagline: "Bolig, inntekt, helse, skoler og valg — kommune for kommune.",
-    examples: ["Stedsprofil", "Boligpriser", "Valgkart", "Helsetilbud"],
-    count: "8 kart",
-    icon: MapPinned,
   },
 ];
 
@@ -121,7 +121,7 @@ export default function Home() {
       <div id="utforsk" className="relative container mx-auto px-6 md:px-16 py-16 md:py-24 max-w-5xl">
         {/* Mest populært — handpicked starting points */}
         <FadeIn>
-          <p className="text-xs font-bold uppercase tracking-widest text-foreground/60 mb-4">
+          <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-4">
             Mest populært
           </p>
         </FadeIn>
@@ -158,7 +158,7 @@ export default function Home() {
         {/* Three category cards — full browse */}
         <div className="mt-14">
           <FadeIn>
-            <p className="text-xs font-bold uppercase tracking-widest text-foreground/60 mb-4">
+            <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-4">
               Utforsk per kategori
             </p>
           </FadeIn>
@@ -194,14 +194,14 @@ export default function Home() {
                   </div>
                   <div>
                     <p className="font-semibold text-sm">{item.label}</p>
-                    <p className="text-xs text-foreground/70 leading-relaxed mt-0.5">{item.desc}</p>
+                    <p className="text-xs text-foreground/80 leading-relaxed mt-0.5">{item.desc}</p>
                   </div>
                 </div>
               </FadeInView>
             ))}
           </div>
 
-          <p className="text-xs text-foreground/70 mt-8">
+          <p className="text-xs text-foreground/80 mt-8">
             Laget av Anders Gram.
           </p>
         </FadeInView>

@@ -116,7 +116,7 @@ export default function EnergiCategoryPage() {
               <p className="text-sm font-semibold">
                 Også relevant: vernet natur og stedsprofil
               </p>
-              <p className="text-xs text-foreground/70 mt-0.5">
+              <p className="text-xs text-foreground/80 mt-0.5">
                 Mange kraftverk ligger i eller ved verneområder. Stedsprofilen viser energisituasjonen per kommune.
               </p>
             </div>
@@ -153,7 +153,7 @@ export default function EnergiCategoryPage() {
               </AccordionItem>
             ))}
           </Accordion>
-          <p className="text-xs text-foreground/70 mt-8">
+          <p className="text-xs text-foreground/80 mt-8">
             Data fra <a href="https://www.nve.no" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">NVE</a>, <a href="https://www.sodir.no" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Sodir</a> og <a href="https://www.enova.no" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Enova</a>.
           </p>
         </div>

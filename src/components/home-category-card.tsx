@@ -7,7 +7,7 @@ interface HomeCategoryCardProps {
   tagline: string;
   examples: string[];
   count: string;
-  icon: React.ComponentType<{ className?: string }>;
+  icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
 }
 
 /**
@@ -46,13 +46,13 @@ export function HomeCategoryCard({
       >
         {label}
       </h2>
-      <p className="mt-2 text-sm text-foreground/70 leading-relaxed">{tagline}</p>
+      <p className="mt-2 text-sm text-foreground/80 leading-relaxed">{tagline}</p>
 
       <ul className="mt-4 flex flex-wrap gap-1.5">
         {examples.map((e) => (
           <li
             key={e}
-            className="text-[11px] font-medium rounded-full bg-muted px-2.5 py-1 text-foreground/70"
+            className="text-[11px] font-medium rounded-full bg-muted px-2.5 py-1 text-foreground"
           >
             {e}
           </li>
@@ -60,7 +60,7 @@ export function HomeCategoryCard({
       </ul>
 
       <div className="mt-5 pt-4 border-t flex items-center justify-between">
-        <span className="text-xs text-foreground/60">{count}</span>
+        <span className="text-xs text-muted-foreground">{count}</span>
         <span
           className="inline-flex items-center gap-1 text-sm font-semibold"
           style={{ color: "var(--kv-blue)" }}

@@ -165,14 +165,14 @@ export default function SamfunnCategoryPage() {
         <div className="container mx-auto px-6 md:px-16 py-10 md:py-12 max-w-4xl">
           {/* Featured: Stedsprofil */}
           <div className="mb-8">
-            <p className="text-xs font-bold uppercase tracking-widest text-foreground/60 mb-3">
+            <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-3">
               Anbefalt — alle kommuner i ett sammendrag
             </p>
             <CategoryMapCard {...featured} />
           </div>
 
           {/* All other maps */}
-          <p className="text-xs font-bold uppercase tracking-widest text-foreground/60 mb-3">
+          <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-3">
             Tematiske kart
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -184,7 +184,7 @@ export default function SamfunnCategoryPage() {
           <div className="mt-10 rounded-2xl border bg-muted/40 px-5 py-4 flex items-center justify-between gap-3 flex-wrap">
             <div>
               <p className="text-sm font-semibold">Også relevant: energi og natur</p>
-              <p className="text-xs text-foreground/70 mt-0.5">
+              <p className="text-xs text-foreground/80 mt-0.5">
                 Stedsprofilen kombinerer alle tre kategorier — boligpriser, kraftverk og verneområder samlet per kommune.
               </p>
             </div>
@@ -221,7 +221,7 @@ export default function SamfunnCategoryPage() {
               </AccordionItem>
             ))}
           </Accordion>
-          <p className="text-xs text-foreground/70 mt-8">
+          <p className="text-xs text-foreground/80 mt-8">
             Data fra <a href="https://www.ssb.no" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">SSB</a>, <a href="https://www.udir.no" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">UDIR</a>, <a href="https://valgresultat.no" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Valgdirektoratet</a> og <a href="https://www.norges-bank.no" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Norges Bank</a>.
           </p>
         </div>

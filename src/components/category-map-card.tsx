@@ -6,7 +6,7 @@ export interface CategoryMapCardProps {
   title: string;
   description: string;
   bullets?: string[];
-  icon: React.ComponentType<{ className?: string }>;
+  icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
   badge?: string;
 }
 
@@ -54,13 +54,13 @@ export function CategoryMapCard({
       >
         {title}
       </h3>
-      <p className="mt-1 text-sm text-foreground/70 leading-snug">{description}</p>
+      <p className="mt-1 text-sm text-foreground/80 leading-snug">{description}</p>
       {bullets && bullets.length > 0 && (
         <ul className="mt-3 space-y-1">
           {bullets.map((b) => (
             <li
               key={b}
-              className="text-xs text-foreground/60 leading-snug pl-3 relative before:content-['•'] before:absolute before:left-0 before:text-foreground/40"
+              className="text-xs text-foreground/80 leading-snug pl-3 relative before:content-['•'] before:absolute before:left-0 before:text-muted-foreground"
             >
               {b}
             </li>
