@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { Menu, X, Mountain, DollarSign, Shield, Zap, Home, BatteryCharging, Waves, TrendingUp, BarChart3, MapPinned, GraduationCap, HeartPulse, Wallet, Vote } from "lucide-react";
+import { Menu, X, Mountain, DollarSign, Shield, Zap, Home, BatteryCharging, Waves, TrendingUp, BarChart3, MapPinned, GraduationCap, HeartPulse, Wallet, Vote, ArrowRight } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -111,17 +111,18 @@ export function Navbar() {
                   </NavigationMenuTrigger>
                   <NavigationMenuContent className="min-w-[280px]">
                     <ul className="flex flex-col gap-1 p-1">
-                      <li>
+                      <li className="mb-1 pb-1 border-b">
                         <NavigationMenuLink
                           href={group.categoryHref}
                           data-active={pathname === group.categoryHref ? "" : undefined}
                           render={<Link href={group.categoryHref} />}
-                          className="flex items-center justify-between gap-3 px-3 py-2.5 rounded-md hover:bg-muted transition-colors border-b mb-1"
+                          className="flex items-center justify-between gap-3 px-3 py-2.5 rounded-md transition-colors hover:brightness-95"
+                          style={{ background: "var(--kv-blue-light)" }}
                         >
-                          <span className="text-xs font-bold uppercase tracking-widest" style={{ color: "var(--kv-blue)" }}>
-                            Se alle {group.label.toLowerCase()}kart
+                          <span className="text-sm font-semibold" style={{ color: "var(--kv-blue)" }}>
+                            Utforsk {group.label}
                           </span>
-                          <span className="text-xs text-muted-foreground">→</span>
+                          <ArrowRight className="h-4 w-4" style={{ color: "var(--kv-blue)" }} />
                         </NavigationMenuLink>
                       </li>
                       {group.links.map((link) => {
