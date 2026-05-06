@@ -1,34 +1,27 @@
-import Link from "next/link";
 import Image from "next/image";
-import { ArrowRight, ChevronDown, BatteryCharging, Mountain, MapPinned, TrendingUp, Vote, Database, Globe, Code } from "lucide-react";
-import { FadeIn, FadeInView, HoverLift } from "@/components/motion";
+import { ChevronDown, BatteryCharging, Mountain, MapPinned, TrendingUp, Vote, Database, Globe, Code } from "lucide-react";
+import { FadeIn, FadeInView } from "@/components/motion";
 import { HomeKommuneSearch } from "@/components/home-kommune-search";
-import { HomeCategoryCard } from "@/components/home-category-card";
+import { MinimalCard } from "@/components/minimal-card";
 import { getAllKommuner } from "@/lib/kommune-profiles";
 
 const categories = [
   {
     href: "/samfunn",
-    label: "Samfunn",
-    tagline: "Bolig, inntekt, helse, skoler og valg — kommune for kommune.",
-    examples: ["Stedsprofil", "Boligpriser", "Valgkart", "Helsetilbud"],
-    count: "8 kart",
+    title: "Samfunn",
+    description: "Bolig, inntekt, helse, skoler og valg — kommune for kommune.",
     icon: MapPinned,
   },
   {
     href: "/energi",
-    label: "Energi",
-    tagline: "Hvor kommer Norges strøm fra, og hvor kan du lade elbilen?",
-    examples: ["Energikart", "Magasinkart", "Ladestasjoner"],
-    count: "3 kart",
+    title: "Energi",
+    description: "Hvor kommer Norges strøm fra, og hvor kan du lade elbilen?",
     icon: BatteryCharging,
   },
   {
     href: "/natur",
-    label: "Natur",
-    tagline: "Fjell, fjellhytter og verneområder fra Lindesnes til Nordkapp.",
-    examples: ["Høydekart", "Turisthytter", "Verneområder"],
-    count: "3 kart",
+    title: "Natur",
+    description: "Fjell, fjellhytter og verneområder fra Lindesnes til Nordkapp.",
     icon: Mountain,
   },
 ];
@@ -39,25 +32,25 @@ const popular = [
   {
     href: "/bolig",
     title: "Boligpriser",
-    description: "Kvadratmeterpris per kommune",
+    description: "Kvadratmeterpris per kommune.",
     icon: TrendingUp,
   },
   {
     href: "/kommune",
     title: "Stedsprofil",
-    description: "Alle 357 kommuner i ett blikk",
+    description: "Alle 357 kommuner i ett blikk.",
     icon: MapPinned,
   },
   {
     href: "/valg",
     title: "Valgkart",
-    description: "Stortingsvalget 2025 per kommune",
+    description: "Stortingsvalget 2025 per kommune.",
     icon: Vote,
   },
   {
     href: "/energikart",
     title: "Energikart",
-    description: "1 700+ kraftverk i Norge",
+    description: "1 700+ kraftverk i Norge.",
     icon: BatteryCharging,
   },
 ];
@@ -125,34 +118,12 @@ export default function Home() {
             Mest populært
           </p>
         </FadeIn>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {popular.map((p, i) => {
-            const Icon = p.icon;
-            return (
-              <FadeIn key={p.href} delay={i * 0.05}>
-                <HoverLift className="h-full">
-                  <Link
-                    href={p.href}
-                    className="group flex items-center gap-3 rounded-xl border bg-card hover:shadow-md transition-shadow px-3.5 py-3 h-full"
-                  >
-                    <div
-                      className="flex items-center justify-center rounded-lg h-10 w-10 shrink-0"
-                      style={{ background: "var(--kv-blue)" }}
-                    >
-                      <Icon className="h-5 w-5 text-white" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-bold text-sm truncate">{p.title}</p>
-                      <p className="text-xs text-muted-foreground truncate mt-0.5">
-                        {p.description}
-                      </p>
-                    </div>
-                    <ArrowRight className="h-4 w-4 text-muted-foreground shrink-0 group-hover:text-foreground group-hover:translate-x-0.5 transition-all" />
-                  </Link>
-                </HoverLift>
-              </FadeIn>
-            );
-          })}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {popular.map((p, i) => (
+            <FadeIn key={p.href} delay={i * 0.05}>
+              <MinimalCard {...p} />
+            </FadeIn>
+          ))}
         </div>
 
         {/* Three category cards — full browse */}
@@ -165,9 +136,7 @@ export default function Home() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {categories.map((c, i) => (
               <FadeIn key={c.href} delay={i * 0.08}>
-                <HoverLift className="h-full">
-                  <HomeCategoryCard {...c} />
-                </HoverLift>
+                <MinimalCard {...c} />
               </FadeIn>
             ))}
           </div>

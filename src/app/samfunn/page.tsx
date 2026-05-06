@@ -2,7 +2,7 @@ import Link from "next/link";
 import { MapPinned, GraduationCap, HeartPulse, DollarSign, TrendingUp, Wallet, Vote, BarChart3, ArrowRight } from "lucide-react";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { CategoryHero } from "@/components/category-hero";
-import { CategoryMapCard } from "@/components/category-map-card";
+import { MinimalCard } from "@/components/minimal-card";
 
 export const metadata = {
   title: "Samfunn i Norge — bolig, inntekt, helse, skoler og valg",
@@ -20,12 +20,7 @@ export const metadata = {
 const featured = {
   href: "/kommune",
   title: "Stedsprofil",
-  description: "Hver av Norges 357 kommuner i ett sammendrag — fra boligpriser til skoletilbud, energi, vernet natur og politikk.",
-  bullets: [
-    "Alle 357 kommuner",
-    "Auto-generert sammendrag i 3 setninger",
-    "Lignende-kommuner-anbefaling",
-  ],
+  description: "Alle 357 kommuner i ett sammendrag — bolig, inntekt, skoler, energi og politikk.",
   icon: MapPinned,
 };
 
@@ -33,80 +28,45 @@ const maps = [
   {
     href: "/bolig",
     title: "Boligpriser",
-    description: "Kvadratmeterpris for enebolig, småhus og blokkleilighet i hver kommune — med 10 års prisutvikling og direktelink til Finn.no.",
-    bullets: [
-      "Bobletkart farget etter percentil",
-      "10 års historikk fra SSB",
-      "Sammenlign to kommuner",
-    ],
+    description: "Kvadratmeterpris og 10 års historikk per kommune.",
     icon: TrendingUp,
     badge: "Populært",
   },
   {
     href: "/lonn",
     title: "Inntektskart",
-    description: "Median inntekt etter skatt per husholdning i hver kommune — hvor lever folk best?",
-    bullets: [
-      "Choropleth fra SSB InntektStruk13",
-      "Rangering blant alle 357",
-      "Sammenlign to kommuner",
-    ],
+    description: "Median inntekt etter skatt per husholdning.",
     icon: DollarSign,
   },
   {
     href: "/kostnader",
     title: "Kostnader",
-    description: "Kommunale gebyrer (vann, avløp, avfall, feiing) og eiendomsskatt for en standard 120 m² enebolig — hvor er det dyrest å bo?",
-    bullets: [
-      "SSB tabell 12842 + 14674",
-      "Sammenlign to kommuner",
-      "«Ingen eiendomsskatt» fremhevet",
-    ],
+    description: "Kommunale gebyrer og eiendomsskatt per kommune.",
     icon: Wallet,
   },
   {
     href: "/helse",
     title: "Helsetilbud",
-    description: "Fastlegesituasjon per kommune: ledig kapasitet, andel uten fastlege, pasienter per lege — pluss sykehus og legevakt på kart.",
-    bullets: [
-      "SSB tabell 12005 (18 metrikker)",
-      "Plain-Norwegian sammendrag",
-      "OSM-overlay for sykehus",
-    ],
+    description: "Fastlegekapasitet, sykehus og legevakt.",
     icon: HeartPulse,
   },
   {
     href: "/skoler",
     title: "Skoler og barnehager",
-    description: "Alle grunnskoler, videregående og barnehager i Norge med antall elever, eierskap og koordinater.",
-    bullets: [
-      "Data fra UDIR (NSR + NBR)",
-      "Klustring på lavt zoom",
-      "Filter på skoletype",
-    ],
+    description: "Alle grunnskoler, videregående og barnehager i Norge.",
     icon: GraduationCap,
   },
   {
     href: "/valg",
     title: "Valgkart",
-    description: "Stortingsvalget 2025 og 2021, kommunestyrevalget 2023 og 2019 — vinnerparti, frammøte og endring per kommune.",
-    bullets: [
-      "Offisielle tall fra Valgdirektoratet",
-      "4 valg å bytte mellom",
-      "Sammenlign to kommuner",
-    ],
+    description: "Stortingsvalg og kommunestyrevalg per kommune.",
     icon: Vote,
     badge: "Nytt",
   },
   {
     href: "/prisvekst",
     title: "Prisvekst",
-    description: "Konsumprisindeksen i sanntid: hvilke kategorier driver inflasjonen, hvor langt er vi fra Norges Banks 2 %-mål, og hvordan ligger vi an mot Norden.",
-    bullets: [
-      "KPI + KPI-JAE fra SSB",
-      "Norges Banks styringsrente",
-      "Eurostat HICP for Norden",
-    ],
+    description: "Konsumprisindeksen i sanntid med Norges Banks rente.",
     icon: BarChart3,
   },
 ];
@@ -168,7 +128,7 @@ export default function SamfunnCategoryPage() {
             <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-3">
               Anbefalt — alle kommuner i ett sammendrag
             </p>
-            <CategoryMapCard {...featured} />
+            <MinimalCard {...featured} />
           </div>
 
           {/* All other maps */}
@@ -177,7 +137,7 @@ export default function SamfunnCategoryPage() {
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {maps.map((m) => (
-              <CategoryMapCard key={m.href} {...m} />
+              <MinimalCard key={m.href} {...m} />
             ))}
           </div>
 

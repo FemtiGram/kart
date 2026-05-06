@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Mountain, Home, Shield, ArrowRight } from "lucide-react";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { CategoryHero } from "@/components/category-hero";
-import { CategoryMapCard } from "@/components/category-map-card";
+import { MinimalCard } from "@/components/minimal-card";
 
 export const metadata = {
   title: "Natur i Norge — fjell, hytter og verneområder",
@@ -21,34 +21,19 @@ const maps = [
   {
     href: "/map",
     title: "Høydekart",
-    description: "Klikk hvor som helst i Norge for å se høyde over havet og siste værmelding fra MET — perfekt før en tur.",
-    bullets: [
-      "Høydedata fra Kartverket",
-      "Værmelding fra MET Norway",
-      "Topografisk basekart",
-    ],
+    description: "Klikk hvor som helst i Norge for høyde over havet og oppdatert værmelding fra MET.",
     icon: Mountain,
   },
   {
     href: "/hytter",
     title: "Turisthytter",
-    description: "Alle DNT-hytter, fjellstuer og ubetjente hytter i Norge — sortert etter type og betjent / ubetjent.",
-    bullets: [
-      "Betjent, selvbetjent og ubetjent",
-      "DNT, statlige og private",
-      "Data fra OpenStreetMap",
-    ],
+    description: "DNT-hytter, fjellstuer og ubetjente hytter i hele Norge.",
     icon: Home,
   },
   {
     href: "/vern",
     title: "Verneområder",
-    description: "Nasjonalparker, naturreservater og landskapsvernområder per kommune — hvor mye av landet er vernet?",
-    bullets: [
-      "Andel vernet areal per kommune",
-      "5 000+ verneområder",
-      "Choropleth fra SSB tabell 08936",
-    ],
+    description: "Andel vernet areal per kommune — nasjonalparker og naturreservater.",
     icon: Shield,
   },
 ];
@@ -107,7 +92,7 @@ export default function NaturCategoryPage() {
         <div className="container mx-auto px-6 md:px-16 py-10 md:py-12 max-w-4xl">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {maps.map((m) => (
-              <CategoryMapCard key={m.href} {...m} />
+              <MinimalCard key={m.href} {...m} />
             ))}
           </div>
 

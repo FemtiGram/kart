@@ -2,7 +2,7 @@ import Link from "next/link";
 import { BatteryCharging, Waves, Zap, ArrowRight } from "lucide-react";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { CategoryHero } from "@/components/category-hero";
-import { CategoryMapCard } from "@/components/category-map-card";
+import { MinimalCard } from "@/components/minimal-card";
 
 export const metadata = {
   title: "Energi i Norge — kraftverk, magasiner og lading",
@@ -21,34 +21,19 @@ const maps = [
   {
     href: "/energikart",
     title: "Energikart",
-    description: "Hver vannkraftstasjon, vindturbinpark og olje- og gassanlegg på sokkelen — med produksjonshistorikk og fallhøyde.",
-    bullets: [
-      "1 700+ kraftverk fra NVE",
-      "Olje- og gassanlegg fra Sodir",
-      "Planlagt og operativ havvind",
-    ],
+    description: "1 700+ kraftverk og olje- og gassanlegg på interaktivt kart, med produksjonshistorikk.",
     icon: BatteryCharging,
   },
   {
     href: "/magasin",
     title: "Magasinkart",
-    description: "Vannmagasinene som driver halvparten av landets strømproduksjon, med fyllingsgrad og kapasitet.",
-    bullets: [
-      "Polygoner med areal og volum",
-      "Sanntid fyllingsgrad fra NVE",
-      "Vassdragsregioner",
-    ],
+    description: "Norges vannmagasiner med fyllingsgrad, areal og volum i sanntid.",
     icon: Waves,
   },
   {
     href: "/lading",
     title: "Ladestasjoner",
-    description: "Hver hurtiglader og vanlig elbil-lader i Norge, med live status om uttak er ledige akkurat nå.",
-    bullets: [
-      "Alle 11 000+ stasjoner fra Enova",
-      "Sanntid status via WebSocket",
-      "Effekt og operatør per uttak",
-    ],
+    description: "Alle 11 000+ ladestasjoner i Norge med live status om uttak er ledige.",
     icon: Zap,
   },
 ];
@@ -107,7 +92,7 @@ export default function EnergiCategoryPage() {
         <div className="container mx-auto px-6 md:px-16 py-10 md:py-12 max-w-4xl">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {maps.map((m) => (
-              <CategoryMapCard key={m.href} {...m} />
+              <MinimalCard key={m.href} {...m} />
             ))}
           </div>
 
