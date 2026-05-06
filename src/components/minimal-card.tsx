@@ -21,14 +21,51 @@ interface MinimalCardProps {
  * and the optional `compact` size.
  */
 export function MinimalCard({ href, icon: Icon, title, description, badge, compact = false }: MinimalCardProps) {
+  if (compact) {
+    return (
+      <Link
+        href={href}
+        className="group flex items-center gap-4 rounded-xl border bg-card px-5 py-4 hover:border-foreground/40 hover:shadow-sm transition-all h-full"
+      >
+        <Icon
+          className="h-7 w-7 shrink-0"
+          style={{ color: "var(--kv-blue)" }}
+          strokeWidth={1.75}
+        />
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center justify-between gap-2">
+            <h3
+              className="font-bold text-base tracking-tight truncate"
+              style={{ color: "var(--kv-blue)" }}
+            >
+              {title}
+            </h3>
+            {badge && (
+              <span
+                className="text-[10px] font-bold uppercase tracking-wider rounded-full px-2 py-0.5 shrink-0"
+                style={{
+                  background: "var(--kv-warning-light)",
+                  color: "var(--kv-warning-dark)",
+                }}
+              >
+                {badge}
+              </span>
+            )}
+          </div>
+          <p className="mt-0.5 text-xs text-foreground/80 truncate">{description}</p>
+        </div>
+      </Link>
+    );
+  }
+
   return (
     <Link
       href={href}
-      className={`group flex flex-col rounded-xl border bg-card hover:border-foreground/40 hover:shadow-sm transition-all h-full ${compact ? "p-4" : "p-6"}`}
+      className="group flex flex-col rounded-xl border bg-card p-6 hover:border-foreground/40 hover:shadow-sm transition-all h-full"
     >
       <div className="flex items-start justify-between gap-3">
         <Icon
-          className={compact ? "h-6 w-6" : "h-8 w-8"}
+          className="h-8 w-8"
           style={{ color: "var(--kv-blue)" }}
           strokeWidth={1.75}
         />
@@ -45,16 +82,12 @@ export function MinimalCard({ href, icon: Icon, title, description, badge, compa
         )}
       </div>
       <h3
-        className={`font-bold tracking-tight ${compact ? "mt-3 text-sm" : "mt-5 text-lg"}`}
+        className="mt-5 text-lg font-bold tracking-tight"
         style={{ color: "var(--kv-blue)" }}
       >
         {title}
       </h3>
-      <p
-        className={`text-foreground/80 leading-relaxed ${compact ? "mt-1 text-xs" : "mt-2 text-sm"}`}
-      >
-        {description}
-      </p>
+      <p className="mt-2 text-sm text-foreground/80 leading-relaxed">{description}</p>
     </Link>
   );
 }
