@@ -10,7 +10,7 @@ const utforskGroups = [
   {
     label: "Energi",
     links: [
-      { label: "Energikart", href: "/energi" },
+      { label: "Energikart", href: "/energikart" },
       { label: "Magasinkart", href: "/magasin" },
       { label: "Ladestasjoner", href: "/lading" },
     ],

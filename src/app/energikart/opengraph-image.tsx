@@ -1,6 +1,6 @@
 import { ImageResponse } from "next/og";
 
-export const alt = "Energi i Norge — Datakart";
+export const alt = "Energikart — Datakart";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -20,16 +20,22 @@ export default function OgImage() {
         }}
       >
         <span style={{ fontSize: 24, fontWeight: 700, color: "rgba(255,255,255,0.5)", letterSpacing: 1 }}>
-          DATAKART · KATEGORI
+          DATAKART
         </span>
-        <span style={{ fontSize: 96, fontWeight: 800, color: "white", marginTop: 8 }}>
-          Energi
+        <span style={{ fontSize: 64, fontWeight: 800, color: "white", marginTop: 8 }}>
+          Energikart
         </span>
-        <p style={{ fontSize: 28, color: "rgba(255,255,255,0.7)", marginTop: 16, maxWidth: 900 }}>
-          Kraftverk, vannmagasiner, ladestasjoner og olje- og gassanlegg på interaktivt kart
+        <p style={{ fontSize: 28, color: "rgba(255,255,255,0.7)", marginTop: 16 }}>
+          Norges komplette energibilde — vindkraft, vannkraft, olje & gass med produksjonsdata
         </p>
-        <div style={{ display: "flex", gap: "16px", marginTop: 40 }}>
-          {["Energikart", "Magasinkart", "Ladestasjoner"].map((label) => (
+        <div
+          style={{
+            display: "flex",
+            gap: "16px",
+            marginTop: 40,
+          }}
+        >
+          {["Vindkraft", "Vannkraft", "Olje & gass", "Produksjon"].map((label) => (
             <div
               key={label}
               style={{
