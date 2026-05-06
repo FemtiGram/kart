@@ -1,3 +1,6 @@
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
+
 interface CategoryHeroProps {
   eyebrow: string;
   title: string;
@@ -6,13 +9,20 @@ interface CategoryHeroProps {
 
 /**
  * Top section of a category landing page (/energi, /natur, /samfunn).
- * Eyebrow ("DATAKART · Energi") + big title + ~80-word editorial intro.
+ * Back-to-home link + eyebrow + big title + ~80-word editorial intro.
  */
 export function CategoryHero({ eyebrow, title, intro }: CategoryHeroProps) {
   return (
-    <div className="container mx-auto px-6 md:px-16 pt-10 md:pt-16 pb-8 md:pb-12 max-w-4xl">
+    <div className="container mx-auto px-6 md:px-16 pt-6 md:pt-8 pb-8 md:pb-12 max-w-4xl">
+      <Link
+        href="/"
+        className="inline-flex items-center gap-1.5 text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors"
+      >
+        <ArrowLeft className="h-4 w-4" />
+        Tilbake til forsiden
+      </Link>
       <p
-        className="text-xs font-bold uppercase tracking-widest text-muted-foreground"
+        className="mt-6 text-xs font-bold uppercase tracking-widest text-muted-foreground"
         aria-hidden="true"
       >
         {eyebrow}

@@ -118,10 +118,10 @@ export default function Home() {
             Mest populært
           </p>
         </FadeIn>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {popular.map((p, i) => (
             <FadeIn key={p.href} delay={i * 0.05}>
-              <MinimalCard {...p} />
+              <MinimalCard {...p} compact />
             </FadeIn>
           ))}
         </div>
