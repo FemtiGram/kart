@@ -14,7 +14,7 @@ Live at: [datakart.no](https://datakart.no)
 | Boligpriser | `/bolig` | Housing prices (kr/m²) per municipality — bubble map with kommune comparison and Finn.no deep-links | |
 | Skoler og barnehager | `/skoler` | All 3 100+ skoler and 5 500+ barnehager in Norge with student/child counts, type and ownership. Data from Utdanningsdirektoratet (NSR + NBR) | |
 | Helsetilbud | `/helse` | Kommune choropleth of fastlege data — ledig kapasitet, andel uten fastlege, gjennomsnittlig listelengde. SSB tabell 12005. Optional OSM overlay for sykehus and legevakt | |
-| Energikart | `/energi` | Wind, hydro, offshore wind, oil and gas | [docs/maps/energi.md](docs/maps/energi.md) |
+| Energikart | `/energikart` | Wind, hydro, offshore wind, oil and gas | [docs/maps/energi.md](docs/maps/energi.md) |
 | Magasinkart | `/magasin` | Regulated water reservoirs with live fill levels | [docs/maps/magasin.md](docs/maps/magasin.md) |
 | Ladestasjoner | `/lading` | All EV charging stations in Norway | [docs/maps/lading.md](docs/maps/lading.md) |
 | Turisthytter | `/hytter` | Mountain huts and wilderness cabins | [docs/maps/hytter.md](docs/maps/hytter.md) |
@@ -22,7 +22,10 @@ Live at: [datakart.no](https://datakart.no)
 | Inntektskart | `/lonn` | Choropleth: median household income per municipality with kommune comparison | [docs/maps/inntekt.md](docs/maps/inntekt.md) |
 | Verneområder | `/vern` | Choropleth: protected nature area per municipality (km²) | [docs/maps/vern.md](docs/maps/vern.md) |
 | Kostnader | `/kostnader` | Choropleth of what it costs to live in each municipality: kommunale årsgebyr (water, sewage, waste, chimney) and eiendomsskatt (property tax) with Sammenlign comparison feature. SSB tables 12842 + 14674 | |
+| Valgkart | `/valg` | Stortingsvalg 2025/2021 and Kommunestyrevalg 2023/2019 per kommune — vinnerparti choropleth, stemmefordeling, frammøte and endring from previous election. Compare two kommuner side by side. Data from Valgdirektoratet | |
 | Prisvekst | `/prisvekst` | Inflation dashboard: KPI, categories, trends, Nordic comparison | |
+
+The home and three category landing pages (`/energi`, `/natur`, `/samfunn`) are tiered hubs that introduce each theme and link out to the maps above. `/energi` previously hosted the energy MAP — that moved to `/energikart` in May 2026; a conditional 301 in `next.config.ts` preserves Stedsprofil deep-links.
 
 ---
 
@@ -63,6 +66,7 @@ node scripts/fetch-kommuner.mjs
 node scripts/fetch-finn-locations.mjs
 node scripts/fetch-schools.mjs
 node scripts/fetch-health.mjs
+node scripts/fetch-valg.mjs
 node scripts/build-kommune-profiles.mjs
 
 npm run dev
@@ -98,6 +102,7 @@ The seed scripts are also run automatically as a `prebuild` hook when deploying.
 | Boligtyper | SSB table 06265 (enebolig, småhus, blokk, ...) | Build-time static JSON |
 | Utdanningsnivå | SSB table 09429 (grunnskole / vgs / høyere utdanning) | Build-time static JSON |
 | Sykehus and legevakt | OpenStreetMap (Overpass, `amenity=hospital`/`clinic` scoped to Norway) | Build-time static JSON |
+| Election results | Valgdirektoratet (valgresultat.no) — Stortingsvalg 2025/2021, Kommunestyrevalg 2023/2019 | Build-time static JSON |
 | Finn.no location codes | Scraped from `finn.no/realestate/homes/search.html` | Build-time static JSON |
 | Inflation (KPI) | SSB tables 03013 + 05327 | Loaded once on mount |
 | Policy rate | Norges Bank API | Loaded once on mount |

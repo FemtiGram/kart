@@ -27,7 +27,10 @@ src/app/
   vern/page.tsx         — Protected areas choropleth
   bolig/page.tsx        — Housing prices bubble map
   map/page.tsx          — Elevation + weather map
-  energi/page.tsx       — Energy (wind + hydro) map
+  energi/page.tsx       — Category landing for Energi (hub for /energikart, /magasin, /lading)
+  natur/page.tsx        — Category landing for Natur (hub for /map, /hytter, /vern)
+  samfunn/page.tsx      — Category landing for Samfunn (hub for Stedsprofil, /bolig, /lonn, /helse, /skoler, /kostnader, /valg, /prisvekst)
+  energikart/page.tsx   — Energy (wind + hydro) map. Renamed from /energi in May 2026; conditional 301 in next.config.ts preserves Stedsprofil deep links (?lat=&lon=&z=)
   magasin/page.tsx      — Reservoir monitor map
   prisvekst/page.tsx    — Inflation dashboard (KPI, categories, trends)
   vindkraft/page.tsx    — Wind power plants map (unlisted deep link, not in nav/sitemap)
@@ -38,6 +41,7 @@ src/app/
   helse/page.tsx        — Fastlege choropleth (SSB 12005) with optional OSM overlay for sykehus/legevakt
   kostnader/page.tsx    — Cost-of-living choropleth: kommunale gebyrer (SSB 12842) + eiendomsskatt (SSB 14674) with Sammenlign feature
   kostnader/opengraph-image.tsx — Dynamic OG image for /kostnader
+  valg/page.tsx         — Election results choropleth: stortingsvalg + kommunestyrevalg per kommune (Valgdirektoratet) — type/year selectors, comparison sheet, FAQ
   personvern/page.tsx   — Privacy policy page
   api/
     bolig/route.ts      — SSB housing price data (table 06035)
@@ -75,6 +79,10 @@ src/components/
   kostnader-map.tsx     — /kostnader map: cost-of-living choropleth (2 metric segmented control: gebyrer total + eiendomsskatt 120 m²). "Ingen eiendomsskatt" rendered as positive light-green fill. Detail + comparison sheets in kostnader-detail-sheets.tsx
   kostnader-map-loader.tsx — Dynamic wrapper for kostnader-map (ssr: false)
   home-kommune-search.tsx — Client component on landing hero: diacritic-aware autocomplete over all 357 kommuner, keyboard nav, routes directly to /kommune/[slug]. Data loaded at build time via server-component prop passing
+  minimal-card.tsx      — Single shared card style for the home (categories + Mest populært strip) AND the category landing pages. `compact` prop switches to icon-on-the-left horizontal layout for the home Mest populært strip
+  category-hero.tsx     — Reusable hero for /energi, /natur, /samfunn — back-to-home link + eyebrow + big title + ~80-word editorial intro
+  valg-map.tsx          — /valg map: party-colored choropleth, type/year selectors (st 2025/2021, ko 2023/2019), white-halo hover, compare sheet
+  valg-map-loader.tsx   — Dynamic wrapper for valg-map (ssr: false)
   footer.tsx            — Shared footer with three-column layout (brand / Utforsk grouped by theme / Ressurser)
   map-icons.tsx         — Shared L.divIcon factories: chargingIcon, cabinIcon, reservoirIcon, schoolIcon, kindergartenIcon, healthIcon + re-exports of energyIcon from energy-map-helpers
   ui/                   — shadcn/ui primitives (includes chart.tsx for Recharts wrappers)
@@ -88,6 +96,7 @@ src/lib/
   kommune-slug.ts       — Pure function that mirrors the build-time slugify logic (knr-name) for client-side URL construction
   health-summary.ts     — Shared `synthesizeHealth()` helper used on /helse and Stedsprofil — turns 3 fastlege metrics into a plain-Norwegian one-line sentence with good/mixed/bad/neutral tone
   utm.ts                — UTM zone 33N → WGS84 conversion (for NVE ArcGIS data)
+  party-colors.ts       — Norwegian party colors (saturated fills + WCAG-AA-compliant text variants); used by /valg and Stedsprofil Politikk section
   utils.ts              — cn() helper
 
 scripts/
@@ -99,7 +108,8 @@ scripts/
   fetch-finn-locations.mjs — Build-time: scrapes Finn.no realestate page, extracts hierarchical location codes, matches each kommune → public/data/finn-locations.json
   fetch-schools.mjs     — Build-time: lists active schools (NSR) and barnehager (NBR) from UDIR, fetches per-orgnr detail for coordinates and stats in a 20-wide pool → public/data/schools.json
   fetch-health.mjs      — Build-time: Overpass query (scoped to Norway via `area["ISO3166-1"="NO"]`) for `amenity=hospital` and `amenity=clinic`, classifies into sykehus / legevakt / privatklinikker → public/data/health.json
-  build-kommune-profiles.mjs — Build-time: composes SSB population/income/bolig/vern/fastlege (12005) + kommunale gebyrer (12842) + eiendomsskatt (14674) + eierstatus (11084) + boligtyper (06265) + utdanningsnivå (09429) + nasjonale prøver (12255) + NVE plants + UDIR schools/barnehager + static files via point-in-polygon and kommunenummer grouping into one profile per kommune → public/data/kommune-profiles.json + public/data/fastlege.json + public/data/kostnader.json. Also calls `generateSnapshot()` from `generate-snapshot.mjs` for each profile so the 3-sentence narrative is baked into the output JSON.
+  fetch-valg.mjs        — Build-time: fetches Stortingsvalg 2025/2021 + Kommunestyrevalg 2023/2019 from valgresultat.no (Valgdirektoratet). Remaps pre-2024 kommunenummer to current geometry via fylke-prefix table + name normalization (Sami/Kven secondary names, "Aurskog-Høland" whitespace, "Nes, Buskerud"→Nesbyen rename) → public/data/valg/{type}-{year}.json + index.json manifest
+  build-kommune-profiles.mjs — Build-time: composes SSB population/income/bolig/vern/fastlege (12005) + kommunale gebyrer (12842) + eiendomsskatt (14674) + eierstatus (11084) + boligtyper (06265) + utdanningsnivå (09429) + nasjonale prøver (12255) + NVE plants + UDIR schools/barnehager + valg results (latest st + ko) + static files via point-in-polygon and kommunenummer grouping into one profile per kommune → public/data/kommune-profiles.json + public/data/fastlege.json + public/data/kostnader.json. Also calls `generateSnapshot()` from `generate-snapshot.mjs` for each profile so the 3-sentence narrative is baked into the output JSON.
   generate-snapshot.mjs — Pure (no fetches) helper imported by build-kommune-profiles.mjs. Takes a profile + rank totals and returns a `string[]` of 3 sentences: rule-based notability scoring picks the top 3 distinct themes from ~13 candidates (bolig / gebyr / income / vern / hytter / sykehus / fastlege / skoler / nasjonale prøver / demografi-eier / demografi-boliger / demografi-utdanning / geografisk filler). Templates are deliberately factual — never LLM-generated.
 
 public/data/
@@ -113,6 +123,12 @@ public/data/
   health.json           — Pre-built OSM health data (sykehus + legevakt + privatklinikker, optional overlay on /helse)
   fastlege.json         — Pre-built SSB 12005 fastlege data — all 357 kommuner, 18 metrics latest year + trend for 3 primary. Consumed by /helse choropleth
   kostnader.json        — Pre-built cost-of-living data — all 357 kommuner, gebyrerTotal (SSB 12842) + eiendomsskatt120m2 / Promille (SSB 14674) + full gebyr breakdown per kommune. Consumed by /kostnader choropleth
+  valg/                 — Per-(type, year) election results from Valgdirektoratet:
+    index.json          — manifest listing available elections
+    st-2025.json        — Stortingsvalg 2025 (357 kommuner)
+    st-2021.json        — Stortingsvalg 2021 (356, Haram missing — was inside Ålesund)
+    ko-2023.json        — Kommunestyrevalg 2023 (357)
+    ko-2019.json        — Kommunestyrevalg 2019 (356)
   kommune-profiles.json — Pre-built per-kommune profile data for Stedsprofil (committed to repo)
 ```
 
@@ -125,12 +141,12 @@ public/data/
 4. **Real-time WebSocket** (charging status) — API route fetches temporary WSS URL from Enova, client connects and receives live updates. Status stored in ref (not state) to avoid re-rendering all markers. Auto-reconnects every 30s (JWT expires ~60s).
 
 ### Build-time data pipeline:
-- `scripts/fetch-stations.mjs`, `scripts/fetch-cabins.mjs`, `scripts/fetch-production.mjs`, `scripts/fetch-reservoirs.mjs`, `scripts/fetch-kommuner.mjs`, `scripts/fetch-finn-locations.mjs`, `scripts/fetch-schools.mjs`, `scripts/fetch-health.mjs`, and `scripts/build-kommune-profiles.mjs` run as `prebuild` hook
+- `scripts/fetch-stations.mjs`, `scripts/fetch-cabins.mjs`, `scripts/fetch-production.mjs`, `scripts/fetch-reservoirs.mjs`, `scripts/fetch-kommuner.mjs`, `scripts/fetch-finn-locations.mjs`, `scripts/fetch-schools.mjs`, `scripts/fetch-health.mjs`, `scripts/fetch-valg.mjs`, and `scripts/build-kommune-profiles.mjs` run as `prebuild` hook
 - Overpass scripts try 3 mirrors with retry; if all fail, keeps existing data
 - Frontend has client-side Overpass fallback if static file is empty
 - Production script fetches yearly CSV from Sodir FactPages (~205 KB, 130 fields)
 - **Vercel's 10s timeout prevents runtime Overpass calls for large bbox queries**
-- **To seed data locally:** `node scripts/fetch-stations.mjs && node scripts/fetch-cabins.mjs && node scripts/fetch-production.mjs && node scripts/fetch-reservoirs.mjs && node scripts/fetch-kommuner.mjs && node scripts/fetch-finn-locations.mjs && node scripts/fetch-schools.mjs && node scripts/fetch-health.mjs && node scripts/build-kommune-profiles.mjs`
+- **To seed data locally:** `node scripts/fetch-stations.mjs && node scripts/fetch-cabins.mjs && node scripts/fetch-production.mjs && node scripts/fetch-reservoirs.mjs && node scripts/fetch-kommuner.mjs && node scripts/fetch-finn-locations.mjs && node scripts/fetch-schools.mjs && node scripts/fetch-health.mjs && node scripts/fetch-valg.mjs && node scripts/build-kommune-profiles.mjs`
 
 ### Each map component has:
 - Search bar (Fylke → Kommune → Adresse, limits: 3/5/2)
@@ -435,6 +451,7 @@ Three-tier convention: `-light` for the background tint, base for icons/borders/
 | Boligtyper | SSB tabell 06265 — antall boliger per bygningstype (enebolig/småhus/blokk/...) per kommune, konvertert til prosent på byggetidspunktet | Build-time static JSON |
 | Utdanningsnivå | SSB tabell 09429 — % grunnskole / vgs / fagskole / UH kort / UH lang per kommune | Build-time static JSON |
 | Nasjonale prøver | SSB tabell 12255 (KOSTRA) — lesing %, regning % (mestringsnivå 3–5, 8. trinn) + grunnskolepoeng per kommune | Build-time static JSON |
+| Election results | Valgdirektoratet (valgresultat.no) — Stortingsvalg 2025/2021, Kommunestyrevalg 2023/2019. Pre-2024 kommunenummer remapped to current geometry | Build-time static JSON |
 | Finn.no location codes | Scraped from `finn.no/realestate/homes/search.html` (embedded JSON) | Build-time static JSON |
 | Weather | MET.no locationforecast | 30min server cache |
 | Elevation | Kartverket høyde-API | Per-request |

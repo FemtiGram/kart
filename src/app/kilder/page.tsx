@@ -115,6 +115,15 @@ const sources = [
     url: "https://ec.europa.eu/eurostat",
     usedIn: ["Prisvekst"],
   },
+  {
+    name: "Valgdirektoratet",
+    description: "Offisielle valgresultater for Stortingsvalg og kommunestyrevalg, fordelt p\u00e5 kommune. Inneholder vinnerparti, stemmefordeling, framm\u00f8te og endring fra forrige valg.",
+    license: "NLOD 2.0",
+    licenseUrl: "https://data.norge.no/nlod/no/2.0",
+    attribution: "Inneholder data under norsk lisens for offentlige data (NLOD) tilgjengeliggjort av Valgdirektoratet",
+    url: "https://valgresultat.no",
+    usedIn: ["Valgkart", "Stedsprofil"],
+  },
 ];
 
 const jsonLd = {
