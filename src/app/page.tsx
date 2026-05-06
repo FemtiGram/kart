@@ -43,7 +43,7 @@ const groups: Array<{ label: string; items: GroupItem[] }> = [
   {
     label: "Energi",
     items: [
-      { title: "Energikart", description: "Vind, vann, olje og gass", href: "/energi", icon: BatteryCharging },
+      { title: "Energikart", description: "Vind, vann, olje og gass", href: "/energikart", icon: BatteryCharging },
       { title: "Magasinkart", description: "Vannmagasiner og fyllingsgrad", href: "/magasin", icon: Waves },
       { title: "Ladestasjoner", description: "Elbil-lading i hele Norge", href: "/lading", icon: Zap },
     ],

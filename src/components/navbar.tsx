@@ -29,20 +29,24 @@ interface NavLink {
 
 interface NavGroup {
   label: string;
+  /** Category landing page — appears as "Se alle …" link at the top of the dropdown */
+  categoryHref: string;
   links: NavLink[];
 }
 
 const navGroups: NavGroup[] = [
   {
     label: "Energi",
+    categoryHref: "/energi",
     links: [
-      { href: "/energi", label: "Energikart", icon: BatteryCharging, description: "Vind, vann, olje og gass" },
+      { href: "/energikart", label: "Energikart", icon: BatteryCharging, description: "Vind, vann, olje og gass" },
       { href: "/magasin", label: "Magasinkart", icon: Waves, description: "Vannmagasiner og fyllingsgrad" },
       { href: "/lading", label: "Ladestasjoner", icon: Zap, description: "Elbil-lading i hele Norge" },
     ],
   },
   {
     label: "Natur",
+    categoryHref: "/natur",
     links: [
       { href: "/map", label: "Høydekart", icon: Mountain, description: "Høydedata og værforhold" },
       { href: "/hytter", label: "Turisthytter", icon: Home, description: "DNT-hytter og fjellstuer" },
@@ -51,6 +55,7 @@ const navGroups: NavGroup[] = [
   },
   {
     label: "Samfunn",
+    categoryHref: "/samfunn",
     links: [
       { href: "/kommune", label: "Stedsprofil", icon: MapPinned, description: "Alle 357 kommuner i ett sammendrag" },
       { href: "/skoler", label: "Skoler og barnehager", icon: GraduationCap, description: "Alle skoler og barnehager i Norge" },
@@ -106,6 +111,19 @@ export function Navbar() {
                   </NavigationMenuTrigger>
                   <NavigationMenuContent className="min-w-[280px]">
                     <ul className="flex flex-col gap-1 p-1">
+                      <li>
+                        <NavigationMenuLink
+                          href={group.categoryHref}
+                          data-active={pathname === group.categoryHref ? "" : undefined}
+                          render={<Link href={group.categoryHref} />}
+                          className="flex items-center justify-between gap-3 px-3 py-2.5 rounded-md hover:bg-muted transition-colors border-b mb-1"
+                        >
+                          <span className="text-xs font-bold uppercase tracking-widest" style={{ color: "var(--kv-blue)" }}>
+                            Se alle {group.label.toLowerCase()}kart
+                          </span>
+                          <span className="text-xs text-muted-foreground">→</span>
+                        </NavigationMenuLink>
+                      </li>
                       {group.links.map((link) => {
                         const Icon = link.icon;
                         return (
@@ -154,9 +172,16 @@ export function Navbar() {
             <nav className="mt-2 flex flex-col">
               {navGroups.map((group) => (
                 <div key={group.label}>
-                  <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground px-3 pt-4 pb-2">
-                    {group.label}
-                  </p>
+                  <Link
+                    href={group.categoryHref}
+                    onClick={() => setOpen(false)}
+                    className="block px-3 pt-4 pb-2"
+                  >
+                    <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors">
+                      {group.label}
+                      <span className="ml-1 text-foreground/40">→</span>
+                    </span>
+                  </Link>
                   {group.links.map((link) => {
                     const Icon = link.icon;
                     const active = pathname === link.href;

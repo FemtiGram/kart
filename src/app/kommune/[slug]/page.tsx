@@ -622,7 +622,7 @@ function NaturSection({ profile }: { profile: KommuneProfile }) {
 function EnergiSection({ profile }: { profile: KommuneProfile }) {
   const { energy, reservoirs, ranks, centroid } = profile;
   const totals = getTotals();
-  const energiHref = `/energi?lat=${centroid.lat.toFixed(4)}&lon=${centroid.lon.toFixed(4)}&z=10`;
+  const energiHref = `/energikart?lat=${centroid.lat.toFixed(4)}&lon=${centroid.lon.toFixed(4)}&z=10`;
   if (energy.plantCount === 0 && reservoirs.total === 0) {
     return (
       <Section title="Energi" icon={Zap} href={energiHref}>
