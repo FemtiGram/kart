@@ -12,7 +12,7 @@ import { Info } from "lucide-react";
 export const metadata: Metadata = {
   title: "Prisutvikling-kalkulator",
   description:
-    "Se hvordan boligprisene har utviklet seg i din kommune siden du kjøpte. Basert på SSBs kvadratmeterpriser. Ikke et nøyaktig estimat — bruk en megler eller bank for det.",
+    "Hvordan har boligprisen din utviklet seg? Beregn snittutviklingen i kommunen din fra 2002 til i dag, basert på SSBs kvadratmeterpriser per boligtype.",
   alternates: { canonical: "/bolig/utvikling" },
 };
 
