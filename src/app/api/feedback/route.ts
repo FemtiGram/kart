@@ -26,9 +26,8 @@ function getClientIp(request: Request): string {
   return request.headers.get("x-real-ip") ?? "unknown";
 }
 
-function normalizeFoundForStorage(value: unknown): boolean | null {
-  if (value === "ja") return true;
-  if (value === "nei") return false;
+function normalizeFoundForStorage(value: unknown): string | null {
+  if (value === "ja" || value === "delvis" || value === "nei") return value;
   return null;
 }
 

@@ -487,7 +487,7 @@ export function InflationDashboard() {
       {/* Source */}
       <div className="pt-4 border-t">
         <p className="text-xs text-foreground/70 text-center">
-          Kilder: <a href="https://www.ssb.no/statbank/table/03013/" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">SSB Tabell 03013</a> (KPI) · <a href="https://www.ssb.no/statbank/table/05327/" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">SSB Tabell 05327</a> (KPI-JAE) · <a href="https://www.norges-bank.no" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Norges Bank</a> (styringsrente) · <a href="https://ec.europa.eu/eurostat" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Eurostat</a> (HICP)
+          Kilder: <a href="https://www.ssb.no/statbank/table/14700/" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">SSB Tabell 14700</a> (KPI) · <a href="https://www.ssb.no/statbank/table/14706/" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">SSB Tabell 14706</a> (KPI-JAE) · <a href="https://www.norges-bank.no" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Norges Bank</a> (styringsrente) · <a href="https://ec.europa.eu/eurostat" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Eurostat</a> (HICP)
         </p>
         <p className="text-[10px] text-muted-foreground text-center mt-1">
           Data kan inneholde feil og bør ikke brukes som eneste kilde for beslutninger.

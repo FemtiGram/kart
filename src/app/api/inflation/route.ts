@@ -18,13 +18,14 @@ export async function GET() {
   try {
     // Fetch all data sources in parallel
     const [kpiRes, jaeRes, rateRes, nordicRes, yearlyRes] = await Promise.all([
-      // SSB 03013: Monthly KPI — last 25 months, all categories, 12-month + 1-month change
-      fetch(`${SSB_BASE}/03013`, {
+      // SSB 14700: Monthly KPI — last 25 months, all categories, 12-month + 1-month change
+      // (replaces deprecated 03013 from 2026-02-10)
+      fetch(`${SSB_BASE}/14700`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           query: [
-            { code: "Konsumgrp", selection: { filter: "item", values: ["TOTAL", "01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"] } },
+            { code: "VareTjenesteGrp", selection: { filter: "item", values: ["00", "01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"] } },
             { code: "ContentsCode", selection: { filter: "item", values: ["Tolvmanedersendring", "Manedsendring"] } },
             { code: "Tid", selection: { filter: "top", values: ["25"] } },
           ],
@@ -33,13 +34,13 @@ export async function GET() {
         next: { revalidate: 3600 },
         signal: AbortSignal.timeout(8000),
       }),
-      // SSB 05327: KPI-JAE — last 25 months
-      fetch(`${SSB_BASE}/05327`, {
+      // SSB 14706: KPI-JAE — last 25 months (replaces deprecated 05327)
+      fetch(`${SSB_BASE}/14706`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           query: [
-            { code: "Konsumgrp", selection: { filter: "item", values: ["JAE_TOTAL"] } },
+            { code: "KPIavledetSerie", selection: { filter: "item", values: ["KPI-JAE"] } },
             { code: "ContentsCode", selection: { filter: "item", values: ["Tolvmanedersendring"] } },
             { code: "Tid", selection: { filter: "top", values: ["25"] } },
           ],
@@ -58,13 +59,13 @@ export async function GET() {
         next: { revalidate: 3600 },
         signal: AbortSignal.timeout(8000),
       }).catch(() => null),
-      // SSB 03014: Yearly KPI — last 20 years
-      fetch(`${SSB_BASE}/03014`, {
+      // SSB 14701: Yearly KPI — last 20 years (replaces deprecated 03014)
+      fetch(`${SSB_BASE}/14701`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           query: [
-            { code: "Konsumgrp", selection: { filter: "item", values: ["TOTAL"] } },
+            { code: "VareTjenesteGrp", selection: { filter: "item", values: ["00"] } },
             { code: "ContentsCode", selection: { filter: "item", values: ["Aarsendring"] } },
             { code: "Tid", selection: { filter: "top", values: ["20"] } },
           ],
@@ -84,11 +85,11 @@ export async function GET() {
     const kVals = kpi.value as (number | null)[];
     const kStrides = new Array(kIds.length).fill(1);
     for (let i = kIds.length - 2; i >= 0; i--) kStrides[i] = kStrides[i + 1] * kSizes[i + 1];
-    const kGrpIdx = kpi.dimension.Konsumgrp.category.index as Record<string, number>;
-    const kGrpLabels = kpi.dimension.Konsumgrp.category.label as Record<string, string>;
+    const kGrpIdx = kpi.dimension.VareTjenesteGrp.category.index as Record<string, number>;
+    const kGrpLabels = kpi.dimension.VareTjenesteGrp.category.label as Record<string, string>;
     const kContIdx = kpi.dimension.ContentsCode.category.index as Record<string, number>;
     const kTidIdx = kpi.dimension.Tid.category.index as Record<string, number>;
-    const kGrpS = kStrides[kIds.indexOf("Konsumgrp")];
+    const kGrpS = kStrides[kIds.indexOf("VareTjenesteGrp")];
     const kContS = kStrides[kIds.indexOf("ContentsCode")];
     const kTidS = kStrides[kIds.indexOf("Tid")];
     const twelveMIdx = kContIdx["Tolvmanedersendring"];
@@ -101,7 +102,7 @@ export async function GET() {
     const latestTi = kTidIdx[latestMonth];
     const categories: CategoryData[] = [];
     for (const [code, gi] of Object.entries(kGrpIdx)) {
-      if (code === "TOTAL") continue;
+      if (code === "00") continue;
       categories.push({
         code,
         name: kGrpLabels[code],
@@ -111,8 +112,8 @@ export async function GET() {
     }
     categories.sort((a, b) => (b.change12m ?? 0) - (a.change12m ?? 0));
 
-    const totalChange12m = kVals[kGrpIdx["TOTAL"] * kGrpS + twelveMIdx * kContS + latestTi * kTidS] ?? null;
-    const totalChange1m = kVals[kGrpIdx["TOTAL"] * kGrpS + oneMIdx * kContS + latestTi * kTidS] ?? null;
+    const totalChange12m = kVals[kGrpIdx["00"] * kGrpS + twelveMIdx * kContS + latestTi * kTidS] ?? null;
+    const totalChange1m = kVals[kGrpIdx["00"] * kGrpS + oneMIdx * kContS + latestTi * kTidS] ?? null;
 
     // Build trend (total KPI 12-month change per month)
     const trend: TrendPoint[] = [];
@@ -120,7 +121,7 @@ export async function GET() {
       const ti = kTidIdx[m];
       trend.push({
         month: m,
-        total: kVals[kGrpIdx["TOTAL"] * kGrpS + twelveMIdx * kContS + ti * kTidS] ?? null,
+        total: kVals[kGrpIdx["00"] * kGrpS + twelveMIdx * kContS + ti * kTidS] ?? null,
         jae: null,
         rate: null,
       });

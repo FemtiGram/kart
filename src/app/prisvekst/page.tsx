@@ -31,7 +31,7 @@ const faqs = [
   },
   {
     q: "Hvor kommer dataene fra?",
-    a: "Konsumprisdata kommer fra Statistisk sentralbyrå (SSB), tabellene 03013 og 05327. Styringsrenten hentes fra Norges Bank. Nordisk sammenligning bruker Eurostats HICP-indeks. Alle data oppdateres automatisk.",
+    a: "Konsumprisdata kommer fra Statistisk sentralbyrå (SSB), tabellene 14700 og 14706. Styringsrenten hentes fra Norges Bank. Nordisk sammenligning bruker Eurostats HICP-indeks. Alle data oppdateres automatisk.",
   },
 ];
 
@@ -77,7 +77,7 @@ export default function PrisvekstPage() {
             ))}
           </Accordion>
           <p className="text-xs text-foreground/70 mt-8">
-            Data fra <a href="https://www.ssb.no/statbank/table/03013/" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">SSB</a>, <a href="https://www.norges-bank.no" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Norges Bank</a> og <a href="https://ec.europa.eu/eurostat" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Eurostat</a>.
+            Data fra <a href="https://www.ssb.no/statbank/table/14700/" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">SSB</a>, <a href="https://www.norges-bank.no" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Norges Bank</a> og <a href="https://ec.europa.eu/eurostat" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Eurostat</a>.
           </p>
         </div>
       </section>
