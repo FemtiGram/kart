@@ -8,6 +8,13 @@ import {
   useEffect,
 } from "react";
 import { Calculator, Search, MapPin, ChevronDown, AlertCircle } from "lucide-react";
+import { Area, AreaChart, CartesianGrid, XAxis, YAxis, ReferenceDot } from "recharts";
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  type ChartConfig,
+} from "@/components/ui/chart";
 
 interface KommuneOption {
   knr: string;
@@ -33,11 +40,17 @@ const YEARS = Array.from({ length: 22 }, (_, i) => String(2002 + i));
 
 type Boligtype = (typeof BOLIGTYPE_OPTIONS)[number]["value"];
 
+interface PricePoint {
+  year: string;
+  price: number | null;
+}
+
 type Result =
   | { status: "missing"; reason: string }
   | {
       status: "ok";
       kommuneName: string;
+      fylkeName: string | null;
       boligtypeLabel: string;
       purchaseYear: string;
       latestYear: string;
@@ -48,7 +61,54 @@ type Result =
       purchasePrice: number;
       estimatedToday: number;
       area: number | null;
+      priceSeries: PricePoint[];
+      fylkeGrowthPercent: number | null;
+      nationalGrowthPercent: number | null;
     };
+
+const chartConfig: ChartConfig = {
+  price: {
+    label: "Pris per m²",
+    color: "var(--kv-blue)",
+  },
+};
+
+function ComparisonCell({
+  label,
+  sublabel,
+  growth,
+  highlight,
+}: {
+  label: string;
+  sublabel: string;
+  growth: number | null;
+  highlight?: boolean;
+}) {
+  const formatted =
+    growth == null
+      ? "—"
+      : `${growth >= 0 ? "+" : ""}${growth.toFixed(1)} %`;
+  const valueColor = highlight
+    ? "var(--kv-blue)"
+    : growth == null
+      ? "var(--muted-foreground)"
+      : undefined;
+  return (
+    <div
+      className={`rounded-xl border px-3 py-3 ${highlight ? "" : "bg-muted/30"}`}
+      style={highlight ? { borderColor: "var(--kv-blue)" } : undefined}
+    >
+      <p className="text-xs font-semibold text-foreground">{label}</p>
+      <p className="text-[11px] text-muted-foreground truncate">{sublabel}</p>
+      <p
+        className="text-xl font-extrabold tabular-nums mt-1"
+        style={valueColor ? { color: valueColor } : undefined}
+      >
+        {formatted}
+      </p>
+    </div>
+  );
+}
 
 /** Lowercase + strip Norwegian/Sami diacritics so e.g. "kautokeino" matches "Guovdageaidnu - Kautokeino". */
 function normalize(s: string): string {
@@ -215,9 +275,52 @@ export function UtviklingCalculator({ kommuner }: { kommuner: KommuneOption[] })
     const estimatedToday = purchasePrice * growthFactor;
     const areaNum = area ? parseFloat(area) : null;
 
+    // Build chart series from purchase year forward
+    const purchaseYearNum = parseInt(year);
+    const latestYearNum = parseInt(latestYear);
+    const priceSeries: PricePoint[] = [];
+    for (let y = purchaseYearNum; y <= latestYearNum; y++) {
+      const ys = String(y);
+      priceSeries.push({ year: ys, price: typeData[ys]?.price ?? null });
+    }
+
+    // Average growth comparison: per-kommune simple average of (latest/purchase - 1),
+    // including only kommuner that have data in both years for the same boligtype.
+    const fylkeKnrs = selectedKommune.fylke
+      ? new Set(
+          kommuner
+            .filter((k) => k.fylke === selectedKommune.fylke)
+            .map((k) => k.knr)
+        )
+      : null;
+
+    let fylkeSum = 0;
+    let fylkeCount = 0;
+    let nationalSum = 0;
+    let nationalCount = 0;
+    for (const [knr, kData] of Object.entries(boligData)) {
+      const t = kData[boligtype];
+      if (!t) continue;
+      const p1 = t[year]?.price;
+      const p2 = t[latestYear]?.price;
+      if (p1 == null || p2 == null) continue;
+      const g = p2 / p1 - 1;
+      nationalSum += g;
+      nationalCount += 1;
+      if (fylkeKnrs && fylkeKnrs.has(knr)) {
+        fylkeSum += g;
+        fylkeCount += 1;
+      }
+    }
+    const fylkeGrowthPercent =
+      fylkeKnrs && fylkeCount > 0 ? (fylkeSum / fylkeCount) * 100 : null;
+    const nationalGrowthPercent =
+      nationalCount > 0 ? (nationalSum / nationalCount) * 100 : null;
+
     return {
       status: "ok",
       kommuneName: selectedKommune.name,
+      fylkeName: selectedKommune.fylke,
       boligtypeLabel: typeLabel,
       purchaseYear: year,
       latestYear,
@@ -228,6 +331,9 @@ export function UtviklingCalculator({ kommuner }: { kommuner: KommuneOption[] })
       purchasePrice,
       estimatedToday,
       area: areaNum,
+      priceSeries,
+      fylkeGrowthPercent,
+      nationalGrowthPercent,
     };
   }
 
@@ -531,38 +637,141 @@ export function UtviklingCalculator({ kommuner }: { kommuner: KommuneOption[] })
                 </div>
               </div>
 
-              {/* Per-m² context (only if area was entered) */}
-              {result.area != null && result.area > 0 && (
-                <div className="rounded-xl border px-4 py-3 text-sm">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
+              {/* Trend chart — kr/m² over time for the selected kommune+type */}
+              <div className="rounded-xl border px-4 py-4">
+                <div className="flex items-baseline justify-between mb-3 gap-2 flex-wrap">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                     Snittpris per m² i {result.kommuneName}
                   </p>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-xs text-muted-foreground">
-                        {result.purchaseYear}
-                      </p>
-                      <p className="text-base font-semibold tabular-nums">
-                        {formatNok(result.pricePerM2Then)} kr
-                      </p>
-                    </div>
-                    <span className="text-muted-foreground" aria-hidden="true">
+                  <p className="text-xs tabular-nums text-muted-foreground">
+                    <span>{formatNok(result.pricePerM2Then)} kr</span>
+                    <span aria-hidden="true" className="mx-2">
                       →
                     </span>
-                    <div className="text-right">
-                      <p className="text-xs text-muted-foreground">
-                        {result.latestYear}
-                      </p>
-                      <p
-                        className="text-base font-semibold tabular-nums"
-                        style={{ color: "var(--kv-blue)" }}
-                      >
-                        {formatNok(result.pricePerM2Now)} kr
-                      </p>
-                    </div>
-                  </div>
+                    <span style={{ color: "var(--kv-blue)" }} className="font-semibold">
+                      {formatNok(result.pricePerM2Now)} kr
+                    </span>
+                  </p>
                 </div>
-              )}
+                <ChartContainer
+                  config={chartConfig}
+                  className="aspect-auto h-32 w-full"
+                >
+                  <AreaChart
+                    data={result.priceSeries}
+                    margin={{ top: 4, right: 8, bottom: 0, left: -16 }}
+                  >
+                    <defs>
+                      <linearGradient
+                        id="utvFill"
+                        x1="0"
+                        y1="0"
+                        x2="0"
+                        y2="1"
+                      >
+                        <stop
+                          offset="0%"
+                          stopColor="var(--kv-blue)"
+                          stopOpacity={0.3}
+                        />
+                        <stop
+                          offset="100%"
+                          stopColor="var(--kv-blue)"
+                          stopOpacity={0.02}
+                        />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid vertical={false} strokeDasharray="3 3" />
+                    <XAxis
+                      dataKey="year"
+                      tickLine={false}
+                      axisLine={false}
+                      tickMargin={8}
+                      interval="preserveStartEnd"
+                      minTickGap={30}
+                    />
+                    <YAxis
+                      tickLine={false}
+                      axisLine={false}
+                      tickMargin={4}
+                      tickFormatter={(v: number) =>
+                        `${Math.round(v / 1000)}k`
+                      }
+                      domain={["dataMin - 1000", "dataMax + 1000"]}
+                      width={42}
+                    />
+                    <ChartTooltip
+                      content={
+                        <ChartTooltipContent
+                          labelFormatter={(label) => label as string}
+                          formatter={(value) => [
+                            value == null
+                              ? "ingen data"
+                              : `${formatNok(value as number)} kr/m²`,
+                            "Snittpris",
+                          ]}
+                        />
+                      }
+                    />
+                    <Area
+                      dataKey="price"
+                      type="monotone"
+                      stroke="var(--kv-blue)"
+                      strokeWidth={2}
+                      fill="url(#utvFill)"
+                      dot={false}
+                      activeDot={{
+                        r: 4,
+                        fill: "var(--kv-blue)",
+                        stroke: "white",
+                        strokeWidth: 2,
+                      }}
+                      connectNulls
+                    />
+                    <ReferenceDot
+                      x={result.purchaseYear}
+                      y={result.pricePerM2Then}
+                      r={4}
+                      fill="white"
+                      stroke="var(--kv-blue)"
+                      strokeWidth={2}
+                    />
+                    <ReferenceDot
+                      x={result.latestYear}
+                      y={result.pricePerM2Now}
+                      r={4}
+                      fill="var(--kv-blue)"
+                      stroke="white"
+                      strokeWidth={2}
+                    />
+                  </AreaChart>
+                </ChartContainer>
+              </div>
+
+              {/* Comparison strip — din kommune vs fylke vs landet */}
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
+                  Sammenlignet med snittutviklingen for {result.boligtypeLabel.toLowerCase()}
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  <ComparisonCell
+                    label="Din kommune"
+                    sublabel={result.kommuneName}
+                    growth={result.growthPercent}
+                    highlight
+                  />
+                  <ComparisonCell
+                    label="Fylket"
+                    sublabel={result.fylkeName ?? "—"}
+                    growth={result.fylkeGrowthPercent}
+                  />
+                  <ComparisonCell
+                    label="Hele landet"
+                    sublabel="357 kommuner"
+                    growth={result.nationalGrowthPercent}
+                  />
+                </div>
+              </div>
 
               <p className="text-xs text-muted-foreground leading-relaxed">
                 Tallet er kun et omtrentlig anslag basert på snittprisutviklingen i kommunen din. Faktisk verdi avhenger av tilstand, beliggenhet, oppgraderinger og mye mer.
