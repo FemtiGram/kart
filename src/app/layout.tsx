@@ -4,6 +4,7 @@ import Script from "next/script";
 import "./globals.css";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
+import { FeedbackButton } from "@/components/feedback-button";
 
 const GA_ID = "G-T8XDP59WNK";
 
@@ -70,6 +71,7 @@ gtag('config', '${GA_ID}');`}
         <Navbar />
         <main className="flex-1">{children}</main>
         <Footer />
+        <FeedbackButton />
       </body>
     </html>
   );
