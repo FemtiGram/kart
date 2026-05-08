@@ -17,6 +17,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { path: "/vern", priority: 0.7, changeFrequency: "monthly" as const },
     { path: "/lonn", priority: 0.7, changeFrequency: "yearly" as const },
     { path: "/bolig", priority: 0.8, changeFrequency: "yearly" as const },
+    { path: "/bolig/utvikling", priority: 0.7, changeFrequency: "yearly" as const },
     { path: "/prisvekst", priority: 0.8, changeFrequency: "monthly" as const },
     { path: "/skoler", priority: 0.8, changeFrequency: "weekly" as const },
     { path: "/helse", priority: 0.8, changeFrequency: "weekly" as const },
