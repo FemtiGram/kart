@@ -7,7 +7,7 @@ export async function GET() {
         { code: "Region", selection: { filter: "all", values: ["*"] } },
         { code: "Boligtype", selection: { filter: "item", values: ["01", "02", "03"] } },
         { code: "ContentsCode", selection: { filter: "item", values: ["KvPris", "Omsetninger"] } },
-        { code: "Tid", selection: { filter: "item", values: ["2015", "2016", "2017", "2018", "2019", "2020", "2021", "2022", "2023", "2024"] } },
+        { code: "Tid", selection: { filter: "all", values: ["*"] } },
       ],
       response: { format: "json-stat2" },
     }),

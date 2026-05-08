@@ -7,7 +7,7 @@ import {
   useRef,
   useEffect,
 } from "react";
-import { Calculator, Search, MapPin, ChevronDown, Loader2, AlertCircle } from "lucide-react";
+import { Calculator, Search, MapPin, ChevronDown, AlertCircle } from "lucide-react";
 
 interface KommuneOption {
   knr: string;
@@ -27,7 +27,9 @@ const BOLIGTYPE_OPTIONS = [
   { value: "03", label: "Blokkleilighet" },
 ] as const;
 
-const YEARS = ["2015", "2016", "2017", "2018", "2019", "2020", "2021", "2022", "2023"] as const;
+// SSB 06035 has data from 2002. Latest year is excluded so there's always at
+// least one year of growth to show — the dropdown ends at "today minus 1".
+const YEARS = Array.from({ length: 22 }, (_, i) => String(2002 + i));
 
 type Boligtype = (typeof BOLIGTYPE_OPTIONS)[number]["value"];
 
