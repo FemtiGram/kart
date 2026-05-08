@@ -155,6 +155,9 @@ export function UtviklingCalculator({ kommuner }: { kommuner: KommuneOption[] })
   const [boligData, setBoligData] = useState<BoligData | null>(null);
   const [dataError, setDataError] = useState(false);
   const [result, setResult] = useState<Result | null>(null);
+  // Becomes true on first Beregn click. After that, any form change
+  // triggers a live recompute — no need to click Beregn again.
+  const [hasComputed, setHasComputed] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -337,6 +340,19 @@ export function UtviklingCalculator({ kommuner }: { kommuner: KommuneOption[] })
     };
   }
 
+  // Live recompute after the first Beregn click. Any form change feeds
+  // straight into a new result, so users can A/B between boligtyper or
+  // years without clicking the button again.
+  useEffect(() => {
+    if (!hasComputed) return;
+    if (!canSubmit) return;
+    setResult(computeResult());
+    // computeResult reads from these state values via closure; listing the
+    // inputs explicitly is enough — including computeResult itself would
+    // re-fire every render since it's defined inline.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasComputed, canSubmit, boligtype, year, price, area, selectedKommune?.knr]);
+
   return (
     <div className="bg-card rounded-2xl shadow-sm border px-5 py-5 sm:px-6 sm:py-6">
       <div className="flex items-center gap-2 mb-4">
@@ -357,6 +373,7 @@ export function UtviklingCalculator({ kommuner }: { kommuner: KommuneOption[] })
         onSubmit={(e) => {
           e.preventDefault();
           if (!canSubmit) return;
+          setHasComputed(true);
           setResult(computeResult());
         }}
         className="flex flex-col gap-5"
@@ -659,7 +676,7 @@ export function UtviklingCalculator({ kommuner }: { kommuner: KommuneOption[] })
                 >
                   <AreaChart
                     data={result.priceSeries}
-                    margin={{ top: 4, right: 8, bottom: 0, left: -16 }}
+                    margin={{ top: 4, right: 8, bottom: 0, left: 4 }}
                   >
                     <defs>
                       <linearGradient
