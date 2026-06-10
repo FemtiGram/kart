@@ -31,6 +31,13 @@ interface BoligEntry {
 type BoligData = Record<string, Record<string, Record<string, BoligEntry>>>;
 // { kommunenummer: { boligtype: { year: { price, count } } } }
 
+// SSB split the series in 2025: 06035 (≤2024, avslutta) → 14545 (2025–).
+// Cite the right table for whichever year is on screen.
+function ssbTable(year: string): { id: string; url: string } {
+  const id = year >= "2025" ? "14545" : "06035";
+  return { id, url: `https://www.ssb.no/statbank/table/${id}/` };
+}
+
 interface SelectedKommune {
   kommunenummer: string;
   kommunenavn: string;
@@ -263,14 +270,18 @@ export function BoligMap() {
       setCentroids(cent);
       setGeoData(geoRes);
       setBoligData(boligRes.data);
-      setYears(boligRes.years ?? []);
+      const loadedYears: string[] = boligRes.years ?? [];
+      setYears(loadedYears);
+      // Default to the most recent year SSB publishes — auto-advances as new data lands
+      const latestYear = loadedYears[loadedYears.length - 1];
+      if (latestYear) setYear(latestYear);
       setMergedKommuner(new Set(boligRes.merged ?? []));
       geoFeaturesRef.current = (geoRes.features ?? []).map((f: { properties: { kommunenummer: string; kommunenavn: string } }) => ({
         properties: { kommunenummer: f.properties.kommunenummer, navn: f.properties.kommunenavn },
       }));
 
       // Count kommuner with data for default type (eneboliger) and latest year
-      const defaultCount = Object.values(boligRes.data as BoligData).filter((t) => t["01"]?.["2024"]?.price != null).length;
+      const defaultCount = Object.values(boligRes.data as BoligData).filter((t) => t["01"]?.[latestYear]?.price != null).length;
       setLoadedCount(defaultCount);
       setCounting(true);
       setLoading(false);
@@ -858,7 +869,7 @@ export function BoligMap() {
                   {/* Source */}
                   <div className="mt-4 pt-4 border-t">
                     <p className="text-xs text-foreground/70 text-center">
-                      Kilde: <a href="https://www.ssb.no/statbank/table/06035/" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">SSB Tabell 06035</a>, {year}
+                      Kilde: <a href={ssbTable(year).url} target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">SSB Tabell {ssbTable(year).id}</a>, {year}
                     </p>
                     <DataDisclaimer />
                   </div>
@@ -1056,7 +1067,7 @@ export function BoligMap() {
                   {/* Source */}
                   <div className="mt-4 pt-4 border-t">
                     <p className="text-xs text-foreground/70 text-center">
-                      Kilde: <a href="https://www.ssb.no/statbank/table/06035/" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">SSB Tabell 06035</a>, {year}
+                      Kilde: <a href={ssbTable(year).url} target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">SSB Tabell {ssbTable(year).id}</a>, {year}
                     </p>
                     <DataDisclaimer />
                   </div>
@@ -1070,7 +1081,7 @@ export function BoligMap() {
         <InfoModal open={showInfo} onClose={() => setShowInfo(false)} title="Om boligpriskartet">
           <p>
             Kartet viser gjennomsnittlig <strong>kvadratmeterpris</strong> for selveierboliger i alle norske kommuner.
-            Data kommer fra SSB (Statistisk sentralbyrå), tabell 06035.
+            Data kommer fra SSB (Statistisk sentralbyrå), tabell 06035 (2002–2024) og 14545 (2025–).
           </p>
           <p>
             <strong>Farge</strong> viser prisnivå (blå = rimelig, rød = dyrt). <strong>Størrelse</strong> viser markedsaktivitet (antall salg).
@@ -1079,7 +1090,7 @@ export function BoligMap() {
             Velg mellom eneboliger, småhus og blokkleiligheter, og se hvordan prisene har utviklet seg over tid.
           </p>
           <p className="text-xs text-foreground/70 mt-1 pt-3 border-t">
-            Kilde: <a href="https://www.ssb.no/statbank/table/06035/" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">SSB Tabell 06035</a>
+            Kilde: <a href="https://www.ssb.no/statbank/table/06035/" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">SSB Tabell 06035</a> og <a href="https://www.ssb.no/statbank/table/14545/" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">14545</a>
           </p>
         </InfoModal>
       </div>

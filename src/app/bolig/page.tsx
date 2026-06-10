@@ -29,11 +29,11 @@ const faqs = [
   },
   {
     q: "Hvordan har boligprisene utviklet seg?",
-    a: "Boligprisene i Norge har steget betydelig det siste tiåret. Kartet viser prisutvikling fra 2015 til 2024 for hver kommune. Du kan bytte mellom år i filteret øverst og se endringen i prisutvikling-grafen i detaljkortet for hver kommune. Vil du se hva en bestemt bolig kunne vært verdt i dag, prøv prisutvikling-kalkulatoren.",
+    a: "Boligprisene i Norge har steget betydelig det siste tiåret. Kartet viser prisutvikling fra 2015 til 2025 for hver kommune. Du kan bytte mellom år i filteret øverst og se endringen i prisutvikling-grafen i detaljkortet for hver kommune. Vil du se hva en bestemt bolig kunne vært verdt i dag, prøv prisutvikling-kalkulatoren.",
   },
   {
     q: "Hvor kommer dataene fra?",
-    a: "Alle boligprisdata kommer fra Statistisk sentralbyrå (SSB), tabell 06035. Dette er offisiell statistikk basert på tinglyste boligomsetninger i fritt salg. Dataene dekker 264 kommuner for eneboliger, 130 for småhus og 154 for blokkleiligheter. Kommuner med svært få salg publiseres ikke av SSB av personvernhensyn.",
+    a: "Alle boligprisdata kommer fra Statistisk sentralbyrå (SSB), tabell 06035 (2002–2024) og 14545 (2025–). Dette er offisiell statistikk basert på tinglyste boligomsetninger i fritt salg. Dataene dekker 264 kommuner for eneboliger, 130 for småhus og 154 for blokkleiligheter. Kommuner med svært få salg publiseres ikke av SSB av personvernhensyn.",
   },
 ];
 
@@ -93,7 +93,7 @@ export default function BoligPage() {
             ))}
           </Accordion>
           <p className="text-xs text-foreground/70 mt-8">
-            Data fra <a href="https://www.ssb.no/statbank/table/06035/" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">SSB Tabell 06035</a>. Tallene gjelder selveierboliger omsatt i fritt salg.
+            Data fra <a href="https://www.ssb.no/statbank/table/06035/" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">SSB Tabell 06035</a> og <a href="https://www.ssb.no/statbank/table/14545/" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">14545</a>. Tallene gjelder selveierboliger omsatt i fritt salg.
           </p>
         </div>
       </section>

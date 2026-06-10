@@ -1,5 +1,15 @@
-export async function GET() {
-  const res = await fetch("https://data.ssb.no/api/v0/no/table/06035", {
+// SSB split the kvadratmeterpris series in 2025:
+//   06035 — Selveierboliger 2002–2024 (avslutta serie, discontinued Jan 2025)
+//   14545 — successor annual table, 2025 onwards (same structure: Region/Boligtype/ContentsCode/Tid)
+// We fetch both and merge so the full 2002–present timeline stays intact and new
+// years appear automatically as SSB publishes them into 14545.
+const TABLES = ["06035", "14545"];
+
+type Entry = { price: number | null; count: number | null };
+type Result = Record<string, Record<string, Record<string, Entry>>>;
+
+async function fetchTable(table: string) {
+  const res = await fetch(`https://data.ssb.no/api/v0/no/table/${table}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -13,14 +23,21 @@ export async function GET() {
     }),
     next: { revalidate: 86400 },
   });
+  if (!res.ok) return null;
+  return res.json();
+}
 
-  if (!res.ok) return Response.json({ error: "SSB fetch failed" }, { status: res.status });
-
-  const data = await res.json();
-
-  const ids: string[] = data.id;
-  const sizes: number[] = data.size;
-  const values: (number | null)[] = data.value;
+// Parse one json-stat2 table into the nested result shape, collapsing pre-2020
+// kommune codes into their current code (2020 municipal reform).
+function buildResult(data: {
+  id: string[];
+  size: number[];
+  value: (number | null)[];
+  dimension: Record<string, { category: { index: Record<string, number>; label: Record<string, string> } }>;
+}): { result: Result; merged: string[]; years: string[]; typeLabels: Record<string, string> } {
+  const ids = data.id;
+  const sizes = data.size;
+  const values = data.value;
 
   // Generic stride calculation for any dimension ordering
   const strides = new Array(ids.length).fill(1);
@@ -28,10 +45,10 @@ export async function GET() {
     strides[i] = strides[i + 1] * sizes[i + 1];
   }
 
-  const regionIndex = data.dimension.Region.category.index as Record<string, number>;
-  const typeIndex = data.dimension.Boligtype.category.index as Record<string, number>;
-  const contentsIndex = data.dimension.ContentsCode.category.index as Record<string, number>;
-  const tidIndex = data.dimension.Tid.category.index as Record<string, number>;
+  const regionIndex = data.dimension.Region.category.index;
+  const typeIndex = data.dimension.Boligtype.category.index;
+  const contentsIndex = data.dimension.ContentsCode.category.index;
+  const tidIndex = data.dimension.Tid.category.index;
 
   const rStride = strides[ids.indexOf("Region")];
   const bStride = strides[ids.indexOf("Boligtype")];
@@ -42,16 +59,16 @@ export async function GET() {
   const countIdx = contentsIndex["Omsetninger"];
 
   // Build nested result: { kommunenummer: { boligtype: { year: { price, count } } } }
-  const result: Record<string, Record<string, Record<string, { price: number | null; count: number | null }>>> = {};
+  const result: Result = {};
 
   for (const [kommune, rI] of Object.entries(regionIndex)) {
     if (!/^\d{4}$/.test(kommune)) continue;
 
-    const types: Record<string, Record<string, { price: number | null; count: number | null }>> = {};
+    const types: Record<string, Record<string, Entry>> = {};
     let hasAny = false;
 
     for (const [typeCode, bI] of Object.entries(typeIndex)) {
-      const years: Record<string, { price: number | null; count: number | null }> = {};
+      const years: Record<string, Entry> = {};
 
       for (const [year, tI] of Object.entries(tidIndex)) {
         const base = rI * rStride + bI * bStride + tI * tStride;
@@ -75,7 +92,7 @@ export async function GET() {
 
   // Merge old kommune codes into new codes (2020 municipal reform)
   // Old codes have labels like "Asker (-2019)", "Songdalen (1964-2019)", "Holmestrand (2018-2019)"
-  const regionLabels = data.dimension.Region.category.label as Record<string, string>;
+  const regionLabels = data.dimension.Region.category.label;
   const isOldCode = (label: string) => /\(\d{0,4}-?\d{4}\)/.test(label);
   const newCodeByName = new Map<string, string>();
   for (const [code, label] of Object.entries(regionLabels)) {
@@ -112,14 +129,44 @@ export async function GET() {
     delete result[oldCode]; // Remove old code from output
   }
 
-  // Also return the years and type labels for the client
   const typeLabels: Record<string, string> = {};
-  const typeLabel = data.dimension.Boligtype.category.label as Record<string, string>;
-  for (const [code, label] of Object.entries(typeLabel)) {
+  for (const [code, label] of Object.entries(data.dimension.Boligtype.category.label)) {
     typeLabels[code] = label as string;
   }
 
   const years = Object.keys(tidIndex).sort();
 
-  return Response.json({ data: result, years, typeLabels, merged: [...new Set(merged)] });
+  return { result, merged, years, typeLabels };
+}
+
+export async function GET() {
+  const tables = await Promise.all(TABLES.map(fetchTable));
+  if (tables.every((t) => t === null)) {
+    return Response.json({ error: "SSB fetch failed" }, { status: 502 });
+  }
+
+  // Merge per-table results. Years never overlap between tables (06035 ≤ 2024,
+  // 14545 ≥ 2025), so Object.assign on the year map is safe.
+  const data: Result = {};
+  const mergedSet = new Set<string>();
+  const yearSet = new Set<string>();
+  const typeLabels: Record<string, string> = {};
+
+  for (const raw of tables) {
+    if (!raw) continue;
+    const b = buildResult(raw);
+    for (const [kommune, types] of Object.entries(b.result)) {
+      const dst = (data[kommune] ??= {});
+      for (const [typeCode, years] of Object.entries(types)) {
+        Object.assign((dst[typeCode] ??= {}), years);
+      }
+    }
+    b.merged.forEach((m) => mergedSet.add(m));
+    b.years.forEach((y) => yearSet.add(y));
+    Object.assign(typeLabels, b.typeLabels);
+  }
+
+  const years = [...yearSet].sort();
+
+  return Response.json({ data, years, typeLabels, merged: [...mergedSet] });
 }

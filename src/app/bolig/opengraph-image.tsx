@@ -35,7 +35,7 @@ export default function OgImage() {
             marginTop: 40,
           }}
         >
-          {["Eneboliger", "Småhus", "Blokkleiligheter", "2015–2024"].map((label) => (
+          {["Eneboliger", "Småhus", "Blokkleiligheter", "2015–2025"].map((label) => (
             <div
               key={label}
               style={{

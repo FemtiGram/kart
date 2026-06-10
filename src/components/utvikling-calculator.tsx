@@ -34,9 +34,10 @@ const BOLIGTYPE_OPTIONS = [
   { value: "03", label: "Blokkleilighet" },
 ] as const;
 
-// SSB 06035 has data from 2002. Latest year is excluded so there's always at
-// least one year of growth to show — the dropdown ends at "today minus 1".
-const YEARS = Array.from({ length: 22 }, (_, i) => String(2002 + i));
+// SSB housing-price data runs from 2002 (06035 ≤2024, 14545 2025–). The latest
+// year is excluded so there's always at least one year of growth to show — the
+// purchase-year dropdown ends at "latest minus 1" (currently 2024).
+const YEARS = Array.from({ length: 23 }, (_, i) => String(2002 + i));
 
 type Boligtype = (typeof BOLIGTYPE_OPTIONS)[number]["value"];
 

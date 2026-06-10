@@ -23,7 +23,7 @@ const faqs = [
   },
   {
     q: "Hvordan beregnes dette?",
-    a: "Vi henter gjennomsnittlig kvadratmeterpris fra SSB tabell 06035 for kommunen og boligtypen din, både for kjøpsåret og det siste tilgjengelige året. Forholdet mellom de to gir en vekstfaktor som vi multipliserer med kjøpesummen din. Eksempel: bodde du i Trondheim og prisene per m² gikk fra 35 000 kr i 2018 til 47 000 kr i siste år tilgjengelig, er vekstfaktoren 1,34. En kjøpesum på 3 000 000 kr blir da til omtrent 4 020 000 kr.",
+    a: "Vi henter gjennomsnittlig kvadratmeterpris fra SSB (tabell 06035 til og med 2024, og 14545 fra 2025) for kommunen og boligtypen din, både for kjøpsåret og det siste tilgjengelige året. Forholdet mellom de to gir en vekstfaktor som vi multipliserer med kjøpesummen din. Eksempel: bodde du i Trondheim og prisene per m² gikk fra 35 000 kr i 2018 til 47 000 kr i siste år tilgjengelig, er vekstfaktoren 1,34. En kjøpesum på 3 000 000 kr blir da til omtrent 4 020 000 kr.",
   },
   {
     q: "Hva er forskjellen mellom dette og bankenes estimat?",
@@ -31,7 +31,7 @@ const faqs = [
   },
   {
     q: "Hvilke data ligger til grunn?",
-    a: "Tabell 06035 «Selveierboliger. Gjennomsnittlig kvadratmeterpris» fra Statistisk sentralbyrå (SSB). Den oppdateres årlig og dekker alle norske kommuner med tilstrekkelig antall salg. Fordelt på tre boligtyper: enebolig, småhus og blokkleilighet. Data er offentlig og fritt tilgjengelig.",
+    a: "«Selveierboliger. Gjennomsnittlig kvadratmeterpris» fra Statistisk sentralbyrå (SSB) — tabell 06035 (2002–2024) og etterfølgeren 14545 (2025–). Den oppdateres årlig og dekker alle norske kommuner med tilstrekkelig antall salg. Fordelt på tre boligtyper: enebolig, småhus og blokkleilighet. Data er offentlig og fritt tilgjengelig.",
   },
 ];
 
@@ -148,6 +148,15 @@ export default function UtviklingPage() {
               className="underline hover:text-foreground"
             >
               SSB tabell 06035
+            </a>{" "}
+            og{" "}
+            <a
+              href="https://www.ssb.no/statbank/table/14545/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline hover:text-foreground"
+            >
+              14545
             </a>
             .
           </p>
