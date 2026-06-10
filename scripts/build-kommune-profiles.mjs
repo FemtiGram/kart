@@ -2,7 +2,7 @@
 //   - kommuner.geojson (boundary polygons)
 //   - SSB 07459 (population)
 //   - SSB InntektStruk13 (median household income)
-//   - SSB 06035 (housing prices per dwelling type, 10 years)
+//   - SSB 06035 + 14545 (housing prices per dwelling type; 06035 ≤2024, 14545 2025–)
 //   - SSB 08936 (protected areas)
 //   - SSB 14674 (eiendomsskatt per kommune)
 //   - SSB 12842 (kommunale gebyrer: vann, avløp, avfall, feiing)
@@ -278,24 +278,8 @@ async function fetchProtectedAreas() {
   return out;
 }
 
-async function fetchBolig() {
-  console.log("  Fetching SSB 06035 (housing prices)...");
-  const res = await fetch("https://data.ssb.no/api/v0/no/table/06035", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      query: [
-        { code: "Region", selection: { filter: "all", values: ["*"] } },
-        { code: "Boligtype", selection: { filter: "item", values: ["01", "02", "03"] } },
-        { code: "ContentsCode", selection: { filter: "item", values: ["KvPris", "Omsetninger"] } },
-        { code: "Tid", selection: { filter: "item", values: ["2020", "2021", "2022", "2023", "2024"] } },
-      ],
-      response: { format: "json-stat2" },
-    }),
-  });
-  if (!res.ok) throw new Error(`SSB 06035: HTTP ${res.status}`);
-  const data = await res.json();
-
+// Parse one json-stat2 kvadratmeterpris table into { kommune: { type: { year: {price,count} } } }.
+function parseBoligTable(data) {
   const ids = data.id;
   const sizes = data.size;
   const values = data.value;
@@ -334,6 +318,53 @@ async function fetchBolig() {
     }
     if (any) result[kommune] = types;
   }
+  return result;
+}
+
+async function fetchBoligTable(table, years) {
+  const res = await fetch(`https://data.ssb.no/api/v0/no/table/${table}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      query: [
+        { code: "Region", selection: { filter: "all", values: ["*"] } },
+        { code: "Boligtype", selection: { filter: "item", values: ["01", "02", "03"] } },
+        { code: "ContentsCode", selection: { filter: "item", values: ["KvPris", "Omsetninger"] } },
+        { code: "Tid", selection: years ? { filter: "item", values: years } : { filter: "all", values: ["*"] } },
+      ],
+      response: { format: "json-stat2" },
+    }),
+  });
+  if (!res.ok) throw new Error(`SSB ${table}: HTTP ${res.status}`);
+  return res.json();
+}
+
+// SSB discontinued 06035 (2002-2024) in Jan 2025 and moved the series to 14545
+// (2025-). Fetch both and merge so the trend window spans the boundary and the
+// latest year advances automatically. Years never overlap between the tables.
+async function fetchBolig() {
+  console.log("  Fetching SSB 06035 + 14545 (housing prices)...");
+  const sources = [
+    { id: "06035", years: ["2020", "2021", "2022", "2023", "2024"] },
+    { id: "14545", years: null }, // all available years (2025 onward)
+  ];
+  const result = {};
+  for (const { id, years } of sources) {
+    let parsed;
+    try {
+      parsed = parseBoligTable(await fetchBoligTable(id, years));
+    } catch (e) {
+      console.warn(`    ⚠ ${id} fetch failed (${e.message}) — continuing without it`);
+      continue;
+    }
+    for (const [kommune, types] of Object.entries(parsed)) {
+      const dst = (result[kommune] ??= {});
+      for (const [typeCode, yrs] of Object.entries(types)) {
+        Object.assign((dst[typeCode] ??= {}), yrs);
+      }
+    }
+  }
+  if (Object.keys(result).length === 0) throw new Error("SSB bolig: both tables failed");
   return result;
 }
 
@@ -1233,19 +1264,22 @@ async function main() {
       (s) => s.type === "vgs" || s.type === "begge"
     ).length;
 
-    // Bolig summary: take 2024 for each of the 3 dwelling types
+    // Bolig summary: take the latest available year for each dwelling type.
+    // The summary year always equals the trend's last entry, which the
+    // Stedsprofil card relies on for its "X salg i <year>" label + YoY badge.
     const boligRaw = bolig[knr] ?? {};
     const boligByType = {};
     for (const [typeCode, years] of Object.entries(boligRaw)) {
-      const yr2024 = years["2024"];
-      if (yr2024) {
+      const sortedYears = Object.keys(years).sort();
+      const latestY = sortedYears[sortedYears.length - 1];
+      if (latestY) {
+        const latest = years[latestY];
         boligByType[typeCode] = {
-          price: yr2024.price,
-          count: yr2024.count,
-          trend: Object.entries(years)
-            .filter(([y]) => ["2020", "2021", "2022", "2023", "2024"].includes(y))
-            .sort()
-            .map(([y, v]) => ({ year: y, price: v.price })),
+          price: latest.price,
+          count: latest.count,
+          trend: sortedYears
+            .slice(-6) // keep the most recent ~6 years for the trend strip
+            .map((y) => ({ year: y, price: years[y].price })),
         };
       }
     }
