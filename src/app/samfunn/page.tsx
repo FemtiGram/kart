@@ -28,9 +28,9 @@ const maps = [
   {
     href: "/bolig",
     title: "Boligpriser",
-    description: "Kvadratmeterpris og 10 års historikk per kommune.",
+    description: "Kvadratmeterpris og historikk tilbake til 2002 per kommune.",
     icon: TrendingUp,
-    badge: "Populært",
+    badge: "2025-tall",
   },
   {
     href: "/lonn",
