@@ -34,6 +34,7 @@ const popular = [
     title: "Boligpriser",
     description: "Kvadratmeterpris per kommune.",
     icon: TrendingUp,
+    badge: "2025-tall",
   },
   {
     href: "/kommune",
