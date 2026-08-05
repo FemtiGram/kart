@@ -42,6 +42,7 @@ const ressurserLinks = [
   { label: "Datakilder og lisenser", href: "/kilder" },
   { label: "Personvern", href: "/personvern" },
   { label: "Åpen kildekode", href: "https://github.com/FemtiGram/kart", external: true },
+  { label: "andersgram.no", href: "https://andersgram.no", external: true },
   { label: "kartverket.no", href: "https://www.kartverket.no", external: true },
   { label: "Geonorge", href: "https://geonorge.no", external: true },
 ];
@@ -143,7 +144,17 @@ export function Footer() {
         <Separator className="my-8" />
 
         <div className="flex flex-col md:flex-row items-center justify-between gap-3 text-xs text-foreground/70">
-          <p>© {new Date().getFullYear()} Datakart</p>
+          <p>
+            © {new Date().getFullYear()} Datakart · Laget av{" "}
+            <a
+              href="https://andersgram.no"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-foreground transition-colors underline underline-offset-2"
+            >
+              Anders Gram
+            </a>
+          </p>
           <p>
             Bygd med{" "}
             <span style={{ color: "var(--kv-positive)" }}>&#9829;</span>
@@ -152,7 +163,7 @@ export function Footer() {
               href="/kilder"
               className="hover:text-foreground transition-colors underline underline-offset-2"
             >
-              apne data
+              åpne data
             </Link>
           </p>
         </div>

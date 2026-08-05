@@ -119,7 +119,9 @@ export default function Home() {
             Mest populært
           </p>
         </FadeIn>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {/* 2 cols until lg — at md the 4-col cards get too narrow for
+            un-truncated text */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {popular.map((p, i) => (
             <FadeIn key={p.href} delay={i * 0.05}>
               <MinimalCard {...p} compact />
@@ -172,7 +174,16 @@ export default function Home() {
           </div>
 
           <p className="text-xs text-foreground/80 mt-8">
-            Laget av Anders Gram.
+            Laget av{" "}
+            <a
+              href="https://andersgram.no"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline underline-offset-2 hover:text-foreground transition-colors"
+            >
+              Anders Gram
+            </a>
+            .
           </p>
         </FadeInView>
       </div>

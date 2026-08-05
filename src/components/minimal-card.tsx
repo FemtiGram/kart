@@ -25,7 +25,7 @@ export function MinimalCard({ href, icon: Icon, title, description, badge, compa
     return (
       <Link
         href={href}
-        className="group flex items-center gap-4 rounded-xl border bg-card px-5 py-4 hover:border-foreground/40 hover:shadow-sm transition-all h-full"
+        className="group flex items-center gap-3 sm:gap-4 rounded-xl border bg-card px-4 sm:px-5 py-4 hover:border-foreground/40 hover:shadow-sm transition-all h-full"
       >
         <Icon
           className="h-7 w-7 shrink-0"
@@ -33,9 +33,11 @@ export function MinimalCard({ href, icon: Icon, title, description, badge, compa
           strokeWidth={1.75}
         />
         <div className="min-w-0 flex-1">
-          <div className="flex items-center justify-between gap-2">
+          {/* flex-wrap lets the badge drop below the title instead of
+              forcing an ellipsis when the card is narrow */}
+          <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
             <h3
-              className="font-bold text-base tracking-tight truncate"
+              className="font-bold text-base tracking-tight"
               style={{ color: "var(--kv-blue)" }}
             >
               {title}
@@ -52,7 +54,7 @@ export function MinimalCard({ href, icon: Icon, title, description, badge, compa
               </span>
             )}
           </div>
-          <p className="mt-0.5 text-xs text-foreground/80 truncate">{description}</p>
+          <p className="mt-0.5 text-xs text-foreground/80">{description}</p>
         </div>
       </Link>
     );
