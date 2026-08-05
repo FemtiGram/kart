@@ -469,7 +469,7 @@ Three-tier convention: `-light` for the background tint, base for icons/borders/
 - **Batch related changes** into one commit instead of commit-per-line
 - **Decide approach first**, then implement — avoid build-try-revert cycles
 - **Keep map components consistent** — refer to the patterns above before making changes
-- **Vercel free tier limit: 10s serverless timeout** — don't make API routes that call slow external services
+- **Vercel serverless timeout: 10s by default, but raisable** — `export const maxDuration = 30` per route (Hobby allows up to 60s). `/api/energy` uses this. Still: keep per-upstream `AbortSignal.timeout` well below the route budget so one slow source can't eat it (Aug 2026 Sodir outage truncated responses mid-stream), and fetch multi-source routes with `Promise.allSettled`, never `Promise.all`
 
 ## Model Selection (Opus vs Sonnet)
 - **Use Opus** for: architecture decisions, multi-file refactors, complex bug diagnosis, new feature design, code review
