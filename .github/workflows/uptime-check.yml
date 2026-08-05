@@ -1,0 +1,30 @@
+name: Uptime check
+
+# Probes the key production endpoints every 6 hours. A failing run sends
+# the repo owner a GitHub notification — cheap monitoring for the class
+# of outage CI can't catch (external data sources dying at runtime).
+on:
+  schedule:
+    - cron: "17 */6 * * *"
+  workflow_dispatch:
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Probe production endpoints
+        run: |
+          failed=0
+          for url in \
+            "https://www.datakart.no/" \
+            "https://www.datakart.no/api/energy" \
+            "https://www.datakart.no/api/inflation" \
+            "https://www.datakart.no/api/sok?q=oslo&n=1" \
+            "https://www.datakart.no/kommune/0301-oslo" ; do
+            code=$(curl -sSL -o /dev/null -m 30 --retry 2 -w "%{http_code}" "$url" || echo 000)
+            echo "$code $url"
+            if [ "$code" -lt 200 ] || [ "$code" -ge 400 ]; then
+              failed=1
+            fi
+          done
+          exit $failed

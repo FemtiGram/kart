@@ -48,7 +48,7 @@ export async function GET() {
         }),
         next: { revalidate: 3600 },
         signal: AbortSignal.timeout(8000),
-      }),
+      }).catch(() => null),
       // Norges Bank: Policy rate — monthly, last 25
       fetch("https://data.norges-bank.no/api/data/IR/M..SD?format=sdmx-json&lastNObservations=25", {
         next: { revalidate: 3600 },
@@ -73,7 +73,7 @@ export async function GET() {
         }),
         next: { revalidate: 3600 },
         signal: AbortSignal.timeout(8000),
-      }),
+      }).catch(() => null),
     ]);
 
     if (!kpiRes.ok) return Response.json({ error: "SSB KPI fetch failed" }, { status: 500 });
@@ -129,7 +129,7 @@ export async function GET() {
 
     // Parse SSB 05327 (KPI-JAE)
     let jaeLatest: number | null = null;
-    if (jaeRes.ok) {
+    if (jaeRes?.ok) {
       const jae = await jaeRes.json();
       const jVals = jae.value as (number | null)[];
       const jTidIdx = jae.dimension.Tid.category.index as Record<string, number>;
@@ -184,7 +184,7 @@ export async function GET() {
 
     // Parse SSB 03014 (yearly)
     const yearly: { year: string; change: number | null }[] = [];
-    if (yearlyRes.ok) {
+    if (yearlyRes?.ok) {
       const yr = await yearlyRes.json();
       const yVals = yr.value as (number | null)[];
       const yTidIdx = yr.dimension.Tid.category.index as Record<string, number>;

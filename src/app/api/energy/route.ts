@@ -77,8 +77,10 @@ interface HavvindZone {
 
 export async function GET() {
   try {
-    // Fetch wind (4 layers), hydro, and turbines in parallel
-    const [windRes, windConstructionRes, windApprovedRes, windRejectedRes, hydroRes, turbineRes, havvindRes, sodirRes, pipelineRes] = await Promise.all([
+    // Fetch wind (4 layers), hydro, and turbines in parallel.
+    // allSettled, not all: one upstream timing out (e.g. a Sodir outage)
+    // must degrade to an empty layer, not 500 the whole map.
+    const settled = await Promise.allSettled([
       fetch(`${NVE_BASE}/Vindkraft2/MapServer/0/${QUERY}`, {
         headers: { "User-Agent": "Datakart/1.0 github.com/FemtiGram/kart" },
         next: { revalidate: 3600 },
@@ -126,6 +128,15 @@ export async function GET() {
       }),
     ]);
 
+    const [windRes, windConstructionRes, windApprovedRes, windRejectedRes, hydroRes, turbineRes, havvindRes, sodirRes, pipelineRes] =
+      settled.map((r) => (r.status === "fulfilled" ? r.value : null));
+
+    const SOURCE_NAMES = ["vind", "vind-bygging", "vind-godkjent", "vind-avslag", "vann", "turbiner", "havvind", "sodir-anlegg", "sodir-ror"];
+    const degradedSources = SOURCE_NAMES.filter((_, i) => {
+      const r = settled[i];
+      return r.status === "rejected" || !r.value.ok;
+    });
+
     const plants: EnergyPlant[] = [];
     const turbines: WindTurbine[] = [];
 
@@ -153,13 +164,13 @@ export async function GET() {
     }
 
     // Process wind farm layers
-    if (windRes.ok) processWindLayer(await windRes.json(), "operational");
-    if (windConstructionRes.ok) processWindLayer(await windConstructionRes.json(), "construction");
-    if (windApprovedRes.ok) processWindLayer(await windApprovedRes.json(), "approved");
-    if (windRejectedRes.ok) processWindLayer(await windRejectedRes.json(), "rejected");
+    if (windRes?.ok) processWindLayer(await windRes.json(), "operational");
+    if (windConstructionRes?.ok) processWindLayer(await windConstructionRes.json(), "construction");
+    if (windApprovedRes?.ok) processWindLayer(await windApprovedRes.json(), "approved");
+    if (windRejectedRes?.ok) processWindLayer(await windRejectedRes.json(), "rejected");
 
     // Process individual turbines
-    if (turbineRes.ok) {
+    if (turbineRes?.ok) {
       const turbineData = await turbineRes.json();
       for (const f of turbineData.features ?? []) {
         if (!f.geometry?.x || !f.geometry?.y) continue;
@@ -175,7 +186,7 @@ export async function GET() {
     }
 
     // Process hydro plants
-    if (hydroRes.ok) {
+    if (hydroRes?.ok) {
       const hydroData = await hydroRes.json();
       for (const f of hydroData.features ?? []) {
         if (!f.geometry?.x || !f.geometry?.y) continue;
@@ -203,7 +214,7 @@ export async function GET() {
 
     // Process offshore wind zones (polygons)
     const havvindZones: HavvindZone[] = [];
-    if (havvindRes.ok) {
+    if (havvindRes?.ok) {
       const havvindData = await havvindRes.json();
       for (const f of havvindData.features ?? []) {
         const a = f.attributes;
@@ -245,7 +256,7 @@ export async function GET() {
 
     // Process oil & gas facilities from Sodir
     const oilGasFacilities: OilGasFacility[] = [];
-    if (sodirRes.ok) {
+    if (sodirRes?.ok) {
       const sodirData = await sodirRes.json();
       for (const f of sodirData.features ?? []) {
         const a = f.attributes;
@@ -278,7 +289,7 @@ export async function GET() {
 
     // Process pipelines
     const pipelines: Pipeline[] = [];
-    if (pipelineRes.ok) {
+    if (pipelineRes?.ok) {
       const pipelineData = await pipelineRes.json();
       for (const f of pipelineData.features ?? []) {
         const a = f.attributes;
@@ -306,6 +317,15 @@ export async function GET() {
       }
     }
 
+    // No plants at all means the core NVE sources are down — better to
+    // fail (client shows error + retry) than to render an empty map.
+    if (plants.length === 0) {
+      return Response.json(
+        { error: "Ingen kraftverkdata tilgjengelig", degradedSources },
+        { status: 503 }
+      );
+    }
+
     // Summary stats
     const windCount = plants.filter((p) => p.type === "vind").length;
     const hydroCount = plants.filter((p) => p.type === "vann").length;
@@ -320,6 +340,7 @@ export async function GET() {
       havvindZones,
       oilGasFacilities,
       pipelines,
+      degradedSources,
       stats: { windCount, hydroCount, havvindCount: havvindZones.length, oilGasCount: oilGasFacilities.length, pipelineCount: pipelines.length, totalCapacityMW: Math.round(totalCapacityMW) },
     });
   } catch (err) {
