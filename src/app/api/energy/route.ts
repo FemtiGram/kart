@@ -5,6 +5,12 @@ import { utmToLatLon } from "@/lib/utm";
 // attribute names are now lowercase (e.g. `anleggnavn` instead of
 // `anleggNavn`). Update both the URL and the field accessors below if
 // switching back to the old host for any reason.
+// Vercel kills the function at 10s by default — observed truncating this
+// route's ~1.6 MB response mid-stream when a slow upstream ate 8s of the
+// budget. Hobby allows up to 60s; 30s gives slow-upstream days headroom.
+// The 5s per-upstream abort below is what keeps the normal path fast.
+export const maxDuration = 30;
+
 const NVE_BASE = "https://kart.nve.no/enterprise/rest/services";
 const SODIR_BASE = "https://factmaps.sodir.no/api/rest/services/Factmaps/FactMapsWGS84/MapServer";
 const QUERY = "query?where=1%3D1&outFields=*&returnGeometry=true&f=json&resultRecordCount=2000";
@@ -84,47 +90,47 @@ export async function GET() {
       fetch(`${NVE_BASE}/Vindkraft2/MapServer/0/${QUERY}`, {
         headers: { "User-Agent": "Datakart/1.0 github.com/FemtiGram/kart" },
         next: { revalidate: 3600 },
-        signal: AbortSignal.timeout(8000),
+        signal: AbortSignal.timeout(5000),
       }),
       fetch(`${NVE_BASE}/Vindkraft2/MapServer/1/${QUERY}`, {
         headers: { "User-Agent": "Datakart/1.0 github.com/FemtiGram/kart" },
         next: { revalidate: 3600 },
-        signal: AbortSignal.timeout(8000),
+        signal: AbortSignal.timeout(5000),
       }),
       fetch(`${NVE_BASE}/Vindkraft2/MapServer/2/${QUERY}`, {
         headers: { "User-Agent": "Datakart/1.0 github.com/FemtiGram/kart" },
         next: { revalidate: 3600 },
-        signal: AbortSignal.timeout(8000),
+        signal: AbortSignal.timeout(5000),
       }),
       fetch(`${NVE_BASE}/Vindkraft2/MapServer/8/${QUERY}`, {
         headers: { "User-Agent": "Datakart/1.0 github.com/FemtiGram/kart" },
         next: { revalidate: 3600 },
-        signal: AbortSignal.timeout(8000),
+        signal: AbortSignal.timeout(5000),
       }),
       fetch(`${NVE_BASE}/Vannkraft1/MapServer/0/${QUERY}`, {
         headers: { "User-Agent": "Datakart/1.0 github.com/FemtiGram/kart" },
         next: { revalidate: 3600 },
-        signal: AbortSignal.timeout(8000),
+        signal: AbortSignal.timeout(5000),
       }),
       fetch(`${NVE_BASE}/Vindkraft2/MapServer/4/${QUERY}`, {
         headers: { "User-Agent": "Datakart/1.0 github.com/FemtiGram/kart" },
         next: { revalidate: 3600 },
-        signal: AbortSignal.timeout(8000),
+        signal: AbortSignal.timeout(5000),
       }),
       fetch(`${NVE_BASE}/Havvind2023/MapServer/0/${QUERY}`, {
         headers: { "User-Agent": "Datakart/1.0 github.com/FemtiGram/kart" },
         next: { revalidate: 3600 },
-        signal: AbortSignal.timeout(8000),
+        signal: AbortSignal.timeout(5000),
       }),
       fetch(`${SODIR_BASE}/307/${QUERY}`, {
         headers: { "User-Agent": "Datakart/1.0 github.com/FemtiGram/kart" },
         next: { revalidate: 3600 },
-        signal: AbortSignal.timeout(8000),
+        signal: AbortSignal.timeout(5000),
       }),
       fetch(`${SODIR_BASE}/311/query?where=1%3D1&outFields=*&returnGeometry=true&outSR=4326&f=json&resultRecordCount=500`, {
         headers: { "User-Agent": "Datakart/1.0 github.com/FemtiGram/kart" },
         next: { revalidate: 3600 },
-        signal: AbortSignal.timeout(8000),
+        signal: AbortSignal.timeout(5000),
       }),
     ]);
 
