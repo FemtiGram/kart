@@ -2,9 +2,9 @@ import Link from "next/link";
 import { Separator } from "@/components/ui/separator";
 
 /**
- * Utforsk column is sub-grouped by theme (Energi / Natur / Samfunn) to
- * match the navbar dropdowns. Keeps the 3-column footer layout while
- * fitting 12 map links in one column without turning into a wall of text.
+ * Link groups mirror the navbar dropdowns (Energi / Natur / Samfunn).
+ * Each group is its own footer column so the link lists sit side by
+ * side instead of stacking into one long column.
  */
 const utforskGroups = [
   {
@@ -51,9 +51,11 @@ export function Footer() {
   return (
     <footer className="border-t bg-muted/30">
       <div className="container mx-auto px-6 md:px-16 py-12">
-        <div className="grid grid-cols-1 gap-10 md:grid-cols-3">
+        {/* Mobile: brand full-width, then link groups 2-up.
+            md: brand row + 4 equal columns. lg: everything in one row. */}
+        <div className="grid grid-cols-2 gap-x-8 gap-y-10 md:grid-cols-12">
           {/* Brand */}
-          <div className="flex flex-col gap-3">
+          <div className="col-span-2 md:col-span-12 lg:col-span-4 flex flex-col gap-3">
             <Link
               href="/"
               className="flex items-center gap-2 font-extrabold text-base w-fit"
@@ -84,34 +86,29 @@ export function Footer() {
             </p>
           </div>
 
-          {/* Utforsk — sub-grouped by theme */}
-          <div className="flex flex-col gap-5">
-            <h3 className="text-xs font-bold uppercase tracking-widest text-foreground/70">
-              Utforsk
-            </h3>
-            {utforskGroups.map((group) => (
-              <div key={group.label} className="flex flex-col gap-2">
-                <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                  {group.label}
-                </p>
-                <ul className="flex flex-col gap-1.5">
-                  {group.links.map((link) => (
-                    <li key={link.href}>
-                      <Link
-                        href={link.href}
-                        className="text-sm text-foreground/70 hover:text-foreground transition-colors"
-                      >
-                        {link.label}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </div>
+          {/* One column per theme — matches the navbar dropdowns */}
+          {utforskGroups.map((group) => (
+            <div key={group.label} className="flex flex-col gap-3 md:col-span-3 lg:col-span-2">
+              <h3 className="text-xs font-bold uppercase tracking-widest text-foreground/70">
+                {group.label}
+              </h3>
+              <ul className="flex flex-col gap-2">
+                {group.links.map((link) => (
+                  <li key={link.href}>
+                    <Link
+                      href={link.href}
+                      className="text-sm text-foreground/70 hover:text-foreground transition-colors"
+                    >
+                      {link.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
 
           {/* Ressurser — flat list */}
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-3 md:col-span-3 lg:col-span-2">
             <h3 className="text-xs font-bold uppercase tracking-widest text-foreground/70">
               Ressurser
             </h3>
