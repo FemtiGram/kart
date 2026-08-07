@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { Menu, X, Mountain, DollarSign, Shield, Zap, Home, BatteryCharging, Waves, TrendingUp, BarChart3, MapPinned, GraduationCap, HeartPulse, Wallet, Vote, ArrowRight } from "lucide-react";
+import { Menu, X, Mountain, DollarSign, Shield, Zap, Home, BatteryCharging, Waves, TrendingUp, BarChart3, MapPinned, GraduationCap, HeartPulse, Wallet, Vote, ArrowRight, LandPlot } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -64,6 +64,7 @@ const navGroups: NavGroup[] = [
       { href: "/bolig", label: "Boligpriser", icon: TrendingUp, description: "Kvadratmeterpris per kommune" },
       { href: "/kostnader", label: "Kostnader", icon: Wallet, description: "Gebyrer og eiendomsskatt" },
       { href: "/valg", label: "Valgkart", icon: Vote, description: "Stortingsvalget 2025 per kommune" },
+      { href: "/eiendom", label: "Tomtegrenser", icon: LandPlot, description: "Eiendomsgrenser og areal fra matrikkelen" },
       { href: "/prisvekst", label: "Prisvekst", icon: BarChart3, description: "Dashboard · Konsumprisindeksen" },
     ],
   },

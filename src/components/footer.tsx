@@ -33,6 +33,7 @@ const utforskGroups = [
       { label: "Boligpriser", href: "/bolig" },
       { label: "Kostnader", href: "/kostnader" },
       { label: "Valgkart", href: "/valg" },
+      { label: "Tomtegrenser", href: "/eiendom" },
       { label: "Prisvekst", href: "/prisvekst" },
     ],
   },

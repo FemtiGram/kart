@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { MapPinned, GraduationCap, HeartPulse, DollarSign, TrendingUp, Wallet, Vote, BarChart3, ArrowRight } from "lucide-react";
+import { MapPinned, GraduationCap, HeartPulse, DollarSign, TrendingUp, Wallet, Vote, BarChart3, ArrowRight, LandPlot } from "lucide-react";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { CategoryHero } from "@/components/category-hero";
 import { MinimalCard } from "@/components/minimal-card";
@@ -61,6 +61,12 @@ const maps = [
     title: "Valgkart",
     description: "Stortingsvalg og kommunestyrevalg per kommune.",
     icon: Vote,
+  },
+  {
+    href: "/eiendom",
+    title: "Tomtegrenser",
+    description: "Eiendomsgrenser, gnr/bnr og areal fra matrikkelen.",
+    icon: LandPlot,
     badge: "Nytt",
   },
   {
