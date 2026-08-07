@@ -42,6 +42,7 @@ src/app/
   kostnader/page.tsx    — Cost-of-living choropleth: kommunale gebyrer (SSB 12842) + eiendomsskatt (SSB 14674) with Sammenlign feature
   kostnader/opengraph-image.tsx — Dynamic OG image for /kostnader
   valg/page.tsx         — Election results choropleth: stortingsvalg + kommunestyrevalg per kommune (Valgdirektoratet) — type/year selectors, comparison sheet, FAQ
+  eiendom/page.tsx      — Tomtegrenser map: click (zoom-gated ≥12, crosshair cursor) or address search → parcel polygon from matrikkelen with gnr/bnr, accuracy class, and geodesic area (m² + mål)
   personvern/page.tsx   — Privacy policy page
   api/
     bolig/route.ts      — SSB housing price data (table 06035)
@@ -56,6 +57,7 @@ src/app/
     hydro-station/route.ts — NVE HydAPI live river data (requires API key)
     inflation/route.ts  — SSB KPI + KPI-JAE + Norges Bank rate + Eurostat HICP
     sok/route.ts        — Geonorge adresser proxy (free-text + punktsok), 1h edge cache + SWR
+    eiendom/route.ts    — Kartverket åpent eiendoms-API proxy (parcel polygons at a point), 1h edge cache + SWR
 
 src/components/
   navbar.tsx            — Shared nav with grouped dropdowns (Energi/Natur/Samfunn) + mobile sheet
@@ -82,6 +84,8 @@ src/components/
   minimal-card.tsx      — Single shared card style for the home (categories + Mest populært strip) AND the category landing pages. `compact` prop switches to icon-on-the-left horizontal layout for the home Mest populært strip
   category-hero.tsx     — Reusable hero for /energi, /natur, /samfunn — back-to-home link + eyebrow + big title + ~80-word editorial intro
   valg-map.tsx          — /valg map: party-colored choropleth, type/year selectors (st 2025/2021, ko 2023/2019), white-halo hover, compare sheet
+  eiendom-map.tsx       — /eiendom map: address search or zoom-gated map click → matrikkel parcel polygon + compact card/detail sheet. Area via src/lib/geodesic-area.ts (turf-style spherical, no projection). Owner data NOT in open API — links to Kartverket's Se eiendom
+  eiendom-map-loader.tsx — Dynamic wrapper for eiendom-map (ssr: false)
   valg-map-loader.tsx   — Dynamic wrapper for valg-map (ssr: false)
   footer.tsx            — Shared footer with three-column layout (brand / Utforsk grouped by theme / Ressurser)
   map-icons.tsx         — Shared L.divIcon factories: chargingIcon, cabinIcon, reservoirIcon, schoolIcon, kindergartenIcon, healthIcon + re-exports of energyIcon from energy-map-helpers
@@ -457,6 +461,7 @@ Three-tier convention: `-light` for the background tint, base for icons/borders/
 | Elevation | Kartverket høyde-API | Per-request |
 | Kommune boundaries | GitHub (robhop/fylker-og-kommuner) | Build-time static GeoJSON |
 | Address search | Geonorge adresser API (via `/api/sok` proxy) | 1h edge cache + 24h SWR |
+| Tomtegrenser (matrikkelen) | Kartverket åpent eiendoms-API `ws.geonorge.no/eiendom/v1` (via `/api/eiendom` proxy) | 1h edge cache + 24h SWR |
 | Kommune list | Geonorge kommuneinfo API | Loaded once on mount |
 | Inflation (KPI) | SSB tabell 03013 + 05327 | Loaded once on mount |
 | Policy rate | Norges Bank API | Loaded once on mount |
