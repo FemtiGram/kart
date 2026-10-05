@@ -11,7 +11,7 @@ A portfolio project showcasing Norwegian open geodata on interactive maps. Built
 - **Maps:** Leaflet 1.9.4 + react-leaflet 5.0.0 + react-leaflet-cluster
 - **Styling:** Tailwind CSS 4 + shadcn/ui (base-ui)
 - **Charts:** Recharts (via shadcn/ui chart components)
-- **Animation:** motion.dev (~3KB) — subtle entrance/scroll/hover animations on landing page (src/components/motion.tsx)
+- **Animation:** motion.dev (~3KB) — scroll/hover animations on landing page (src/components/motion.tsx). Entrance `<FadeIn>` is CSS-only (`.fade-up` in globals.css) so above-the-fold content is visible from first paint — never ship `opacity:0` in SSR HTML for hero content
 - **Tiles:** Kartverket WMTS (topo + topograatone + sjokartraster) + OpenTopoMap (terreng)
 - **Icons:** lucide-react
 
