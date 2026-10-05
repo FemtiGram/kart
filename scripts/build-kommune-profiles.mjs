@@ -667,7 +667,7 @@ async function fetchFastlege() {
   return { byKnr, latestYear };
 }
 
-// ─── Demografi fetchers (SSB 11084 + 09429 + 06265) ──────────
+// ─── Demografi fetchers (SSB 14891 + 09429 + 06265) ──────────
 //
 // Three separate tables, all requested at once and then merged into a
 // `demografi` sub-object per kommune. Each sub-fetch asks for the last
@@ -681,30 +681,32 @@ async function fetchFastlege() {
 //   }
 // All fractions are 0..1 (decimal); the render layer formats as percent.
 
-const DEMOGRAFI_YEARS = ["2021", "2022", "2023", "2024"];
+// Newest 4 years, so new SSB releases flow in without a code change.
+const DEMOGRAFI_TID = { code: "Tid", selection: { filter: "top", values: ["4"] } };
 
 async function fetchEierstatus() {
-  console.log("  Fetching SSB 11084 (eierstatus)...");
-  const res = await fetch("https://data.ssb.no/api/v0/no/table/11084", {
+  console.log("  Fetching SSB 14891 (eierstatus)...");
+  // 14891 replaced 11084 in Sep 2026 (11084 now returns HTTP 400).
+  const res = await fetch("https://data.ssb.no/api/v0/no/table/14891", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       query: [
         { code: "Region", selection: { filter: "all", values: ["*"] } },
-        // Values: 1=I alt, 2=Selveier, 3=Andels-/aksjeeier, 4=Leier
-        { code: "EierStatus", selection: { filter: "item", values: ["2", "3", "4"] } },
+        // Values: 0=I alt, 1=Selveier, 2=Andels-/aksjeeier, 3=Leier
+        { code: "EierStatus", selection: { filter: "item", values: ["1", "2", "3"] } },
         { code: "ContentsCode", selection: { filter: "item", values: ["HusholdningProsent"] } },
-        { code: "Tid", selection: { filter: "item", values: DEMOGRAFI_YEARS } },
+        DEMOGRAFI_TID,
       ],
       response: { format: "json-stat2" },
     }),
   });
-  if (!res.ok) throw new Error(`SSB 11084: HTTP ${res.status}`);
+  if (!res.ok) throw new Error(`SSB 14891: HTTP ${res.status}`);
   const data = await res.json();
   return decodeDemografi(data, "EierStatus", {
-    "2": "selveier",
-    "3": "andelseier",
-    "4": "leier",
+    "1": "selveier",
+    "2": "andelseier",
+    "3": "leier",
   });
 }
 
@@ -728,7 +730,7 @@ async function fetchUtdanning() {
         // Kjonn 0 = Begge kjønn (total)
         { code: "Kjonn", selection: { filter: "item", values: ["0"] } },
         { code: "ContentsCode", selection: { filter: "item", values: ["PersonerProsent"] } },
-        { code: "Tid", selection: { filter: "item", values: DEMOGRAFI_YEARS } },
+        DEMOGRAFI_TID,
       ],
       response: { format: "json-stat2" },
     }),
@@ -759,7 +761,7 @@ async function fetchBoligtyper() {
           selection: { filter: "item", values: ["01", "02", "03", "04", "05", "999"] },
         },
         { code: "ContentsCode", selection: { filter: "item", values: ["Boliger"] } },
-        { code: "Tid", selection: { filter: "item", values: DEMOGRAFI_YEARS } },
+        DEMOGRAFI_TID,
       ],
       response: { format: "json-stat2" },
     }),
