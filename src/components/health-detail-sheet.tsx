@@ -5,6 +5,7 @@ import { ArrowRight } from "lucide-react";
 import { kommuneSlug } from "@/lib/kommune-slug";
 import { SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { DataDisclaimer } from "@/lib/map-utils";
+import { BarSparkline } from "@/components/bar-sparkline";
 import {
   synthesizeHealth,
   type HealthTone,
@@ -343,26 +344,21 @@ function KapasitetTrend({
           </span>
         )}
       </div>
-      <div className="flex items-end gap-[2px] h-12">
-        {trend.map((p) => {
-          const heightPct = Math.max(4, ((p.value - minRaw) / range) * 100);
-          const delta = p.value - 100;
+      <BarSparkline
+        className="h-12"
+        data={trend}
+        color="var(--kv-blue)"
+        highlightYear={latestYear}
+        dimOpacity={0.3}
+        baseline={minRaw}
+        max={minRaw + range}
+        formatValue={(v) => {
+          const delta = v - 100;
           const sign = delta > 0 ? "+" : delta < 0 ? "−" : "";
-          const tooltip = `${p.year}: ${sign}${Math.abs(delta)} %`;
-          return (
-            <div
-              key={p.year}
-              className="flex-1 rounded-sm min-w-[2px] transition-all"
-              style={{
-                height: `${heightPct}%`,
-                background: "var(--kv-blue)",
-                opacity: p.year === latestYear ? 1 : 0.3,
-              }}
-              title={tooltip}
-            />
-          );
-        })}
-      </div>
+          return `${sign}${Math.abs(delta)} %`;
+        }}
+        label={`Ledig kapasitet ${first.year}–${latestYear}`}
+      />
       <div className="flex justify-between mt-0.5">
         <span className="text-[10px] text-muted-foreground">{first.year}</span>
         <span className="text-[10px] text-muted-foreground">{latestYear}</span>

@@ -20,6 +20,7 @@ import { InfoModal } from "@/components/info-modal";
 import { TileToggle } from "@/components/tile-toggle";
 import { MapLoading } from "@/components/map-loading";
 import { SelectedHalo } from "@/components/selected-halo";
+import { BarSparkline } from "@/components/bar-sparkline";
 import { useHashSelection } from "@/lib/use-hash-selection";
 
 // ─── Types ──────────────────────────────────────────────────
@@ -751,7 +752,6 @@ export function BoligMap() {
 
                   {/* Price trend bar chart */}
                   {sparkValues.some((v) => v != null) && (() => {
-                    const maxVal = Math.max(...sparkValues.filter((v): v is number => v != null));
                     const first = sparkValues.find((v) => v != null);
                     const last = [...sparkValues].reverse().find((v) => v != null);
                     const totalChange = first && last ? ((last - first) / first) * 100 : null;
@@ -765,20 +765,15 @@ export function BoligMap() {
                             </span>
                           )}
                         </div>
-                        <div className="flex items-end gap-[2px] h-12">
-                          {sparkValues.map((v, i) => (
-                            <div
-                              key={years[i]}
-                              className="flex-1 rounded-sm min-w-[2px] transition-all"
-                              style={{
-                                height: v != null ? `${Math.max(4, (v / maxVal) * 100)}%` : "0%",
-                                background: "var(--kv-blue)",
-                                opacity: years[i] === year ? 1 : 0.3,
-                              }}
-                              title={v != null ? `${years[i]}: ${v.toLocaleString("nb-NO")} kr/m²` : `${years[i]}: Ingen data`}
-                            />
-                          ))}
-                        </div>
+                        <BarSparkline
+                          className="h-12"
+                          data={sparkValues.map((v, i) => ({ year: years[i], value: v }))}
+                          color="var(--kv-blue)"
+                          highlightYear={year}
+                          dimOpacity={0.3}
+                          formatValue={(v) => `${v.toLocaleString("nb-NO")} kr/m²`}
+                          label={`Prisutvikling ${years[0]}–${years[years.length - 1]}`}
+                        />
                         <div className="flex justify-between mt-0.5">
                           <span className="text-[10px] text-muted-foreground">{years[0]}</span>
                           <span className="text-[10px] text-muted-foreground">{years[years.length - 1]}</span>
@@ -1000,20 +995,16 @@ export function BoligMap() {
                                   </span>
                                 )}
                               </div>
-                              <div className="flex items-end gap-[2px] h-10">
-                                {item.values.map((v, i) => (
-                                  <div
-                                    key={years[i]}
-                                    className="flex-1 rounded-sm min-w-[2px]"
-                                    style={{
-                                      height: v != null ? `${Math.max(4, (v / maxSpark) * 100)}%` : "0%",
-                                      background: "var(--kv-blue)",
-                                      opacity: years[i] === year ? 1 : 0.3,
-                                    }}
-                                    title={v != null ? `${years[i]}: ${v.toLocaleString("nb-NO")} kr/m²` : `${years[i]}: Ingen data`}
-                                  />
-                                ))}
-                              </div>
+                              <BarSparkline
+                                className="h-10"
+                                data={item.values.map((v, i) => ({ year: years[i], value: v }))}
+                                color="var(--kv-blue)"
+                                highlightYear={year}
+                                dimOpacity={0.3}
+                                max={maxSpark}
+                                formatValue={(v) => `${v.toLocaleString("nb-NO")} kr/m²`}
+                                label={`Prisutvikling ${item.name} ${years[0]}–${years[years.length - 1]}`}
+                              />
                               <div className="flex justify-between mt-0.5">
                                 <span className="text-[10px] text-muted-foreground">{years[0]}</span>
                                 <span className="text-[10px] text-muted-foreground">{years[years.length - 1]}</span>
