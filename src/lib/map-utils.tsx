@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useMap } from "react-leaflet";
+import { safeFlyTo } from "@/lib/safe-fly";
 
 // ─── Shared constants ───────────────────────────────────────
 
@@ -217,7 +218,7 @@ export function useCompare<T>(
 export function FlyTo({ lat, lon, zoom = 10, _t }: { lat: number; lon: number; zoom?: number; _t?: number }) {
   const map = useMap();
   useEffect(() => {
-    map.flyTo([lat, lon], zoom, { duration: 1.2 });
+    safeFlyTo(map, lat, lon, zoom, { duration: 1.2 });
   }, [lat, lon, zoom, _t, map]);
   return null;
 }

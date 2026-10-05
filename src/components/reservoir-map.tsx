@@ -24,6 +24,7 @@ import { TileToggle } from "@/components/tile-toggle";
 import { MapLoading } from "@/components/map-loading";
 import { DriveLink } from "@/components/drive-link";
 import { useHashSelection } from "@/lib/use-hash-selection";
+import { safeFlyTo } from "@/lib/safe-fly";
 import type { Suggestion } from "@/lib/map-utils";
 
 interface Reservoir {
@@ -87,7 +88,7 @@ function PanToSelected({ reservoir }: { reservoir: Reservoir | null }) {
   const map = useMap();
   useEffect(() => {
     if (!reservoir) return;
-    map.flyTo([reservoir.center.lat, reservoir.center.lon], 12, { duration: 1.2 });
+    safeFlyTo(map, reservoir.center.lat, reservoir.center.lon, 12, { duration: 1.2 });
   }, [reservoir, map]);
   return null;
 }
