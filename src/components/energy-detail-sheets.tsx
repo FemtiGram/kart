@@ -4,6 +4,7 @@ import { Loader2, ExternalLink, Info, Waves, Gauge } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { DataDisclaimer } from "@/lib/map-utils";
 import { DriveLink } from "@/components/drive-link";
+import { BarSparkline } from "@/components/bar-sparkline";
 import {
   formatFunctions, formatKind, titleCase,
   TYPE_META, WIND_STATUS_META, OILGAS_COLOR, HAVVIND_COLOR,
@@ -135,7 +136,6 @@ export function OilGasSheet({
               const totalOil = fieldProd.reduce((s, y) => s + y.oil, 0);
               const totalGas = fieldProd.reduce((s, y) => s + y.gas, 0);
               const latest = fieldProd[fieldProd.length - 1];
-              const maxOe = Math.max(...fieldProd.map((y) => y.oe));
               return (
                 <div className="mt-4 pt-4 border-t">
                   <button
@@ -174,21 +174,14 @@ export function OilGasSheet({
                     <span className="text-muted-foreground">Gass</span>
                     <span className="font-medium">{totalGas.toFixed(1)} mrd Sm³</span>
                   </div>
-                  {/* Sparkline */}
-                  <div className="mt-3 flex items-end gap-[2px] h-10">
-                    {fieldProd.map((y) => (
-                      <div
-                        key={y.year}
-                        className="flex-1 rounded-sm min-w-[2px] transition-all"
-                        style={{
-                          height: `${Math.max(4, (y.oe / maxOe) * 100)}%`,
-                          background: OILGAS_COLOR,
-                          opacity: y.year === latest.year ? 1 : 0.4,
-                        }}
-                        title={`${y.year}: ${y.oe.toFixed(3)} mill Sm³ o.e.`}
-                      />
-                    ))}
-                  </div>
+                  <BarSparkline
+                    key={selectedOilGas.fieldName}
+                    className="mt-3 h-10"
+                    data={fieldProd.map((y) => ({ year: y.year, value: y.oe }))}
+                    color={OILGAS_COLOR}
+                    formatValue={(v) => `${v.toFixed(2)} mill Sm³ o.e.`}
+                    label={`Årlig produksjon ${fieldProd[0].year}–${latest.year}`}
+                  />
                   <div className="flex justify-between mt-0.5">
                     <span className="text-[10px] text-muted-foreground">{fieldProd[0].year}</span>
                     <span className="text-[10px] text-muted-foreground">{latest.year}</span>

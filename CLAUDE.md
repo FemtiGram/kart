@@ -88,6 +88,7 @@ src/components/
   eiendom-map-loader.tsx — Dynamic wrapper for eiendom-map (ssr: false)
   valg-map-loader.tsx   — Dynamic wrapper for valg-map (ssr: false)
   footer.tsx            — Shared footer with three-column layout (brand / Utforsk grouped by theme / Ressurser)
+  bar-sparkline.tsx     — Shared year-by-year bar chart used in detail sheets (bolig trend + compare, helse kapasitet, energi oil/gas production). Hover/touch-drag/arrow keys show a clamped tooltip with the exact value; supports null years ("Ingen data"), a shared `max` for side-by-side charts, and a `baseline` for narrow-band series
   map-icons.tsx         — Shared L.divIcon factories: chargingIcon, cabinIcon, reservoirIcon, schoolIcon, kindergartenIcon, healthIcon + re-exports of energyIcon from energy-map-helpers
   ui/                   — shadcn/ui primitives (includes chart.tsx for Recharts wrappers)
 
@@ -243,7 +244,7 @@ All maps use a **compact floating card + expandable bottom Sheet** pattern:
 - **Plain-language synthesis** via `synthesizeHealth()` in `src/lib/health-summary.ts`. Input: the 3 primary metric values. Output: `{ tone: "good"|"mixed"|"bad"|"neutral", sentence }`. Used identically on /helse detail sheet AND Stedsprofil Helsetilbud — same wording in both places.
 - **Optional OSM overlay** toggled via the map legend's "OSM-markører" button. When active, sykehus + legevakt markers from `health.json` render on top of the choropleth. Clicking a marker **steals the compact card slot** from any active kommune selection and shows an OSM compact card (type, operator, OSM timestamp, Ring + Se i OSM actions). Toggling the overlay off clears any pending OSM selection. Privatklinikker are in the data file but not in the overlay.
 - **Detail sheet** on "Vis mer" uses `initialFocus={detailSheetTopRef}` on the base-ui Dialog Popup — this is critical because base-ui's default focus trap focuses the first tabbable link which is near the bottom, scrolling the hero off-screen. Structural fix, not a scroll-reset race.
-- **Trend bar chart** mirrors the bolig detail sheet's inline div pattern (`flex items-end gap-[2px] h-12`). Raw SSB values are rebased to `value - min` per series so the year-to-year shape is visible within the narrow 85–120 band. Latest-year bar at full opacity, others at 0.3.
+- **Trend bar chart** uses the shared `BarSparkline` (same as the bolig detail sheet). Raw SSB values are rebased via `baseline={min}` per series so the year-to-year shape is visible within the narrow 85–120 band. Latest-year bar at full opacity, others at 0.3.
 - **18-metric stat table** in the detail sheet — each row shows the SSB label, a one-line plain-Norwegian description from `METRIC_DESCRIPTION` (in `health-map-helpers.ts`), and the formatted value. Primary metric rows get a muted background tint.
 
 ### Kostnader map (kostnader):
