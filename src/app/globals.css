@@ -259,3 +259,27 @@ html {
     animation: none;
   }
 }
+
+/* ─── Party rows (Politikk on Stedsprofil, Stemmefordeling + Sammenlign on /valg) ─
+ *
+ * Hovering one row quietly dims its siblings so the hovered party reads
+ * as the focused series — the same cue as highlighting one line in a
+ * chart. Each row's own accent (bar thickens and brightens, or the swatch
+ * grows) comes from group-hover utilities in the markup. Hover-capable pointers only, so a tap on
+ * touch devices never leaves a row stuck in the dimmed state.
+ */
+@layer components {
+  .party-rows > li {
+    transition: opacity 200ms ease-out;
+  }
+  @media (hover: hover) {
+    .party-rows:has(> li:hover) > li:not(:hover) {
+      opacity: 0.55;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .party-rows > li {
+      transition: none;
+    }
+  }
+}

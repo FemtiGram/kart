@@ -1101,17 +1101,17 @@ function PolitikkSection({ profile }: { profile: KommuneProfile }) {
           {valg.vinner.navn} — størst
         </p>
 
-        <ul className="mt-3 space-y-1.5">
+        <ul className="mt-3 space-y-1.5 party-rows">
           {valg.partier.slice(0, 3).map((part) => (
-            <li key={part.kode} className="flex items-center gap-2">
+            <li key={part.kode} className="group flex items-center gap-2">
               <span
                 className="inline-block w-2 h-2 rounded-sm shrink-0"
                 style={{ background: partyFill(part.kode) }}
               />
               <span className="text-xs font-medium w-10 shrink-0">{part.kode}</span>
-              <div className="h-1 grow rounded-full bg-muted overflow-hidden">
+              <div className="h-1 grow rounded-full bg-muted overflow-hidden transition-[height] duration-200 ease-out group-hover:h-1.5">
                 <div
-                  className="h-full rounded-full"
+                  className="h-full rounded-full transition-[filter] duration-200 ease-out group-hover:brightness-110"
                   style={{
                     width: `${(part.prosent / maxBar) * 100}%`,
                     background: partyFill(part.kode),

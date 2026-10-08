@@ -512,10 +512,10 @@ export function ValgMap() {
                     {/* Top partier */}
                     <div className="mt-4 pt-4 border-t">
                       <p className="text-xs font-semibold text-foreground/70 mb-2">Stemmefordeling</p>
-                      <ul className="space-y-2">
+                      <ul className="space-y-2 party-rows">
                         {selectedEntry.partier.slice(0, 8).map((p) => (
-                          <li key={p.kode} className="flex items-center gap-2">
-                            <span className="inline-block w-2.5 h-2.5 rounded-sm shrink-0" style={{ background: partyFill(p.kode) }} />
+                          <li key={p.kode} className="group flex items-center gap-2">
+                            <span className="inline-block w-2.5 h-2.5 rounded-sm shrink-0 transition-[transform,filter] duration-200 ease-out group-hover:scale-125 group-hover:brightness-110" style={{ background: partyFill(p.kode) }} />
                             <span className="text-sm font-medium w-12 shrink-0">{p.kode}</span>
                             <span className="text-sm text-foreground/80 flex-1 truncate">{p.navn}</span>
                             <span className="text-sm font-semibold tabular-nums">{formatPct(p.prosent)}</span>
@@ -670,9 +670,9 @@ export function ValgMap() {
                   {/* Partier — bar comparison */}
                   <div className="mt-4 pt-4 border-t">
                     <p className="text-xs font-semibold text-foreground/70 mb-3">Stemmefordeling</p>
-                    <ul className="space-y-2.5">
+                    <ul className="space-y-2.5 party-rows">
                       {partyRows.map((r) => (
-                        <li key={r.kode}>
+                        <li key={r.kode} className="group">
                           <div className="flex items-center gap-2 mb-1">
                             <span className="inline-block w-2.5 h-2.5 rounded-sm shrink-0" style={{ background: partyFill(r.kode) }} />
                             <span className="text-xs font-medium w-12 shrink-0">{r.kode}</span>
@@ -680,14 +680,14 @@ export function ValgMap() {
                           </div>
                           <div className="grid grid-cols-2 gap-2 pl-[1.125rem]">
                             <div className="flex items-center gap-1.5">
-                              <div className="h-1.5 grow rounded-full bg-muted overflow-hidden">
-                                <div className="h-full rounded-full" style={{ width: `${(r.a / maxBar) * 100}%`, background: partyFill(r.kode) }} />
+                              <div className="h-1.5 grow rounded-full bg-muted overflow-hidden transition-[height] duration-200 ease-out group-hover:h-2">
+                                <div className="h-full rounded-full transition-[filter] duration-200 ease-out group-hover:brightness-110" style={{ width: `${(r.a / maxBar) * 100}%`, background: partyFill(r.kode) }} />
                               </div>
                               <span className="text-[11px] font-semibold tabular-nums w-10 text-right">{formatPct(r.a, 1)}</span>
                             </div>
                             <div className="flex items-center gap-1.5">
-                              <div className="h-1.5 grow rounded-full bg-muted overflow-hidden">
-                                <div className="h-full rounded-full" style={{ width: `${(r.b / maxBar) * 100}%`, background: partyFill(r.kode) }} />
+                              <div className="h-1.5 grow rounded-full bg-muted overflow-hidden transition-[height] duration-200 ease-out group-hover:h-2">
+                                <div className="h-full rounded-full transition-[filter] duration-200 ease-out group-hover:brightness-110" style={{ width: `${(r.b / maxBar) * 100}%`, background: partyFill(r.kode) }} />
                               </div>
                               <span className="text-[11px] font-semibold tabular-nums w-10 text-right">{formatPct(r.b, 1)}</span>
                             </div>
