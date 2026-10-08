@@ -14,6 +14,7 @@ import { InfoModal } from "@/components/info-modal";
 import { TileToggle } from "@/components/tile-toggle";
 import { DriveLink } from "@/components/drive-link";
 import { useInitialPosition } from "@/lib/use-initial-position";
+import { isWithinNorway, parseCoordinates } from "@/lib/parse-coordinates";
 
 function weatherIcon(symbolCode: string): LucideIcon {
   const c = symbolCode.toLowerCase();
@@ -102,25 +103,6 @@ const SEARCH_ZOOM = 16;
 /** Pixels at the bottom of the map covered by the compact card (card height + bottom offset). */
 const CARD_CLEARANCE = 210;
 
-const isWithinNorway = (lat: number, lon: number) =>
-  lat >= 57.0 && lat <= 81.0 && lon >= 4.0 && lon <= 32.0;
-
-/**
- * Parses pasted coordinates such as "61.6363, 8.3125", "61,6363 8,3125" or
- * "8.3125, 61.6363". Both numbers need decimals so street numbers never
- * match. Either order is accepted: Norway's latitude (57–81) and longitude
- * (4–32) ranges don't overlap, so the order is unambiguous.
- */
-function parseCoordinates(q: string): { lat: number; lon: number } | null {
-  const m = q.trim().match(/^(\d{1,2}[.,]\d+)(?:\s*[,;]\s*|\s+)(\d{1,2}[.,]\d+)$/);
-  if (!m) return null;
-  const a = parseFloat(m[1].replace(",", "."));
-  const b = parseFloat(m[2].replace(",", "."));
-  if (isWithinNorway(a, b)) return { lat: a, lon: b };
-  if (isWithinNorway(b, a)) return { lat: b, lon: a };
-  return null;
-}
-
 /** Turns the høyde-API's `datakilde` code (e.g. "dtm1_33_…") into a readable label. Unknown formats are shown as-is. */
 function formatDatakilde(code: string): string {
   const m = code.match(/^dtm(\d+)/i);
@@ -150,6 +132,9 @@ function CameraController({ move }: { move: CameraMove | null }) {
     if (move.zoom != null) {
       safeFlyTo(map, move.lat, move.lon, move.zoom, { duration: 1.2 });
     } else if (map.getSize().y > CARD_CLEARANCE + 120) {
+      // A click mid-flight (after a search) would otherwise let the flyTo
+      // carry on away from the point the user just picked
+      map.stop();
       map.panInside([move.lat, move.lon], {
         paddingTopLeft: [24, 48],
         paddingBottomRight: [24, CARD_CLEARANCE],
@@ -179,14 +164,18 @@ export function ElevationMap() {
   // older query or point can't overwrite newer results.
   const searchSeq = useRef(0);
   const selectionSeq = useRef(0);
+  // The query the visible suggestions were fetched for, so Enter doesn't pick
+  // a stale top result while the search for the current text is pending.
+  const suggestionsFor = useRef("");
 
   const searchAddresses = useCallback(async (q: string) => {
     const seq = searchSeq.current;
-    if (q.length < 2) { setSuggestions([]); return; }
+    if (q.length < 2) { setSuggestions([]); setLoadingSuggestions(false); return; }
     setLoadingSuggestions(true);
     try {
       const data = await getJson<{ adresser?: Address[] }>(`/api/sok?q=${encodeURIComponent(q)}&n=6`);
       if (seq !== searchSeq.current) return;
+      suggestionsFor.current = q;
       setSuggestions(data.adresser ?? []);
       setShowDropdown(true);
     } catch {
@@ -205,8 +194,7 @@ export function ElevationMap() {
     setLoadingSuggestions(false);
   }, [debounceRef]);
 
-  const handleInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value;
+  const updateQuery = (val: string) => {
     searchSeq.current++;
     setQuery(val);
     setHighlightedIndex(-1);
@@ -214,6 +202,7 @@ export function ElevationMap() {
 
     const coords = parseCoordinates(val);
     if (coords) {
+      suggestionsFor.current = val;
       setLoadingSuggestions(false);
       setSuggestions([{
         adressetekst: `${coords.lat.toFixed(5)}, ${coords.lon.toFixed(5)}`,
@@ -227,6 +216,17 @@ export function ElevationMap() {
     }
 
     debounceRef.current = setTimeout(() => searchAddresses(val), 300);
+  };
+
+  const handleInput = (e: React.ChangeEvent<HTMLInputElement>) => updateQuery(e.target.value);
+
+  // Pasted coordinates replace the field (which usually still holds the last
+  // selected place) instead of being spliced into the middle of it.
+  const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    const text = e.clipboardData.getData("text").trim();
+    if (!parseCoordinates(text)) return;
+    e.preventDefault();
+    updateQuery(text);
   };
 
   const fetchNearestName = useCallback(async (lat: number, lon: number): Promise<{ name: string; roadCoords?: { lat: number; lon: number } }> => {
@@ -387,9 +387,12 @@ export function ElevationMap() {
       e.preventDefault();
       setHighlightedIndex((i) => Math.max(i - 1, 0));
     } else if (e.key === "Enter") {
-      // Enter with nothing highlighted picks the top result
+      // Enter with nothing highlighted picks the top result, but only if the
+      // list is for what's in the box now
+      const i = highlightedIndex >= 0 ? highlightedIndex : suggestionsFor.current === query ? 0 : -1;
+      if (i < 0 || !suggestions[i]) return;
       e.preventDefault();
-      selectSuggestion(suggestions[highlightedIndex >= 0 ? highlightedIndex : 0]);
+      selectSuggestion(suggestions[i]);
     } else if (e.key === "Escape") {
       setShowDropdown(false);
       setHighlightedIndex(-1);
@@ -421,6 +424,7 @@ export function ElevationMap() {
                 ref={inputRef}
                 value={query}
                 onChange={handleInput}
+                onPaste={handlePaste}
                 onKeyDown={handleKeyDown}
                 autoFocus={typeof window !== "undefined" && window.innerWidth >= 640}
                 onFocus={() => suggestions.length > 0 && setShowDropdown(true)}
