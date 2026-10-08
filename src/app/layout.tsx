@@ -13,18 +13,30 @@ const GA_ID = "G-T8XDP59WNK";
 // with extensionless /l/font URLs, which happens intermittently. Split by
 // unicode-range like Google's CSS: latin is preloaded, latin-ext (Sami
 // letters such as ŋ, š, č) only loads when a page uses those characters.
-// The metric-matched fallback face lives in globals.css.
+// The metric-matched fallback face lives in globals.css. One @font-face per
+// weight the old setup declared (same file each time, downloaded once), so
+// in-between weights like font-medium (500) still resolve to 400 as before.
 const nunitoLatin = localFont({
-  src: "../assets/fonts/nunito-sans-latin.woff2",
-  weight: "200 1000",
+  src: [
+    { path: "../assets/fonts/nunito-sans-latin.woff2", weight: "300" },
+    { path: "../assets/fonts/nunito-sans-latin.woff2", weight: "400" },
+    { path: "../assets/fonts/nunito-sans-latin.woff2", weight: "600" },
+    { path: "../assets/fonts/nunito-sans-latin.woff2", weight: "700" },
+    { path: "../assets/fonts/nunito-sans-latin.woff2", weight: "800" },
+  ],
   variable: "--font-nunito-latin",
   adjustFontFallback: false,
   declarations: [{ prop: "unicode-range", value: "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD" }],
 });
 
 const nunitoLatinExt = localFont({
-  src: "../assets/fonts/nunito-sans-latin-ext.woff2",
-  weight: "200 1000",
+  src: [
+    { path: "../assets/fonts/nunito-sans-latin-ext.woff2", weight: "300" },
+    { path: "../assets/fonts/nunito-sans-latin-ext.woff2", weight: "400" },
+    { path: "../assets/fonts/nunito-sans-latin-ext.woff2", weight: "600" },
+    { path: "../assets/fonts/nunito-sans-latin-ext.woff2", weight: "700" },
+    { path: "../assets/fonts/nunito-sans-latin-ext.woff2", weight: "800" },
+  ],
   variable: "--font-nunito-latin-ext",
   adjustFontFallback: false,
   preload: false,

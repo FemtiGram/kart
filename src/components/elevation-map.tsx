@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from "react-leaflet";
 import L from "leaflet";
+import { useSearchParams } from "next/navigation";
 import "leaflet/dist/leaflet.css";
 import { Search, MapPin, Mountain, Loader2, X, ChevronUp, LocateFixed, Crosshair, Wind, Droplets, Sun, Cloud, CloudSun, CloudRain, CloudSnow, CloudLightning, CloudFog, CloudHail, CloudDrizzle, Moon, ExternalLink, Map as MapIcon, Info, Navigation, Share2, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -164,11 +165,14 @@ export function ElevationMap() {
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const [selected, setSelected] = useState<SelectedLocation | null>(null);
   const [camera, setCamera] = useState<CameraMove | null>(null);
-  const [zoom, setZoom] = useState(5);
+  const zoomRef = useRef(5);
   const [copied, setCopied] = useState(false);
-  // Deep links are honoured only if present when the page loads, so the URL
-  // updates this map makes itself (see the effect below) don't re-trigger them.
-  const [landedWithParams] = useState(() => new URLSearchParams(window.location.search).has("lat"));
+  // Deep links are honoured only if present when the map mounts, so the URL
+  // updates this map makes itself (see the effect below) don't re-trigger
+  // them. Read from the router, not window.location: on a client-side <Link>
+  // navigation the address bar still shows the previous page during render.
+  const searchParams = useSearchParams();
+  const [landedWithParams] = useState(() => searchParams.has("lat"));
   const [loadingElevation, setLoadingElevation] = useState(false);
   const [loadingWeather, setLoadingWeather] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
@@ -382,7 +386,9 @@ export function ElevationMap() {
   });
 
   // Mirror the selection in the URL so it can be shared or bookmarked.
-  // replaceState keeps every click out of the back-button history.
+  // replaceState keeps every click out of the back-button history. Written
+  // on selection changes only, not on every zoom: Next's router treats a
+  // replaceState as navigation and would drop a <Link> click still pending.
   const wroteUrl = useRef(false);
   const selectedLat = selected?.address.representasjonspunkt.lat;
   const selectedLon = selected?.address.representasjonspunkt.lon;
@@ -392,14 +398,15 @@ export function ElevationMap() {
       wroteUrl.current = false;
       return;
     }
+    const zoom = camera?.zoom ?? zoomRef.current;
     window.history.replaceState(null, "", `?${shareParams(selectedLat, selectedLon, zoom)}`);
     wroteUrl.current = true;
-  }, [selectedLat, selectedLon, zoom]);
+  }, [selectedLat, selectedLon, camera]);
 
   const handleShare = async () => {
     if (!selected) return;
     const { lat, lon } = selected.address.representasjonspunkt;
-    const url = `${window.location.origin}${window.location.pathname}?${shareParams(lat, lon, zoom)}`;
+    const url = `${window.location.origin}${window.location.pathname}?${shareParams(lat, lon, zoomRef.current)}`;
     const høyde = selected.elevation?.høyde;
     const text = høyde != null
       ? `${selected.address.adressetekst} ligger ${høyde.toFixed(1)} meter over havet`
@@ -543,7 +550,7 @@ export function ElevationMap() {
         >
           <MapClickHandler onMapClick={handleMapClick} />
           <CameraController move={camera} />
-          <ZoomTracker onZoom={setZoom} />
+          <ZoomTracker onZoom={(z) => { zoomRef.current = z; }} />
           <TileLayer
             key={tileLayer}
             url={TILE_LAYERS[tileLayer].url}

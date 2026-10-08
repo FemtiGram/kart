@@ -14,7 +14,7 @@ A portfolio project showcasing Norwegian open geodata on interactive maps. Built
 - **Animation:** motion.dev (~3KB) — scroll/hover animations on landing page (src/components/motion.tsx). Entrance `<FadeIn>` is CSS-only (`.fade-up` in globals.css) so above-the-fold content is visible from first paint — never ship `opacity:0` in SSR HTML for hero content
 - **Tiles:** Kartverket WMTS (topo + topograatone + sjokartraster) + OpenTopoMap (terreng)
 - **Icons:** lucide-react
-- **Font:** Nunito Sans, **self-hosted** via `next/font/local` (`src/assets/fonts/`, latin + latin-ext split by unicode-range, metric-matched fallback in globals.css). Never switch back to `next/font/google` — Turbopack intermittently fails the whole build when Google returns extensionless font URLs. `src/app/fonts/` is git-ignored (local experiments)
+- **Font:** Nunito Sans, **self-hosted** via `next/font/local` (`src/assets/fonts/`, latin + latin-ext split by unicode-range, one @font-face per weight 300/400/600/700/800 like the old Google setup so `font-medium` still renders as 400, metric-matched fallback in globals.css). Never switch back to `next/font/google` — Turbopack intermittently fails the whole build when Google returns extensionless font URLs. `src/app/fonts/` is git-ignored (local experiments)
 
 ## Project Structure
 
@@ -270,7 +270,7 @@ All maps use a **compact floating card + expandable bottom Sheet** pattern:
 
 ### Elevation map specifics (/map):
 - **Camera:** map clicks keep the current zoom and only `panInside` so the point clears the compact card; searches, geolocation and pasted coordinates fly to zoom 16; deep links fly to their `z`
-- **Shareable URL:** the selection is mirrored to `?lat=&lon=&z=` with `history.replaceState` (no back-button spam) and cleared when the card closes. "Del" uses the Web Share API, falling back to clipboard. Deep links are only honoured if present when the page loads (`landedWithParams`) — otherwise the map's own URL writes would re-trigger `useInitialPosition`
+- **Shareable URL:** the selection is mirrored to `?lat=&lon=&z=` with `history.replaceState` (no back-button spam) and cleared when the card closes. Written on selection changes only, never on zoom — Next's router treats `replaceState` as a navigation and would drop a pending `<Link>` click. "Del" uses the Web Share API (live zoom from a ref), falling back to clipboard. Deep links are only honoured if present when the map mounts (`landedWithParams`, read from `useSearchParams` — **not** `window.location`, which still holds the previous page's URL during a client-side `<Link>` navigation) — otherwise the map's own URL writes would re-trigger `useInitialPosition`
 - **Weather waits for elevation** and passes it as `altitude` to `/api/weather`; elevation renders first. All responses are guarded by a selection sequence ref so stale results can't overwrite a newer selection
 
 ### Energy map specifics:

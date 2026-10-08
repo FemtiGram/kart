@@ -14,6 +14,8 @@ export const metadata = {
     description: DESCRIPTION,
     type: "website",
     url: "/map",
+    locale: "nb_NO",
+    siteName: "Datakart",
   },
   keywords: [
     "høyde over havet",
