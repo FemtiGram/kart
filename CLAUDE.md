@@ -14,6 +14,7 @@ A portfolio project showcasing Norwegian open geodata on interactive maps. Built
 - **Animation:** motion.dev (~3KB) — scroll/hover animations on landing page (src/components/motion.tsx). Entrance `<FadeIn>` is CSS-only (`.fade-up` in globals.css) so above-the-fold content is visible from first paint — never ship `opacity:0` in SSR HTML for hero content
 - **Tiles:** Kartverket WMTS (topo + topograatone + sjokartraster) + OpenTopoMap (terreng)
 - **Icons:** lucide-react
+- **Font:** Nunito Sans, **self-hosted** via `next/font/local` (`src/assets/fonts/`, latin + latin-ext split by unicode-range, metric-matched fallback in globals.css). Never switch back to `next/font/google` — Turbopack intermittently fails the whole build when Google returns extensionless font URLs. `src/app/fonts/` is git-ignored (local experiments)
 
 ## Project Structure
 
@@ -26,7 +27,7 @@ src/app/
   lonn/page.tsx         — Income choropleth
   vern/page.tsx         — Protected areas choropleth
   bolig/page.tsx        — Housing prices bubble map
-  map/page.tsx          — "Høyde over havet" elevation + weather map (top traffic page). FAQ (FAQPage JSON-LD) below the map
+  map/page.tsx          — "Høyde over havet" elevation + weather map (top traffic page). crawlable intro, "Norges høyeste fjell" section (Galdhøpiggen + Glittertind only — heights verified) and FAQ (FAQPage JSON-LD) below the map
   energi/page.tsx       — Category landing for Energi (hub for /energikart, /magasin, /lading)
   natur/page.tsx        — Category landing for Natur (hub for /map, /hytter, /vern)
   samfunn/page.tsx      — Category landing for Samfunn (hub for Stedsprofil, /bolig, /lonn, /helse, /skoler, /kostnader, /valg, /prisvekst)

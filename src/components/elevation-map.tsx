@@ -768,7 +768,7 @@ export function ElevationMap() {
           <span className="font-medium text-foreground">Høydedata</span> hentes fra Kartverkets høyde-API og er basert på den nasjonale terrengmodellen (DTM). Der det finnes laserskannede data, er avviket typisk under én meter. Der terrengmodellen er grovere, kan avviket være noen meter.
         </p>
         <p>
-          <span className="font-medium text-foreground">Værdata</span> hentes fra MET.no (Meteorologisk institutt) og viser gjeldende temperatur, vindstyrke og nedbør for det valgte punktet.
+          <span className="font-medium text-foreground">Værdata</span> hentes fra MET.no (Meteorologisk institutt) og viser gjeldende temperatur, vindstyrke og nedbør for det valgte punktet. Temperaturen er justert for høyden på punktet.
         </p>
         <p>
           Kartet bruker <span className="font-medium text-foreground">Kartverket</span> for bakgrunnskart og <span className="font-medium text-foreground">OpenTopoMap</span> for terrengvisning.
