@@ -11,11 +11,15 @@ export const metadata = {
 const faqs = [
   {
     q: "Hvor nøyaktig er høydedataene?",
-    a: "Nøyaktigheten avhenger av datakilden. For bygninger og veiadresser er presisjonen typisk ±1 meter (fra Kartverkets detaljerte terrengmodell). For stedsnavn og fjelltoppper kan usikkerheten være større avhengig av punktets plassering.",
+    a: "Nøyaktigheten avhenger av datakilden. Der Kartverket har laserskannede data, er avviket typisk under én meter. Der terrengmodellen er grovere, kan avviket være noen meter. For fjelltopper og stedsnavn kan høyden også avvike fordi punktet du velger ikke ligger nøyaktig på toppen. Kilden for hvert punkt vises når du trykker «Vis mer».",
   },
   {
     q: "Hvordan fungerer terrengkartet?",
-    a: "Terrengkartet bruker OpenTopoMap som viser høydekurver, skyggereleff og topografiske detaljer. Dette gjør det lettere å se fjell, daler og bratthet sammenlignet med et vanlig veikart.",
+    a: "Terrengkartet bruker OpenTopoMap som viser høydekurver, skyggerelieff og topografiske detaljer. Dette gjør det lettere å se fjell, daler og bratthet sammenlignet med et vanlig veikart.",
+  },
+  {
+    q: "Kan jeg finne høyden for et sett med koordinater?",
+    a: "Ja. Lim inn koordinatene i søkefeltet, for eksempel «61.6363, 8.3125», og velg treffet. Du kan også klikke hvor som helst i kartet for å se høyden over havet for akkurat det punktet.",
   },
   {
     q: "Kan jeg bruke kartet til fjellturer?",
@@ -23,7 +27,7 @@ const faqs = [
   },
   {
     q: "Hva viser værdataene?",
-    a: "Når du klikker på et punkt vises aktuell temperatur, vindstyrke og nedbør. Dataene kommer fra MET.no (yr.no) og gjelder de nærmeste timene. Værdata oppdateres hvert 30. minutt.",
+    a: "Når du klikker på et punkt, vises aktuell temperatur, vindstyrke og nedbør. Dataene kommer fra MET.no (yr.no) og gjelder de nærmeste timene. Værdata oppdateres hvert 30. minutt.",
   },
   {
     q: "Hvor kommer dataene fra?",

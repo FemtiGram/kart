@@ -1,18 +1,20 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { Search, MapPin, Mountain, Loader2, X, ChevronUp, LocateFixed, Wind, Droplets, Sun, Cloud, CloudSun, CloudRain, CloudSnow, CloudLightning, CloudFog, CloudHail, CloudDrizzle, Moon, ExternalLink, Map as MapIcon, Info, Navigation } from "lucide-react";
+import { Search, MapPin, Mountain, Loader2, X, ChevronUp, LocateFixed, Crosshair, Wind, Droplets, Sun, Cloud, CloudSun, CloudRain, CloudSnow, CloudLightning, CloudFog, CloudHail, CloudDrizzle, Moon, ExternalLink, Map as MapIcon, Info, Navigation } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import type { LucideIcon } from "lucide-react";
-import { FlyTo, DataDisclaimer, useDebounceRef, MAP_HEIGHT, TILE_URL_KART, KV_ATTRIBUTION, useGeolocation } from "@/lib/map-utils";
+import { DataDisclaimer, useDebounceRef, MAP_HEIGHT, TILE_URL_KART, KV_ATTRIBUTION, useGeolocation } from "@/lib/map-utils";
+import { safeFlyTo } from "@/lib/safe-fly";
 import { InfoModal } from "@/components/info-modal";
 import { TileToggle } from "@/components/tile-toggle";
 import { DriveLink } from "@/components/drive-link";
 import { useInitialPosition } from "@/lib/use-initial-position";
+import { isWithinNorway, parseCoordinates } from "@/lib/parse-coordinates";
 
 function weatherIcon(symbolCode: string): LucideIcon {
   const c = symbolCode.toLowerCase();
@@ -63,6 +65,10 @@ interface ElevationResult {
   terrengtype?: string;
 }
 
+interface ElevationResponse {
+  punkter?: Array<{ z: number | null; datakilde: string; terrengtype?: string }>;
+}
+
 interface WeatherResult {
   temperature: number;
   windSpeed: number;
@@ -78,7 +84,37 @@ interface SelectedLocation {
   mapsCoords?: { lat: number; lon: number };
 }
 
+/** A search dropdown row: an address from Geonorge, or a pasted coordinate pair. */
+interface Suggestion extends Address {
+  isCoordinate?: boolean;
+}
 
+/** Camera move for a new selection. With `zoom` the map flies there; without, it only pans enough to keep the point clear of the compact card. */
+interface CameraMove {
+  lat: number;
+  lon: number;
+  zoom?: number;
+  _t: number;
+}
+
+/** Zoom used when jumping to a searched address, coordinate or the user's position. */
+const SEARCH_ZOOM = 16;
+
+/** Pixels at the bottom of the map covered by the compact card (card height + bottom offset). */
+const CARD_CLEARANCE = 210;
+
+/** Turns the høyde-API's `datakilde` code (e.g. "dtm1_33_…") into a readable label. Unknown formats are shown as-is. */
+function formatDatakilde(code: string): string {
+  const m = code.match(/^dtm(\d+)/i);
+  return m ? `Kartverkets terrengmodell, ${m[1]} m oppløsning` : code;
+}
+
+/** fetch + JSON that rejects on HTTP errors, so a failed upstream ends up in the catch path instead of being rendered as data. */
+async function getJson<T>(url: string): Promise<T> {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`${res.status} ${url}`);
+  return res.json() as Promise<T>;
+}
 
 function MapClickHandler({ onMapClick }: { onMapClick: (lat: number, lon: number) => void }) {
   useMapEvents({
@@ -89,11 +125,31 @@ function MapClickHandler({ onMapClick }: { onMapClick: (lat: number, lon: number
   return null;
 }
 
+function CameraController({ move }: { move: CameraMove | null }) {
+  const map = useMap();
+  useEffect(() => {
+    if (!move) return;
+    if (move.zoom != null) {
+      safeFlyTo(map, move.lat, move.lon, move.zoom, { duration: 1.2 });
+    } else if (map.getSize().y > CARD_CLEARANCE + 120) {
+      // A click mid-flight (after a search) would otherwise let the flyTo
+      // carry on away from the point the user just picked
+      map.stop();
+      map.panInside([move.lat, move.lon], {
+        paddingTopLeft: [24, 48],
+        paddingBottomRight: [24, CARD_CLEARANCE],
+      });
+    }
+  }, [move, map]);
+  return null;
+}
+
 export function ElevationMap() {
   const [query, setQuery] = useState("");
-  const [suggestions, setSuggestions] = useState<Address[]>([]);
+  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const [selected, setSelected] = useState<SelectedLocation | null>(null);
+  const [camera, setCamera] = useState<CameraMove | null>(null);
   const [loadingElevation, setLoadingElevation] = useState(false);
   const [loadingWeather, setLoadingWeather] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
@@ -104,92 +160,81 @@ export function ElevationMap() {
   const debounceRef = useDebounceRef();
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const inputRef = useRef<HTMLInputElement>(null);
-  const [apiDown, setApiDown] = useState(false);
-  const [apiBannerDismissed, setApiBannerDismissed] = useState(false);
+  // Bumped on every keystroke / new selection so slow responses for an
+  // older query or point can't overwrite newer results.
+  const searchSeq = useRef(0);
+  const selectionSeq = useRef(0);
+  // The query the visible suggestions were fetched for, so Enter doesn't pick
+  // a stale top result while the search for the current text is pending.
+  const suggestionsFor = useRef("");
 
-  const devFetch = useCallback(async (url: string, _summary?: (data: unknown) => string) => {
-    const res = await fetch(url);
-    return res.json();
+  const searchAddresses = useCallback(async (q: string) => {
+    const seq = searchSeq.current;
+    if (q.length < 2) { setSuggestions([]); setLoadingSuggestions(false); return; }
+    setLoadingSuggestions(true);
+    try {
+      const data = await getJson<{ adresser?: Address[] }>(`/api/sok?q=${encodeURIComponent(q)}&n=6`);
+      if (seq !== searchSeq.current) return;
+      suggestionsFor.current = q;
+      setSuggestions(data.adresser ?? []);
+      setShowDropdown(true);
+    } catch {
+      if (seq === searchSeq.current) setSuggestions([]);
+    } finally {
+      if (seq === searchSeq.current) setLoadingSuggestions(false);
+    }
   }, []);
 
-  useEffect(() => {
-    const checkApis = async () => {
-      const results = await Promise.allSettled([
-        devFetch("/api/sok?q=Oslo&n=1", () => "Helsesjekk: Adresser API"),
-        devFetch("/api/weather?lat=59.9&lon=10.7", () => "Helsesjekk: Vær-proxy"),
-      ]);
-      const anyFailed = results.some((r) => r.status === "rejected");
-      if (anyFailed) setApiDown(true);
-    };
-    checkApis();
-  }, [devFetch]);
+  /** Closes the dropdown and cancels any pending or in-flight search so it can't reopen after a selection. */
+  const closeSearch = useCallback(() => {
+    searchSeq.current++;
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    setShowDropdown(false);
+    setSuggestions([]);
+    setLoadingSuggestions(false);
+  }, [debounceRef]);
 
-  const searchAddresses = useCallback(
-    async (q: string) => {
-      if (q.length < 2) { setSuggestions([]); return; }
-      setLoadingSuggestions(true);
-      try {
-        const url = `/api/sok?q=${encodeURIComponent(q)}&n=6`;
-        const data = await devFetch(url, (d: unknown) => {
-          const result = d as { adresser?: unknown[] };
-          return `${result.adresser?.length ?? 0} adresser funnet`;
-        });
-        setSuggestions((data as { adresser?: Address[] }).adresser ?? []);
-        setShowDropdown(true);
-      } catch {
-        setSuggestions([]);
-      } finally {
-        setLoadingSuggestions(false);
-      }
-    },
-    [devFetch]
-  );
-
-  const handleInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value;
+  const updateQuery = (val: string) => {
+    searchSeq.current++;
     setQuery(val);
     setHighlightedIndex(-1);
     if (debounceRef.current) clearTimeout(debounceRef.current);
+
+    const coords = parseCoordinates(val);
+    if (coords) {
+      suggestionsFor.current = val;
+      setLoadingSuggestions(false);
+      setSuggestions([{
+        adressetekst: `${coords.lat.toFixed(5)}, ${coords.lon.toFixed(5)}`,
+        poststed: "",
+        kommunenavn: "",
+        representasjonspunkt: coords,
+        isCoordinate: true,
+      }]);
+      setShowDropdown(true);
+      return;
+    }
+
     debounceRef.current = setTimeout(() => searchAddresses(val), 300);
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (!showDropdown || suggestions.length === 0) return;
-    if (e.key === "ArrowDown") {
-      e.preventDefault();
-      setHighlightedIndex((i) => Math.min(i + 1, suggestions.length - 1));
-    } else if (e.key === "ArrowUp") {
-      e.preventDefault();
-      setHighlightedIndex((i) => Math.max(i - 1, 0));
-    } else if (e.key === "Enter" && highlightedIndex >= 0) {
-      e.preventDefault();
-      const addr = suggestions[highlightedIndex];
-      setQuery(`${addr.adressetekst}, ${addr.poststed}`);
-      setShowDropdown(false);
-      setHighlightedIndex(-1);
-      handleMapClick(addr.representasjonspunkt.lat, addr.representasjonspunkt.lon);
-    } else if (e.key === "Escape") {
-      setShowDropdown(false);
-      setHighlightedIndex(-1);
-    }
-  };
+  const handleInput = (e: React.ChangeEvent<HTMLInputElement>) => updateQuery(e.target.value);
 
-  const isWithinNorway = (lat: number, lon: number) =>
-    lat >= 57.0 && lat <= 81.0 && lon >= 4.0 && lon <= 32.0;
+  // Pasted coordinates replace the field (which usually still holds the last
+  // selected place) instead of being spliced into the middle of it.
+  const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    const text = e.clipboardData.getData("text").trim();
+    if (!parseCoordinates(text)) return;
+    e.preventDefault();
+    updateQuery(text);
+  };
 
   const fetchNearestName = useCallback(async (lat: number, lon: number): Promise<{ name: string; roadCoords?: { lat: number; lon: number } }> => {
     type AdresseHit = { adressetekst: string; poststed: string; kommunenavn: string; representasjonspunkt?: { lat: number; lon: number } };
-    type AdresseResponse = { adresser?: AdresseHit[] };
 
     const fetchAddr = async (radius: number) => {
-      const data = await devFetch(
-        `/api/sok?lat=${lat}&lon=${lon}&radius=${radius}&n=1`,
-        (d: unknown) => {
-          const a = (d as AdresseResponse).adresser?.[0];
-          return a ? `${a.adressetekst}, ${a.poststed}` : "Ingen adresse";
-        }
-      );
-      return (data as AdresseResponse).adresser?.[0] ?? null;
+      const data = await getJson<{ adresser?: AdresseHit[] }>(`/api/sok?lat=${lat}&lon=${lon}&radius=${radius}&n=1`);
+      return data.adresser?.[0] ?? null;
     };
 
     // 1. Building — close address hit (≤ 50m)
@@ -215,66 +260,65 @@ export function ElevationMap() {
 
     // 3. Place name — stedsnavn within 5km (mountains, lakes, forests)
     try {
-      const data = await devFetch(
-        `https://ws.geonorge.no/stedsnavn/v1/punkt?nord=${lat}&ost=${lon}&koordsys=4326&radius=5000&treffPerSide=1`,
-        (d: unknown) => {
-          const result = d as { navn?: Array<{ stedsnavn?: Array<{ skrivemåte: string }> }> };
-          return result.navn?.[0]?.stedsnavn?.[0]?.skrivemåte ?? "Ingen stedsnavn";
-        }
+      const data = await getJson<{ navn?: Array<{ stedsnavn?: Array<{ skrivemåte: string }> }> }>(
+        `https://ws.geonorge.no/stedsnavn/v1/punkt?nord=${lat}&ost=${lon}&koordsys=4326&radius=5000&treffPerSide=1`
       );
-      const name = (data as { navn?: Array<{ stedsnavn?: Array<{ skrivemåte: string }> }> }).navn?.[0]?.stedsnavn?.[0]?.skrivemåte;
+      const name = data.navn?.[0]?.stedsnavn?.[0]?.skrivemåte;
       if (name) return { name };
     } catch { /* fall through */ }
 
     // 4. Fallback to raw coordinates
     return { name: `${lat.toFixed(5)}, ${lon.toFixed(5)}` };
-  }, [devFetch]);
+  }, []);
 
-  const fetchLocationData = useCallback(async (address: Address) => {
+  /**
+   * Fetches elevation and weather for a point. The two are applied
+   * independently so the elevation (the number people came for) shows as
+   * soon as it arrives instead of waiting for the slower weather proxy.
+   * Returns the selection sequence number so callers can detect staleness.
+   */
+  const fetchLocationData = useCallback((address: Address) => {
+    const seq = ++selectionSeq.current;
     const { lat, lon } = address.representasjonspunkt;
     setLoadingElevation(true);
     setLoadingWeather(true);
 
-    // Fetch elevation and weather in parallel
-    const [elevationData, weatherData] = await Promise.allSettled([
-      devFetch(
-        `https://ws.geonorge.no/hoydedata/v1/punkt?koordsys=4326&nord=${lat}&ost=${lon}`,
-        (d: unknown) => {
-          const result = d as { punkter?: Array<{ z: number | null; datakilde: string }> };
-          const p = result.punkter?.[0];
-          return p?.z != null ? `${p.z.toFixed(1)} moh. (${p.datakilde})` : "Ingen data";
-        }
-      ),
-      devFetch(
-        `/api/weather?lat=${lat}&lon=${lon}`,
-        (d: unknown) => {
-          const w = d as WeatherResult;
-          return `${w.temperature}°C, ${w.symbolCode}`;
-        }
-      ),
-    ]);
+    getJson<ElevationResponse>(`https://ws.geonorge.no/hoydedata/v1/punkt?koordsys=4326&nord=${lat}&ost=${lon}`)
+      .then((d) => d.punkter?.[0] ?? null, () => null)
+      .then((p) => {
+        if (seq !== selectionSeq.current) return;
+        setSelected((prev) => prev && {
+          ...prev,
+          elevation: p ? { datakilde: p.datakilde, høyde: p.z, terrengtype: p.terrengtype } : null,
+        });
+        setLoadingElevation(false);
+      });
 
-    const høyde = elevationData.status === "fulfilled"
-      ? (elevationData.value as { punkter?: Array<{ z: number | null; datakilde: string; terrengtype?: string }> }).punkter?.[0]
-      : null;
+    getJson<WeatherResult>(`/api/weather?lat=${lat}&lon=${lon}`)
+      .catch(() => null)
+      .then((w) => {
+        if (seq !== selectionSeq.current) return;
+        setSelected((prev) => prev && { ...prev, weather: w });
+        setLoadingWeather(false);
+      });
 
-    setSelected((prev) => ({
-      yrSearchName: prev?.yrSearchName ?? "",
-      mapsCoords: prev?.mapsCoords ?? address.representasjonspunkt,
-      address,
-      elevation: høyde ? { datakilde: høyde.datakilde, høyde: høyde.z, terrengtype: høyde.terrengtype } : null,
-      weather: weatherData.status === "fulfilled" ? (weatherData.value as WeatherResult) : null,
-    }));
+    return seq;
+  }, []);
 
-    setLoadingElevation(false);
-    setLoadingWeather(false);
-  }, [devFetch]);
-
-  const handleMapClick = useCallback(async (lat: number, lon: number) => {
-    setShowDropdown(false);
-    setSuggestions([]);
+  /**
+   * Selects an arbitrary point (map click, geolocation, deep link, pasted
+   * coordinates) and resolves a human-readable name for it. Pass `flyZoom`
+   * to fly the camera there; map clicks omit it so the user keeps their
+   * current zoom level.
+   */
+  const handleMapClick = useCallback(async (lat: number, lon: number, flyZoom?: number) => {
+    closeSearch();
+    setCamera({ lat, lon, zoom: flyZoom, _t: Date.now() });
 
     if (!isWithinNorway(lat, lon)) {
+      selectionSeq.current++;
+      setLoadingElevation(false);
+      setLoadingWeather(false);
       setQuery(`${lat.toFixed(5)}, ${lon.toFixed(5)}`);
       setSelected({ address: { adressetekst: "Utenfor Norge", poststed: "", kommunenavn: "", representasjonspunkt: { lat, lon } }, elevation: null, weather: null, yrSearchName: "", mapsCoords: { lat, lon } });
       return;
@@ -289,10 +333,9 @@ export function ElevationMap() {
     setQuery(address.adressetekst);
     setSelected({ address, elevation: null, weather: null, yrSearchName: "", mapsCoords: { lat, lon } });
 
-    const [nearest] = await Promise.all([
-      fetchNearestName(lat, lon),
-      fetchLocationData(address),
-    ]);
+    const seq = fetchLocationData(address);
+    const nearest = await fetchNearestName(lat, lon);
+    if (seq !== selectionSeq.current) return;
     setQuery(nearest.name);
     setSelected((prev) => prev && {
       ...prev,
@@ -300,55 +343,78 @@ export function ElevationMap() {
       yrSearchName: nearest.name,
       mapsCoords: nearest.roadCoords ?? { lat, lon },
     });
-  }, [fetchNearestName, fetchLocationData]);
+  }, [closeSearch, fetchNearestName, fetchLocationData]);
 
   const { locating, locateError, locate: handleLocate } = useGeolocation(
     useCallback((lat, lon) => {
-      handleMapClick(lat, lon);
+      handleMapClick(lat, lon, SEARCH_ZOOM);
     }, [handleMapClick]),
     useCallback(() => {
-      handleMapClick(59.91, 10.75);
+      handleMapClick(59.91, 10.75, SEARCH_ZOOM);
     }, [handleMapClick]),
   );
 
   // Deep link from /kommune/[slug]: ?lat=&lon=&z= triggers an elevation+weather
-  // fetch at that point. The existing <FlyTo> inside MapContainer picks up the
-  // resulting `selected` state and flies there.
-  useInitialPosition((lat, lon) => {
-    handleMapClick(lat, lon);
+  // fetch at that point and flies to the requested zoom.
+  useInitialPosition((lat, lon, zoom) => {
+    handleMapClick(lat, lon, zoom);
   });
 
-  const handleSelect = async (address: Address) => {
-    setShowDropdown(false);
+  const handleSelect = (address: Address) => {
+    closeSearch();
     setQuery(`${address.adressetekst}, ${address.poststed}`);
-    setSuggestions([]);
+    const { lat, lon } = address.representasjonspunkt;
+    setCamera({ lat, lon, zoom: SEARCH_ZOOM, _t: Date.now() });
     setSelected({ address, elevation: null, weather: null, yrSearchName: `${address.adressetekst}, ${address.poststed}`, mapsCoords: address.representasjonspunkt });
     fetchLocationData(address);
+  };
+
+  const selectSuggestion = (s: Suggestion) => {
+    setHighlightedIndex(-1);
+    if (s.isCoordinate) {
+      handleMapClick(s.representasjonspunkt.lat, s.representasjonspunkt.lon, SEARCH_ZOOM);
+    } else {
+      handleSelect(s);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (!showDropdown || suggestions.length === 0) return;
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setHighlightedIndex((i) => Math.min(i + 1, suggestions.length - 1));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setHighlightedIndex((i) => Math.max(i - 1, 0));
+    } else if (e.key === "Enter") {
+      // Enter with nothing highlighted picks the top result, but only if the
+      // list is for what's in the box now
+      const i = highlightedIndex >= 0 ? highlightedIndex : suggestionsFor.current === query ? 0 : -1;
+      if (i < 0 || !suggestions[i]) return;
+      e.preventDefault();
+      selectSuggestion(suggestions[i]);
+    } else if (e.key === "Escape") {
+      setShowDropdown(false);
+      setHighlightedIndex(-1);
+    }
   };
 
   const lat = selected?.address.representasjonspunkt.lat ?? 65;
   const lon = selected?.address.representasjonspunkt.lon ?? 14;
 
+  const coordText = `${lat.toFixed(5)}, ${lon.toFixed(5)}`;
+  const placeContext = selected?.address.poststed
+    ? `${selected.address.poststed}, ${selected.address.kommunenavn}`
+    : selected && selected.address.adressetekst !== coordText ? coordText : "";
+  const CardWeatherIcon = selected?.weather ? weatherIcon(selected.weather.symbolCode) : null;
+
   return (
     <div className="flex flex-col" style={{ height: MAP_HEIGHT }}>
-      {/* API health banner */}
-      {apiDown && !apiBannerDismissed && (
-        <div className="shrink-0 flex items-center justify-between gap-3 px-4 py-2.5 bg-yellow-50 border-b border-yellow-200 text-yellow-800 text-sm">
-          <p>Eksterne APIer svarer ikke, søk og høydedata kan være utilgjengelig. Prøv igjen senere.</p>
-          <button
-            onClick={() => setApiBannerDismissed(true)}
-            className="shrink-0 p-1 rounded hover:bg-yellow-100 transition-colors"
-            aria-label="Lukk"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-      )}
       {/* Search bar */}
       <div className="relative z-[1000] px-4 py-4 md:px-8 shrink-0 bg-background border-b">
         <div className="max-w-xl mx-auto relative flex flex-col gap-2">
           <div className="flex items-center gap-2">
-            <div className="flex flex-1 items-center gap-2 bg-background border rounded-xl px-4 py-3">
+            <div className="flex flex-1 min-w-0 items-center gap-2 bg-background border rounded-xl px-4 py-3">
               {loadingSuggestions ? (
                 <Loader2 className="h-4 w-4 shrink-0 animate-spin text-muted-foreground" />
               ) : (
@@ -358,32 +424,40 @@ export function ElevationMap() {
                 ref={inputRef}
                 value={query}
                 onChange={handleInput}
+                onPaste={handlePaste}
                 onKeyDown={handleKeyDown}
-                autoFocus
+                autoFocus={typeof window !== "undefined" && window.innerWidth >= 640}
                 onFocus={() => suggestions.length > 0 && setShowDropdown(true)}
                 onBlur={() => setTimeout(() => setShowDropdown(false), 150)}
-                placeholder="Søk etter en adresse i Norge..."
-                className="flex-1 bg-transparent outline-none focus-visible:ring-2 focus-visible:ring-ring text-sm text-foreground placeholder:text-muted-foreground text-[16px] sm:text-sm"
+                placeholder="Adresse eller koordinater"
+                className="flex-1 min-w-0 text-ellipsis bg-transparent outline-none focus-visible:ring-2 focus-visible:ring-ring text-sm text-foreground placeholder:text-muted-foreground text-[16px] sm:text-sm"
               />
             </div>
             <Button onClick={handleLocate} disabled={locating} variant="secondary" size="icon" aria-label="Min posisjon" className="shadow-lg shrink-0 h-11 w-11 rounded-xl">
               {locating ? <Loader2 className="h-4 w-4 animate-spin" /> : <LocateFixed className="h-4 w-4" />}
             </Button>
+            <Button onClick={() => setShowInfo(true)} variant="secondary" size="icon" aria-label="Om data" className="shadow-lg shrink-0 h-11 w-11 rounded-xl">
+              <Info className="h-4 w-4" />
+            </Button>
           </div>
 
           {showDropdown && suggestions.length > 0 && (
             <ul className="absolute top-full mt-1 left-0 right-0 bg-background rounded-xl shadow-xl border overflow-hidden">
-              {suggestions.map((addr, i) => (
+              {suggestions.map((s, i) => (
                 <li key={i}>
                   <button
-                    onMouseDown={() => handleSelect(addr)}
+                    onMouseDown={() => selectSuggestion(s)}
                     className={`w-full text-left px-4 py-3 text-sm flex items-start gap-3 transition-colors border-b last:border-0 ${highlightedIndex === i ? "bg-muted" : "hover:bg-muted"}`}
                   >
-                    <MapPin className="h-4 w-4 mt-0.5 shrink-0 text-muted-foreground" />
+                    {s.isCoordinate ? (
+                      <Crosshair className="h-4 w-4 mt-0.5 shrink-0 text-muted-foreground" />
+                    ) : (
+                      <MapPin className="h-4 w-4 mt-0.5 shrink-0 text-muted-foreground" />
+                    )}
                     <div>
-                      <p className="font-medium">{addr.adressetekst}</p>
+                      <p className="font-medium">{s.adressetekst}</p>
                       <p className="text-xs text-foreground/70">
-                        {addr.poststed}, {addr.kommunenavn}
+                        {s.isCoordinate ? "Gå til koordinatene" : `${s.poststed}, ${s.kommunenavn}`}
                       </p>
                     </div>
                   </button>
@@ -408,6 +482,7 @@ export function ElevationMap() {
           zoomControl={true}
         >
           <MapClickHandler onMapClick={handleMapClick} />
+          <CameraController move={camera} />
           <TileLayer
             key={tileLayer}
             url={TILE_LAYERS[tileLayer].url}
@@ -415,19 +490,17 @@ export function ElevationMap() {
             maxZoom={17}
           />
           {selected && (
-            <>
-              <FlyTo lat={lat} lon={lon} zoom={16} />
-              <Marker position={[lat, lon]}>
-                <Popup>
-                  <strong>{selected.address.adressetekst}</strong>
-                  <br />
-                  {selected.address.poststed}, {selected.address.kommunenavn}
-                  {selected.elevation?.høyde != null && (
-                    <><br /><span className="font-semibold">{selected.elevation.høyde.toFixed(1)} moh.</span></>
-                  )}
-                </Popup>
-              </Marker>
-            </>
+            <Marker position={[lat, lon]}>
+              <Popup>
+                <strong>{selected.address.adressetekst}</strong>
+                {selected.address.poststed && (
+                  <><br />{selected.address.poststed}, {selected.address.kommunenavn}</>
+                )}
+                {selected.elevation?.høyde != null && (
+                  <><br /><span className="font-semibold">{selected.elevation.høyde.toFixed(1)} moh.</span></>
+                )}
+              </Popup>
+            </Marker>
           )}
         </MapContainer>
 
@@ -449,40 +522,41 @@ export function ElevationMap() {
             className="absolute bottom-4 left-3 right-3 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 sm:w-96 z-[999] bg-card rounded-2xl shadow-xl px-4 py-4"
             style={{ border: "1.5px solid var(--border)" }}
           >
-            {/* Layer 1 — Identity */}
-            <div className="flex items-start justify-between gap-2">
-              <div className="min-w-0">
-                <p className="font-bold text-base truncate leading-snug">{selected.address.adressetekst}</p>
-                {selected.address.poststed && (
-                  <p className="text-xs text-foreground/70 truncate">
-                    {selected.address.poststed}, {selected.address.kommunenavn}
+            <button
+              onClick={() => setSelected(null)}
+              className="absolute top-0 right-0 p-2.5 rounded-md text-muted-foreground hover:text-foreground transition-colors"
+              aria-label="Lukk"
+            >
+              <X className="h-4 w-4" />
+            </button>
+
+            {/* Row 1 — name left, elevation right */}
+            <div className="flex items-start justify-between gap-3 pr-6">
+              <p className="min-w-0 text-xl font-extrabold leading-tight break-words" style={{ color: "var(--kv-blue)" }}>
+                {selected.address.adressetekst}
+              </p>
+              <div className="shrink-0 text-right">
+                {loadingElevation ? (
+                  <Loader2 className="h-5 w-5 mt-0.5 animate-spin text-muted-foreground" aria-label="Henter høyde" />
+                ) : selected.elevation?.høyde != null ? (
+                  <p className="text-xl font-extrabold leading-tight whitespace-nowrap" style={{ color: "var(--kv-blue)" }}>
+                    {selected.elevation.høyde.toFixed(1)}
+                    <span className="text-sm font-medium text-muted-foreground"> moh.</span>
                   </p>
+                ) : (
+                  <p className="text-sm text-muted-foreground mt-0.5">Ingen høydedata</p>
                 )}
               </div>
-              <button
-                onClick={() => setSelected(null)}
-                className="shrink-0 p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                aria-label="Lukk"
-              >
-                <X className="h-4 w-4" />
-              </button>
             </div>
 
-            {/* Layer 2 — Elevation */}
-            <div className="mt-3">
-              {loadingElevation ? (
-                <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" /> Henter høyde...
-                </div>
-              ) : selected.elevation?.høyde != null ? (
-                <div className="flex items-baseline gap-2">
-                  <span className="text-2xl font-extrabold" style={{ color: "var(--kv-blue)" }}>
-                    {selected.elevation.høyde.toFixed(1)}
-                  </span>
-                  <span className="text-sm font-medium text-muted-foreground">moh.</span>
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground">Ingen høydedata</p>
+            {/* Row 2 — place left, weather right */}
+            <div className="flex items-center justify-between gap-3 mt-1 min-h-4">
+              <p className="min-w-0 text-xs text-muted-foreground truncate">{placeContext}</p>
+              {selected.weather && CardWeatherIcon && (
+                <span className="shrink-0 flex items-center gap-1 text-xs text-foreground">
+                  <CardWeatherIcon className="h-3.5 w-3.5" style={{ color: "var(--kv-blue)" }} />
+                  {selected.weather.temperature.toFixed(1)}°C · {selected.weather.windSpeed.toFixed(1)} m/s
+                </span>
               )}
             </div>
 
@@ -544,7 +618,7 @@ export function ElevationMap() {
                     <p className="text-sm text-muted-foreground">Ingen høydedata</p>
                   )}
                   {selected.elevation?.datakilde && (
-                    <p className="text-xs text-foreground/70 mt-1">Kilde: {selected.elevation.datakilde}</p>
+                    <p className="text-xs text-foreground/70 mt-1">Kilde: {formatDatakilde(selected.elevation.datakilde)}</p>
                   )}
                 </div>
 
@@ -611,7 +685,7 @@ export function ElevationMap() {
         {!selected && (
           <div className="absolute inset-0 flex items-end justify-center pb-8 pointer-events-none z-[998]">
             <div className="bg-card/90 backdrop-blur-sm rounded-xl px-5 py-3 shadow text-sm text-muted-foreground">
-              Søk etter en adresse for å se høyden over havet
+              Søk eller klikk i kartet for å se høyden over havet
             </div>
           </div>
         )}
@@ -621,10 +695,10 @@ export function ElevationMap() {
       {/* Info modal */}
       <InfoModal open={showInfo} onClose={() => setShowInfo(false)} title="Om høydekartet">
         <p>
-          Søk etter en adresse eller klikk i kartet for å se <span className="font-medium text-foreground">høyde over havet</span> for et punkt i Norge.
+          Søk etter en adresse, lim inn koordinater eller klikk i kartet for å se <span className="font-medium text-foreground">høyde over havet</span> for et punkt i Norge.
         </p>
         <p>
-          <span className="font-medium text-foreground">Høydedata</span> hentes fra Kartverkets høyde-API og er basert på den nasjonale terrengmodellen (DTM). Nøyaktigheten varierer, men er typisk ±2–5 meter.
+          <span className="font-medium text-foreground">Høydedata</span> hentes fra Kartverkets høyde-API og er basert på den nasjonale terrengmodellen (DTM). Der det finnes laserskannede data, er avviket typisk under én meter. Der terrengmodellen er grovere, kan avviket være noen meter.
         </p>
         <p>
           <span className="font-medium text-foreground">Værdata</span> hentes fra MET.no (Meteorologisk institutt) og viser gjeldende temperatur, vindstyrke og nedbør for det valgte punktet.
