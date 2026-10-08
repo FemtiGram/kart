@@ -1,6 +1,6 @@
 import { ImageResponse } from "next/og";
 
-export const alt = "Høydekart — Datakart";
+export const alt = "Høyde over havet — Datakart";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -23,10 +23,10 @@ export default function OgImage() {
           DATAKART
         </span>
         <span style={{ fontSize: 64, fontWeight: 800, color: "white", marginTop: 8 }}>
-          Høydekart
+          Høyde over havet
         </span>
         <p style={{ fontSize: 28, color: "rgba(255,255,255,0.7)", marginTop: 16 }}>
-          Søk etter en adresse og finn høyden over havet, med værdata fra Yr
+          Finn moh. for enhver adresse eller koordinat i Norge, med vær fra MET.no
         </p>
         <div
           style={{
@@ -35,7 +35,7 @@ export default function OgImage() {
             marginTop: 40,
           }}
         >
-          {["Adressesøk", "Høydedata", "Vær", "Kartverket-kart"].map((label) => (
+          {["Adressesøk", "Koordinater", "Høydedata", "Del lenke"].map((label) => (
             <div
               key={label}
               style={{

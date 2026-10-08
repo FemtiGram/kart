@@ -12,7 +12,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { path: "/energikart", priority: 0.9, changeFrequency: "weekly" as const },
     { path: "/magasin", priority: 0.8, changeFrequency: "weekly" as const },
     { path: "/lading", priority: 0.8, changeFrequency: "weekly" as const },
-    { path: "/map", priority: 0.7, changeFrequency: "monthly" as const },
+    { path: "/map", priority: 0.9, changeFrequency: "monthly" as const },
     { path: "/hytter", priority: 0.7, changeFrequency: "monthly" as const },
     { path: "/vern", priority: 0.7, changeFrequency: "monthly" as const },
     { path: "/lonn", priority: 0.7, changeFrequency: "yearly" as const },
