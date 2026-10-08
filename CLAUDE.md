@@ -14,6 +14,7 @@ A portfolio project showcasing Norwegian open geodata on interactive maps. Built
 - **Animation:** motion.dev (~3KB) — scroll/hover animations on landing page (src/components/motion.tsx). Entrance `<FadeIn>` is CSS-only (`.fade-up` in globals.css) so above-the-fold content is visible from first paint — never ship `opacity:0` in SSR HTML for hero content
 - **Tiles:** Kartverket WMTS (topo + topograatone + sjokartraster) + OpenTopoMap (terreng)
 - **Icons:** lucide-react
+- **Font:** Nunito Sans, **self-hosted** via `next/font/local` (`src/assets/fonts/`, latin + latin-ext split by unicode-range, one @font-face per weight 300/400/600/700/800 like the old Google setup so `font-medium` still renders as 400, metric-matched fallback in globals.css). Never switch back to `next/font/google` — Turbopack intermittently fails the whole build when Google returns extensionless font URLs. `src/app/fonts/` is git-ignored (local experiments)
 
 ## Project Structure
 
@@ -26,7 +27,7 @@ src/app/
   lonn/page.tsx         — Income choropleth
   vern/page.tsx         — Protected areas choropleth
   bolig/page.tsx        — Housing prices bubble map
-  map/page.tsx          — Elevation + weather map
+  map/page.tsx          — "Høyde over havet" elevation + weather map (top traffic page). crawlable intro, "Norges høyeste fjell" section (Galdhøpiggen + Glittertind only — heights verified) and FAQ (FAQPage JSON-LD) below the map
   energi/page.tsx       — Category landing for Energi (hub for /energikart, /magasin, /lading)
   natur/page.tsx        — Category landing for Natur (hub for /map, /hytter, /vern)
   samfunn/page.tsx      — Category landing for Samfunn (hub for Stedsprofil, /bolig, /lonn, /helse, /skoler, /kostnader, /valg, /prisvekst)
@@ -49,7 +50,7 @@ src/app/
     income/route.ts     — SSB income data
     kommuner/route.ts   — GeoJSON kommune boundaries (static file)
     protected-areas/    — SSB verne data
-    weather/route.ts    — MET.no proxy (30min cache)
+    weather/route.ts    — MET.no proxy (30min cache). Optional `altitude` (whole metres) → MET corrects temperature for real terrain height; lat/lon rounded to 4 decimals
     wind-power/route.ts — NVE wind power proxy (1h cache)
     energy/route.ts     — NVE wind + hydro proxy (1h cache)
     reservoirs/route.ts — NVE reservoir polygons (1h cache)
@@ -102,6 +103,7 @@ src/lib/
   kommune-slug.ts       — Pure function that mirrors the build-time slugify logic (knr-name) for client-side URL construction
   health-summary.ts     — Shared `synthesizeHealth()` helper used on /helse and Stedsprofil — turns 3 fastlege metrics into a plain-Norwegian one-line sentence with good/mixed/bad/neutral tone
   utm.ts                — UTM zone 33N → WGS84 conversion (for NVE ArcGIS data)
+  parse-coordinates.ts  — Parses pasted coordinates (decimal, decimal comma, Apple Maps °N/°E, Google DMS, Garmin decimal minutes) + isWithinNorway(); used by /map search
   party-colors.ts       — Norwegian party colors (saturated fills + WCAG-AA-compliant text variants); used by /valg and Stedsprofil Politikk section
   utils.ts              — cn() helper
 
@@ -161,7 +163,7 @@ public/data/
 - Info modal — explaining data sources
 - Error handling — floating pill, bottom on mobile (bottom-20), top on desktop (sm:top-3)
 - "Min posisjon" button with isInNorway() check — falls back to OSLO/Jotunheimen if outside Norway
-- **Exception:** Elevation map uses address-only search (needs specific point, 6 results)
+- **Exception:** Elevation map searches addresses + pasted coordinates only (needs a specific point, 6 results), with its own search bar rather than MapSearchBar
 - **Exception:** Choropleth maps use "Bakgrunnskart" toggle instead of Kart/Gråtone
 - **Exception:** Choropleth maps have no "Min posisjon" button
 
@@ -265,6 +267,11 @@ All maps use a **compact floating card + expandable bottom Sheet** pattern:
 - Yearly chart: Recharts `BarChart` with color-coded bars (green/amber/red by threshold)
 - Nordic comparison: horizontal bars for NO/SE/DK/FI/EU (Eurostat HICP)
 - FAQ section with JSON-LD FAQPage schema
+
+### Elevation map specifics (/map):
+- **Camera:** map clicks keep the current zoom and only `panInside` so the point clears the compact card; searches, geolocation and pasted coordinates fly to zoom 16; deep links fly to their `z`
+- **Shareable URL:** the selection is mirrored to `?lat=&lon=&z=` with `history.replaceState` (no back-button spam) and cleared when the card closes. Written on selection changes only, never on zoom — Next's router treats `replaceState` as a navigation and would drop a pending `<Link>` click. "Del" uses the Web Share API (live zoom from a ref), falling back to clipboard. Deep links are only honoured if present when the map mounts (`landedWithParams`, read from `useSearchParams` — **not** `window.location`, which still holds the previous page's URL during a client-side `<Link>` navigation) — otherwise the map's own URL writes would re-trigger `useInitialPosition`
+- **Weather waits for elevation** and passes it as `altitude` to `/api/weather`; elevation renders first. All responses are guarded by a selection sequence ref so stale results can't overwrite a newer selection
 
 ### Energy map specifics:
 - **Sjøkart overlay:** Optional Kartverket nautical chart layer (sjokartraster), toggled in tile switcher, off by default
@@ -460,7 +467,7 @@ Three-tier convention: `-light` for the background tint, base for icons/borders/
 | Nasjonale prøver | SSB tabell 12255 (KOSTRA) — lesing %, regning % (mestringsnivå 3–5, 8. trinn) + grunnskolepoeng per kommune | Build-time static JSON |
 | Election results | Valgdirektoratet (valgresultat.no) — Stortingsvalg 2025/2021, Kommunestyrevalg 2023/2019. Pre-2024 kommunenummer remapped to current geometry | Build-time static JSON |
 | Finn.no location codes | Scraped from `finn.no/realestate/homes/search.html` (embedded JSON) | Build-time static JSON |
-| Weather | MET.no locationforecast | 30min server cache |
+| Weather | MET.no locationforecast (altitude-corrected on /map) | 30min server cache |
 | Elevation | Kartverket høyde-API | Per-request |
 | Kommune boundaries | GitHub (robhop/fylker-og-kommuner) | Build-time static GeoJSON |
 | Address search | Geonorge adresser API (via `/api/sok` proxy) | 1h edge cache + 24h SWR |

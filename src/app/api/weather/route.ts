@@ -1,15 +1,25 @@
 import { NextRequest } from "next/server";
 
 export async function GET(request: NextRequest) {
-  const lat = request.nextUrl.searchParams.get("lat");
-  const lon = request.nextUrl.searchParams.get("lon");
+  const lat = parseFloat(request.nextUrl.searchParams.get("lat") ?? "");
+  const lon = parseFloat(request.nextUrl.searchParams.get("lon") ?? "");
+  const altitude = parseFloat(request.nextUrl.searchParams.get("altitude") ?? "");
 
-  if (!lat || !lon) {
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
     return Response.json({ error: "lat and lon required" }, { status: 400 });
   }
 
+  // MET asks for at most 4 decimals; rounding also makes nearby clicks share
+  // a cache entry. `altitude` (whole metres) lets MET correct the temperature
+  // for the real terrain height instead of its smoothed model terrain, which
+  // can be hundreds of metres off in steep terrain.
+  const params = new URLSearchParams({ lat: lat.toFixed(4), lon: lon.toFixed(4) });
+  if (Number.isFinite(altitude) && altitude > -500 && altitude < 9000) {
+    params.set("altitude", String(Math.round(altitude)));
+  }
+
   const res = await fetch(
-    `https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=${lat}&lon=${lon}`,
+    `https://api.met.no/weatherapi/locationforecast/2.0/compact?${params}`,
     {
       headers: {
         "User-Agent": "KartverketExplorer/1.0 github.com/FemtiGram/kart",

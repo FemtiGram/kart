@@ -3,8 +3,9 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from "react-leaflet";
 import L from "leaflet";
+import { useSearchParams } from "next/navigation";
 import "leaflet/dist/leaflet.css";
-import { Search, MapPin, Mountain, Loader2, X, ChevronUp, LocateFixed, Crosshair, Wind, Droplets, Sun, Cloud, CloudSun, CloudRain, CloudSnow, CloudLightning, CloudFog, CloudHail, CloudDrizzle, Moon, ExternalLink, Map as MapIcon, Info, Navigation } from "lucide-react";
+import { Search, MapPin, Mountain, Loader2, X, ChevronUp, LocateFixed, Crosshair, Wind, Droplets, Sun, Cloud, CloudSun, CloudRain, CloudSnow, CloudLightning, CloudFog, CloudHail, CloudDrizzle, Moon, ExternalLink, Map as MapIcon, Info, Navigation, Share2, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import type { LucideIcon } from "lucide-react";
@@ -125,6 +126,20 @@ function MapClickHandler({ onMapClick }: { onMapClick: (lat: number, lon: number
   return null;
 }
 
+/** Query string for a shareable link to a point, read back by useInitialPosition. */
+function shareParams(lat: number, lon: number, zoom: number) {
+  return new URLSearchParams({ lat: lat.toFixed(5), lon: lon.toFixed(5), z: String(Math.round(zoom)) }).toString();
+}
+
+function ZoomTracker({ onZoom }: { onZoom: (zoom: number) => void }) {
+  const map = useMapEvents({
+    zoomend() {
+      onZoom(map.getZoom());
+    },
+  });
+  return null;
+}
+
 function CameraController({ move }: { move: CameraMove | null }) {
   const map = useMap();
   useEffect(() => {
@@ -150,6 +165,14 @@ export function ElevationMap() {
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const [selected, setSelected] = useState<SelectedLocation | null>(null);
   const [camera, setCamera] = useState<CameraMove | null>(null);
+  const zoomRef = useRef(5);
+  const [copied, setCopied] = useState(false);
+  // Deep links are honoured only if present when the map mounts, so the URL
+  // updates this map makes itself (see the effect below) don't re-trigger
+  // them. Read from the router, not window.location: on a client-side <Link>
+  // navigation the address bar still shows the previous page during render.
+  const searchParams = useSearchParams();
+  const [landedWithParams] = useState(() => searchParams.has("lat"));
   const [loadingElevation, setLoadingElevation] = useState(false);
   const [loadingWeather, setLoadingWeather] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
@@ -272,9 +295,10 @@ export function ElevationMap() {
   }, []);
 
   /**
-   * Fetches elevation and weather for a point. The two are applied
-   * independently so the elevation (the number people came for) shows as
-   * soon as it arrives instead of waiting for the slower weather proxy.
+   * Fetches elevation, then weather for a point. The elevation (the number
+   * people came for) is shown as soon as it arrives; the weather request
+   * follows with it as `altitude`, so MET corrects the temperature for the
+   * real terrain height rather than its smoothed model terrain.
    * Returns the selection sequence number so callers can detect staleness.
    */
   const fetchLocationData = useCallback((address: Address) => {
@@ -292,14 +316,15 @@ export function ElevationMap() {
           elevation: p ? { datakilde: p.datakilde, høyde: p.z, terrengtype: p.terrengtype } : null,
         });
         setLoadingElevation(false);
-      });
 
-    getJson<WeatherResult>(`/api/weather?lat=${lat}&lon=${lon}`)
-      .catch(() => null)
-      .then((w) => {
-        if (seq !== selectionSeq.current) return;
-        setSelected((prev) => prev && { ...prev, weather: w });
-        setLoadingWeather(false);
+        const altitude = p?.z != null ? `&altitude=${Math.round(p.z)}` : "";
+        getJson<WeatherResult>(`/api/weather?lat=${lat}&lon=${lon}${altitude}`)
+          .catch(() => null)
+          .then((w) => {
+            if (seq !== selectionSeq.current) return;
+            setSelected((prev) => prev && { ...prev, weather: w });
+            setLoadingWeather(false);
+          });
       });
 
     return seq;
@@ -354,11 +379,53 @@ export function ElevationMap() {
     }, [handleMapClick]),
   );
 
-  // Deep link from /kommune/[slug]: ?lat=&lon=&z= triggers an elevation+weather
-  // fetch at that point and flies to the requested zoom.
+  // Deep link (shared link, or /kommune/[slug]): ?lat=&lon=&z= triggers an
+  // elevation+weather fetch at that point and flies to the requested zoom.
   useInitialPosition((lat, lon, zoom) => {
-    handleMapClick(lat, lon, zoom);
+    if (landedWithParams) handleMapClick(lat, lon, zoom);
   });
+
+  // Mirror the selection in the URL so it can be shared or bookmarked.
+  // replaceState keeps every click out of the back-button history. Written
+  // on selection changes only, not on every zoom: Next's router treats a
+  // replaceState as navigation and would drop a <Link> click still pending.
+  const wroteUrl = useRef(false);
+  const selectedLat = selected?.address.representasjonspunkt.lat;
+  const selectedLon = selected?.address.representasjonspunkt.lon;
+  useEffect(() => {
+    if (selectedLat == null || selectedLon == null) {
+      if (wroteUrl.current) window.history.replaceState(null, "", window.location.pathname);
+      wroteUrl.current = false;
+      return;
+    }
+    const zoom = camera?.zoom ?? zoomRef.current;
+    window.history.replaceState(null, "", `?${shareParams(selectedLat, selectedLon, zoom)}`);
+    wroteUrl.current = true;
+  }, [selectedLat, selectedLon, camera]);
+
+  const handleShare = async () => {
+    if (!selected) return;
+    const { lat, lon } = selected.address.representasjonspunkt;
+    const url = `${window.location.origin}${window.location.pathname}?${shareParams(lat, lon, zoomRef.current)}`;
+    const høyde = selected.elevation?.høyde;
+    const text = høyde != null
+      ? `${selected.address.adressetekst} ligger ${høyde.toFixed(1)} meter over havet`
+      : selected.address.adressetekst;
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: "Høyde over havet", text, url });
+      } catch { /* share sheet dismissed */ }
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Clipboard blocked (e.g. insecure context) — let the user copy it by hand
+      window.prompt("Kopier lenken:", url);
+    }
+  };
 
   const handleSelect = (address: Address) => {
     closeSearch();
@@ -483,6 +550,7 @@ export function ElevationMap() {
         >
           <MapClickHandler onMapClick={handleMapClick} />
           <CameraController move={camera} />
+          <ZoomTracker onZoom={(z) => { zoomRef.current = z; }} />
           <TileLayer
             key={tileLayer}
             url={TILE_LAYERS[tileLayer].url}
@@ -577,6 +645,12 @@ export function ElevationMap() {
               >
                 <Navigation className="h-3.5 w-3.5" /> Kjør hit
               </a>
+              <button
+                onClick={handleShare}
+                className="flex-1 inline-flex items-center justify-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl border bg-muted/50 hover:bg-muted transition-colors"
+              >
+                {copied ? <><Check className="h-3.5 w-3.5" /> Kopiert</> : <><Share2 className="h-3.5 w-3.5" /> Del</>}
+              </button>
             </div>
           </div>
         )}
@@ -701,7 +775,7 @@ export function ElevationMap() {
           <span className="font-medium text-foreground">Høydedata</span> hentes fra Kartverkets høyde-API og er basert på den nasjonale terrengmodellen (DTM). Der det finnes laserskannede data, er avviket typisk under én meter. Der terrengmodellen er grovere, kan avviket være noen meter.
         </p>
         <p>
-          <span className="font-medium text-foreground">Værdata</span> hentes fra MET.no (Meteorologisk institutt) og viser gjeldende temperatur, vindstyrke og nedbør for det valgte punktet.
+          <span className="font-medium text-foreground">Værdata</span> hentes fra MET.no (Meteorologisk institutt) og viser gjeldende temperatur, vindstyrke og nedbør for det valgte punktet. Temperaturen er justert for høyden på punktet.
         </p>
         <p>
           Kartet bruker <span className="font-medium text-foreground">Kartverket</span> for bakgrunnskart og <span className="font-medium text-foreground">OpenTopoMap</span> for terrengvisning.
