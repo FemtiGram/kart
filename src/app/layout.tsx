@@ -16,6 +16,12 @@ const GA_ID = "G-T8XDP59WNK";
 // The metric-matched fallback face lives in globals.css. One @font-face per
 // weight the old setup declared (same file each time, downloaded once), so
 // in-between weights like font-medium (500) still resolve to 400 as before.
+// Both files are declared as the family "Nunito Sans" (exactly like Google's
+// CSS), so globals.css names the font directly instead of chaining CSS
+// variables: an undefined variable would invalidate font-family on <html>
+// and drop the whole page to the browser's default serif (Times) whenever
+// HTML and CSS come from different builds (open tab during a deploy, stale
+// dev cache). --font-nunito-sans is kept for CSS from before the switch.
 const nunitoLatin = localFont({
   src: [
     { path: "../assets/fonts/nunito-sans-latin.woff2", weight: "300" },
@@ -24,9 +30,9 @@ const nunitoLatin = localFont({
     { path: "../assets/fonts/nunito-sans-latin.woff2", weight: "700" },
     { path: "../assets/fonts/nunito-sans-latin.woff2", weight: "800" },
   ],
-  variable: "--font-nunito-latin",
+  variable: "--font-nunito-sans",
   adjustFontFallback: false,
-  declarations: [{ prop: "unicode-range", value: "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD" }],
+  declarations: [{ prop: "font-family", value: "'Nunito Sans'" }, { prop: "unicode-range", value: "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD" }],
 });
 
 const nunitoLatinExt = localFont({
@@ -40,7 +46,7 @@ const nunitoLatinExt = localFont({
   variable: "--font-nunito-latin-ext",
   adjustFontFallback: false,
   preload: false,
-  declarations: [{ prop: "unicode-range", value: "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF" }],
+  declarations: [{ prop: "font-family", value: "'Nunito Sans'" }, { prop: "unicode-range", value: "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF" }],
 });
 
 export const metadata: Metadata = {

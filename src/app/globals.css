@@ -22,9 +22,9 @@ html {
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-nunito-latin), var(--font-nunito-latin-ext), "Nunito Sans Fallback", sans-serif;
+  --font-sans: "Nunito Sans", "Nunito Sans Fallback", sans-serif;
   --font-mono: ui-monospace, monospace;
-  --font-heading: var(--font-nunito-latin), var(--font-nunito-latin-ext), "Nunito Sans Fallback", sans-serif;
+  --font-heading: "Nunito Sans", "Nunito Sans Fallback", sans-serif;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
