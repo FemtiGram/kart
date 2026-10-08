@@ -16,64 +16,43 @@ interface MinimalCardProps {
  * Single card style used everywhere on the home and category landing
  * pages: home category cards (Energi/Natur/Samfunn), the "Mest populært"
  * strip, and the per-map cards on /energi, /natur, /samfunn. Helsenorge-
- * inspired minimalism — outline icon on top, bold title, one-line
- * description, no CTA chrome. Hierarchy comes from section headings
- * and the optional `compact` size.
+ * inspired minimalism — outline icon inline with the bold title, one-line
+ * description underneath spanning the full card width, no CTA chrome.
+ * Hierarchy comes from section headings and the optional `compact` size.
+ *
+ * The icon sits on the title line, sized to the title's cap height, so the
+ * description can start at the card's left edge instead of being indented
+ * by an icon column (which wasted up to half the card on narrow screens).
  */
 export function MinimalCard({ href, icon: Icon, title, description, badge, compact = false }: MinimalCardProps) {
-  if (compact) {
-    return (
-      <Link
-        href={href}
-        className="group flex items-center gap-3 sm:gap-4 rounded-xl border bg-card px-4 sm:px-5 py-4 hover:border-foreground/40 hover:shadow-sm transition-all h-full"
-      >
-        <Icon
-          className="h-7 w-7 shrink-0"
-          style={{ color: "var(--kv-blue)" }}
-          strokeWidth={1.75}
-        />
-        <div className="min-w-0 flex-1">
-          {/* flex-wrap lets the badge drop below the title instead of
-              forcing an ellipsis when the card is narrow */}
-          <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
-            <h3
-              className="font-bold text-base tracking-tight"
-              style={{ color: "var(--kv-blue)" }}
-            >
-              {title}
-            </h3>
-            {badge && (
-              <span
-                className="text-[10px] font-bold uppercase tracking-wider rounded-full px-2 py-0.5 shrink-0"
-                style={{
-                  background: "var(--kv-warning-light)",
-                  color: "var(--kv-warning-dark)",
-                }}
-              >
-                {badge}
-              </span>
-            )}
-          </div>
-          <p className="mt-0.5 text-xs text-foreground/80">{description}</p>
-        </div>
-      </Link>
-    );
-  }
-
   return (
     <Link
       href={href}
-      className="group flex flex-col rounded-xl border bg-card p-6 hover:border-foreground/40 hover:shadow-sm transition-all h-full"
+      className={`group flex flex-col rounded-xl border bg-card hover:border-foreground/40 hover:shadow-sm transition-all h-full ${
+        compact ? "px-4 sm:px-5 py-4" : "p-5 sm:p-6"
+      }`}
     >
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex items-center gap-2.5">
         <Icon
-          className="h-8 w-8"
+          className={compact ? "h-[1.125em] w-[1.125em] shrink-0" : "h-[1.15em] w-[1.15em] shrink-0"}
           style={{ color: "var(--kv-blue)" }}
-          strokeWidth={1.75}
+          strokeWidth={compact ? 2 : 1.85}
+          aria-hidden="true"
         />
+        <h3
+          className={`font-bold tracking-tight ${compact ? "text-base" : "text-lg"}`}
+          style={{ color: "var(--kv-blue)" }}
+        >
+          {title}
+        </h3>
+      </div>
+      {/* The badge leads the description line rather than sitting alone on
+          the title row: on a narrow card it would otherwise wrap under the
+          title and leave an empty band between title and text */}
+      <p className={compact ? "mt-1.5 text-xs text-foreground/80" : "mt-2 text-sm text-foreground/80 leading-relaxed"}>
         {badge && (
           <span
-            className="text-[10px] font-bold uppercase tracking-wider rounded-full px-2 py-0.5"
+            className="inline-block align-middle text-[10px] font-bold uppercase tracking-wider rounded-full px-2 py-0.5 mr-2 mb-0.5"
             style={{
               background: "var(--kv-warning-light)",
               color: "var(--kv-warning-dark)",
@@ -82,14 +61,8 @@ export function MinimalCard({ href, icon: Icon, title, description, badge, compa
             {badge}
           </span>
         )}
-      </div>
-      <h3
-        className="mt-5 text-lg font-bold tracking-tight"
-        style={{ color: "var(--kv-blue)" }}
-      >
-        {title}
-      </h3>
-      <p className="mt-2 text-sm text-foreground/80 leading-relaxed">{description}</p>
+        {description}
+      </p>
     </Link>
   );
 }
