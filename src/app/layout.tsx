@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Nunito_Sans } from "next/font/google";
+import localFont from "next/font/local";
 import Script from "next/script";
 import "./globals.css";
 import { Navbar } from "@/components/navbar";
@@ -7,10 +7,28 @@ import { Footer } from "@/components/footer";
 
 const GA_ID = "G-T8XDP59WNK";
 
-const nunitoSans = Nunito_Sans({
-  variable: "--font-nunito-sans",
-  subsets: ["latin"],
-  weight: ["300", "400", "600", "700", "800"],
+// Nunito Sans is self-hosted (the same variable font files Google Fonts
+// serves, OFL — see src/assets/fonts/OFL.txt) so the build never fetches
+// fonts.googleapis.com: Turbopack fails the whole build when Google answers
+// with extensionless /l/font URLs, which happens intermittently. Split by
+// unicode-range like Google's CSS: latin is preloaded, latin-ext (Sami
+// letters such as ŋ, š, č) only loads when a page uses those characters.
+// The metric-matched fallback face lives in globals.css.
+const nunitoLatin = localFont({
+  src: "../assets/fonts/nunito-sans-latin.woff2",
+  weight: "200 1000",
+  variable: "--font-nunito-latin",
+  adjustFontFallback: false,
+  declarations: [{ prop: "unicode-range", value: "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD" }],
+});
+
+const nunitoLatinExt = localFont({
+  src: "../assets/fonts/nunito-sans-latin-ext.woff2",
+  weight: "200 1000",
+  variable: "--font-nunito-latin-ext",
+  adjustFontFallback: false,
+  preload: false,
+  declarations: [{ prop: "unicode-range", value: "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF" }],
 });
 
 export const metadata: Metadata = {
@@ -52,7 +70,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="no" className={`${nunitoSans.variable} h-full antialiased`}>
+    <html lang="no" className={`${nunitoLatin.variable} ${nunitoLatinExt.variable} h-full antialiased`}>
       <head>
         <script
           type="application/ld+json"
