@@ -196,7 +196,7 @@ export interface HealthSummary {
 /**
  * Demografi — household ownership, education level, and dwelling type
  * distribution per kommune. Sourced from three SSB tables:
- *   - 11084 (Eierstatus): % selveier / andelseier / leier (households)
+ *   - 14891 (Eierstatus): % selveier / andelseier / leier (households)
  *   - 09429 (Utdanningsnivå): % grunnskole / vgs / fagskole / UH kort/lang
  *   - 06265 (Boliger etter bygningstype): % enebolig / tomannsbolig /
  *           rekkehus / blokk / bofellesskap / annet (share of dwellings)

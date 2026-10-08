@@ -11,6 +11,7 @@ import { FlyTo, DataDisclaimer, MapError, useDebounceRef, MAP_HEIGHT, TILE_LAYER
 import { InfoModal } from "@/components/info-modal";
 import { TileToggle } from "@/components/tile-toggle";
 import { useInitialPosition } from "@/lib/use-initial-position";
+import { safeFlyToBounds } from "@/lib/safe-fly";
 import { polygonAreaM2, formatM2, formatMal } from "@/lib/geodesic-area";
 import { kommuneSlug } from "@/lib/kommune-slug";
 
@@ -103,7 +104,7 @@ function MapClickHandler({ onMapClick }: { onMapClick: (lat: number, lon: number
 function FitParcel({ bounds, fitKey }: { bounds: LatLngBoundsExpression | null; fitKey: number }) {
   const map = useMap();
   useEffect(() => {
-    if (bounds) map.flyToBounds(bounds, { padding: [60, 60], maxZoom: 17, duration: 0.8 });
+    if (bounds) safeFlyToBounds(map, bounds, { padding: [60, 60], maxZoom: 17, duration: 0.8 });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fitKey]);
   return null;

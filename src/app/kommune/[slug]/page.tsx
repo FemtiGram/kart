@@ -677,7 +677,7 @@ function EnergiSection({ profile }: { profile: KommuneProfile }) {
 
 // ─── Section: Demografi ──────────────────────────────────────
 //
-// Three stacked-bar cards built from SSB tables 11084 (eierstatus),
+// Three stacked-bar cards built from SSB tables 14891 (eierstatus),
 // 06265 (boligtyper) and 09429 (utdanningsnivå). Same percentages the
 // automatisk sammendrag samples from, but shown in full so the reader
 // can see the whole distribution, not just the one surfaced outlier.
@@ -802,12 +802,12 @@ function DemografiSection({ profile }: { profile: KommuneProfile }) {
       <p className="mt-4 text-xs text-foreground/70">
         Kilder:{" "}
         <a
-          href="https://www.ssb.no/statbank/table/11084"
+          href="https://www.ssb.no/statbank/table/14891"
           target="_blank"
           rel="noopener noreferrer"
           className="underline hover:text-foreground"
         >
-          SSB 11084
+          SSB 14891
         </a>{" "}
         (eierstatus),{" "}
         <a

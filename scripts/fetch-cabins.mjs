@@ -26,7 +26,11 @@ async function fetchWithRetry() {
     try {
       const res = await fetch(endpoint, {
         method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          // overpass-api.de answers 406 to requests without an identifying UA
+          "User-Agent": "datakart.no (+https://www.datakart.no)",
+        },
         body: `data=${encodeURIComponent(QUERY)}`,
         signal: AbortSignal.timeout(90000),
       });
