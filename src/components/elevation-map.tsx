@@ -414,7 +414,7 @@ export function ElevationMap() {
       <div className="relative z-[1000] px-4 py-4 md:px-8 shrink-0 bg-background border-b">
         <div className="max-w-xl mx-auto relative flex flex-col gap-2">
           <div className="flex items-center gap-2">
-            <div className="flex flex-1 items-center gap-2 bg-background border rounded-xl px-4 py-3">
+            <div className="flex flex-1 min-w-0 items-center gap-2 bg-background border rounded-xl px-4 py-3">
               {loadingSuggestions ? (
                 <Loader2 className="h-4 w-4 shrink-0 animate-spin text-muted-foreground" />
               ) : (
@@ -429,8 +429,8 @@ export function ElevationMap() {
                 autoFocus={typeof window !== "undefined" && window.innerWidth >= 640}
                 onFocus={() => suggestions.length > 0 && setShowDropdown(true)}
                 onBlur={() => setTimeout(() => setShowDropdown(false), 150)}
-                placeholder="Søk adresse eller koordinater..."
-                className="flex-1 bg-transparent outline-none focus-visible:ring-2 focus-visible:ring-ring text-sm text-foreground placeholder:text-muted-foreground text-[16px] sm:text-sm"
+                placeholder="Adresse eller koordinater"
+                className="flex-1 min-w-0 text-ellipsis bg-transparent outline-none focus-visible:ring-2 focus-visible:ring-ring text-sm text-foreground placeholder:text-muted-foreground text-[16px] sm:text-sm"
               />
             </div>
             <Button onClick={handleLocate} disabled={locating} variant="secondary" size="icon" aria-label="Min posisjon" className="shadow-lg shrink-0 h-11 w-11 rounded-xl">
@@ -698,7 +698,7 @@ export function ElevationMap() {
           Søk etter en adresse, lim inn koordinater eller klikk i kartet for å se <span className="font-medium text-foreground">høyde over havet</span> for et punkt i Norge.
         </p>
         <p>
-          <span className="font-medium text-foreground">Høydedata</span> hentes fra Kartverkets høyde-API og er basert på den nasjonale terrengmodellen (DTM). Der det finnes laserskannede data er avviket typisk under én meter. Der terrengmodellen er grovere kan avviket være noen meter.
+          <span className="font-medium text-foreground">Høydedata</span> hentes fra Kartverkets høyde-API og er basert på den nasjonale terrengmodellen (DTM). Der det finnes laserskannede data, er avviket typisk under én meter. Der terrengmodellen er grovere, kan avviket være noen meter.
         </p>
         <p>
           <span className="font-medium text-foreground">Værdata</span> hentes fra MET.no (Meteorologisk institutt) og viser gjeldende temperatur, vindstyrke og nedbør for det valgte punktet.

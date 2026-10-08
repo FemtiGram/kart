@@ -11,7 +11,7 @@ export const metadata = {
 const faqs = [
   {
     q: "Hvor nøyaktig er høydedataene?",
-    a: "Nøyaktigheten avhenger av datakilden. Der Kartverket har laserskannede data er avviket typisk under én meter. Der terrengmodellen er grovere kan avviket være noen meter. For fjelltopper og stedsnavn kan høyden også avvike fordi punktet du velger ikke ligger nøyaktig på toppen. Kilden for hvert punkt vises når du trykker «Vis mer».",
+    a: "Nøyaktigheten avhenger av datakilden. Der Kartverket har laserskannede data, er avviket typisk under én meter. Der terrengmodellen er grovere, kan avviket være noen meter. For fjelltopper og stedsnavn kan høyden også avvike fordi punktet du velger ikke ligger nøyaktig på toppen. Kilden for hvert punkt vises når du trykker «Vis mer».",
   },
   {
     q: "Hvordan fungerer terrengkartet?",
@@ -27,7 +27,7 @@ const faqs = [
   },
   {
     q: "Hva viser værdataene?",
-    a: "Når du klikker på et punkt vises aktuell temperatur, vindstyrke og nedbør. Dataene kommer fra MET.no (yr.no) og gjelder de nærmeste timene. Værdata oppdateres hvert 30. minutt.",
+    a: "Når du klikker på et punkt, vises aktuell temperatur, vindstyrke og nedbør. Dataene kommer fra MET.no (yr.no) og gjelder de nærmeste timene. Værdata oppdateres hvert 30. minutt.",
   },
   {
     q: "Hvor kommer dataene fra?",
