@@ -9,25 +9,34 @@ import thumbValg from "@/assets/thumbs/valg.webp";
 import thumbBolig from "@/assets/thumbs/bolig.webp";
 import thumbEnergi from "@/assets/thumbs/energikart.webp";
 import thumbSted from "@/assets/thumbs/stedsprofil.webp";
+import thumbSamfunn from "@/assets/thumbs/samfunn.webp";
+import thumbEnergiTema from "@/assets/thumbs/energi.webp";
+import thumbNatur from "@/assets/thumbs/natur.webp";
 
+// Each theme card gets its own texture (build-time art, scripts/build-thumbs.mjs)
+// so the row doesn't read as three more maps after the strip above:
+// population lines, the hydro reservoirs, and verne share + cabins.
 const categories = [
   {
     href: "/samfunn",
     title: "Samfunn",
     description: "Bolig, inntekt, helse, skoler og valg — kommune for kommune.",
     icon: MapPinned,
+    image: thumbSamfunn,
   },
   {
     href: "/energi",
     title: "Energi",
     description: "Hvor kommer Norges strøm fra, og hvor kan du lade elbilen?",
     icon: BatteryCharging,
+    image: thumbEnergiTema,
   },
   {
     href: "/natur",
     title: "Natur",
     description: "Fjell, fjellhytter og verneområder fra Lindesnes til Nordkapp.",
     icon: Mountain,
+    image: thumbNatur,
   },
 ];
 
