@@ -144,9 +144,10 @@ export default function Home() {
             </div>
           </FadeIn>
           <FadeIn delay={0.2}>
-            {/* Each item carries its own leading separator and never wraps
-                internally, so a line break on phone can't strand a lone "·" */}
-            <p className="mt-5 text-xs sm:text-sm text-white/80 drop-shadow-md tabular-nums">
+            {/* Phone: a 2×2 grid (four items never fit one 390px line, and a
+                wrapped dot-separated line strands a "·"). From sm up: one
+                flex row with "·" separators; flex items can wrap safely. */}
+            <p className="mt-5 grid grid-cols-2 gap-x-4 gap-y-1 sm:flex sm:flex-wrap sm:gap-0 text-xs sm:text-sm text-white/80 drop-shadow-md tabular-nums">
               {[
                 `${nb(facts.kommuner)} kommuner`,
                 `${nb(facts.plants)} kraftverk`,
@@ -154,7 +155,7 @@ export default function Home() {
                 `${nb(facts.population)} innbyggere`,
               ].map((item, i) => (
                 <span key={item} className="whitespace-nowrap">
-                  {i > 0 && <span aria-hidden="true"> · </span>}
+                  {i > 0 && <span aria-hidden="true" className="hidden sm:inline"> · </span>}
                   {item}
                 </span>
               ))}
