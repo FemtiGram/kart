@@ -7,7 +7,7 @@ import { getAllKommuner } from "@/lib/kommune-profiles";
 import { getHomeFacts, nb } from "@/lib/home-facts";
 import thumbValg from "@/assets/thumbs/valg.webp";
 import thumbBolig from "@/assets/thumbs/bolig.webp";
-import thumbEnergi from "@/assets/thumbs/energikart.webp";
+import thumbHoyde from "@/assets/thumbs/hoydekart.webp";
 import thumbSted from "@/assets/thumbs/stedsprofil.webp";
 import thumbSamfunn from "@/assets/thumbs/samfunn.webp";
 import thumbEnergiTema from "@/assets/thumbs/energi.webp";
@@ -15,7 +15,7 @@ import thumbNatur from "@/assets/thumbs/natur.webp";
 
 // Each theme card gets its own texture (build-time art, scripts/build-thumbs.mjs)
 // so the row doesn't read as three more maps after the strip above:
-// population lines, the hydro reservoirs, and verne share + cabins.
+// schools and barnehager, the hydro reservoirs, and verne share + cabins.
 const categories = [
   {
     href: "/samfunn",
@@ -73,7 +73,15 @@ export default function Home() {
   // Curated by hand — these surface what the audience actually opens first.
   // Kept small (4) so the eye lands here and doesn't have to scan further.
   // Each card shows its map (build-time art) and one real fact from the data.
+  // No Energikart here: the Energi theme card below already leads to it.
   const popular = [
+    {
+      href: "/map",
+      title: "Høydekart",
+      description: "Klikk hvor som helst for høyde over havet og vær.",
+      icon: Mountain,
+      image: thumbHoyde,
+    },
     {
       href: "/bolig",
       title: "Boligpriser",
@@ -101,13 +109,6 @@ export default function Home() {
           : `Stortingsvalget ${facts.valg.year} per kommune.`,
       icon: Vote,
       image: thumbValg,
-    },
-    {
-      href: "/energikart",
-      title: "Energikart",
-      description: `${nb(facts.plants)} kraftverk · ${nb(facts.totalMW)} MW installert.`,
-      icon: BatteryCharging,
-      image: thumbEnergi,
     },
   ];
 

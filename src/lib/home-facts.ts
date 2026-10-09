@@ -32,8 +32,6 @@ function loadValg(): ValgFile {
 
 export interface HomeFacts {
   kommuner: number;
-  plants: number;
-  totalMW: number;
   bolig: { year: string; min: { name: string; price: number }; max: { name: string; price: number } } | null;
   pop: { min: { name: string; n: number }; max: { name: string; n: number } } | null;
   valg: { year: number; winners: { party: string; count: number }[] };
@@ -41,9 +39,6 @@ export interface HomeFacts {
 
 export function getHomeFacts(): HomeFacts {
   const all = getAllKommuner();
-
-  const plants = all.reduce((s, p) => s + (p.energy?.plantCount ?? 0), 0);
-  const totalMW = all.reduce((s, p) => s + (p.energy?.totalMW ?? 0), 0);
 
   // Enebolig (01) extremes — only kommuner with a meaningful number of
   // sales, and only those whose latest SSB figure is from the latest year
@@ -82,5 +77,5 @@ export function getHomeFacts(): HomeFacts {
     .slice(0, 3)
     .map(([kode, count]) => ({ party: SHORT_PARTY[kode] ?? kode, count }));
 
-  return { kommuner: all.length, plants, totalMW, bolig, pop, valg: { year: valgFile.meta.valgår, winners } };
+  return { kommuner: all.length, bolig, pop, valg: { year: valgFile.meta.valgår, winners } };
 }

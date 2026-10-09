@@ -8,14 +8,14 @@
 // deterministic — rerun with `npm run thumbs` after a data refresh and
 // commit the output in src/assets/thumbs/.
 //
-// Mest populært — four maps of Sør-Norge in one shared frame:
-//   valg.webp         party-coloured choropleth (same partyFill as /valg)
+// Mest populært — Sør-Norge in one shared frame:
+//   hoydekart.webp    population lines: ridgelines raised where people live
 //   bolig.webp        enebolig price bubbles (same blue→orange→red scale as /bolig)
-//   energikart.webp   power plants, wind blue / hydro cyan (same as /energikart)
 //   stedsprofil.webp  every kommune tinted by population, brand blue only
+//   valg.webp         party-coloured choropleth (same partyFill as /valg)
 //
-// Theme cards — one texture each:
-//   samfunn.webp      population lines: ridgelines raised where people live
+// Theme cards — zoomed in, one texture each:
+//   samfunn.webp      every school and barnehage around Oslofjorden
 //   energi.webp       every regulated reservoir around Sognefjorden–Hallingdal
 //   natur.webp        verne share + turisthytter around Jotunheimen
 //
@@ -95,27 +95,16 @@ const bubbles = priced
   .join("");
 const boligSvg = svg(land(() => LAND) + bubbles);
 
-// ─── 3. Energikart: plants from each profile's top list ────────
-const plants = profiles.flatMap((p) => p.energy?.top ?? []).filter((pl) => pl.lat && pl.lon);
-const dots = plants
-  .filter((pl) => pl.lat > FRAME.lat0 - 0.2 && pl.lat < FRAME.lat1 + 0.2 && pl.lon > FRAME.lon0 - 0.2 && pl.lon < FRAME.lon1 + 0.2)
-  .map((pl) => {
-    const r = Math.max(2.6, Math.min(7, 2.2 + Math.sqrt(pl.capacityMW || 1) * 0.35));
-    return `<circle cx="${px(pl.lon)}" cy="${py(pl.lat)}" r="${r.toFixed(1)}" fill="${pl.type === "vind" ? "#0369a1" : "#0e7490"}" fill-opacity=".82" stroke="#fff" stroke-width=".9"/>`;
-  })
-  .join("");
-const energiSvg = svg(land(() => LAND, "#fff", 0.6) + dots);
-
-// ─── 4. Stedsprofil: all kommuner, tinted by population rank ────
+// ─── 3. Stedsprofil: all kommuner, tinted by population rank ────
 const byPop = [...profiles].filter((p) => p.population > 0).sort((a, b) => a.population - b.population);
 const popRank = new Map(byPop.map((p, i) => [p.knr, i / Math.max(1, byPop.length - 1)]));
 const stedSvg = svg(land((p) => (popRank.has(p.knr) ? mix(0.12 + 0.78 * popRank.get(p.knr)) : LAND), "#fff", 0.7));
 
-// ─── Theme cards (Samfunn / Energi / Natur) ─────────────────────
-// The three theme cards below the strip each get a different texture —
-// lines, water, green — so they don't read as three more copies of the
-// Sør-Norge map above. Energi and Natur zoom in, so they draw the
-// full-resolution kommuner.geojson instead of the ~40-point outlines.
+// ─── Zoomed frames ─────────────────────────────────────────────
+// The theme cards below the strip each get a different texture — dots,
+// water, green — so they don't read as three more copies of the
+// Sør-Norge maps above. They zoom in, so they draw the full-resolution
+// kommuner.geojson instead of the ~40-point outlines.
 
 const geo = read("public/data/kommuner.geojson").features;
 const polysOf = (f) => (f.geometry.type === "Polygon" ? [f.geometry.coordinates] : f.geometry.coordinates);
@@ -152,18 +141,19 @@ const geoLand = (P, fillFor, stroke, sw) =>
     })
     .join("");
 
-// ─── 5. Samfunn: population lines ──────────────────────────────
+// ─── 4. Høydekart: population lines ────────────────────────────
 // Ridgelines in the style of James Cheshire's "Population Lines": every
 // line is a band of latitude, raised where people live. The real SSB
 // population of each kommune is spread over its schools and barnehager
 // in proportion to pupils, so the peaks sit in town centres rather than
 // on kommune centroids. Heights are compressed (^0.4) or Oslo would
-// flatten everything else.
+// flatten everything else. The peaks are people, not terrain — the
+// elevation card uses the picture because ridgelines read as mountains.
 const { schools, kindergartens } = read("public/data/schools.json");
 const popByKnr = new Map(profiles.map((p) => [p.knr, p.population ?? 0]));
 const units = [
-  ...schools.map((s) => ({ knr: s.kommunenummer, lat: s.lat, lon: s.lon, w: s.students || 50 })),
-  ...kindergartens.map((k) => ({ knr: k.kommunenummer, lat: k.lat, lon: k.lon, w: k.children || 25 })),
+  ...schools.map((s) => ({ kind: "skole", knr: s.kommunenummer, lat: s.lat, lon: s.lon, w: s.students || 50 })),
+  ...kindergartens.map((k) => ({ kind: "barnehage", knr: k.kommunenummer, lat: k.lat, lon: k.lon, w: k.children || 25 })),
 ].filter((u) => u.lat && u.lon && popByKnr.has(u.knr));
 const pupilsByKnr = new Map();
 for (const u of units) pupilsByKnr.set(u.knr, (pupilsByKnr.get(u.knr) ?? 0) + u.w);
@@ -202,7 +192,24 @@ const ridges = density
     return `<polygon points="-4,${H + 4} ${pts} ${W + 4},${H + 4}" fill="${PAPER}"/><polyline points="${pts}" fill="none" stroke="rgb(${BLUE.join(",")})" stroke-width="2.4" stroke-linejoin="round"/>`;
   })
   .join("");
-const samfunnSvg = svg(ridges, PAPER);
+const hoydekartSvg = svg(ridges, PAPER);
+
+// ─── 5. Samfunn: every school and barnehage around Oslofjorden ──
+// Schools in brand blue sized by pupils, barnehager as small slate dots
+// beneath them — no other layer, the towns draw themselves.
+const OSLOFJORD = frameAt(59.75, 10.55, 1.45);
+const institutions = [...units]
+  // barnehager first so schools sit on top; big schools under small ones
+  .sort((a, b) => (a.kind === b.kind ? b.w - a.w : a.kind === "barnehage" ? -1 : 1))
+  .map((u) => ({ u, xy: OSLOFJORD(u.lon, u.lat) }))
+  .filter(({ xy }) => onScreen(xy, 10))
+  .map(({ u, xy: [x, y] }) =>
+    u.kind === "skole"
+      ? `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${Math.max(3.4, Math.min(9, Math.sqrt(u.w) * 0.34)).toFixed(1)}" fill="rgb(${BLUE.join(",")})" fill-opacity=".9" stroke="#fff" stroke-width="1.1"/>`
+      : `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="2.6" fill="#7f8fa3" fill-opacity=".75"/>`
+  )
+  .join("");
+const samfunnSvg = svg(geoLand(OSLOFJORD, () => LAND, "#fff", 0.8) + institutions);
 
 // ─── 6. Energi: regulated reservoirs ───────────────────────────
 // Every NVE magasin between Sognefjorden and Hallingdal, the hydro
@@ -272,7 +279,7 @@ const naturSvg = svg(geoLand(MOUNTAINS, verneFill, "#fff", 0.9) + huts);
 const outDir = join(root, "src/assets/thumbs");
 mkdirSync(outDir, { recursive: true });
 const jobs = {
-  valg: valgSvg, bolig: boligSvg, energikart: energiSvg, stedsprofil: stedSvg,
+  hoydekart: hoydekartSvg, bolig: boligSvg, stedsprofil: stedSvg, valg: valgSvg,
   samfunn: samfunnSvg, energi: magasinSvg, natur: naturSvg,
 };
 for (const [name, markup] of Object.entries(jobs)) {
@@ -290,5 +297,5 @@ if (process.argv.includes("--sheet")) {
     .png()
     .toFile(process.argv[process.argv.indexOf("--sheet") + 1] || "thumbs-sheet.png");
 }
-console.log(`frame lon ${FRAME.lon0}–${FRAME.lon1}, lat ${FRAME.lat0}–${FRAME.lat1}; ${visible.length} kommuner drawn, ${priced.length} priced, ${plants.length} plants`);
+console.log(`frame lon ${FRAME.lon0}–${FRAME.lon1}, lat ${FRAME.lat0}–${FRAME.lat1}; ${visible.length} kommuner drawn, ${priced.length} priced`);
 console.log(`theme cards: ${units.length} schools/barnehager, ${reservoirs.length} reservoirs, ${norCabins.length}/${cabins.length} cabins inside Norway`);
