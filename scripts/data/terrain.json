@@ -1,0 +1,13 @@
+{
+  "source": "Mapzen Terrain Tiles on AWS Open Data (terrarium, z8). Norway © Kartverket; see https://github.com/tilezen/joerd/blob/master/docs/attribution.md",
+  "bounds": {
+    "lon0": 1.5,
+    "lon1": 16.5,
+    "lat0": 58,
+    "lat1": 63.2
+  },
+  "width": 750,
+  "height": 520,
+  "metresPerLevel": 10,
+  "fetchedAt": "2026-10-09T21:28:05.346Z"
+}

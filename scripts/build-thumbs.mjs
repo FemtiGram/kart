@@ -3,13 +3,14 @@
 //
 // Draws small pictures straight from the committed data (kommune outlines
 // + centroids from kommune-profiles.json, winners from valg/st-2025.json,
-// schools.json, reservoirs.json, cabins.json, kommuner.geojson) and
+// schools.json, reservoirs.json, cabins.json, kommuner.geojson, and the
+// elevation grid in scripts/data/ from fetch-terrain.mjs) and
 // rasterises them to 16:10 webp with sharp. No network, no tiles,
 // deterministic — rerun with `npm run thumbs` after a data refresh and
 // commit the output in src/assets/thumbs/.
 //
-// Mest populært — Sør-Norge in one shared frame:
-//   hoydekart.webp    population lines: ridgelines raised where people live
+// Mest populært — Sør-Norge (the maps share one frame):
+//   hoydekart.webp    terrain lines: ridgelines raised by the real elevation
 //   bolig.webp        enebolig price bubbles (same blue→orange→red scale as /bolig)
 //   stedsprofil.webp  every kommune tinted by population, brand blue only
 //   valg.webp         party-coloured choropleth (same partyFill as /valg)
@@ -141,62 +142,69 @@ const geoLand = (P, fillFor, stroke, sw) =>
     })
     .join("");
 
-// ─── 4. Høydekart: population lines ────────────────────────────
-// Ridgelines in the style of James Cheshire's "Population Lines": every
-// line is a band of latitude, raised where people live. The real SSB
-// population of each kommune is spread over its schools and barnehager
-// in proportion to pupils, so the peaks sit in town centres rather than
-// on kommune centroids. Heights are compressed (^0.4) or Oslo would
-// flatten everything else. The peaks are people, not terrain — the
-// elevation card uses the picture because ridgelines read as mountains.
-const { schools, kindergartens } = read("public/data/schools.json");
-const popByKnr = new Map(profiles.map((p) => [p.knr, p.population ?? 0]));
-const units = [
-  ...schools.map((s) => ({ kind: "skole", knr: s.kommunenummer, lat: s.lat, lon: s.lon, w: s.students || 50 })),
-  ...kindergartens.map((k) => ({ kind: "barnehage", knr: k.kommunenummer, lat: k.lat, lon: k.lon, w: k.children || 25 })),
-].filter((u) => u.lat && u.lon && popByKnr.has(u.knr));
-const pupilsByKnr = new Map();
-for (const u of units) pupilsByKnr.set(u.knr, (pupilsByKnr.get(u.knr) ?? 0) + u.w);
-const people = units.map((u) => ({ x: +px(u.lon), y: +py(u.lat), n: (popByKnr.get(u.knr) * u.w) / pupilsByKnr.get(u.knr) }));
-// Kommuner without a single school or barnehage keep their people at the centroid
-for (const p of profiles) {
-  if (!pupilsByKnr.has(p.knr) && p.population > 0 && p.centroid) people.push({ x: +px(p.centroid.lon), y: +py(p.centroid.lat), n: p.population });
-}
-
-const ROWS = 30;
-const COLS = 320;
-const TOP = 64; // headroom for the tallest peak
-const STEP = (H - TOP - 18) / ROWS;
-const SX = 7; // kernel width in px — wide enough that neighbouring towns merge into one ridge
-const SY = STEP * 0.7;
-const density = Array.from({ length: ROWS }, () => new Float64Array(COLS));
-for (const { x, y, n } of people) {
-  for (let r = 0; r < ROWS; r++) {
-    const dy = (y - (TOP + (r + 1) * STEP)) / SY;
-    if (Math.abs(dy) > 3) continue;
-    const c0 = Math.max(0, Math.floor(((x - 3 * SX) / W) * (COLS - 1)));
-    const c1 = Math.min(COLS - 1, Math.ceil(((x + 3 * SX) / W) * (COLS - 1)));
-    for (let c = c0; c <= c1; c++) {
-      const dx = (x - (c / (COLS - 1)) * W) / SX;
-      density[r][c] += n * Math.exp(-(dx * dx + dy * dy) / 2);
+// ─── 4. Høydekart: terrain lines ───────────────────────────────
+// Ridgelines in the style of Joy Division's "Unknown Pleasures": every
+// line is a band of latitude from the Bergen coast to the Swedish border,
+// raised by the real terrain under it — Hardangervidda, Jotunheimen,
+// Rondane and Dovre. Elevations come from scripts/data/terrain.png (a
+// ~1 km grid fetched once by scripts/fetch-terrain.mjs, Norway © Kartverket).
+// The exponent keeps the lowlands nearly flat so the high mountains read
+// as peaks instead of one wall of scribble.
+const terrain = read("scripts/data/terrain.json");
+const { data: terrainGrid } = await sharp(join(root, "scripts/data/terrain.png")).extractChannel(0).raw().toBuffer({ resolveWithObject: true });
+const tb = terrain.bounds;
+const highest = terrainGrid.reduce((m, v) => Math.max(m, v), 0) * terrain.metresPerLevel;
+/** Mean elevation (m) over a lon/lat box, 0 outside the grid. */
+const elevation = (lonA, lonB, latA, latB) => {
+  const col = (lon) => Math.floor(((lon - tb.lon0) / (tb.lon1 - tb.lon0)) * terrain.width);
+  const row = (lat) => Math.floor(((tb.lat1 - lat) / (tb.lat1 - tb.lat0)) * terrain.height);
+  let sum = 0, n = 0;
+  for (let j = row(latB); j <= Math.max(row(latB), row(latA)); j++) {
+    for (let i = col(lonA); i <= Math.max(col(lonA), col(lonB)); i++) {
+      const inside = i >= 0 && j >= 0 && i < terrain.width && j < terrain.height;
+      sum += inside ? terrainGrid[j * terrain.width + i] * terrain.metresPerLevel : 0;
+      n++;
     }
   }
-}
-const peak = Math.max(...density.map((row) => Math.max(...row)));
+  return sum / n;
+};
+
+const MOUNTAIN_FRAME = { latc: 61.0, lonc: 8.0, latSpan: 3.0 };
+const mCos = Math.cos((MOUNTAIN_FRAME.latc * Math.PI) / 180);
+const mK = H / MOUNTAIN_FRAME.latSpan;
+const ROWS = 28;
+const COLS = 320;
+const TOP = 80; // headroom for Dovre in the top rows
+const STEP = (H - TOP - 18) / ROWS;
+const AMP = 105; // px for the highest cell
+const HALF_LON = ((W / (COLS - 1)) / (mCos * mK)) * 1.5; // ±1.5 sample widths: smooths 1 km noise
+const HALF_LAT = (STEP / mK) * 0.35;
 const PAPER = "#f4f1ec";
 // Top row first: each line's paper-coloured fill hides the lines behind it
-const ridges = density
-  .map((row, r) => {
-    const base = TOP + (r + 1) * STEP;
-    const pts = Array.from(row, (v, c) => `${((c / (COLS - 1)) * W).toFixed(1)},${(base - Math.pow(v / peak, 0.4) * 118).toFixed(1)}`).join(" ");
-    return `<polygon points="-4,${H + 4} ${pts} ${W + 4},${H + 4}" fill="${PAPER}"/><polyline points="${pts}" fill="none" stroke="rgb(${BLUE.join(",")})" stroke-width="2.4" stroke-linejoin="round"/>`;
-  })
-  .join("");
+let ridges = "";
+for (let r = 0; r < ROWS; r++) {
+  const base = TOP + (r + 1) * STEP;
+  const lat = MOUNTAIN_FRAME.latc - (base - H / 2) / mK;
+  const pts = [];
+  for (let c = 0; c < COLS; c++) {
+    const x = (c / (COLS - 1)) * W;
+    const lon = MOUNTAIN_FRAME.lonc + (x - W / 2) / (mCos * mK);
+    const e = elevation(lon - HALF_LON, lon + HALF_LON, lat - HALF_LAT, lat + HALF_LAT);
+    pts.push(`${x.toFixed(1)},${(base - Math.pow(e / highest, 1.5) * AMP).toFixed(1)}`);
+  }
+  const line = pts.join(" ");
+  ridges += `<polygon points="-4,${H + 4} ${line} ${W + 4},${H + 4}" fill="${PAPER}"/><polyline points="${line}" fill="none" stroke="rgb(${BLUE.join(",")})" stroke-width="2.4" stroke-linejoin="round"/>`;
+}
 const hoydekartSvg = svg(ridges, PAPER);
 
 // ─── 5. Samfunn: every school and barnehage around Oslofjorden ──
 // Schools in brand blue sized by pupils, barnehager as small slate dots
 // beneath them — no other layer, the towns draw themselves.
+const { schools, kindergartens } = read("public/data/schools.json");
+const units = [
+  ...schools.map((s) => ({ kind: "skole", lat: s.lat, lon: s.lon, w: s.students || 50 })),
+  ...kindergartens.map((k) => ({ kind: "barnehage", lat: k.lat, lon: k.lon, w: k.children || 25 })),
+].filter((u) => u.lat && u.lon);
 const OSLOFJORD = frameAt(59.75, 10.55, 1.45);
 const institutions = [...units]
   // barnehager first so schools sit on top; big schools under small ones
