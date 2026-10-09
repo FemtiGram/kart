@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { ChevronDown, BatteryCharging, Mountain, MapPinned, TrendingUp, Vote, Database, Globe, Code } from "lucide-react";
 import { FadeIn, FadeInView } from "@/components/motion";
 import { HomeKommuneSearch } from "@/components/home-kommune-search";
@@ -54,8 +55,10 @@ export default function Home() {
     fylke: k.fylke,
   }));
 
-  // Every number on this page is derived from the build data (home-facts.ts),
-  // never typed in — hand-maintained counts drift ("1 700+ kraftverk" was 1 912).
+  // Every number on the data cards is derived from the build data
+  // (home-facts.ts), never typed in — hand-maintained counts drift
+  // ("1 700+ kraftverk" was 1 912). The two counts in "Om prosjektet" are
+  // still hand-typed; that section is due for its own pass.
   const facts = getHomeFacts();
 
   // Curated by hand — these surface what the audience actually opens first.
@@ -101,22 +104,31 @@ export default function Home() {
 
   return (
     <div className="bg-background">
-      {/* Hero — no photo. A brand-blue "dusk" gradient (.hero-dusk: the navbar
-          colour at the top so bar and hero read as one surface) with paper
-          grain, and the promise as H1; the brand word lives in the navbar.
-          No `overflow-hidden` here: the HomeKommuneSearch dropdown must
-          extend below the hero. `isolate` + z-10 keep it above what follows. */}
-      <section className="relative isolate z-10 hero-dusk text-white">
-        <div className="absolute inset-0 -z-10 grain" aria-hidden="true" />
-        <div className="relative px-6 md:px-16 pt-14 pb-14 sm:pt-20 sm:pb-16 md:pt-28 md:pb-24 max-w-5xl mx-auto">
+      {/* Hero section — note: no `overflow-hidden` here. The dropdown of
+          HomeKommuneSearch needs to extend below the hero bottom edge,
+          and the `<Image fill object-cover>` clips itself to its own box
+          so the banner doesn't bleed. `isolate` + a high z-index pins
+          the hero's stacking context above the content that follows. */}
+      <section className="relative h-[75svh] min-h-[500px] isolate z-10">
+        <div className="absolute inset-0 overflow-hidden">
+          <Image
+            src="/img/banner_1920.webp"
+            alt="Lofoten, Norge"
+            fill
+            priority
+            className="object-cover object-[center_30%]"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+        </div>
+        <div className="relative h-full flex flex-col justify-end px-6 md:px-16 pb-16 md:pb-24 max-w-5xl mx-auto">
           <FadeIn>
-            <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-[84px] font-extrabold tracking-tight leading-[1.02] text-balance">
-              {"Se Norge i\u00a0tall, kommune for kommune."}
+            <h1 className="text-display text-white drop-shadow-lg">
+              Datakart
             </h1>
           </FadeIn>
           <FadeIn delay={0.1}>
-            <p className="mt-5 md:mt-7 text-white/90 text-lg md:text-2xl max-w-2xl text-pretty leading-snug">
-              Boligpriser, høyde over havet, strøm, skoler og valgresultater – på kart bygget på åpne, offentlige data.
+            <p className="mt-4 text-white/90 text-lg md:text-2xl max-w-lg drop-shadow-md">
+              Utforsk Norge gjennom åpne geodata
             </p>
           </FadeIn>
           <FadeIn delay={0.15}>
@@ -130,25 +142,6 @@ export default function Home() {
                 <ChevronDown className="h-4 w-4" />
               </a>
             </div>
-          </FadeIn>
-          <FadeIn delay={0.2}>
-            {/* Phone: a 2×2 grid (four items never fit one 390px line, and a
-                wrapped dot-separated line strands a "·"). From sm up: one
-                flex row with "·" separators; flex items can wrap safely. */}
-            <p className="mt-6 grid grid-cols-2 gap-x-4 gap-y-1 sm:flex sm:flex-wrap sm:gap-0 text-xs sm:text-sm text-white tabular-nums">
-              {[
-                `${nb(facts.kommuner)} kommuner`,
-                `${nb(facts.plants)} kraftverk`,
-                `${nb(facts.stations)} ladestasjoner`,
-                `${nb(facts.population)} innbyggere`,
-              ].map((item, i) => (
-                <span key={item} className="whitespace-nowrap">
-                  {/* Padding, not spaces: a leading space collapses at the start of a flex item */}
-                  {i > 0 && <span aria-hidden="true" className="hidden sm:inline px-1.5">·</span>}
-                  {item}
-                </span>
-              ))}
-            </p>
           </FadeIn>
         </div>
       </section>

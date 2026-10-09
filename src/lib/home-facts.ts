@@ -14,7 +14,7 @@ import { getAllKommuner } from "@/lib/kommune-profiles";
 export const nb = (n: number) => Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
 
 const SHORT_PARTY: Record<string, string> = {
-  A: "Ap", FRP: "Frp", SP: "Sp", H: "Høyre", SV: "SV", R: "Rødt", V: "Venstre", KRF: "KrF", MDG: "MDG",
+  A: "Ap", FRP: "Frp", SP: "Sp", H: "Høyre", SV: "SV", RØDT: "Rødt", V: "Venstre", KRF: "KrF", MDG: "MDG", Andre: "Andre lister",
 };
 
 interface ValgFile {
@@ -32,10 +32,8 @@ function loadValg(): ValgFile {
 
 export interface HomeFacts {
   kommuner: number;
-  population: number;
   plants: number;
   totalMW: number;
-  stations: number;
   bolig: { year: string; min: { name: string; price: number }; max: { name: string; price: number } } | null;
   pop: { min: { name: string; n: number }; max: { name: string; n: number } } | null;
   valg: { year: number; winners: { party: string; count: number }[] };
@@ -46,18 +44,20 @@ export function getHomeFacts(): HomeFacts {
 
   const plants = all.reduce((s, p) => s + (p.energy?.plantCount ?? 0), 0);
   const totalMW = all.reduce((s, p) => s + (p.energy?.totalMW ?? 0), 0);
-  const stations = all.reduce((s, p) => s + (p.charging?.total ?? 0), 0);
-  const population = all.reduce((s, p) => s + (p.population ?? 0), 0);
 
-  // Enebolig (01) extremes — only kommuner with a meaningful number of sales
-  const priced = all
-    .map((p) => ({ name: p.name, entry: p.bolig?.["01"] }))
-    .filter((x): x is { name: string; entry: NonNullable<typeof x.entry> } => !!x.entry && x.entry.price > 0 && (x.entry.count ?? 0) >= 10)
-    .sort((a, b) => a.entry.price - b.entry.price);
+  // Enebolig (01) extremes — only kommuner with a meaningful number of
+  // sales, and only those whose latest SSB figure is from the latest year
+  // in the data, so the one year label is true for both ends (a kommune
+  // whose newest price is from 2021 must not become the "2025" minimum).
   const lastYear = (trend?: { year: string }[]) => trend?.[trend.length - 1]?.year;
-  const bolig = priced.length >= 2
+  const withSales = all
+    .map((p) => ({ name: p.name, entry: p.bolig?.["01"] }))
+    .filter((x): x is { name: string; entry: NonNullable<typeof x.entry> } => !!x.entry && x.entry.price > 0 && (x.entry.count ?? 0) >= 10);
+  const latestYear = withSales.map((x) => lastYear(x.entry.trend) ?? "").reduce((a, b) => (b > a ? b : a), "");
+  const priced = withSales.filter((x) => lastYear(x.entry.trend) === latestYear).sort((a, b) => a.entry.price - b.entry.price);
+  const bolig = latestYear && priced.length >= 2
     ? {
-        year: lastYear(priced[priced.length - 1].entry.trend) ?? "",
+        year: latestYear,
         min: { name: priced[0].name, price: priced[0].entry.price },
         max: { name: priced[priced.length - 1].name, price: priced[priced.length - 1].entry.price },
       }
@@ -82,5 +82,5 @@ export function getHomeFacts(): HomeFacts {
     .slice(0, 3)
     .map(([kode, count]) => ({ party: SHORT_PARTY[kode] ?? kode, count }));
 
-  return { kommuner: all.length, population, plants, totalMW, stations, bolig, pop, valg: { year: valgFile.meta.valgår, winners } };
+  return { kommuner: all.length, plants, totalMW, bolig, pop, valg: { year: valgFile.meta.valgår, winners } };
 }

@@ -38,11 +38,11 @@ export function MinimalCard({ href, icon: Icon, title, description, badge, compa
     <Link
       href={href}
       className={`group flex flex-col rounded-xl border bg-card h-full overflow-hidden transition-[transform,box-shadow,border-color] duration-200 ease-out hover:-translate-y-0.5 hover:shadow-md hover:border-foreground/40 active:translate-y-0 active:shadow-sm active:duration-75 motion-reduce:transform-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
-        compact ? "px-4 sm:px-5 py-4" : "p-5 sm:p-6"
+        compact ? "px-3 min-[360px]:px-4 sm:px-5 py-4" : "p-5 sm:p-6"
       }`}
     >
       {image && (
-        <div className={`relative aspect-[16/10] overflow-hidden border-b ${compact ? "-mx-4 sm:-mx-5 -mt-4 mb-3" : "-mx-5 sm:-mx-6 -mt-5 sm:-mt-6 mb-4"}`}>
+        <div className={`relative aspect-[16/10] overflow-hidden border-b ${compact ? "-mx-3 min-[360px]:-mx-4 sm:-mx-5 -mt-4 mb-3" : "-mx-5 sm:-mx-6 -mt-5 sm:-mt-6 mb-4"}`}>
           <Image
             src={image}
             alt=""
@@ -53,7 +53,9 @@ export function MinimalCard({ href, icon: Icon, title, description, badge, compa
           />
         </div>
       )}
-      <div className="flex items-center gap-2.5">
+      {/* Compact cards get 12px side padding under 360px: at 320px a
+          two-column card has ~106px for icon + one-word title ("Stedsprofil") */}
+      <div className={`flex items-center ${compact ? "gap-2" : "gap-2.5"}`}>
         <Icon
           className={compact ? "h-[1.125em] w-[1.125em] shrink-0" : "h-[1.15em] w-[1.15em] shrink-0"}
           style={{ color: "var(--kv-blue)" }}
@@ -66,9 +68,12 @@ export function MinimalCard({ href, icon: Icon, title, description, badge, compa
         >
           {title}
         </h3>
+        {/* Decorative arrow; hidden under 400px where a two-column compact
+            card (~120px of content) can't fit icon + one-word title + arrow
+            and the arrow was pushed into the padding and clipped */}
         {image && (
           <ArrowRight
-            className="ml-auto h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 ease-out group-hover:translate-x-0.5 motion-reduce:transform-none"
+            className="ml-auto hidden min-[400px]:block h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 ease-out group-hover:translate-x-0.5 motion-reduce:transform-none"
             aria-hidden="true"
           />
         )}

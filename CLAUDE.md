@@ -20,7 +20,7 @@ A portfolio project showcasing Norwegian open geodata on interactive maps. Built
 
 ```
 src/app/
-  page.tsx              — Landing page: no photo — a brand-blue gradient hero (`.hero-dusk` + `.grain`) with the promise as a big bold H1 (the brand word lives in the navbar), kommune search, and a meta line of build-time numbers; stacked section headings (eyebrow above one bold sentence, left-aligned with the cards); "Mest populært" image cards + category cards. Every number comes from `src/lib/home-facts.ts` — never type a count into this page
+  page.tsx              — Landing page: photo hero (Lofoten banner, "Datakart" as H1, kommune search), then stacked section headings (eyebrow above one bold sentence, left-aligned with the cards), "Mest populært" image cards (build-time map art + one real fact each) and the three category cards. Every number on the data cards comes from `src/lib/home-facts.ts` — never type a count into them (the two counts in "Om prosjektet" are still hand-typed and due for their own pass). A gradient/promise-headline hero was tried in Oct 2026 and reverted: a dark hero needs the whole page to follow, and the off-white sections below didn't
   not-found.tsx         — 404 page (Norwegian)
   lading/page.tsx       — Charging stations map
   hytter/page.tsx       — Tourist cabins map
@@ -106,7 +106,7 @@ src/lib/
   parse-coordinates.ts  — Parses pasted coordinates (decimal, decimal comma, Apple Maps °N/°E, Google DMS, Garmin decimal minutes) + isWithinNorway(); used by /map search
   party-colors.ts       — Norwegian party colors (saturated fills + WCAG-AA-compliant text variants); used by /valg and Stedsprofil Politikk section
   utils.ts              — cn() helper
-  home-facts.ts         — Server-only. Landing-page numbers derived from kommune-profiles.json + valg/st-2025.json (kommuner, population, plants/MW, stations, enebolig price extremes, population extremes, top-3 winning parties) + `nb()` nb-NO thousands formatter
+  home-facts.ts         — Server-only. Landing-page numbers derived from kommune-profiles.json + valg/st-2025.json (kommuner, plants/MW, enebolig price extremes for the latest SSB year, population extremes, top-3 winning parties) + `nb()` nb-NO thousands formatter
 
 scripts/
   fetch-stations.mjs    — Build-time: fetches ALL charging stations → public/data/stations.json
@@ -439,8 +439,6 @@ Three-tier convention: `-light` for the background tint, base for icons/borders/
 - Card style: `bg-card rounded-2xl shadow-sm border px-4 py-4` (hover: `shadow-md`)
 - Modal style: `bg-background rounded-2xl shadow-xl border w-full max-w-sm p-5`
 - Floating pill: `bg-background/90 backdrop-blur-sm border rounded-full px-4 py-2 shadow-lg`
-- Hero gradient: `.hero-dusk` (globals.css) — 160° linear gradient that starts in `--kv-blue` (so the navbar and the hero read as one surface) and lightens towards the bottom-right, plus two soft radial glows (steel blue, sand) in that corner. All hero text is white; every block must stay ≥ 4.5:1 against the gradient *including* the text's own opacity — the lightest corner (bottom-right, where the 12px meta line sits) is the spot that fails first, so re-measure if you move the glows or lighten the tail
-- Grain: `.grain` (globals.css) adds a subtle SVG-noise texture in `::after` to a positioned container — used on the landing hero gradient. Keep it soft-light ≤ .35
 - Section heading on landing-style pages: stacked and left-aligned with the cards below — eyebrow (`text-xs font-bold uppercase tracking-widest text-muted-foreground`), then one real sentence as the h2 (`mt-2 text-2xl md:text-3xl font-bold tracking-tight text-balance max-w-2xl`, brand blue). Not a two-column grid: with the eyebrow in its own column the sentence floated away from the content it introduced
 - Primary CTA button: `text-white rounded-xl` with `style={{ background: "var(--kv-blue)" }}`
 - Secondary button: `border bg-muted/50 hover:bg-muted rounded-xl`
@@ -489,6 +487,7 @@ Three-tier convention: `-light` for the background tint, base for icons/borders/
 - **Batch related changes** into one commit instead of commit-per-line
 - **Decide approach first**, then implement — avoid build-try-revert cycles
 - **Keep map components consistent** — refer to the patterns above before making changes
+- **Verification budget — scale checks to the change.** Copy, layout, card and CSS changes are verified inline: eslint + `tsc --noEmit` + vitest + one Playwright pass (screenshot or measurement across 320/360/390/1440px), no subagents. Multi-agent review workflows are reserved for data-pipeline, API-route and map-logic changes, and even then a few reviewers, never a skeptic panel per finding (an Oct 2026 review of a hero revert spent 36 agents to find one 320px overflow). Never re-verify what a deterministic check already proved, e.g. a byte-identical diff
 - **Vercel serverless timeout: 10s by default, but raisable** — `export const maxDuration = 30` per route (Hobby allows up to 60s). `/api/energy` uses this. Still: keep per-upstream `AbortSignal.timeout` well below the route budget so one slow source can't eat it (Aug 2026 Sodir outage truncated responses mid-stream), and fetch multi-source routes with `Promise.allSettled`, never `Promise.all`
 
 ## Model Selection (Opus vs Sonnet)
