@@ -47,3 +47,6 @@ next-env.d.ts
 src/app/api/rapport/
 src/app/fonts/
 src/fonts/
+
+# contact sheet from `npm run thumbs -- --sheet` (never committed)
+thumbs-sheet.png

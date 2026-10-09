@@ -20,7 +20,7 @@ A portfolio project showcasing Norwegian open geodata on interactive maps. Built
 
 ```
 src/app/
-  page.tsx              — Landing page (card grid)
+  page.tsx              — Landing page: photo hero (Lofoten banner, "Datakart" as H1, kommune search), then stacked section headings (eyebrow above one bold sentence, left-aligned with the cards), "Mest populært" image cards (build-time map art + one real fact each) and the three category cards. Every number on the data cards comes from `src/lib/home-facts.ts` — never type a count into them (the two counts in "Om prosjektet" are still hand-typed and due for their own pass). A gradient/promise-headline hero was tried in Oct 2026 and reverted: a dark hero needs the whole page to follow, and the off-white sections below didn't
   not-found.tsx         — 404 page (Norwegian)
   lading/page.tsx       — Charging stations map
   hytter/page.tsx       — Tourist cabins map
@@ -82,7 +82,7 @@ src/components/
   kostnader-map.tsx     — /kostnader map: cost-of-living choropleth (2 metric segmented control: gebyrer total + eiendomsskatt 120 m²). "Ingen eiendomsskatt" rendered as positive light-green fill. Detail + comparison sheets in kostnader-detail-sheets.tsx
   kostnader-map-loader.tsx — Dynamic wrapper for kostnader-map (ssr: false)
   home-kommune-search.tsx — Client component on landing hero: diacritic-aware autocomplete over all 357 kommuner, keyboard nav, routes directly to /kommune/[slug]. Data loaded at build time via server-component prop passing
-  minimal-card.tsx      — Single shared card style for the home (categories + Mest populært strip) AND the category landing pages. `compact` prop switches to icon-on-the-left horizontal layout for the home Mest populært strip
+  minimal-card.tsx      — Single shared card style for the home (categories + Mest populært strip) AND the category landing pages. Icon inline with the title, description full width. `compact` = tighter padding/type; `image` (StaticImageData) adds a 16:10 picture strip + arrow (the Mest populært strip uses the build-time map art). Hover = 2px lift + press, focus ring
   category-hero.tsx     — Reusable hero for /energi, /natur, /samfunn — back-to-home link + eyebrow + big title + ~80-word editorial intro
   valg-map.tsx          — /valg map: party-colored choropleth, type/year selectors (st 2025/2021, ko 2023/2019), white-halo hover, compare sheet
   eiendom-map.tsx       — /eiendom map: address search or zoom-gated map click → matrikkel parcel polygon + compact card/detail sheet. Area via src/lib/geodesic-area.ts (turf-style spherical, no projection). Owner data NOT in open API — links to Kartverket's Se eiendom
@@ -106,6 +106,7 @@ src/lib/
   parse-coordinates.ts  — Parses pasted coordinates (decimal, decimal comma, Apple Maps °N/°E, Google DMS, Garmin decimal minutes) + isWithinNorway(); used by /map search
   party-colors.ts       — Norwegian party colors (saturated fills + WCAG-AA-compliant text variants); used by /valg and Stedsprofil Politikk section
   utils.ts              — cn() helper
+  home-facts.ts         — Server-only. Landing-page numbers derived from kommune-profiles.json + valg/st-2025.json (kommuner, plants/MW, enebolig price extremes for the latest SSB year, population extremes, top-3 winning parties) + `nb()` nb-NO thousands formatter
 
 scripts/
   fetch-stations.mjs    — Build-time: fetches ALL charging stations → public/data/stations.json
@@ -118,6 +119,7 @@ scripts/
   fetch-health.mjs      — Build-time: Overpass query (scoped to Norway via `area["ISO3166-1"="NO"]`) for `amenity=hospital` and `amenity=clinic`, classifies into sykehus / legevakt / privatklinikker → public/data/health.json
   fetch-valg.mjs        — Build-time: fetches Stortingsvalg 2025/2021 + Kommunestyrevalg 2023/2019 from valgresultat.no (Valgdirektoratet). Remaps pre-2024 kommunenummer to current geometry via fylke-prefix table + name normalization (Sami/Kven secondary names, "Aurskog-Høland" whitespace, "Nes, Buskerud"→Nesbyen rename) → public/data/valg/{type}-{year}.json + index.json manifest
   build-kommune-profiles.mjs — Build-time: composes SSB population/income/bolig/vern/fastlege (12005) + kommunale gebyrer (12842) + eiendomsskatt (14674) + eierstatus (14891) + boligtyper (06265) + utdanningsnivå (09429) + nasjonale prøver (12255) + NVE plants + UDIR schools/barnehager + valg results (latest st + ko) + static files via point-in-polygon and kommunenummer grouping into one profile per kommune → public/data/kommune-profiles.json + public/data/fastlege.json + public/data/kostnader.json. Also calls `generateSnapshot()` from `generate-snapshot.mjs` for each profile so the 3-sentence narrative is baked into the output JSON.
+  build-thumbs.mjs      — `npm run thumbs`. Draws the four Mest populært card pictures (valg choropleth, bolig bubbles, energikart plants, stedsprofil population tints) as SVG from kommune-profiles.json + valg/st-2025.json, framed on Sør-Norge at 16:10, rasterised with sharp → src/assets/thumbs/*.webp (committed). No network, no tiles; rerun after a data refresh. Imports partyFill from src/lib/party-colors.ts (Node type-stripping)
   generate-snapshot.mjs — Pure (no fetches) helper imported by build-kommune-profiles.mjs. Takes a profile + rank totals and returns a `string[]` of 3 sentences: rule-based notability scoring picks the top 3 distinct themes from ~13 candidates (bolig / gebyr / income / vern / hytter / sykehus / fastlege / skoler / nasjonale prøver / demografi-eier / demografi-boliger / demografi-utdanning / geografisk filler). Templates are deliberately factual — never LLM-generated.
 
 public/data/
@@ -437,6 +439,7 @@ Three-tier convention: `-light` for the background tint, base for icons/borders/
 - Card style: `bg-card rounded-2xl shadow-sm border px-4 py-4` (hover: `shadow-md`)
 - Modal style: `bg-background rounded-2xl shadow-xl border w-full max-w-sm p-5`
 - Floating pill: `bg-background/90 backdrop-blur-sm border rounded-full px-4 py-2 shadow-lg`
+- Section heading on landing-style pages: stacked and left-aligned with the cards below — eyebrow (`text-xs font-bold uppercase tracking-widest text-muted-foreground`), then one real sentence as the h2 (`mt-2 text-2xl md:text-3xl font-bold tracking-tight text-balance max-w-2xl`, brand blue). Not a two-column grid: with the eyebrow in its own column the sentence floated away from the content it introduced
 - Primary CTA button: `text-white rounded-xl` with `style={{ background: "var(--kv-blue)" }}`
 - Secondary button: `border bg-muted/50 hover:bg-muted rounded-xl`
 
@@ -484,6 +487,7 @@ Three-tier convention: `-light` for the background tint, base for icons/borders/
 - **Batch related changes** into one commit instead of commit-per-line
 - **Decide approach first**, then implement — avoid build-try-revert cycles
 - **Keep map components consistent** — refer to the patterns above before making changes
+- **Verification budget — scale checks to the change.** Copy, layout, card and CSS changes are verified inline: eslint + `tsc --noEmit` + vitest + one Playwright pass (screenshot or measurement across 320/360/390/1440px), no subagents. Multi-agent review workflows are reserved for data-pipeline, API-route and map-logic changes, and even then a few reviewers, never a skeptic panel per finding (an Oct 2026 review of a hero revert spent 36 agents to find one 320px overflow). Never re-verify what a deterministic check already proved, e.g. a byte-identical diff
 - **Vercel serverless timeout: 10s by default, but raisable** — `export const maxDuration = 30` per route (Hobby allows up to 60s). `/api/energy` uses this. Still: keep per-upstream `AbortSignal.timeout` well below the route budget so one slow source can't eat it (Aug 2026 Sodir outage truncated responses mid-stream), and fetch multi-source routes with `Promise.allSettled`, never `Promise.all`
 
 ## Model Selection (Opus vs Sonnet)
