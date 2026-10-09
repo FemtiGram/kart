@@ -14,7 +14,9 @@ interface MinimalCardProps {
   compact?: boolean;
   /** Decorative picture across the top of the card (16:10). Generated at
    *  build time by scripts/build-thumbs.mjs from the real map data, so
-   *  the card shows what the map looks like before you open it. */
+   *  the card shows what the map looks like before you open it. Full-size
+   *  cards crop it to 2:1 while they sit one per row, so three stacked
+   *  theme cards don't turn into a wall of pictures on a phone. */
   image?: StaticImageData;
 }
 
@@ -42,13 +44,13 @@ export function MinimalCard({ href, icon: Icon, title, description, badge, compa
       }`}
     >
       {image && (
-        <div className={`relative aspect-[16/10] overflow-hidden border-b ${compact ? "-mx-3 min-[360px]:-mx-4 sm:-mx-5 -mt-4 mb-3" : "-mx-5 sm:-mx-6 -mt-5 sm:-mt-6 mb-4"}`}>
+        <div className={`relative overflow-hidden border-b ${compact ? "aspect-[16/10] -mx-3 min-[360px]:-mx-4 sm:-mx-5 -mt-4 mb-3" : "aspect-[2/1] md:aspect-[16/10] -mx-5 sm:-mx-6 -mt-5 sm:-mt-6 mb-4"}`}>
           <Image
             src={image}
             alt=""
             fill
             placeholder="blur"
-            sizes="(min-width: 1024px) 240px, 50vw"
+            sizes={compact ? "(min-width: 1024px) 240px, 50vw" : "(min-width: 768px) 300px, 100vw"}
             className="object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03] motion-reduce:transform-none"
           />
         </div>

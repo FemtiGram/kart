@@ -80,6 +80,15 @@ const sources = [
     usedIn: ["Hoydekart"],
   },
   {
+    name: "Terrain Tiles (Mapzen, AWS Open Data)",
+    description: "Høydemodell for illustrasjonen på Høydekart-kortet på forsiden: linjer som løftes av terrenget fra Bergen til svenskegrensen.",
+    license: "Varierer per kilde",
+    licenseUrl: "https://github.com/tilezen/joerd/blob/master/docs/attribution.md",
+    attribution: "Norge © Kartverket; Europa: Copernicus EU-DEM; SRTM og GMTED2010: U.S. Geological Survey; ETOPO1: NOAA",
+    url: "https://registry.opendata.aws/terrain-tiles/",
+    usedIn: ["Forsiden"],
+  },
+  {
     name: "Geonorge",
     description: "Adressesok og kommuneinformasjon via offentlige APIer.",
     license: "CC BY 4.0",
