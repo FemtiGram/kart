@@ -15,7 +15,7 @@ import thumbNatur from "@/assets/thumbs/natur.webp";
 
 // Each theme card gets its own texture (build-time art, scripts/build-thumbs.mjs)
 // so the row doesn't read as three more maps after the strip above:
-// schools and barnehager, the hydro reservoirs, and verne share + cabins.
+// schools and barnehager, charging capacity as hexagons, and verne share + cabins.
 const categories = [
   {
     href: "/samfunn",

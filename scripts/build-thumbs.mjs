@@ -3,7 +3,7 @@
 //
 // Draws small pictures straight from the committed data (kommune outlines
 // + centroids from kommune-profiles.json, winners from valg/st-2025.json,
-// schools.json, reservoirs.json, cabins.json, kommuner.geojson, and the
+// schools.json, stations.json, cabins.json, kommuner.geojson, and the
 // elevation grid in scripts/data/ from fetch-terrain.mjs) and
 // rasterises them to 16:10 webp with sharp. No network, no tiles,
 // deterministic — rerun with `npm run thumbs` after a data refresh and
@@ -15,9 +15,9 @@
 //   stedsprofil.webp  every kommune tinted by population, brand blue only
 //   valg.webp         party-coloured choropleth (same partyFill as /valg)
 //
-// Theme cards — zoomed in, one texture each:
+// Theme cards — one texture each:
 //   samfunn.webp      every school and barnehage around Oslofjorden
-//   energi.webp       every regulated reservoir around Sognefjorden–Hallingdal
+//   energi.webp       charging capacity across Sør-Norge as a hex mosaic
 //   natur.webp        verne share + turisthytter around Jotunheimen
 //
 // The pictures are decorative (alt="" in the card); the numbers next to
@@ -103,9 +103,9 @@ const stedSvg = svg(land((p) => (popRank.has(p.knr) ? mix(0.12 + 0.78 * popRank.
 
 // ─── Zoomed frames ─────────────────────────────────────────────
 // The theme cards below the strip each get a different texture — dots,
-// water, green — so they don't read as three more copies of the
-// Sør-Norge maps above. They zoom in, so they draw the full-resolution
-// kommuner.geojson instead of the ~40-point outlines.
+// hexagons, green — so they don't read as three more copies of the
+// Sør-Norge maps above. Samfunn and Natur zoom in, so they draw the
+// full-resolution kommuner.geojson instead of the ~40-point outlines.
 
 const geo = read("public/data/kommuner.geojson").features;
 const polysOf = (f) => (f.geometry.type === "Polygon" ? [f.geometry.coordinates] : f.geometry.coordinates);
@@ -219,22 +219,43 @@ const institutions = [...units]
   .join("");
 const samfunnSvg = svg(geoLand(OSLOFJORD, () => LAND, "#fff", 0.8) + institutions);
 
-// ─── 6. Energi: regulated reservoirs ───────────────────────────
-// Every NVE magasin between Sognefjorden and Hallingdal, the hydro
-// heartland, in the cyan /energikart uses for vannkraft. Land without
-// kommune borders so the water is the only drawing.
-const reservoirs = read("public/data/reservoirs.json").reservoirs;
-const HYDRO = frameAt(60.55, 8.0, 2.3);
-const water = reservoirs
-  .filter((r) => r.center && onScreen(HYDRO(r.center.lon, r.center.lat)))
-  .map((r) => {
-    // reservoir polygons are rings of [lat, lon]
-    const d = geoPath(HYDRO, r.polygon.map((ring) => ring.map(([lat, lon]) => [lon, lat])));
-    // A 2px outline keeps the small lakes visible at card size (~300px wide)
-    return `<path d="${d}" fill="#0e7490" stroke="#0e7490" stroke-width="2" stroke-linejoin="round"/>`;
+// ─── 6. Energi: charging capacity as a hex mosaic ──────────────
+// Every NOBIL charging station in Sør-Norge, binned into hexagons
+// tinted by installed capacity (max kW × charge points, log scale) in the
+// /energikart hydro cyan. Hexes so the card doesn't read as a second dot
+// map next to Samfunn — 14px is the smallest that still reads as a hex
+// mosaic at card size (~300px wide); the empty mountain plateau stays bare.
+const stations = read("public/data/stations.json").filter((s) => s.lat && s.lon);
+const HEX_R = 14;
+const HEX_W = Math.sqrt(3) * HEX_R;
+const capacity = new Map();
+for (const st of stations) {
+  const x = +px(st.lon), y = +py(st.lat);
+  if (x < 0 || x > W || y < 0 || y > H) continue;
+  const row = Math.round(y / (1.5 * HEX_R));
+  const col = Math.round((x - (row & 1) * HEX_W / 2) / HEX_W);
+  const key = `${row},${col}`;
+  // 28 stations have no maxKw; count them as a slow 11 kW AC charger
+  capacity.set(key, (capacity.get(key) ?? 0) + (st.maxKw || 11) * st.numPoints);
+}
+const topCapacity = Math.max(...capacity.values());
+const CYAN = [0x0e, 0x74, 0x90];
+const LAND_TINT = [0xe3, 0xdd, 0xd4];
+const hexes = [...capacity]
+  .map(([key, kw]) => {
+    const [row, col] = key.split(",").map(Number);
+    const cx = col * HEX_W + (row & 1) * HEX_W / 2;
+    const cy = row * 1.5 * HEX_R;
+    const t = 0.3 + 0.7 * (Math.log(1 + kw) / Math.log(1 + topCapacity));
+    const fill = `rgb(${CYAN.map((v, i) => Math.round(LAND_TINT[i] + (v - LAND_TINT[i]) * t)).join(",")})`;
+    const corners = Array.from({ length: 6 }, (_, i) => {
+      const a = (Math.PI / 3) * i + Math.PI / 6;
+      return `${(cx + (HEX_R - 0.9) * Math.cos(a)).toFixed(1)},${(cy + (HEX_R - 0.9) * Math.sin(a)).toFixed(1)}`;
+    });
+    return `<polygon points="${corners.join(" ")}" fill="${fill}"/>`;
   })
   .join("");
-const magasinSvg = svg(geoLand(HYDRO, () => LAND, LAND, 0.6) + water);
+const ladingSvg = svg(land(() => LAND, LAND, 0.5) + hexes);
 
 // ─── 7. Natur: verneområder + turisthytter around Jotunheimen ──
 // Kommuner tinted by protected share (darkest at ≥ 50 %), with every
@@ -288,7 +309,7 @@ const outDir = join(root, "src/assets/thumbs");
 mkdirSync(outDir, { recursive: true });
 const jobs = {
   hoydekart: hoydekartSvg, bolig: boligSvg, stedsprofil: stedSvg, valg: valgSvg,
-  samfunn: samfunnSvg, energi: magasinSvg, natur: naturSvg,
+  samfunn: samfunnSvg, energi: ladingSvg, natur: naturSvg,
 };
 for (const [name, markup] of Object.entries(jobs)) {
   const out = join(outDir, `${name}.webp`);
@@ -306,4 +327,4 @@ if (process.argv.includes("--sheet")) {
     .toFile(process.argv[process.argv.indexOf("--sheet") + 1] || "thumbs-sheet.png");
 }
 console.log(`frame lon ${FRAME.lon0}–${FRAME.lon1}, lat ${FRAME.lat0}–${FRAME.lat1}; ${visible.length} kommuner drawn, ${priced.length} priced`);
-console.log(`theme cards: ${units.length} schools/barnehager, ${reservoirs.length} reservoirs, ${norCabins.length}/${cabins.length} cabins inside Norway`);
+console.log(`theme cards: ${units.length} schools/barnehager, ${capacity.size} charging hexes, ${norCabins.length}/${cabins.length} cabins inside Norway`);
