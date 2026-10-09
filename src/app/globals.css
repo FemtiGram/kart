@@ -251,6 +251,21 @@ html {
   animation: shimmer 1.2s ease-in-out infinite;
 }
 
+/* Paper grain for gradient surfaces (one 220px tile of SVG fractal noise,
+   ~0.6 KB, no request). Put the class on a positioned container; the grain
+   lives in ::after, ignores pointer events and only textures what is
+   underneath it. Kept subtle (soft-light at .35) so photos stay photos. */
+.grain::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.35;
+  mix-blend-mode: soft-light;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' seed='4'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .6 0'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23g)'/%3E%3C/svg%3E");
+  background-size: 220px 220px;
+}
+
 /* Entrance fade for <FadeIn>. Pure CSS so it starts on first paint
    instead of waiting for hydration (the JS version shipped opacity:0
    in the SSR HTML, hiding the hero until the bundle ran). */

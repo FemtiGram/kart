@@ -4,6 +4,11 @@ import { FadeIn, FadeInView } from "@/components/motion";
 import { HomeKommuneSearch } from "@/components/home-kommune-search";
 import { MinimalCard } from "@/components/minimal-card";
 import { getAllKommuner } from "@/lib/kommune-profiles";
+import { getHomeFacts, nb } from "@/lib/home-facts";
+import thumbValg from "@/assets/thumbs/valg.webp";
+import thumbBolig from "@/assets/thumbs/bolig.webp";
+import thumbEnergi from "@/assets/thumbs/energikart.webp";
+import thumbSted from "@/assets/thumbs/stedsprofil.webp";
 
 const categories = [
   {
@@ -26,35 +31,17 @@ const categories = [
   },
 ];
 
-// Curated by hand — these surface what the audience actually opens first.
-// Kept small (4) so the eye lands here and doesn't have to scan further.
-const popular = [
-  {
-    href: "/bolig",
-    title: "Boligpriser",
-    description: "Kvadratmeterpris per kommune.",
-    icon: TrendingUp,
-    badge: "2025-tall",
-  },
-  {
-    href: "/kommune",
-    title: "Stedsprofil",
-    description: "Alle 357 kommuner i ett blikk.",
-    icon: MapPinned,
-  },
-  {
-    href: "/valg",
-    title: "Valgkart",
-    description: "Stortingsvalget 2025 per kommune.",
-    icon: Vote,
-  },
-  {
-    href: "/energikart",
-    title: "Energikart",
-    description: "1 700+ kraftverk i Norge.",
-    icon: BatteryCharging,
-  },
-];
+/** Two-column section header: small eyebrow left, one real sentence right. */
+function SectionHeading({ eyebrow, title }: { eyebrow: string; title: string }) {
+  return (
+    <div className="grid gap-1.5 md:grid-cols-[minmax(150px,1fr)_3fr] md:gap-x-8 md:items-baseline mb-6 md:mb-8">
+      <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">{eyebrow}</p>
+      <h2 className="text-2xl md:text-3xl font-semibold tracking-tight text-balance" style={{ color: "var(--kv-blue)" }}>
+        {title}
+      </h2>
+    </div>
+  );
+}
 
 export default function Home() {
   // Trimmed kommune list for the hero search — only the fields the
@@ -68,15 +55,61 @@ export default function Home() {
     fylke: k.fylke,
   }));
 
+  // Every number on this page is derived from the build data (home-facts.ts),
+  // never typed in — hand-maintained counts drift ("1 700+ kraftverk" was 1 912).
+  const facts = getHomeFacts();
+
+  // Curated by hand — these surface what the audience actually opens first.
+  // Kept small (4) so the eye lands here and doesn't have to scan further.
+  // Each card shows its map (build-time art) and one real fact from the data.
+  const popular = [
+    {
+      href: "/bolig",
+      title: "Boligpriser",
+      description: facts.bolig
+        ? `Enebolig ${facts.bolig.year}: fra ${nb(facts.bolig.min.price)} til ${nb(facts.bolig.max.price)} kr/m².`
+        : "Kvadratmeterpris per kommune.",
+      icon: TrendingUp,
+      image: thumbBolig,
+    },
+    {
+      href: "/kommune",
+      title: "Stedsprofil",
+      description: facts.pop
+        ? `Fra ${facts.pop.min.name} (${nb(facts.pop.min.n)} innb.) til ${facts.pop.max.name} (${nb(facts.pop.max.n)}).`
+        : `Alle ${facts.kommuner} kommuner i ett blikk.`,
+      icon: MapPinned,
+      image: thumbSted,
+    },
+    {
+      href: "/valg",
+      title: "Valgkart",
+      description:
+        facts.valg.winners.length >= 3
+          ? `${facts.valg.winners[0].party} vant ${facts.valg.winners[0].count} kommuner, ${facts.valg.winners[1].party} ${facts.valg.winners[1].count}, ${facts.valg.winners[2].party} ${facts.valg.winners[2].count}.`
+          : `Stortingsvalget ${facts.valg.year} per kommune.`,
+      icon: Vote,
+      image: thumbValg,
+    },
+    {
+      href: "/energikart",
+      title: "Energikart",
+      description: `${nb(facts.plants)} kraftverk · ${nb(facts.totalMW)} MW installert.`,
+      icon: BatteryCharging,
+      image: thumbEnergi,
+    },
+  ];
+
   return (
     <div className="bg-background">
       {/* Hero section — note: no `overflow-hidden` here. The dropdown of
           HomeKommuneSearch needs to extend below the hero bottom edge,
           and the `<Image fill object-cover>` clips itself to its own box
           so the banner doesn't bleed. `isolate` + a high z-index pins
-          the hero's stacking context above the content that follows. */}
-      <section className="relative h-[75svh] min-h-[500px] isolate z-10">
-        <div className="absolute inset-0 overflow-hidden">
+          the hero's stacking context above the content that follows.
+          The brand word lives in the navbar; the H1 is the promise. */}
+      <section className="relative h-[75svh] min-h-[540px] isolate z-10">
+        <div className="absolute inset-0 overflow-hidden grain">
           <Image
             src="/img/banner_1920.webp"
             alt="Lofoten, Norge"
@@ -84,21 +117,22 @@ export default function Home() {
             priority
             className="object-cover object-[center_30%]"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+          {/* Scrim in brand-dark rather than black so the hero and the navbar read as one ink */}
+          <div className="absolute inset-0 bg-gradient-to-t from-[#0f1923]/85 via-[#0f1923]/30 to-transparent" />
         </div>
-        <div className="relative h-full flex flex-col justify-end px-6 md:px-16 pb-16 md:pb-24 max-w-5xl mx-auto">
+        <div className="relative h-full flex flex-col justify-end px-6 md:px-16 pb-12 md:pb-20 max-w-5xl mx-auto">
           <FadeIn>
-            <h1 className="text-display text-white drop-shadow-lg">
-              Datakart
+            <h1 className="text-white text-4xl sm:text-5xl md:text-6xl font-semibold tracking-tight leading-[1.05] text-balance max-w-3xl drop-shadow-lg">
+              {"Se Norge i\u00a0tall, kommune for kommune."}
             </h1>
           </FadeIn>
           <FadeIn delay={0.1}>
-            <p className="mt-4 text-white/90 text-lg md:text-2xl max-w-lg drop-shadow-md">
-              Utforsk Norge gjennom åpne geodata
+            <p className="mt-4 text-white/90 text-base md:text-xl max-w-xl drop-shadow-md text-pretty">
+              Boligpriser, høyde over havet, strøm, skoler og valgresultater – på kart bygget på åpne, offentlige data.
             </p>
           </FadeIn>
           <FadeIn delay={0.15}>
-            <div className="mt-8 flex flex-col sm:flex-row sm:items-center gap-3 w-full">
+            <div className="mt-7 flex flex-col sm:flex-row sm:items-center gap-3 w-full">
               <HomeKommuneSearch kommuner={kommuneSearchList} />
               <a
                 href="#utforsk"
@@ -109,19 +143,34 @@ export default function Home() {
               </a>
             </div>
           </FadeIn>
+          <FadeIn delay={0.2}>
+            {/* Each item carries its own leading separator and never wraps
+                internally, so a line break on phone can't strand a lone "·" */}
+            <p className="mt-5 text-xs sm:text-sm text-white/80 drop-shadow-md tabular-nums">
+              {[
+                `${nb(facts.kommuner)} kommuner`,
+                `${nb(facts.plants)} kraftverk`,
+                `${nb(facts.stations)} ladestasjoner`,
+                `${nb(facts.population)} innbyggere`,
+              ].map((item, i) => (
+                <span key={item} className="whitespace-nowrap">
+                  {i > 0 && <span aria-hidden="true"> · </span>}
+                  {item}
+                </span>
+              ))}
+            </p>
+          </FadeIn>
         </div>
       </section>
 
-      <div id="utforsk" className="relative container mx-auto px-6 md:px-16 py-16 md:py-24 max-w-5xl">
+      <div id="utforsk" className="relative container mx-auto px-6 md:px-16 py-14 md:py-20 max-w-5xl">
         {/* Mest populært — handpicked starting points */}
         <FadeIn>
-          <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-4">
-            Mest populært
-          </p>
+          <SectionHeading eyebrow="Mest populært" title="Kartene flest åpner først." />
         </FadeIn>
         {/* 2 cols until lg — at md the 4-col cards get too narrow for
             un-truncated text */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
           {popular.map((p, i) => (
             <FadeIn key={p.href} delay={i * 0.05}>
               <MinimalCard {...p} compact />
@@ -130,11 +179,9 @@ export default function Home() {
         </div>
 
         {/* Three category cards — full browse */}
-        <div className="mt-14">
+        <div className="mt-14 md:mt-20">
           <FadeIn>
-            <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-4">
-              Utforsk per kategori
-            </p>
+            <SectionHeading eyebrow="Utforsk etter tema" title="Samfunn, energi og natur – tre innganger til hele landet." />
           </FadeIn>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {categories.map((c, i) => (
@@ -147,7 +194,7 @@ export default function Home() {
 
         {/* About section */}
         <FadeInView className="mt-16 pt-12 border-t">
-          <h2 className="text-2xl font-extrabold tracking-tight" style={{ color: "var(--kv-blue)" }}>Om prosjektet</h2>
+          <h2 className="text-2xl md:text-3xl font-semibold tracking-tight" style={{ color: "var(--kv-blue)" }}>Om prosjektet</h2>
           <p className="mt-3 text-muted-foreground leading-relaxed max-w-2xl">
             Datakart er et prosjekt der jeg utforsker hva som er mulig med åpne norske geodata. Alle kartene er bygget
             utelukkende på gratis, offentlige datakilder, uten betalte API-er eller autentisering.

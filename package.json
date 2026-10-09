@@ -8,6 +8,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "thumbs": "node scripts/build-thumbs.mjs",
     "test": "vitest run"
   },
   "dependencies": {
