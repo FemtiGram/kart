@@ -20,7 +20,7 @@ A portfolio project showcasing Norwegian open geodata on interactive maps. Built
 
 ```
 src/app/
-  page.tsx              — Landing page: photo hero with the promise as H1 (the brand word lives in the navbar), a meta line of build-time numbers, two-column section headings (eyebrow left, one sentence right), "Mest populært" image cards + category cards. Every number comes from `src/lib/home-facts.ts` — never type a count into this page
+  page.tsx              — Landing page: no photo — a brand-blue gradient hero (`.hero-dusk` + `.grain`) with the promise as a big bold H1 (the brand word lives in the navbar), kommune search, and a meta line of build-time numbers; stacked section headings (eyebrow above one bold sentence, left-aligned with the cards); "Mest populært" image cards + category cards. Every number comes from `src/lib/home-facts.ts` — never type a count into this page
   not-found.tsx         — 404 page (Norwegian)
   lading/page.tsx       — Charging stations map
   hytter/page.tsx       — Tourist cabins map
@@ -439,8 +439,9 @@ Three-tier convention: `-light` for the background tint, base for icons/borders/
 - Card style: `bg-card rounded-2xl shadow-sm border px-4 py-4` (hover: `shadow-md`)
 - Modal style: `bg-background rounded-2xl shadow-xl border w-full max-w-sm p-5`
 - Floating pill: `bg-background/90 backdrop-blur-sm border rounded-full px-4 py-2 shadow-lg`
-- Grain: `.grain` (globals.css) adds a subtle SVG-noise texture in `::after` to a positioned container — used on the hero photo overlay. Keep it soft-light ≤ .35
-- Section heading on landing-style pages: eyebrow (`text-xs font-bold uppercase tracking-widest text-muted-foreground`) left, one real sentence right (`text-2xl md:text-3xl font-semibold tracking-tight`), `md:grid-cols-[minmax(150px,1fr)_3fr]`
+- Hero gradient: `.hero-dusk` (globals.css) — 160° linear gradient that starts in `--kv-blue` (so the navbar and the hero read as one surface) and lightens towards the bottom-right, plus two soft radial glows (steel blue, sand) in that corner. All hero text is white; every block must stay ≥ 4.5:1 against the gradient *including* the text's own opacity — the lightest corner (bottom-right, where the 12px meta line sits) is the spot that fails first, so re-measure if you move the glows or lighten the tail
+- Grain: `.grain` (globals.css) adds a subtle SVG-noise texture in `::after` to a positioned container — used on the landing hero gradient. Keep it soft-light ≤ .35
+- Section heading on landing-style pages: stacked and left-aligned with the cards below — eyebrow (`text-xs font-bold uppercase tracking-widest text-muted-foreground`), then one real sentence as the h2 (`mt-2 text-2xl md:text-3xl font-bold tracking-tight text-balance max-w-2xl`, brand blue). Not a two-column grid: with the eyebrow in its own column the sentence floated away from the content it introduced
 - Primary CTA button: `text-white rounded-xl` with `style={{ background: "var(--kv-blue)" }}`
 - Secondary button: `border bg-muted/50 hover:bg-muted rounded-xl`
 

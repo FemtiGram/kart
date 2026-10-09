@@ -1,4 +1,3 @@
-import Image from "next/image";
 import { ChevronDown, BatteryCharging, Mountain, MapPinned, TrendingUp, Vote, Database, Globe, Code } from "lucide-react";
 import { FadeIn, FadeInView } from "@/components/motion";
 import { HomeKommuneSearch } from "@/components/home-kommune-search";
@@ -31,12 +30,12 @@ const categories = [
   },
 ];
 
-/** Two-column section header: small eyebrow left, one real sentence right. */
+/** Section header: small eyebrow, then one real sentence, both aligned with the cards below. */
 function SectionHeading({ eyebrow, title }: { eyebrow: string; title: string }) {
   return (
-    <div className="grid gap-1.5 md:grid-cols-[minmax(150px,1fr)_3fr] md:gap-x-8 md:items-baseline mb-6 md:mb-8">
+    <div className="mb-6 md:mb-8">
       <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">{eyebrow}</p>
-      <h2 className="text-2xl md:text-3xl font-semibold tracking-tight text-balance" style={{ color: "var(--kv-blue)" }}>
+      <h2 className="mt-2 text-2xl md:text-3xl font-bold tracking-tight text-balance max-w-2xl" style={{ color: "var(--kv-blue)" }}>
         {title}
       </h2>
     </div>
@@ -102,37 +101,26 @@ export default function Home() {
 
   return (
     <div className="bg-background">
-      {/* Hero section — note: no `overflow-hidden` here. The dropdown of
-          HomeKommuneSearch needs to extend below the hero bottom edge,
-          and the `<Image fill object-cover>` clips itself to its own box
-          so the banner doesn't bleed. `isolate` + a high z-index pins
-          the hero's stacking context above the content that follows.
-          The brand word lives in the navbar; the H1 is the promise. */}
-      <section className="relative h-[75svh] min-h-[540px] isolate z-10">
-        <div className="absolute inset-0 overflow-hidden grain">
-          <Image
-            src="/img/banner_1920.webp"
-            alt="Lofoten, Norge"
-            fill
-            priority
-            className="object-cover object-[center_30%]"
-          />
-          {/* Scrim in brand-dark rather than black so the hero and the navbar read as one ink */}
-          <div className="absolute inset-0 bg-gradient-to-t from-[#0f1923]/85 via-[#0f1923]/30 to-transparent" />
-        </div>
-        <div className="relative h-full flex flex-col justify-end px-6 md:px-16 pb-12 md:pb-20 max-w-5xl mx-auto">
+      {/* Hero — no photo. A brand-blue "dusk" gradient (.hero-dusk: the navbar
+          colour at the top so bar and hero read as one surface) with paper
+          grain, and the promise as H1; the brand word lives in the navbar.
+          No `overflow-hidden` here: the HomeKommuneSearch dropdown must
+          extend below the hero. `isolate` + z-10 keep it above what follows. */}
+      <section className="relative isolate z-10 hero-dusk text-white">
+        <div className="absolute inset-0 -z-10 grain" aria-hidden="true" />
+        <div className="relative px-6 md:px-16 pt-14 pb-14 sm:pt-20 sm:pb-16 md:pt-28 md:pb-24 max-w-5xl mx-auto">
           <FadeIn>
-            <h1 className="text-white text-4xl sm:text-5xl md:text-6xl font-semibold tracking-tight leading-[1.05] text-balance max-w-3xl drop-shadow-lg">
+            <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-[84px] font-extrabold tracking-tight leading-[1.02] text-balance">
               {"Se Norge i\u00a0tall, kommune for kommune."}
             </h1>
           </FadeIn>
           <FadeIn delay={0.1}>
-            <p className="mt-4 text-white/90 text-base md:text-xl max-w-xl drop-shadow-md text-pretty">
+            <p className="mt-5 md:mt-7 text-white/90 text-lg md:text-2xl max-w-2xl text-pretty leading-snug">
               Boligpriser, høyde over havet, strøm, skoler og valgresultater – på kart bygget på åpne, offentlige data.
             </p>
           </FadeIn>
           <FadeIn delay={0.15}>
-            <div className="mt-7 flex flex-col sm:flex-row sm:items-center gap-3 w-full">
+            <div className="mt-8 flex flex-col sm:flex-row sm:items-center gap-3 w-full">
               <HomeKommuneSearch kommuner={kommuneSearchList} />
               <a
                 href="#utforsk"
@@ -147,7 +135,7 @@ export default function Home() {
             {/* Phone: a 2×2 grid (four items never fit one 390px line, and a
                 wrapped dot-separated line strands a "·"). From sm up: one
                 flex row with "·" separators; flex items can wrap safely. */}
-            <p className="mt-5 grid grid-cols-2 gap-x-4 gap-y-1 sm:flex sm:flex-wrap sm:gap-0 text-xs sm:text-sm text-white/80 drop-shadow-md tabular-nums">
+            <p className="mt-6 grid grid-cols-2 gap-x-4 gap-y-1 sm:flex sm:flex-wrap sm:gap-0 text-xs sm:text-sm text-white tabular-nums">
               {[
                 `${nb(facts.kommuner)} kommuner`,
                 `${nb(facts.plants)} kraftverk`,
@@ -155,7 +143,8 @@ export default function Home() {
                 `${nb(facts.population)} innbyggere`,
               ].map((item, i) => (
                 <span key={item} className="whitespace-nowrap">
-                  {i > 0 && <span aria-hidden="true" className="hidden sm:inline"> · </span>}
+                  {/* Padding, not spaces: a leading space collapses at the start of a flex item */}
+                  {i > 0 && <span aria-hidden="true" className="hidden sm:inline px-1.5">·</span>}
                   {item}
                 </span>
               ))}
@@ -195,7 +184,7 @@ export default function Home() {
 
         {/* About section */}
         <FadeInView className="mt-16 pt-12 border-t">
-          <h2 className="text-2xl md:text-3xl font-semibold tracking-tight" style={{ color: "var(--kv-blue)" }}>Om prosjektet</h2>
+          <h2 className="text-2xl md:text-3xl font-bold tracking-tight" style={{ color: "var(--kv-blue)" }}>Om prosjektet</h2>
           <p className="mt-3 text-muted-foreground leading-relaxed max-w-2xl">
             Datakart er et prosjekt der jeg utforsker hva som er mulig med åpne norske geodata. Alle kartene er bygget
             utelukkende på gratis, offentlige datakilder, uten betalte API-er eller autentisering.

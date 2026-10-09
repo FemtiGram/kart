@@ -251,6 +251,18 @@ html {
   animation: shimmer 1.2s ease-in-out infinite;
 }
 
+/* Hero surface — Datakart's take on the Papermorph "dusk": the navbar's
+   brand blue at the top (bar and hero read as one surface), deepening and
+   then lightening to steel blue at the bottom-right, with one warm sand
+   glow in that corner. The copy sits top/left where white text stays
+   ≥ 4.5:1; keep the light corner on the right. */
+.hero-dusk {
+  background:
+    radial-gradient(48% 58% at 100% 100%, rgba(234, 216, 190, 0.22), rgba(234, 216, 190, 0) 60%),
+    radial-gradient(50% 70% at 95% 40%, rgba(120, 160, 200, 0.32), rgba(120, 160, 200, 0) 65%),
+    linear-gradient(160deg, #24374c 0%, #22395a 38%, #37587c 72%, #40607e 100%);
+}
+
 /* Paper grain for gradient surfaces (one 220px tile of SVG fractal noise,
    ~0.6 KB, no request). Put the class on a positioned container; the grain
    lives in ::after, ignores pointer events and only textures what is
