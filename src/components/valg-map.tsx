@@ -7,7 +7,7 @@ import "leaflet/dist/leaflet.css";
 import type { GeoJsonObject, Feature } from "geojson";
 import type { Layer } from "leaflet";
 import Link from "next/link";
-import { Info, Map as MapIcon, ChevronUp, ExternalLink, ArrowRight, ArrowLeftRight } from "lucide-react";
+import { Info, Map as MapIcon, ChevronUp, ExternalLink, ArrowRight, ArrowLeftRight, History } from "lucide-react";
 import { kommuneSlug } from "@/lib/kommune-slug";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { MapSearchBar, type MapSearchBarHandle } from "@/components/map-search";
@@ -22,6 +22,7 @@ import type { Suggestion } from "@/lib/map-utils";
 
 import { partyFill, partyText } from "@/lib/party-colors";
 import { KV_BLUE } from "@/lib/brand-colors";
+import { ValgTimeline, type KommuneStyle } from "@/components/valg-timeline";
 
 interface PartyResult {
   kode: string;
@@ -92,6 +93,18 @@ export function ValgMap() {
   const layerRefs = useRef<Map<string, L.Path>>(new Map());
   const selectedKommuneRef = useRef<string | null>(null);
   const searchBarRef = useRef<MapSearchBarHandle>(null);
+
+  // Tidslinje (1945–2025). While open it owns the kommune colours: the page's
+  // style function asks it first, so a re-render (react-leaflet re-applies
+  // `style` on every render) repaints the timeline instead of wiping it.
+  const [showTimeline, setShowTimeline] = useState(false);
+  const [mapInstance, setMapInstance] = useState<L.Map | null>(null);
+  const showTimelineRef = useRef(false);
+  const timelineStyleRef = useRef<((knr: string) => KommuneStyle | null) | null>(null);
+  const timelineFocusRef = useRef<((knr: string | null) => void) | null>(null);
+  useEffect(() => { showTimelineRef.current = showTimeline; }, [showTimeline]);
+  // The header toggles with the timeline on mobile, resizing the map.
+  useEffect(() => { mapInstance?.invalidateSize(); }, [showTimeline, mapInstance]);
 
   const active = manifest.find((m) => `${m.type}-${m.year}` === activeKey) ?? null;
   const activeType = active?.type ?? "st";
@@ -243,6 +256,8 @@ export function ValgMap() {
 
   const geoStyle = (feature?: Feature) => {
     const nr = feature?.properties?.kommunenummer;
+    const override = timelineStyleRef.current?.(nr);
+    if (override) return { ...override, weight: 0.5, color: "white" };
     const entry = valgRef.current[nr];
     return {
       fillColor: entry ? partyFill(entry.vinner.kode) : "var(--kv-muted-fill)",
@@ -250,6 +265,20 @@ export function ValgMap() {
       color: "white",
       fillOpacity: entry ? 0.85 : 0.3,
     };
+  };
+
+  const applyTimelineStyle = useCallback((styler: ((knr: string) => KommuneStyle | null) | null) => {
+    timelineStyleRef.current = styler;
+    for (const [nr, layer] of layerRefs.current) {
+      layer.setStyle(geoStyle({ type: "Feature", geometry: null as never, properties: { kommunenummer: nr } }));
+    }
+    // geoStyle only reads refs, so this stays stable.
+  }, []);
+
+  const openTimeline = () => {
+    clearSelection();
+    setShowInfoSheet(false);
+    setShowTimeline(true);
   };
 
   const onEachFeature = (feature: Feature, layer: Layer) => {
@@ -264,18 +293,19 @@ export function ValgMap() {
           // Thick white halo — high contrast against any saturated party color.
           // Avoids the "border-mixes-with-fill" issue you'd get with a blue
           // hover ring on top of FRP dark blue or A red fills.
-          l.setStyle({ weight: 3, color: "white", fillOpacity: 0.85 });
+          l.setStyle({ weight: 3, color: "white" });
           l.bringToFront();
         }
+        if (showTimelineRef.current) timelineFocusRef.current?.(nr);
       },
       mouseout(e) {
         const l = e.target as L.Path;
-        if (nr !== selectedKommuneRef.current) {
-          const has = !!valgRef.current[nr];
-          l.setStyle({ weight: 0.5, color: "white", fillOpacity: has ? 0.85 : 0.3 });
-        }
+        if (nr !== selectedKommuneRef.current) l.setStyle(geoStyle(feature));
+        if (showTimelineRef.current) timelineFocusRef.current?.(null);
       },
       click() {
+        // In the timeline a tap shows that kommune's result in the panel.
+        if (showTimelineRef.current) { timelineFocusRef.current?.(nr); return; }
         if (handleCompareClick(nr, () => ({ kommunenummer: nr, kommunenavn: navn }))) return;
         highlightKommune(nr);
         setSelected({ kommunenummer: nr, kommunenavn: navn });
@@ -299,7 +329,9 @@ export function ValgMap() {
   return (
     <div className="flex flex-col" style={{ height: MAP_HEIGHT }}>
       {/* Search bar + selectors + freshness strip */}
-      <div className="relative z-[1000] px-4 py-4 md:px-8 shrink-0 bg-background border-b">
+      {/* Hidden on mobile during the timeline: the selectors don't apply
+          there, and the map needs the height. */}
+      <div className={`relative z-[1000] px-4 py-4 md:px-8 shrink-0 bg-background border-b ${showTimeline ? "hidden sm:block" : ""}`}>
         <div className="max-w-xl mx-auto relative flex flex-col gap-2">
           <MapSearchBar
             ref={searchBarRef}
@@ -385,6 +417,7 @@ export function ValgMap() {
 
         {!loading && !error && geoData && (
           <MapContainer
+            ref={setMapInstance}
             center={[65, 14]}
             zoom={5}
             style={{ height: "100%", width: "100%" }}
@@ -399,6 +432,25 @@ export function ValgMap() {
               onEachFeature={onEachFeature}
             />
           </MapContainer>
+        )}
+
+        {!loading && !error && !showTimeline && (
+          <button
+            onClick={openTimeline}
+            className="absolute top-[84px] left-[10px] sm:top-3 sm:left-14 z-[999] inline-flex items-center gap-1.5 rounded-lg border bg-card shadow-md px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-muted transition-colors"
+          >
+            <History className="h-3.5 w-3.5" />
+            Tidslinje
+          </button>
+        )}
+        {showTimeline && (
+          <ValgTimeline
+            map={mapInstance}
+            names={() => new Map(geoFeaturesRef.current.map((f) => [f.properties.kommunenummer, f.properties.navn]))}
+            onStyle={applyTimelineStyle}
+            focusRef={timelineFocusRef}
+            onClose={() => setShowTimeline(false)}
+          />
         )}
 
         {/* Compact card */}
@@ -734,7 +786,7 @@ export function ValgMap() {
         {/* Legend */}
         {!loading && partyCounts.length > 0 && (
           <div className="absolute top-3 right-3 z-[999] flex flex-col gap-2 items-end">
-            <div className="hidden sm:block bg-card rounded-xl shadow-md px-3 py-2.5" style={{ border: "1px solid var(--kv-muted-fill)" }}>
+            <div className={`${showTimeline ? "hidden" : "hidden sm:block"} bg-card rounded-xl shadow-md px-3 py-2.5`} style={{ border: "1px solid var(--kv-muted-fill)" }}>
               <p className="text-xs font-semibold text-foreground/70 mb-1.5">Største parti per kommune</p>
               <ul className="space-y-1">
                 {partyCounts.map(([kode, count]) => (

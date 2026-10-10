@@ -13,6 +13,9 @@ const PARTY_FILL: Record<string, string> = {
   MDG: "#608f3d",
   RØDT: "#8b1a1a",
   INP: "#ff7733",
+  // Historical (only in the 1945– timeline on /valg)
+  NKP: "#9f1239",
+  FELLES: "#a8a29e",
 };
 
 const PARTY_TEXT: Record<string, string> = {
@@ -26,6 +29,8 @@ const PARTY_TEXT: Record<string, string> = {
   MDG: "#3a5827",
   RØDT: "#7a1717",
   INP: "#a83400",
+  NKP: "#9f1239",
+  FELLES: "#57534e",
 };
 
 const FALLBACK_FILL = "#888888";
