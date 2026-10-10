@@ -1,12 +1,19 @@
+import { upstreamError } from "@/lib/upstream";
+
 export async function GET() {
-  const res = await fetch(
-    "https://data.ssb.no/api/pxwebapi/v2/tables/08936/data?lang=en&outputFormat=json-stat2&valuecodes[ContentsCode]=VernetAreal&valuecodes[Tid]=2024&valuecodes[Region]=*&codelist[Region]=agg_KommGjeldende&valuecodes[VerneOmrader]=*&heading=ContentsCode,Tid,VerneOmrader&stub=Region",
-    { next: { revalidate: 86400 } }
-  );
+  let data;
+  try {
+    const res = await fetch(
+      "https://data.ssb.no/api/pxwebapi/v2/tables/08936/data?lang=en&outputFormat=json-stat2&valuecodes[ContentsCode]=VernetAreal&valuecodes[Tid]=2024&valuecodes[Region]=*&codelist[Region]=agg_KommGjeldende&valuecodes[VerneOmrader]=*&heading=ContentsCode,Tid,VerneOmrader&stub=Region",
+      { next: { revalidate: 86400 }, signal: AbortSignal.timeout(8000) } // under Vercel's 10s route budget
+    );
 
-  if (!res.ok) return Response.json({ error: "SSB fetch failed" }, { status: res.status });
+    if (!res.ok) return Response.json({ error: "SSB fetch failed" }, { status: res.status });
 
-  const data = await res.json();
+    data = await res.json();
+  } catch (err) {
+    return upstreamError(err, "SSB");
+  }
 
   const regionIndex = data.dimension.Region.category.index as Record<string, number>;
   const verneIndex = data.dimension.VerneOmrader.category.index as Record<string, number>;

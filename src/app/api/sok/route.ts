@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+import { upstreamError } from "@/lib/upstream";
 
 /**
  * Proxy for Geonorge adresser API.
@@ -30,12 +31,18 @@ export async function GET(request: NextRequest) {
     return Response.json({ error: "Missing q or lat/lon" }, { status: 400 });
   }
 
-  const res = await fetch(upstream, { next: { revalidate: 3600 } });
-  if (!res.ok) {
-    return Response.json({ error: "Upstream error" }, { status: res.status });
+  let data;
+  try {
+    // Search-as-you-type: a short cap, since a newer keystroke usually
+    // supersedes this request anyway.
+    const res = await fetch(upstream, { next: { revalidate: 3600 }, signal: AbortSignal.timeout(4000) });
+    if (!res.ok) {
+      return Response.json({ error: "Upstream error" }, { status: res.status });
+    }
+    data = await res.json();
+  } catch (err) {
+    return upstreamError(err, "Geonorge");
   }
-
-  const data = await res.json();
   return Response.json(data, {
     headers: {
       "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=86400",

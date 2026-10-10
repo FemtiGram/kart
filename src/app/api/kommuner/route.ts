@@ -1,5 +1,6 @@
 import { readFileSync, existsSync } from "fs";
 import { join } from "path";
+import { upstreamError } from "@/lib/upstream";
 
 const STATIC_PATH = join(process.cwd(), "public", "data", "kommuner.geojson");
 const REMOTE_URL = "https://raw.githubusercontent.com/robhop/fylker-og-kommuner/main/Kommuner-M.geojson";
@@ -12,10 +13,13 @@ export async function GET() {
   }
 
   // Fallback to remote fetch if static file doesn't exist
-  const res = await fetch(REMOTE_URL);
-  if (!res.ok) {
-    return Response.json({ error: "GeoJSON fetch failed" }, { status: res.status });
+  try {
+    const res = await fetch(REMOTE_URL, { signal: AbortSignal.timeout(8000) });
+    if (!res.ok) {
+      return Response.json({ error: "GeoJSON fetch failed" }, { status: res.status });
+    }
+    return Response.json(await res.json());
+  } catch (err) {
+    return upstreamError(err, "GitHub");
   }
-  const data = await res.json();
-  return Response.json(data);
 }

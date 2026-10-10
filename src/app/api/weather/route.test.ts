@@ -41,6 +41,13 @@ describe("GET /api/weather", () => {
     expect((await metUrlFor("lat=59.9&lon=10.7&altitude=12000")).url.searchParams.has("altitude")).toBe(false);
   });
 
+  it("answers 504 with a JSON error when MET times out", async () => {
+    vi.stubGlobal("fetch", vi.fn(() => Promise.reject(new DOMException("timed out", "TimeoutError"))));
+    const res = await GET(new NextRequest("http://localhost/api/weather?lat=59.9&lon=10.7"));
+    expect(res.status).toBe(504);
+    expect((await res.json()).error).toBeTruthy();
+  });
+
   it("rejects requests without valid coordinates", async () => {
     const res = await GET(new NextRequest("http://localhost/api/weather?lat=abc&lon=10.7"));
     expect(res.status).toBe(400);

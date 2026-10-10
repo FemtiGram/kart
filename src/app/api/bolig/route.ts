@@ -22,6 +22,7 @@ async function fetchTable(table: string) {
       response: { format: "json-stat2" },
     }),
     next: { revalidate: 86400 },
+    signal: AbortSignal.timeout(8000),
   });
   if (!res.ok) return null;
   return res.json();
@@ -140,7 +141,10 @@ function buildResult(data: {
 }
 
 export async function GET() {
-  const tables = await Promise.all(TABLES.map(fetchTable));
+  // allSettled: a timeout or network error on one table must not discard the
+  // other — the merge below already skips a missing (null) table.
+  const settled = await Promise.allSettled(TABLES.map(fetchTable));
+  const tables = settled.map((s) => (s.status === "fulfilled" ? s.value : null));
   if (tables.every((t) => t === null)) {
     return Response.json({ error: "SSB fetch failed" }, { status: 502 });
   }

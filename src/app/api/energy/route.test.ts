@@ -137,6 +137,21 @@ describe("GET /api/energy", () => {
     expect(data.degradedSources).toContain("vann");
   });
 
+  it("degrades one source when its body is cut off mid-stream", async () => {
+    mockFetch({
+      // 200 OK headers, then a truncated body: allSettled can't see this one
+      "factmaps.sodir.no/api/rest/services/Factmaps/FactMapsWGS84/MapServer/307/": () =>
+        Promise.resolve(new Response('{"features":[{"attributes":')),
+    });
+    const res = await GET();
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data.plants).toHaveLength(2);
+    expect(data.oilGasFacilities).toEqual([]);
+    expect(data.pipelines).toHaveLength(1);
+    expect(data.degradedSources).toEqual(["sodir-anlegg"]);
+  });
+
   it("fails with 503 when no plant data is available at all", async () => {
     mockFetch({
       "Vindkraft2/MapServer/0/": timeout,

@@ -34,7 +34,7 @@ src/app/
   energikart/page.tsx   — Energy (wind + hydro) map. Renamed from /energi in May 2026; conditional 301 in next.config.ts preserves Stedsprofil deep links (?lat=&lon=&z=)
   magasin/page.tsx      — Reservoir monitor map
   prisvekst/page.tsx    — Inflation dashboard (KPI, categories, trends)
-  vindkraft/page.tsx    — Wind power plants map (unlisted deep link, not in nav/sitemap)
+  vindkraft/page.tsx    — Wind power plants map (unlisted deep link, not in nav/sitemap; `robots: noindex` with a self-canonical)
   kommune/page.tsx      — Kommuner index (searchable list grouped by fylke, keyboard nav)
   kommune/[slug]/page.tsx — Stedsprofil (dashboard per kommune, SSG at build time)
   kommune/[slug]/opengraph-image.tsx — Dynamic OG image per kommune
@@ -63,7 +63,7 @@ src/app/
 src/components/
   navbar.tsx            — Shared nav with grouped dropdowns (Energi/Natur/Samfunn) + mobile sheet
   *-map.tsx             — Map components (one per page)
-  *-map-loader.tsx      — Dynamic import wrappers (ssr: false), all include MapLoading skeleton
+  *-map-loader.tsx      — Dynamic import wrappers (ssr: false), all include MapLoading skeleton except kommune-mini-map-loader.tsx (plain `animate-pulse` div, 320px, for the inline Stedsprofil map)
   energy-detail-sheets.tsx — Extracted detail sheets for energy plant, oil/gas, and havvind
   energy-map-helpers.tsx — Shared energy map helpers, icon factories, and re-exports shared TILE_LAYERS/TileLayerKey
   health-detail-sheet.tsx — Extracted detail sheet + sub-components for /helse
@@ -73,7 +73,7 @@ src/components/
   inflation-dashboard.tsx — Prisvekst dashboard (Recharts charts, target badges, category breakdown)
   kommune-index.tsx     — Client component for /kommune index search + list (keyboard nav, Sami-aware)
   kommune-mini-map.tsx  — Interactive Leaflet map for Stedsprofil "Plassering" section (polygon + 6 layer pills)
-  kommune-mini-map-loader.tsx — Dynamic wrapper for kommune-mini-map (ssr: false)
+  kommune-mini-map-loader.tsx — Dynamic wrapper for kommune-mini-map (ssr: false); inline pulse-div placeholder, not MapLoading
   kommune-weather.tsx   — Client weather card for Stedsprofil (fetches /api/weather)
   schools-map.tsx       — /skoler map: schools + kindergartens with independent cluster toggles
   schools-map-loader.tsx — Dynamic wrapper for schools-map (ssr: false)
@@ -319,11 +319,12 @@ Not a map — a portrait of a place. One pre-rendered dashboard per kommune at `
 6. **Demografi** — three stacked-bar cards (Eierforhold / Boligtyper / Utdanningsnivå) with blue-gradient segments and a legend showing each category's exact percent. Not derived — reads straight from `profile.demografi` (SSB 14891 + 06265 + 09429). Mirrors the raw data the snapshot generator samples from, so the reader can see the full distribution, not just the surfaced outlier.
 7. **Skoler og barnehager** — 3 stat cards (Grunnskoler, Videregående, Barnehager) with totalStudents/totalChildren context. **Nasjonale prøver** sub-section (when data exists): 3 cards showing Grunnskolepoeng (with rank), Lesing %, Regning % for 8. trinn, plus an explanatory paragraph. ~337/357 kommuner have data; suppressed for small cohorts. Største skoler list with top 5. Deep-links to `/skoler?lat=&lon=&z=12`.
 8. **Helsetilbud** — Plain-language synthesis line (from `synthesizeHealth()`) + 3 stat cards (Ledig kapasitet, Uten fastlege, Pasienter per lege) with ranks, plus an "Utvikling siden 2018" delta. Deep-links to `/helse#kommune-<knr>`. Source: SSB 12005.
-9. **Natur og verneområder** — verne % + DNT/fjellhytter count. Deep-links to `/vern#kommune-<knr>`.
-10. **Energi** — installert MW, kraftverk count by type, magasiner, top 5 plants list. Deep-links to `/energi?lat=&lon=&z=10`.
-11. **Infrastruktur** — charging stations (total + ≥50 kW), cabins. Deep-links to `/lading?lat=&lon=&z=11`.
-12. **Vær akkurat nå** — client-fetched MET.no for the kommune centroid. Deep-links to `/map?lat=&lon=&z=12`.
-13. **Lignende kommuner** — 3 compact cards showing kommuner with the closest combined (population rank, income rank) distance using Manhattan on rank-space. Uses `findSimilar()` helper inline in `kommune/[slug]/page.tsx`. Each card links to that kommune's Stedsprofil — discovery feature for users to jump to comparable places.
+9. **Politikk** — two cards (Stortingsvalg / Kommunestyrevalg): winning party + %, top 3 parties with bars, frammøte. Hidden when the kommune has no election data. Deep-links to `/valg#kommune-<knr>`. Source: Valgdirektoratet.
+10. **Natur og verneområder** — verne % (km² + rank) + DNT/fjellhytter count. Deep-links to `/vern#kommune-<knr>`.
+11. **Energi** — installert MW, kraftverk count by type, magasiner, top 5 plants list. Deep-links to `/energikart?lat=&lon=&z=10`.
+12. **Infrastruktur** — charging stations (total + ≥50 kW), cabins. Deep-links to `/lading?lat=&lon=&z=11`.
+13. **Vær akkurat nå** — client-fetched MET.no for the kommune centroid. Deep-links to `/map?lat=&lon=&z=12`.
+14. **Lignende kommuner** — 3 compact cards showing kommuner with the closest combined (population rank, income rank) distance using Manhattan on rank-space. Uses `findSimilar()` helper inline in `kommune/[slug]/page.tsx`. Each card links to that kommune's Stedsprofil — discovery feature for users to jump to comparable places.
 
 ### Card pattern (different from the maps!)
 Stedsprofil cards are **vertically stacked** (value on top, label caption, context row). Intentionally distinct from the horizontal Z-pattern used on map compact cards:
@@ -490,6 +491,8 @@ Three-tier convention: `-light` for the background tint, base for icons/borders/
 - **Decide approach first**, then implement — avoid build-try-revert cycles
 - **Keep map components consistent** — refer to the patterns above before making changes
 - **Verification budget — scale checks to the change.** Copy, layout, card and CSS changes are verified inline: eslint + `tsc --noEmit` + vitest + one Playwright pass (screenshot or measurement across 320/360/390/1440px), no subagents. Multi-agent review workflows are reserved for data-pipeline, API-route and map-logic changes, and even then a few reviewers, never a skeptic panel per finding (an Oct 2026 review of a hero revert spent 36 agents to find one 320px overflow). Never re-verify what a deterministic check already proved, e.g. a byte-identical diff
+- **API route upstream failures** go through `upstreamError(err, source)` from `src/lib/upstream.ts`: timeout → 504, network/parse error → 502, always a JSON body (never Next's unhandled 500). Every upstream fetch has an `AbortSignal.timeout` below the route budget (interactive routes 4–5s, SSB 8s), and the body read sits inside the same try — a body cut off mid-stream throws there, not at fetch()
+- **Build-time fetch scripts must never fail the build on an upstream outage** and never overwrite good data with empty/partial data: keep the existing file and exit 0 (exit 1 only when nothing exists yet). Sanity-check counts before writing (fetch-valg ≥ 340 kommuner, fetch-finn ≥ 95% matched, profiles need wind + hydro plants), and write multi-file outputs together at the end
 - **Vercel serverless timeout: 10s by default, but raisable** — `export const maxDuration = 30` per route (Hobby allows up to 60s). `/api/energy` uses this. Still: keep per-upstream `AbortSignal.timeout` well below the route budget so one slow source can't eat it (Aug 2026 Sodir outage truncated responses mid-stream), and fetch multi-source routes with `Promise.allSettled`, never `Promise.all`
 
 ## Model Selection (Opus vs Sonnet)
