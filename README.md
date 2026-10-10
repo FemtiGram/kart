@@ -78,6 +78,10 @@ Open [http://localhost:3000](http://localhost:3000).
 
 The seed scripts are also run automatically as a `prebuild` hook when deploying. If Overpass is unreachable, the existing files in `public/data/` are kept.
 
+### Analytics reports
+
+`scripts/analytics.mjs` prints read-only Google Analytics 4 and Search Console reports (`overview`, `pages`, `sources`, `hosts`, `queries`, `gsc-pages`, `query-pages /valg`). It authenticates with a service account whose JSON key lives outside the repo; set `GOOGLE_SERVICE_ACCOUNT_KEY`, `GA_PROPERTY_ID` and `GSC_SITE` in `.env.local`. The GA tag only loads when `VERCEL_ENV === "production"`, so localhost and preview visits are not counted.
+
 ---
 
 ## Data Sources
