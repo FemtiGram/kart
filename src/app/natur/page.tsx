@@ -60,11 +60,11 @@ const collectionJsonLd = {
   description:
     "Samling av interaktive kart over norsk natur: høydedata, fjellhytter og verneområder.",
   inLanguage: "no",
-  url: "https://datakart.no/natur",
+  url: "https://www.datakart.no/natur",
   hasPart: maps.map((m) => ({
     "@type": "WebPage",
     name: m.title,
-    url: `https://datakart.no${m.href}`,
+    url: `https://www.datakart.no${m.href}`,
     description: m.description,
   })),
 };

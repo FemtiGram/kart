@@ -99,11 +99,11 @@ const collectionJsonLd = {
   description:
     "Samling av interaktive kart over norsk samfunn: boligpriser, inntekt, helse, skoler, valgresultater, kostnader, prisvekst og 357 stedsprofiler.",
   inLanguage: "no",
-  url: "https://datakart.no/samfunn",
+  url: "https://www.datakart.no/samfunn",
   hasPart: [featured, ...maps].map((m) => ({
     "@type": "WebPage",
     name: m.title,
-    url: `https://datakart.no${m.href}`,
+    url: `https://www.datakart.no${m.href}`,
     description: m.description,
   })),
 };

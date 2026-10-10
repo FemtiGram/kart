@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+import { upstreamError } from "@/lib/upstream";
 
 export async function GET(request: NextRequest) {
   const lat = parseFloat(request.nextUrl.searchParams.get("lat") ?? "");
@@ -18,21 +19,27 @@ export async function GET(request: NextRequest) {
     params.set("altitude", String(Math.round(altitude)));
   }
 
-  const res = await fetch(
-    `https://api.met.no/weatherapi/locationforecast/2.0/compact?${params}`,
-    {
-      headers: {
-        "User-Agent": "KartverketExplorer/1.0 github.com/FemtiGram/kart",
-      },
-      next: { revalidate: 1800 }, // cache 30 min
+  let data;
+  try {
+    const res = await fetch(
+      `https://api.met.no/weatherapi/locationforecast/2.0/compact?${params}`,
+      {
+        headers: {
+          "User-Agent": "KartverketExplorer/1.0 github.com/FemtiGram/kart",
+        },
+        next: { revalidate: 1800 }, // cache 30 min
+        signal: AbortSignal.timeout(5000), // the user just clicked and is waiting
+      }
+    );
+
+    if (!res.ok) {
+      return Response.json({ error: "Weather fetch failed" }, { status: res.status });
     }
-  );
 
-  if (!res.ok) {
-    return Response.json({ error: "Weather fetch failed" }, { status: res.status });
+    data = await res.json();
+  } catch (err) {
+    return upstreamError(err, "MET");
   }
-
-  const data = await res.json();
   const current = data.properties.timeseries[0];
   const details = current.data.instant.details;
   const next = current.data.next_1_hours ?? current.data.next_6_hours;

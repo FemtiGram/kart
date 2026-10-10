@@ -9,7 +9,7 @@ export const metadata = {
 const sources = [
   {
     name: "Kartverket",
-    description: "Karttjenester (WMTS), adressesok, hoydedata, kommunegrenser og stedsnavn.",
+    description: "Karttjenester (WMTS), adressesøk, høydedata, eiendomsgrenser fra matrikkelen, kommunegrenser og stedsnavn.",
     license: "CC BY 4.0",
     licenseUrl: "https://creativecommons.org/licenses/by/4.0/",
     attribution: "\u00a9 Kartverket",
@@ -27,7 +27,7 @@ const sources = [
   },
   {
     name: "Sokkeldirektoratet (Sodir)",
-    description: "Olje- og gassanlegg, plattformer, undervannsinstallasjoner og rorledninger pa norsk sokkel.",
+    description: "Olje- og gassanlegg, plattformer, undervannsinstallasjoner og rørledninger på norsk sokkel.",
     license: "NLOD 2.0",
     licenseUrl: "https://data.norge.no/nlod/no/2.0",
     attribution: "Inneholder data under norsk lisens for offentlige data (NLOD) tilgjengeliggjort av Sodir",
@@ -35,22 +35,22 @@ const sources = [
     usedIn: ["Energikart"],
   },
   {
-    name: "Statistisk sentralbyra (SSB)",
-    description: "Inntektsstatistikk, befolkningsstatistikk, boligpriser (tabell 06035 og 14545), fastlegedata (tabell 12005), kommunale gebyrer (tabell 12842), eiendomsskatt (tabell 14674), eierstatus (tabell 14891), boligtyper (tabell 06265), utdanningsnivå (tabell 09429), konsumprisindeks og arealstatistikk for verneomrader.",
+    name: "Statistisk sentralbyrå (SSB)",
+    description: "Inntektsstatistikk, befolkningsstatistikk, boligpriser (tabell 06035 og 14545), fastlegedata (tabell 12005), kommunale gebyrer (tabell 12842), eiendomsskatt (tabell 14674), eierstatus (tabell 14891), boligtyper (tabell 06265), utdanningsnivå (tabell 09429), nasjonale prøver (tabell 12255), konsumprisindeks og arealstatistikk for verneområder.",
     license: "CC BY 4.0",
     licenseUrl: "https://creativecommons.org/licenses/by/4.0/",
-    attribution: "\u00a9 Statistisk sentralbyra (SSB)",
+    attribution: "\u00a9 Statistisk sentralbyrå (SSB)",
     url: "https://www.ssb.no",
-    usedIn: ["Inntektskart", "Verneomrader", "Boligkart", "Prisvekst", "Helsetilbud", "Kostnader", "Stedsprofil"],
+    usedIn: ["Inntektskart", "Verneområder", "Boligkart", "Prisvekst", "Helsetilbud", "Kostnader", "Stedsprofil"],
   },
   {
     name: "Meteorologisk institutt (MET)",
-    description: "Vardata og varsel via Locationforecast API.",
+    description: "Værdata og varsel via Locationforecast API.",
     license: "CC BY 4.0",
     licenseUrl: "https://creativecommons.org/licenses/by/4.0/",
     attribution: "\u00a9 MET Norway",
     url: "https://api.met.no",
-    usedIn: ["Hoydekart", "Turisthytter", "Stedsprofil"],
+    usedIn: ["Høydekart", "Turisthytter", "Stedsprofil"],
   },
   {
     name: "NOBIL / Enova",
@@ -77,7 +77,7 @@ const sources = [
     licenseUrl: "https://creativecommons.org/licenses/by-sa/3.0/",
     attribution: "\u00a9 OpenTopoMap",
     url: "https://opentopomap.org",
-    usedIn: ["Hoydekart"],
+    usedIn: ["Høydekart"],
   },
   {
     name: "Terrain Tiles (Mapzen, AWS Open Data)",
@@ -90,7 +90,7 @@ const sources = [
   },
   {
     name: "Geonorge",
-    description: "Adressesok og kommuneinformasjon via offentlige APIer.",
+    description: "Adressesøk og kommuneinformasjon via offentlige API-er.",
     license: "CC BY 4.0",
     licenseUrl: "https://creativecommons.org/licenses/by/4.0/",
     attribution: "\u00a9 Kartverket / Geonorge",
@@ -108,7 +108,7 @@ const sources = [
   },
   {
     name: "Norges Bank",
-    description: "Styringsrenten (policy rate) brukt som referanse mot inflasjonsmalet pa 2 prosent.",
+    description: "Styringsrenten (policy rate) brukt som referanse mot inflasjonsmålet på 2 prosent.",
     license: "CC BY 4.0",
     licenseUrl: "https://creativecommons.org/licenses/by/4.0/",
     attribution: "\u00a9 Norges Bank",
@@ -126,7 +126,7 @@ const sources = [
   },
   {
     name: "Valgdirektoratet",
-    description: "Offisielle valgresultater for Stortingsvalg og kommunestyrevalg, fordelt p\u00e5 kommune. Inneholder vinnerparti, stemmefordeling, framm\u00f8te og endring fra forrige valg.",
+    description: "Offisielle valgresultater for stortingsvalg og kommunestyrevalg, fordelt p\u00e5 kommune. Inneholder vinnerparti, stemmefordeling, framm\u00f8te og endring fra forrige valg.",
     license: "NLOD 2.0",
     licenseUrl: "https://data.norge.no/nlod/no/2.0",
     attribution: "Inneholder data under norsk lisens for offentlige data (NLOD) tilgjengeliggjort av Valgdirektoratet",
@@ -140,7 +140,7 @@ const jsonLd = {
   "@type": "DataCatalog",
   name: "Datakilder brukt i Datakart",
   description: "Oversikt over alle offentlige datakilder, lisenser og attribusjon brukt i Datakart.",
-  url: "https://datakart.no/kilder",
+  url: "https://www.datakart.no/kilder",
   dataset: sources.map((s) => ({
     "@type": "Dataset",
     name: s.name,
@@ -155,12 +155,12 @@ export default function KilderPage() {
     <div className="min-h-[calc(100svh-57px)] bg-background">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <div className="container mx-auto px-6 md:px-16 py-12 md:py-20 max-w-3xl">
-        <h1 className="text-headline" style={{ color: "#24374c" }}>
+        <h1 className="text-headline" style={{ color: "var(--kv-blue)" }}>
           Datakilder og lisenser
         </h1>
         <p className="mt-3 text-muted-foreground text-base max-w-xl">
-          Datakart er bygget utelukkende pa fritt tilgjengelige, offentlige data. Ingen betalte API-er,
-          ingen autentisering. Her er en oversikt over alle datakilder og deres lisenser.
+          Datakart er bygget utelukkende på fritt tilgjengelige, offentlige data. Ingen betalte API-er.
+          Her er en oversikt over alle datakilder og deres lisenser.
         </p>
 
         <div className="mt-10 flex flex-col gap-6">
@@ -221,26 +221,26 @@ export default function KilderPage() {
         </div>
 
         <div className="mt-12 pt-8 border-t">
-          <h2 className="font-bold text-base" style={{ color: "#24374c" }}>Om lisensene</h2>
+          <h2 className="font-bold text-base" style={{ color: "var(--kv-blue)" }}>Om lisensene</h2>
           <div className="mt-4 flex flex-col gap-4 text-sm text-muted-foreground">
             <div>
               <p className="font-semibold text-foreground">NLOD 2.0 (Norsk lisens for offentlige data)</p>
               <p className="mt-1 leading-relaxed">
                 Norges standardlisens for offentlige data. Tillater fri bruk, inkludert kommersiell,
-                sa lenge kilden krediteres. Kompatibel med CC BY 4.0.
+                så lenge kilden krediteres. Kompatibel med CC BY 4.0.
               </p>
             </div>
             <div>
               <p className="font-semibold text-foreground">CC BY 4.0 (Creative Commons Attribution)</p>
               <p className="mt-1 leading-relaxed">
-                Tillater kopiering, redistribusjon og bearbeidelse for ethvert formal, inkludert kommersiell bruk,
-                sa lenge opphavspersonen krediteres.
+                Tillater kopiering, redistribusjon og bearbeidelse for ethvert formål, inkludert kommersiell bruk,
+                så lenge opphavspersonen krediteres.
               </p>
             </div>
             <div>
               <p className="font-semibold text-foreground">ODbL 1.0 (Open Database License)</p>
               <p className="mt-1 leading-relaxed">
-                Tillater fri bruk av databasen, inkludert kommersiell. Avledede databaser ma
+                Tillater fri bruk av databasen, inkludert kommersiell. Avledede databaser må
                 tilgjengeliggjores under ODbL. Produserte verk (som kart og applikasjoner) er unntatt
                 fra delingsplikt.
               </p>

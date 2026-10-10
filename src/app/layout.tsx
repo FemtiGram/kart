@@ -55,7 +55,7 @@ export const metadata: Metadata = {
     template: "%s — Datakart",
   },
   description: "Utforsk Norge gjennom åpne geodata. Boligpriser, energikart, prisvekst, ladestasjoner, inntekt, hytter og verneområder på interaktive kart.",
-  metadataBase: new URL("https://datakart.no"),
+  metadataBase: new URL("https://www.datakart.no"),
   alternates: {
     canonical: "/",
   },
@@ -73,7 +73,7 @@ const jsonLd = {
   "@context": "https://schema.org",
   "@type": "WebSite",
   name: "Datakart",
-  url: "https://datakart.no",
+  url: "https://www.datakart.no",
   description: "Utforsk Norge gjennom åpne geodata. Boligpriser, energikart, prisvekst, ladestasjoner, inntekt, hytter og verneområder.",
   inLanguage: "nb",
   author: {

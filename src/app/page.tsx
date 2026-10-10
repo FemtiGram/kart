@@ -190,13 +190,13 @@ export default function Home() {
           <h2 className="text-2xl md:text-3xl font-bold tracking-tight" style={{ color: "var(--kv-blue)" }}>Om prosjektet</h2>
           <p className="mt-3 text-muted-foreground leading-relaxed max-w-2xl">
             Datakart er et prosjekt der jeg utforsker hva som er mulig med åpne norske geodata. Alle kartene er bygget
-            utelukkende på gratis, offentlige datakilder, uten betalte API-er eller autentisering.
+            utelukkende på gratis, offentlige datakilder, uten betalte API-er.
           </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-8">
             {[
-              { icon: Database, label: "12 datakilder", desc: "SSB, NVE, Kartverket, Geonorge, MET.no, Sodir, UDIR, NOBIL, Norges Bank, Eurostat, OpenStreetMap og Finn.no" },
-              { icon: Globe, label: "14 interaktive visualiseringer", desc: "Kart og dashboards for bolig, skoler, helse, energi, natur, inntekt, kostnader, valg og mer — pluss detaljerte kommuneprofiler" },
+              { icon: Database, label: "13 datakilder", desc: "SSB, NVE, Kartverket, Geonorge, MET.no, Sodir, UDIR, NOBIL, Valgdirektoratet, Norges Bank, Eurostat, OpenStreetMap og OpenTopoMap" },
+              { icon: Globe, label: "14 interaktive visualiseringer", desc: "Kart og dashboards for bolig, tomtegrenser, skoler, helse, energi, natur, inntekt, kostnader, valg og mer, pluss detaljerte kommuneprofiler" },
               { icon: Code, label: "Åpen kildekode", desc: "Next.js, React, Leaflet og Tailwind. Hostet på Vercel." },
             ].map((item, i) => (
               <FadeInView key={item.label} delay={i * 0.1}>

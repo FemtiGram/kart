@@ -6,6 +6,6 @@ export default function robots(): MetadataRoute.Robots {
       userAgent: "*",
       allow: "/",
     },
-    sitemap: "https://datakart.no/sitemap.xml",
+    sitemap: "https://www.datakart.no/sitemap.xml",
   };
 }

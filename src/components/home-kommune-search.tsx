@@ -132,7 +132,7 @@ export function HomeKommuneSearch({
           spellCheck={false}
           enterKeyHint="search"
           aria-label="Søk etter kommune"
-          className="w-full h-12 pl-11 pr-4 rounded-full bg-white/95 backdrop-blur-sm border border-white/20 text-foreground text-[16px] sm:text-base placeholder:text-foreground/50 shadow-xl focus:outline-none focus:ring-2 focus:ring-white/40 transition-shadow"
+          className="w-full h-12 pl-11 pr-4 rounded-full bg-white/95 backdrop-blur-sm border border-white/20 text-foreground text-[16px] sm:text-base placeholder:text-muted-foreground shadow-xl focus:outline-none focus:ring-2 focus:ring-white/40 transition-shadow"
         />
       </div>
 
@@ -159,7 +159,7 @@ export function HomeKommuneSearch({
                     {k.displayName}
                   </p>
                   {k.fylke && (
-                    <p className="text-xs text-foreground/60 truncate">
+                    <p className="text-xs text-muted-foreground truncate">
                       {k.fylke}
                     </p>
                   )}

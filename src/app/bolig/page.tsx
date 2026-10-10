@@ -79,7 +79,7 @@ export default function BoligPage() {
             />
           </Link>
 
-          <h2 className="text-2xl font-extrabold tracking-tight mb-6" style={{ color: "#24374c" }}>
+          <h2 className="text-2xl font-extrabold tracking-tight mb-6" style={{ color: "var(--kv-blue)" }}>
             Ofte stilte spørsmål om boligpriser
           </h2>
           <Accordion>

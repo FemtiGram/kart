@@ -137,10 +137,22 @@ async function main() {
     }
   }
 
+  // If Finn changes its markup the regex quietly matches little or nothing;
+  // never let that overwrite a good mapping (it has covered 356/357).
+  const matched = Object.keys(mapping).length;
+  const minMatched = Math.floor(geo.features.length * 0.95);
+  if (matched < minMatched) {
+    console.error(`  ✗ Only ${matched}/${geo.features.length} kommuner matched (need ≥ ${minMatched}) — Finn's page format may have changed`);
+    if (existsSync(OUT_PATH)) {
+      console.log("  → Keeping existing finn-locations.json");
+      return;
+    }
+    process.exit(1);
+  }
+
   writeFileSync(OUT_PATH, JSON.stringify(mapping));
 
   const elapsed = ((Date.now() - start) / 1000).toFixed(1);
-  const matched = Object.keys(mapping).length;
   console.log(
     `  ✓ Matched ${matched}/${geo.features.length} kommuner → ${OUT_PATH} [${elapsed}s]`
   );

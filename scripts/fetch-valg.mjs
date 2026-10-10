@@ -23,9 +23,12 @@ const ELECTIONS = [
 
 const OUT_DIR = path.join(process.cwd(), "public/data/valg");
 const CONCURRENCY = 8;
+// Every election covers ~356–357 kommuner; far fewer means the API answered
+// with partial data, which must not replace a good file.
+const MIN_KOMMUNER = 340;
 
 async function fetchJson(url) {
-  const res = await fetch(url, { headers: { Accept: "application/json" } });
+  const res = await fetch(url, { headers: { Accept: "application/json" }, signal: AbortSignal.timeout(30000) });
   if (!res.ok) throw new Error(`${url}: HTTP ${res.status}`);
   return res.json();
 }
@@ -205,9 +208,19 @@ async function main() {
   await fs.mkdir(OUT_DIR, { recursive: true });
   const remap = await buildRemap();
 
-  const manifest = [];
+  // Fetch everything first and write only when every election succeeded, so
+  // a mid-run failure can't leave fresh and stale files side by side.
+  const results = [];
   for (const e of ELECTIONS) {
     const result = await fetchOne(e, remap);
+    if (result.meta.kommuner < MIN_KOMMUNER) {
+      throw new Error(`${e.type}-${e.year}: only ${result.meta.kommuner} kommuner (expected ≥ ${MIN_KOMMUNER})`);
+    }
+    results.push({ e, result });
+  }
+
+  const manifest = [];
+  for (const { e, result } of results) {
     const filename = `${e.type}-${e.year}.json`;
     await fs.writeFile(path.join(OUT_DIR, filename), JSON.stringify(result, null, 0));
     manifest.push({
@@ -224,7 +237,15 @@ async function main() {
   console.log(`\nWrote manifest with ${manifest.length} elections.`);
 }
 
-main().catch((err) => {
+main().catch(async (err) => {
   console.error("fetch-valg failed:", err.message);
+  // Like the other fetch scripts: an upstream outage keeps the committed data
+  // instead of failing the whole build. Only a first run with nothing on disk
+  // is fatal.
+  const hasExisting = await fs.access(path.join(OUT_DIR, "index.json")).then(() => true, () => false);
+  if (hasExisting) {
+    console.warn("  → Keeping existing public/data/valg/*.json");
+    process.exit(0);
+  }
   process.exit(1);
 });

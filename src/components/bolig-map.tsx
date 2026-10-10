@@ -22,6 +22,7 @@ import { MapLoading } from "@/components/map-loading";
 import { SelectedHalo } from "@/components/selected-halo";
 import { BarSparkline } from "@/components/bar-sparkline";
 import { useHashSelection } from "@/lib/use-hash-selection";
+import { KV_BLUE } from "@/lib/brand-colors";
 
 // ─── Types ──────────────────────────────────────────────────
 interface BoligEntry {
@@ -107,7 +108,7 @@ function bubbleIcon(price: number | null, count: number | null, sorted: number[]
   if (cached) return cached;
 
   const color = priceColor(t);
-  const border = isSelected ? "2.5px solid #24374c" : "1.5px solid rgba(255,255,255,0.6)";
+  const border = isSelected ? `2.5px solid ${KV_BLUE}` : "1.5px solid rgba(255,255,255,0.6)";
   const shadow = isSelected ? "0 0 0 2px rgba(36,55,76,0.3), 0 2px 6px rgba(0,0,0,0.2)" : "0 1px 4px rgba(0,0,0,0.2)";
 
   const icon = L.divIcon({
@@ -483,7 +484,7 @@ export function BoligMap() {
                   fillColor: t >= 0 ? priceColor(t) : "var(--kv-muted-fill)",
                   fillOpacity: t >= 0 ? 0.7 : 0.15,
                   weight: selected?.kommunenummer === nr ? 2.5 : 0.5,
-                  color: selected?.kommunenummer === nr ? "#24374c" : "white",
+                  color: selected?.kommunenummer === nr ? KV_BLUE : "white",
                 };
               }}
               onEachFeature={(feature: Feature, layer: Layer) => {
@@ -500,7 +501,7 @@ export function BoligMap() {
                   mouseover(e) {
                     const l = e.target as L.Path;
                     if (nr !== selectedRef.current?.kommunenummer) {
-                      l.setStyle({ weight: 1.5, color: "#24374c", fillOpacity: 0.9 });
+                      l.setStyle({ weight: 1.5, color: KV_BLUE, fillOpacity: 0.9 });
                       l.bringToFront();
                     }
                   },

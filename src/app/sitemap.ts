@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
 import { getAllKommuner } from "@/lib/kommune-profiles";
 
-const BASE = "https://datakart.no";
+const BASE = "https://www.datakart.no";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const pages = [

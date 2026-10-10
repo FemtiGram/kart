@@ -978,13 +978,19 @@ async function fetchEnergyPlants() {
   const [windRes, hydroRes] = await Promise.all([
     fetch(`${NVE}/Vindkraft2/MapServer/0/${QUERY}`, {
       headers: { "User-Agent": "Datakart/1.0 github.com/FemtiGram/kart" },
+      signal: AbortSignal.timeout(30000),
     }),
     fetch(`${NVE}/Vannkraft1/MapServer/0/${QUERY}`, {
       headers: { "User-Agent": "Datakart/1.0 github.com/FemtiGram/kart" },
+      signal: AbortSignal.timeout(30000),
     }),
   ]);
+  // An error status used to be skipped silently, writing 0 plants into every
+  // profile. Throw instead, so main()'s catch keeps the existing profiles.
+  if (!windRes.ok) throw new Error(`NVE wind: HTTP ${windRes.status}`);
+  if (!hydroRes.ok) throw new Error(`NVE hydro: HTTP ${hydroRes.status}`);
   const plants = [];
-  if (windRes.ok) {
+  {
     const data = await windRes.json();
     for (const f of data.features ?? []) {
       if (!f.geometry?.x || !f.geometry?.y) continue;
@@ -1001,7 +1007,7 @@ async function fetchEnergyPlants() {
       });
     }
   }
-  if (hydroRes.ok) {
+  {
     const data = await hydroRes.json();
     for (const f of data.features ?? []) {
       if (!f.geometry?.x || !f.geometry?.y) continue;
@@ -1018,7 +1024,14 @@ async function fetchEnergyPlants() {
       });
     }
   }
-  console.log(`    → ${plants.length} plants`);
+  const windCount = plants.filter((p) => p.type === "vind").length;
+  const hydroCount = plants.length - windCount;
+  // A 200 with an empty layer (ArcGIS does this during maintenance) is just
+  // as wrong as an error: Norway has dozens of wind farms and >1000 hydro plants.
+  if (windCount === 0 || hydroCount === 0) {
+    throw new Error(`NVE returned ${windCount} wind / ${hydroCount} hydro plants — refusing partial data`);
+  }
+  console.log(`    → ${plants.length} plants (${windCount} vind, ${hydroCount} vann)`);
   return plants;
 }
 
@@ -1694,11 +1707,6 @@ async function main() {
         .filter(([, entry]) => Object.keys(entry.latest).length > 0)
     ),
   };
-  writeFileSync(FASTLEGE_OUT_PATH, JSON.stringify(fastlegeOut));
-  const fastlegeKb = (Buffer.byteLength(JSON.stringify(fastlegeOut)) / 1024).toFixed(0);
-  console.log(
-    `  ✓ ${Object.keys(fastlegeOut.kommuner).length} fastlege rows (${fastlegeKb} KB) → ${FASTLEGE_OUT_PATH}`
-  );
 
   // Write public/data/kostnader.json — flat cost-of-living dataset consumed
   // by the /kostnader choropleth. Mirrors fastlege.json's structure: a
@@ -1771,11 +1779,6 @@ async function main() {
         .filter(([, entry]) => Object.keys(entry.latest).length > 0 || entry.hasEiendomsskatt === false)
     ),
   };
-  writeFileSync(KOSTNADER_OUT_PATH, JSON.stringify(kostnaderOut));
-  const kostnaderKb = (Buffer.byteLength(JSON.stringify(kostnaderOut)) / 1024).toFixed(0);
-  console.log(
-    `  ✓ ${Object.keys(kostnaderOut.kommuner).length} kostnader rows (${kostnaderKb} KB) → ${KOSTNADER_OUT_PATH}`
-  );
 
   // Write
   const output = {
@@ -1789,6 +1792,18 @@ async function main() {
     },
     profiles,
   };
+  // All three files are written together, only after everything above is
+  // computed, so a crash can never leave them out of sync with each other.
+  writeFileSync(FASTLEGE_OUT_PATH, JSON.stringify(fastlegeOut));
+  const fastlegeKb = (Buffer.byteLength(JSON.stringify(fastlegeOut)) / 1024).toFixed(0);
+  console.log(
+    `  ✓ ${Object.keys(fastlegeOut.kommuner).length} fastlege rows (${fastlegeKb} KB) → ${FASTLEGE_OUT_PATH}`
+  );
+  writeFileSync(KOSTNADER_OUT_PATH, JSON.stringify(kostnaderOut));
+  const kostnaderKb = (Buffer.byteLength(JSON.stringify(kostnaderOut)) / 1024).toFixed(0);
+  console.log(
+    `  ✓ ${Object.keys(kostnaderOut.kommuner).length} kostnader rows (${kostnaderKb} KB) → ${KOSTNADER_OUT_PATH}`
+  );
   writeFileSync(OUT_PATH, JSON.stringify(output));
 
   const sizeKB = (Buffer.byteLength(JSON.stringify(output)) / 1024).toFixed(0);

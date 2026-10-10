@@ -81,6 +81,20 @@ interface HavvindZone {
   polygon: [number, number][][];
 }
 
+// A source's parsed body, or null — never a rejection. A failed read is
+// added to `degraded` so the client can say which layer is missing.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function safeJson(res: Response | null, source: string | undefined, degraded: string[]): Promise<any> {
+  if (!res?.ok) return null; // already counted as degraded
+  try {
+    return await res.json();
+  } catch (err) {
+    console.warn(`[energy] ${source} body failed:`, err);
+    if (source && !degraded.includes(source)) degraded.push(source);
+    return null;
+  }
+}
+
 export async function GET() {
   try {
     // Fetch wind (4 layers), hydro, and turbines in parallel.
@@ -143,6 +157,16 @@ export async function GET() {
       return r.status === "rejected" || !r.value.ok;
     });
 
+    // Read every body up front, each guarded on its own: allSettled above only
+    // covers the headers, and a body cut off mid-stream (the Aug 2026 Sodir
+    // outage) or a non-JSON 200 must degrade that one source, not the route.
+    const [windData, windConstructionData, windApprovedData, windRejectedData, hydroData, turbineData, havvindData, sodirData, pipelineData] =
+      await Promise.all(
+        [windRes, windConstructionRes, windApprovedRes, windRejectedRes, hydroRes, turbineRes, havvindRes, sodirRes, pipelineRes].map((res, i) =>
+          safeJson(res, SOURCE_NAMES[i], degradedSources)
+        )
+      );
+
     const plants: EnergyPlant[] = [];
     const turbines: WindTurbine[] = [];
 
@@ -165,19 +189,19 @@ export async function GET() {
           type: "vind",
           windStatus: status,
           turbineCount: (a.antallturbiner as number) ?? null,
+          yearBuilt: a.forsteidriftdato ? new Date(a.forsteidriftdato as number).getFullYear() : null,
         });
       }
     }
 
     // Process wind farm layers
-    if (windRes?.ok) processWindLayer(await windRes.json(), "operational");
-    if (windConstructionRes?.ok) processWindLayer(await windConstructionRes.json(), "construction");
-    if (windApprovedRes?.ok) processWindLayer(await windApprovedRes.json(), "approved");
-    if (windRejectedRes?.ok) processWindLayer(await windRejectedRes.json(), "rejected");
+    if (windData) processWindLayer(windData, "operational");
+    if (windConstructionData) processWindLayer(windConstructionData, "construction");
+    if (windApprovedData) processWindLayer(windApprovedData, "approved");
+    if (windRejectedData) processWindLayer(windRejectedData, "rejected");
 
     // Process individual turbines
-    if (turbineRes?.ok) {
-      const turbineData = await turbineRes.json();
+    if (turbineData) {
       for (const f of turbineData.features ?? []) {
         if (!f.geometry?.x || !f.geometry?.y) continue;
         const a = f.attributes;
@@ -192,8 +216,7 @@ export async function GET() {
     }
 
     // Process hydro plants
-    if (hydroRes?.ok) {
-      const hydroData = await hydroRes.json();
+    if (hydroData) {
       for (const f of hydroData.features ?? []) {
         if (!f.geometry?.x || !f.geometry?.y) continue;
         const a = f.attributes;
@@ -220,8 +243,7 @@ export async function GET() {
 
     // Process offshore wind zones (polygons)
     const havvindZones: HavvindZone[] = [];
-    if (havvindRes?.ok) {
-      const havvindData = await havvindRes.json();
+    if (havvindData) {
       for (const f of havvindData.features ?? []) {
         const a = f.attributes;
         const rings = f.geometry?.rings;
@@ -262,8 +284,7 @@ export async function GET() {
 
     // Process oil & gas facilities from Sodir
     const oilGasFacilities: OilGasFacility[] = [];
-    if (sodirRes?.ok) {
-      const sodirData = await sodirRes.json();
+    if (sodirData) {
       for (const f of sodirData.features ?? []) {
         const a = f.attributes;
         // Only Norwegian facilities
@@ -295,8 +316,7 @@ export async function GET() {
 
     // Process pipelines
     const pipelines: Pipeline[] = [];
-    if (pipelineRes?.ok) {
-      const pipelineData = await pipelineRes.json();
+    if (pipelineData) {
       for (const f of pipelineData.features ?? []) {
         const a = f.attributes;
         const paths = f.geometry?.paths;

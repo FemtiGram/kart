@@ -2,6 +2,7 @@
 
 import { Wind, Droplets, Fuel } from "lucide-react";
 import L from "leaflet";
+import { KV_BLUE } from "@/lib/brand-colors";
 
 // ─── Shared compound types ─────────────────────────────────
 
@@ -193,10 +194,10 @@ export function energyIcon(
     ? WIND_STATUS_META[windStatus].color
     : TYPE_META[type].color;
 
-  const bg = inverted ? (isSelected ? "#24374c" : color) : "white";
-  const iconColor = inverted ? "white" : isSelected ? "#24374c" : color;
+  const bg = inverted ? (isSelected ? KV_BLUE : color) : "white";
+  const iconColor = inverted ? "white" : isSelected ? KV_BLUE : color;
   const border = isSelected
-    ? "#24374c"
+    ? KV_BLUE
     : inverted
       ? "rgba(255,255,255,0.3)"
       : "rgba(0,0,0,0.15)";
@@ -241,9 +242,9 @@ export function oilgasIcon(isSelected: boolean, inverted: boolean, isSurface: bo
   if (cached) return cached;
   const size = isSurface ? 28 : 22;
   const iconSize = isSurface ? 14 : 10;
-  const bg = inverted ? (isSelected ? "#24374c" : OILGAS_COLOR) : "white";
-  const iconColor = inverted ? "white" : (isSelected ? "#24374c" : OILGAS_COLOR);
-  const border = isSelected ? "#24374c" : inverted ? "rgba(255,255,255,0.3)" : "rgba(0,0,0,0.15)";
+  const bg = inverted ? (isSelected ? KV_BLUE : OILGAS_COLOR) : "white";
+  const iconColor = inverted ? "white" : (isSelected ? KV_BLUE : OILGAS_COLOR);
+  const border = isSelected ? KV_BLUE : inverted ? "rgba(255,255,255,0.3)" : "rgba(0,0,0,0.15)";
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="${iconSize}" height="${iconSize}" fill="none" stroke="${iconColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 22h18"/><path d="M6 18V2"/><path d="m6 7 5-1v4l-5 1"/><circle cx="18" cy="16" r="4"/><path d="m18 13-1 5h2l-1-5"/></svg>`;
   const icon = L.divIcon({
     className: "",
@@ -261,9 +262,9 @@ export function havvindIcon(isSelected: boolean, inverted: boolean): L.DivIcon {
   const cached = havvindIconCache.get(key);
   if (cached) return cached;
   const size = 28;
-  const bg = inverted ? (isSelected ? "#24374c" : HAVVIND_COLOR) : "white";
-  const iconColor = inverted ? "white" : (isSelected ? "#24374c" : HAVVIND_COLOR);
-  const border = isSelected ? "#24374c" : inverted ? "rgba(255,255,255,0.3)" : "rgba(0,0,0,0.15)";
+  const bg = inverted ? (isSelected ? KV_BLUE : HAVVIND_COLOR) : "white";
+  const iconColor = inverted ? "white" : (isSelected ? KV_BLUE : HAVVIND_COLOR);
+  const border = isSelected ? KV_BLUE : inverted ? "rgba(255,255,255,0.3)" : "rgba(0,0,0,0.15)";
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="${iconColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.8 19.6A2 2 0 1 0 14 16H2"/><path d="M17.5 8a2.5 2.5 0 1 1 2 4H2"/><path d="M9.8 4.4A2 2 0 1 1 11 8H2"/></svg>`;
   const icon = L.divIcon({
     className: "",

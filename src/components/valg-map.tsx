@@ -21,6 +21,7 @@ import { useHashSelection } from "@/lib/use-hash-selection";
 import type { Suggestion } from "@/lib/map-utils";
 
 import { partyFill, partyText } from "@/lib/party-colors";
+import { KV_BLUE } from "@/lib/brand-colors";
 
 interface PartyResult {
   kode: string;
@@ -162,7 +163,7 @@ export function ValgMap() {
     const id = requestAnimationFrame(() => {
       const layer = layerRefs.current.get(selected.kommunenummer);
       if (layer) {
-        layer.setStyle({ weight: 2.5, color: "#24374c", fillOpacity: 1 });
+        layer.setStyle({ weight: 2.5, color: KV_BLUE, fillOpacity: 1 });
         layer.bringToFront();
       }
     });
@@ -179,7 +180,7 @@ export function ValgMap() {
     }
     const layer = layerRefs.current.get(kommunenummer);
     if (layer) {
-      layer.setStyle({ weight: 2.5, color: "#24374c", fillOpacity: 1 });
+      layer.setStyle({ weight: 2.5, color: KV_BLUE, fillOpacity: 1 });
       layer.bringToFront();
     }
     selectedKommuneRef.current = kommunenummer;
@@ -740,7 +741,7 @@ export function ValgMap() {
                   <li key={kode} className="flex items-center gap-2 text-xs">
                     <span className="inline-block w-3 h-3 rounded-sm" style={{ background: partyFill(kode) }} />
                     <span className="font-medium w-10">{kode}</span>
-                    <span className="text-foreground/60 tabular-nums">{count}</span>
+                    <span className="text-muted-foreground tabular-nums">{count}</span>
                   </li>
                 ))}
               </ul>
