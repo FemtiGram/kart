@@ -31,25 +31,28 @@ export async function generateMetadata({
   const profile = getProfileBySlug(slug);
   if (!profile) return { title: "Kommune ikke funnet" };
 
-  const pop = profile.population ? fmtNumber(profile.population) : null;
-  const blokk = profile.bolig["03"]?.price ?? null;
-  const income = profile.income;
-
-  const parts = [
-    `${profile.displayName} kommune i tall`,
-    pop ? `${pop} innbyggere` : null,
-    income ? `median inntekt ${fmtNumber(income)} kr` : null,
-    blokk ? `kvadratmeterpris ${fmtNumber(blokk)} kr` : null,
-  ].filter(Boolean);
-
-  const description = `${parts.join(", ")}. Boligmarked, energi, verneområder og infrastruktur.`;
+  // Search Console: these pages show up for "<kommune> innbyggere" and
+  // "hvor mange bor i <kommune>" (100 000+ impressions / 90 days) but got
+  // ~0 % CTR at position ~10 with the bare kommune name as title. Lead with
+  // the answer. The " — Datakart" suffix is added by the layout template.
+  const { pop, perJan, largest } = kommuneFacts(profile);
+  const popText = pop != null ? `${fmtNumber(pop)} innbyggere` : null;
+  const question = `Hvor mange bor i ${profile.name}? ${popText}`;
+  const title = !popText
+    ? `${profile.name} kommune i tall`
+    : question.length <= 50
+      ? question
+      : `${profile.name}: ${popText}`;
+  const description = popText
+    ? `${profile.name} har ${popText}${perJan} (SSB)${largest ? ` og er ${largest}` : ""}. Boligpriser, inntekt, skoler, helse og valg i kommunen.`
+    : `${profile.name} kommune i tall: boligpriser, inntekt, skoler, helse og valg.`;
 
   return {
-    title: profile.displayName,
+    title,
     description,
     alternates: { canonical: `/kommune/${profile.slug}` },
     openGraph: {
-      title: `${profile.displayName} — Datakart`,
+      title: `${title} — Datakart`,
       description,
       type: "article",
     },
@@ -71,6 +74,42 @@ function fmtCurrency(n: number | null | undefined): string {
 function fmtRank(rank: number | null, total: number): string {
   if (rank == null) return "–";
   return `#${rank} av ${total}`;
+}
+
+/**
+ * The plain answers to what people search for a kommune ("hvor mange bor i
+ * Kristiansand", "kristiansand innbyggere", "hvilket fylke ligger …"). Used
+ * for the title, description, hero sentence and the visible FAQ + FAQPage
+ * JSON-LD, so all of them say exactly the same thing. All from the profile.
+ */
+function kommuneFacts(profile: KommuneProfile) {
+  const totals = getTotals();
+  const year = totals.populationYear ?? null;
+  const pop = profile.population;
+  const rank = profile.ranks.population;
+  const perJan = year ? ` per 1. januar ${year}` : "";
+  const largest = rank == null ? null : rank === 1 ? "Norges største kommune" : `Norges ${rank}. største kommune`;
+  const density = pop != null && profile.area > 0 ? pop / profile.area : null;
+  const faqs: { q: string; a: string }[] = [];
+  if (pop != null) {
+    faqs.push({
+      q: `Hvor mange bor i ${profile.name}?`,
+      a: `${profile.name} har ${fmtNumber(pop)} innbyggere${perJan}, ifølge SSB.${largest ? ` Det gjør kommunen til ${largest} etter folketall, av ${totals.kommuner}.` : ""}`,
+    });
+  }
+  if (profile.fylke) {
+    faqs.push({
+      q: `Hvilket fylke ligger ${profile.name} i?`,
+      a: `${profile.name} ligger i ${profile.fylke} fylke og har kommunenummer ${profile.knr}.`,
+    });
+  }
+  if (profile.area > 0) {
+    faqs.push({
+      q: `Hvor stor er ${profile.name} kommune?`,
+      a: `${profile.name} er ${fmtNumber(profile.area)} km²${density != null ? `, med omtrent ${fmtNumber(density)} innbyggere per km²` : ""}.`,
+    });
+  }
+  return { pop, year, perJan, largest, faqs };
 }
 
 /**
@@ -116,6 +155,7 @@ function HealthSynthLine({
 function Hero({ profile }: { profile: KommuneProfile }) {
   const { knr, name, displayName, fylke, area, population, ranks } = profile;
   const totals = getTotals();
+  const facts = kommuneFacts(profile);
 
   return (
     <div className="pb-2">
@@ -139,9 +179,15 @@ function Hero({ profile }: { profile: KommuneProfile }) {
         <span className="text-muted-foreground" aria-hidden="true">·</span>
         <span>{fmtNumber(area)} km²</span>
       </div>
+      {facts.pop != null && (
+        <p className="mt-4 text-base leading-relaxed text-foreground/80 max-w-2xl">
+          {name} har <strong className="font-semibold text-foreground">{fmtNumber(facts.pop)} innbyggere</strong>
+          {facts.perJan}{facts.largest ? ` og er ${facts.largest} etter folketall` : ""}.
+        </p>
+      )}
       <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Stat
-          label="Innbyggere"
+          label={facts.year ? `Innbyggere ${facts.year}` : "Innbyggere"}
           value={fmtNumber(population)}
           context={fmtRank(ranks.population, totals.popTotal)}
         />
@@ -1443,7 +1489,7 @@ function buildJsonLd(profile: KommuneProfile) {
     name: profile.displayName,
     alternateName: profile.name !== profile.displayName ? profile.name : undefined,
     identifier: profile.knr,
-    description: `${profile.displayName} kommune i ${profile.fylke ?? "Norge"}${profile.population ? `, ${profile.population.toLocaleString("nb-NO")} innbyggere` : ""}.`,
+    description: `${profile.displayName} kommune i ${profile.fylke ?? "Norge"}${profile.population ? `, ${profile.population.toLocaleString("nb-NO")} innbyggere${kommuneFacts(profile).perJan}` : ""}.`,
     url: `https://www.datakart.no/kommune/${profile.slug}`,
     containedInPlace: profile.fylke
       ? { "@type": "AdministrativeArea", name: `${profile.fylke} fylke` }
@@ -1460,6 +1506,43 @@ function buildJsonLd(profile: KommuneProfile) {
     },
     additionalProperty,
   };
+}
+
+/** FAQPage JSON-LD mirroring the visible "Fakta om" section word for word. */
+function faqJsonLd(profile: KommuneProfile) {
+  const { faqs } = kommuneFacts(profile);
+  if (faqs.length === 0) return null;
+  return {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: faqs.map((f) => ({
+      "@type": "Question",
+      name: f.q,
+      acceptedAnswer: { "@type": "Answer", text: f.a },
+    })),
+  };
+}
+
+// ─── Section: Fakta (visible FAQ) ────────────────────────────
+
+function FaktaSection({ profile }: { profile: KommuneProfile }) {
+  const { faqs } = kommuneFacts(profile);
+  if (faqs.length === 0) return null;
+  return (
+    <section className="mt-12">
+      <h2 className="text-title" style={{ color: "var(--kv-blue)" }}>
+        Fakta om {profile.name}
+      </h2>
+      <dl className="mt-4 divide-y rounded-2xl border bg-card">
+        {faqs.map((f) => (
+          <div key={f.q} className="px-5 py-4">
+            <dt className="font-semibold text-foreground">{f.q}</dt>
+            <dd className="mt-1 text-sm leading-relaxed text-foreground/80">{f.a}</dd>
+          </div>
+        ))}
+      </dl>
+    </section>
+  );
 }
 
 // ─── Page ────────────────────────────────────────────────────
@@ -1479,6 +1562,12 @@ export default async function KommunePage({
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(buildJsonLd(profile)) }}
       />
+      {faqJsonLd(profile) && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd(profile)) }}
+        />
+      )}
       <div className="container mx-auto px-6 md:px-16 py-8 md:py-12 max-w-4xl">
         <Hero profile={profile} />
         <MuligheterSection profile={profile} />
@@ -1494,6 +1583,7 @@ export default async function KommunePage({
         <InfraSection profile={profile} />
         <VaerSection profile={profile} />
         <SimilarSection profile={profile} />
+        <FaktaSection profile={profile} />
         <p className="text-xs text-muted-foreground mt-12 pt-6 border-t">
           Kilder: Kartverket, SSB, NVE, Utdanningsdirektoratet (UDIR),
           NOBIL/Enova, MET Norway og OpenStreetMap. Tallene er oppdatert så
