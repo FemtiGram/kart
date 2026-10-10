@@ -33,7 +33,7 @@ export default function OgImage() {
           Tomtegrenser
         </span>
         <p style={{ fontSize: 28, color: "rgba(255,255,255,0.7)", marginTop: 16 }}>
-          Klikk i kartet — se eiendomsgrenser, gnr/bnr og areal
+          Se tomtegrenser, gnr/bnr og tomteareal for hele Norge
         </p>
         <div
           style={{
