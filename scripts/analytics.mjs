@@ -5,6 +5,9 @@
 //   node scripts/analytics.mjs pages               GA4 top pages
 //   node scripts/analytics.mjs sources             GA4 traffic channels/sources
 //   node scripts/analytics.mjs hosts               GA4 hostnames (spot localhost/preview hits)
+//   node scripts/analytics.mjs devices             GA4 engagement by device
+//   node scripts/analytics.mjs landing             GA4 landing pages (where visits start)
+//   node scripts/analytics.mjs opps                Search Console: query+page pairs seen ≥40 times at position ≥4 (CTR wins)
 //   node scripts/analytics.mjs queries             Search Console top queries
 //   node scripts/analytics.mjs gsc-pages           Search Console top pages
 //   node scripts/analytics.mjs query-pages <page>  Search Console queries for one page (e.g. /valg)
@@ -191,6 +194,37 @@ const commands = {
       }),
       "GA4 hostnames",
     ),
+  devices: async () =>
+    print(
+      withAvgEngagement(await ga4({
+        dimensions: [{ name: "deviceCategory" }],
+        metrics: [{ name: "activeUsers" }, { name: "sessions" }, { name: "engagementRate" }, { name: "userEngagementDuration" }],
+      })),
+      "GA4 devices",
+    ),
+  landing: async () =>
+    print(
+      await ga4({
+        dimensions: [{ name: "landingPage" }],
+        metrics: [{ name: "sessions" }, { name: "engagementRate" }],
+        orderBys: [{ metric: { metricName: "sessions" }, desc: true }],
+        limit,
+      }),
+      "GA4 landing pages",
+    ),
+  // Pages Google already shows for a query but that rarely get the click —
+  // usually fixed by a title/description that answers the query.
+  opps: async () => {
+    const rows = await gsc({ dimensions: ["query", "page"], rowLimit: 5000 });
+    print(
+      rows
+        .filter((r) => r.impressions >= 40 && r.position >= 4)
+        .map((r) => ({ ...r, key: r.key.replace(/https:\/\/(www\.)?datakart\.no/, "") }))
+        .sort((a, b) => b.impressions - a.impressions)
+        .slice(0, limit),
+      "Search Console opportunities (≥40 impressions, position ≥4)",
+    );
+  },
   queries: async () => print(await gsc({ dimensions: ["query"] }), "Search Console top queries"),
   "gsc-pages": async () => print(await gsc({ dimensions: ["page"] }), "Search Console top pages"),
   "query-pages": async () => {

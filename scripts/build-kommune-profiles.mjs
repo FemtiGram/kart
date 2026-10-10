@@ -203,6 +203,10 @@ function centroidOf(geometry) {
 
 // ─── SSB fetchers ────────────────────────────────────────────
 
+// Year of the population figures (SSB counts per 1 January), published on
+// every kommune page as "per 1. januar <year>".
+let populationYear = null;
+
 async function fetchPopulation() {
   console.log("  Fetching SSB 07459 (population)...");
   const res = await fetch("https://data.ssb.no/api/v0/no/table/07459/", {
@@ -211,13 +215,18 @@ async function fetchPopulation() {
     body: JSON.stringify({
       query: [
         { code: "Region", selection: { filter: "all", values: ["*"] } },
-        { code: "Tid", selection: { filter: "item", values: ["2024"] } },
+        // Newest year SSB has. Was hard-coded to 2024, so pages kept showing
+        // 2024 figures after SSB published 2025 and 2026.
+        { code: "Tid", selection: { filter: "top", values: ["1"] } },
       ],
       response: { format: "json-stat2" },
     }),
+    signal: AbortSignal.timeout(30000),
   });
   if (!res.ok) throw new Error(`SSB 07459: HTTP ${res.status}`);
   const data = await res.json();
+  populationYear = Number(Object.keys(data.dimension.Tid.category.index)[0]);
+  console.log(`    population per 1 January ${populationYear}`);
   const regionIndex = data.dimension.Region.category.index;
   const values = data.value;
   const out = {};
@@ -1786,6 +1795,7 @@ async function main() {
     totals: {
       kommuner: Object.keys(profiles).length,
       popTotal: popRanks.total,
+      populationYear,
       incomeTotal: incomeRanks.total,
       boligTotal: boligRanks.total,
       grunnskolepoengTotal: grunnskolepoengRanks.total,

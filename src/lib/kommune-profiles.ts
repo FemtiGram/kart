@@ -345,6 +345,8 @@ interface ProfilesFile {
   totals: {
     kommuner: number;
     popTotal: number;
+    /** SSB counts population per 1 January of this year. Missing in files built before Oct 2026. */
+    populationYear?: number | null;
     incomeTotal: number;
     boligTotal: number;
     grunnskolepoengTotal: number;
