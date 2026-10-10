@@ -82,6 +82,8 @@ The seed scripts are also run automatically as a `prebuild` hook when deploying.
 
 `scripts/analytics.mjs` prints read-only Google Analytics 4 and Search Console reports (`overview`, `pages`, `sources`, `hosts`, `queries`, `gsc-pages`, `query-pages /valg`). It authenticates with a service account whose JSON key lives outside the repo; set `GOOGLE_SERVICE_ACCOUNT_KEY`, `GA_PROPERTY_ID` and `GSC_SITE` in `.env.local`. The GA tag only loads when `VERCEL_ENV === "production"`, so localhost and preview visits are not counted.
 
+**Monthly report.** `scripts/monthly-report.sh` builds a Markdown report for the previous month (`scripts/analytics-report.mjs`: traffic vs the month before, channels, devices, top pages and searches, biggest movers, opportunities, and before/after for the SEO changes listed in `TRACKED`), then has headless Claude Code write plain-language findings in Norwegian. Claude runs with no tools and no MCP servers, so it only reads the numbers it is given. `scripts/render-report-html.mjs` turns it all into a visual, offline HTML page with key numbers, simple charts, «Gode nyheter» and «Dette bør du gjøre», which opens in the browser. Reports are saved to `~/Documents/Datakart-rapporter/YYYY-MM.html`, next to the technical `.md` version and the `.data.json` / `.findings.json` inputs. They stay local and are never committed, because the repo is public. `scripts/monthly-report.sh --install` schedules it with launchd for the 4th of each month at 09:00 (Search Console needs about 3 days to finalise a month); `--uninstall` removes it.
+
 ---
 
 ## Data Sources
