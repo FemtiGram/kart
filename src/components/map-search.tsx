@@ -228,7 +228,9 @@ export const MapSearchBar = forwardRef<MapSearchBarHandle, MapSearchBarProps>(
 
     return (
       <div className="relative flex items-center gap-2">
-        <div className="flex flex-1 items-center gap-2 bg-background border rounded-xl px-4 py-3">
+        {/* min-w-0: an <input> keeps an intrinsic ~20-character width in a
+            flex row, which pushed the action buttons off screen at 320px. */}
+        <div className="flex flex-1 min-w-0 items-center gap-2 bg-background border rounded-xl px-4 py-3">
           {showSpinner ? (
             <Loader2 className="h-4 w-4 shrink-0 animate-spin text-muted-foreground" />
           ) : (
@@ -263,7 +265,7 @@ export const MapSearchBar = forwardRef<MapSearchBarHandle, MapSearchBarProps>(
                 ? `search-result-${highlightedIndex}`
                 : undefined
             }
-            className="flex-1 bg-transparent outline-none focus-visible:ring-2 focus-visible:ring-ring text-sm text-foreground placeholder:text-muted-foreground text-[16px] sm:text-sm"
+            className="flex-1 min-w-0 bg-transparent outline-none focus-visible:ring-2 focus-visible:ring-ring text-sm text-foreground placeholder:text-muted-foreground text-[16px] sm:text-sm"
           />
         </div>
         {children}

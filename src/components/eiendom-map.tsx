@@ -324,7 +324,10 @@ export function EiendomMap() {
       <div className="relative z-[1000] px-4 py-4 md:px-8 shrink-0 bg-background border-b">
         <div className="max-w-xl mx-auto relative flex flex-col gap-2">
           <div className="flex items-center gap-2">
-            <div className="flex flex-1 items-center gap-2 bg-background border rounded-xl px-4 py-3">
+            {/* min-w-0 on the wrapper and input: an <input> keeps an intrinsic
+                ~20-character width in a flex row, which pushed the two buttons
+                34px off screen at 320px. */}
+            <div className="flex flex-1 min-w-0 items-center gap-2 bg-background border rounded-xl px-4 py-3">
               {loadingSuggestions ? (
                 <Loader2 className="h-4 w-4 shrink-0 animate-spin text-muted-foreground" />
               ) : (
@@ -342,7 +345,7 @@ export function EiendomMap() {
                 autoCapitalize="off"
                 spellCheck={false}
                 enterKeyHint="search"
-                className="flex-1 bg-transparent outline-none focus-visible:ring-2 focus-visible:ring-ring text-foreground placeholder:text-muted-foreground text-[16px] sm:text-sm"
+                className="flex-1 min-w-0 bg-transparent outline-none focus-visible:ring-2 focus-visible:ring-ring text-foreground placeholder:text-muted-foreground text-[16px] sm:text-sm"
               />
             </div>
             <Button
