@@ -19,6 +19,7 @@ import {
   ChevronUp,
   Navigation,
   Anchor,
+  History,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -41,6 +42,7 @@ import type {
   HydroStationData,
 } from "@/components/energy-map-helpers";
 import { OilGasSheet, HavvindSheet, EnergyPlantSheet } from "@/components/energy-detail-sheets";
+import { EnergyTimeline, type TimelineTarget } from "@/components/energy-timeline";
 
 function ZoomTracker({ onZoom }: { onZoom: (z: number) => void }) {
   const map = useMap();
@@ -94,6 +96,10 @@ export function EnergyMap() {
   const [showSjokart, setShowSjokart] = useState(false);
   const [showProdInfo, setShowProdInfo] = useState(false);
   const [showFacilityInfo, setShowFacilityInfo] = useState(false);
+  const [showTimeline, setShowTimeline] = useState(false);
+  const [mapInstance, setMapInstance] = useState<L.Map | null>(null);
+  // The header toggles with the timeline on mobile, resizing the map.
+  useEffect(() => { mapInstance?.invalidateSize(); }, [showTimeline, mapInstance]);
 
   const searchBarRef = useRef<MapSearchBarHandle>(null);
   const kommunerRef = useRef<KommuneEntry[]>([]);
@@ -408,6 +414,21 @@ export function EnergyMap() {
     [filteredOilGas, inverted, selectOilGas]
   );
 
+  // Clicking a dot in the timeline leaves it and opens that plant's card.
+  const openFromTimeline = useCallback((t: TimelineTarget) => {
+    setShowTimeline(false);
+    if (t.kind === "plant") {
+      // Small plants are hidden by default; show them so the opened plant
+      // has a marker under its card.
+      if ((t.plant.capacityMW ?? 0) < MW_THRESHOLD) setShowSmall(true);
+      selectPlant(t.plant);
+      setCenter({ lat: t.plant.lat, lon: t.plant.lon, zoom: 11, _t: Date.now() });
+    } else {
+      selectOilGas(t.facility);
+      setCenter({ lat: t.facility.lat, lon: t.facility.lon, zoom: 11, _t: Date.now() });
+    }
+  }, [selectPlant, selectOilGas]);
+
   const statusLabel = (() => {
     const parts = [`${filteredPlants.length} kraftverk`];
     if (filteredOilGas.length > 0) parts.push(`${filteredOilGas.length} anlegg`);
@@ -418,7 +439,9 @@ export function EnergyMap() {
   return (
     <div className="flex flex-col" style={{ height: MAP_HEIGHT }}>
       {/* Search bar */}
-      <div className="relative z-[1000] px-4 py-4 md:px-8 shrink-0 bg-background border-b">
+      {/* Hidden on mobile during the timeline: search and filters don't apply
+          there, and the map needs the height. */}
+      <div className={`relative z-[1000] px-4 py-4 md:px-8 shrink-0 bg-background border-b ${showTimeline ? "hidden sm:block" : ""}`}>
         <div className="max-w-xl mx-auto relative flex flex-col gap-2">
           <MapSearchBar
             ref={searchBarRef}
@@ -576,6 +599,7 @@ export function EnergyMap() {
         {error && <MapError message="Kunne ikke hente kraftverk." onRetry={loadPlants} />}
 
         <MapContainer
+          ref={setMapInstance}
           center={[65, 14]}
           zoom={5}
           style={{ height: "100%", width: "100%" }}
@@ -600,6 +624,7 @@ export function EnergyMap() {
               opacity={0.7}
             />
           )}
+          {!showTimeline && (<>
           <MarkerClusterGroup
             chunkedLoading
             maxClusterRadius={50}
@@ -711,6 +736,7 @@ export function EnergyMap() {
               />
             </span>
           ))}
+          </>)}
 
           {selected && (
             <SelectedHalo lat={selected.lat} lon={selected.lon} />
@@ -725,6 +751,32 @@ export function EnergyMap() {
             />
           )}
         </MapContainer>
+
+        {/* Timeline toggle */}
+        {!showTimeline && !loading && plants.length > 0 && (
+          <button
+            onClick={() => {
+              setSelected(null);
+              setSelectedOilGas(null);
+              setSelectedHavvind(null);
+              setShowInfoSheet(false);
+              setShowTimeline(true);
+            }}
+            className="absolute top-[84px] left-[10px] sm:top-3 sm:left-14 z-[999] inline-flex items-center gap-1.5 rounded-lg border bg-card shadow-md px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-muted transition-colors"
+          >
+            <History className="h-3.5 w-3.5" />
+            Tidslinje
+          </button>
+        )}
+        {showTimeline && (
+          <EnergyTimeline
+            map={mapInstance}
+            plants={plants}
+            oilGas={oilGasFacilities}
+            onClose={() => setShowTimeline(false)}
+            onOpen={openFromTimeline}
+          />
+        )}
 
         {/* Tile layer toggle */}
         <div className="absolute top-3 right-3 z-[999] flex rounded-lg border bg-card shadow-md overflow-hidden">

@@ -189,6 +189,7 @@ export async function GET() {
           type: "vind",
           windStatus: status,
           turbineCount: (a.antallturbiner as number) ?? null,
+          yearBuilt: a.forsteidriftdato ? new Date(a.forsteidriftdato as number).getFullYear() : null,
         });
       }
     }
