@@ -1,6 +1,7 @@
 "use client";
 
 import { CircleMarker } from "react-leaflet";
+import { KV_BLUE } from "@/lib/brand-colors";
 
 /**
  * A brand-blue ring rendered at a lat/lon to indicate the currently-
@@ -26,9 +27,9 @@ export function SelectedHalo({
       center={[lat, lon]}
       radius={radius}
       pathOptions={{
-        color: "#24374c",
+        color: KV_BLUE,
         weight: 3,
-        fillColor: "#24374c",
+        fillColor: KV_BLUE,
         fillOpacity: 0.15,
       }}
       interactive={false}

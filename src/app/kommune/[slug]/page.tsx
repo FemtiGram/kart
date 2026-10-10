@@ -134,9 +134,9 @@ function Hero({ profile }: { profile: KommuneProfile }) {
       </h1>
       <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-foreground/70">
         {fylke && <span>{fylke} fylke</span>}
-        <span className="text-muted-foreground/40">·</span>
+        <span className="text-muted-foreground" aria-hidden="true">·</span>
         <span>Kommunenummer {knr}</span>
-        <span className="text-muted-foreground/40">·</span>
+        <span className="text-muted-foreground" aria-hidden="true">·</span>
         <span>{fmtNumber(area)} km²</span>
       </div>
       <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1444,7 +1444,7 @@ function buildJsonLd(profile: KommuneProfile) {
     alternateName: profile.name !== profile.displayName ? profile.name : undefined,
     identifier: profile.knr,
     description: `${profile.displayName} kommune i ${profile.fylke ?? "Norge"}${profile.population ? `, ${profile.population.toLocaleString("nb-NO")} innbyggere` : ""}.`,
-    url: `https://datakart.no/kommune/${profile.slug}`,
+    url: `https://www.datakart.no/kommune/${profile.slug}`,
     containedInPlace: profile.fylke
       ? { "@type": "AdministrativeArea", name: `${profile.fylke} fylke` }
       : undefined,

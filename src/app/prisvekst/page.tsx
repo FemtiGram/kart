@@ -50,7 +50,7 @@ export default function PrisvekstPage() {
     <>
       <div className="min-h-[calc(100svh-57px)] bg-background">
         <div className="container mx-auto px-6 md:px-16 py-8 md:py-12 max-w-4xl">
-          <h1 className="text-headline" style={{ color: "#24374c" }}>
+          <h1 className="text-headline" style={{ color: "var(--kv-blue)" }}>
             Prisvekst i Norge
           </h1>
           <p className="mt-2 text-muted-foreground max-w-xl">
@@ -63,7 +63,7 @@ export default function PrisvekstPage() {
       </div>
       <section className="bg-background border-t">
         <div className="container mx-auto px-6 md:px-16 pt-5 pb-12 md:pb-16 max-w-3xl">
-          <h2 className="text-2xl font-extrabold tracking-tight mb-6" style={{ color: "#24374c" }}>
+          <h2 className="text-2xl font-extrabold tracking-tight mb-6" style={{ color: "var(--kv-blue)" }}>
             Ofte stilte spørsmål om prisvekst
           </h2>
           <Accordion>

@@ -60,11 +60,11 @@ const collectionJsonLd = {
   description:
     "Samling av interaktive kart over norsk energi: kraftverk, vannmagasiner, ladestasjoner og olje- og gassanlegg.",
   inLanguage: "no",
-  url: "https://datakart.no/energi",
+  url: "https://www.datakart.no/energi",
   hasPart: maps.map((m) => ({
     "@type": "WebPage",
     name: m.title,
-    url: `https://datakart.no${m.href}`,
+    url: `https://www.datakart.no${m.href}`,
     description: m.description,
   })),
 };

@@ -193,13 +193,13 @@ export function InflationDashboard() {
     <div className="space-y-8">
       {/* Hero stat cards */}
       <div>
-        <h2 className="text-lg font-bold mb-1" style={{ color: "#24374c" }}>Nøkkeltall</h2>
+        <h2 className="text-lg font-bold mb-1" style={{ color: "var(--kv-blue)" }}>Nøkkeltall</h2>
         <p className="text-xs text-foreground/70 mb-3">Sist oppdatert {current.month}.</p>
       </div>
       <div className="grid grid-cols-1 gap-3">
         {/* KPI */}
         <div className="relative rounded-2xl border bg-card p-5 shadow-sm">
-          <button onClick={() => setInfoModal("kpi")} aria-label="Mer informasjon om KPI" className="absolute top-4 right-4 p-1.5 rounded-md text-muted-foreground/50 hover:text-muted-foreground transition-colors">
+          <button onClick={() => setInfoModal("kpi")} aria-label="Mer informasjon om KPI" className="absolute top-4 right-4 p-1.5 rounded-md text-muted-foreground hover:text-foreground transition-colors">
             <Info className="h-3.5 w-3.5" />
           </button>
           <div className="flex items-baseline justify-between gap-2 pr-7">
@@ -225,7 +225,7 @@ export function InflationDashboard() {
 
         {/* KPI-JAE */}
         <div className="relative rounded-2xl border bg-card p-5 shadow-sm">
-          <button onClick={() => setInfoModal("jae")} aria-label="Mer informasjon om KPI-JAE" className="absolute top-4 right-4 p-1.5 rounded-md text-muted-foreground/50 hover:text-muted-foreground transition-colors">
+          <button onClick={() => setInfoModal("jae")} aria-label="Mer informasjon om KPI-JAE" className="absolute top-4 right-4 p-1.5 rounded-md text-muted-foreground hover:text-foreground transition-colors">
             <Info className="h-3.5 w-3.5" />
           </button>
           <div className="flex items-baseline justify-between gap-2 pr-7">
@@ -244,7 +244,7 @@ export function InflationDashboard() {
 
         {/* Styringsrente */}
         <div className="relative rounded-2xl border bg-card p-5 shadow-sm">
-          <button onClick={() => setInfoModal("rente")} aria-label="Mer informasjon om styringsrente" className="absolute top-4 right-4 p-1.5 rounded-md text-muted-foreground/50 hover:text-muted-foreground transition-colors">
+          <button onClick={() => setInfoModal("rente")} aria-label="Mer informasjon om styringsrente" className="absolute top-4 right-4 p-1.5 rounded-md text-muted-foreground hover:text-foreground transition-colors">
             <Info className="h-3.5 w-3.5" />
           </button>
           <div className="flex items-baseline justify-between gap-2 pr-7">
@@ -321,7 +321,7 @@ export function InflationDashboard() {
 
       {/* Category breakdown */}
       <div>
-        <h2 className="text-lg font-bold mb-3" style={{ color: "#24374c" }}>Prisvekst etter kategori</h2>
+        <h2 className="text-lg font-bold mb-3" style={{ color: "var(--kv-blue)" }}>Prisvekst etter kategori</h2>
         <p className="text-xs text-foreground/70 mb-4">12-månedersendring per {current.month}. Trykk for detaljer.</p>
         <div className="space-y-2">
           {categories.map((cat) => {
@@ -389,7 +389,7 @@ export function InflationDashboard() {
       {/* Trend chart */}
       <div>
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-bold" style={{ color: "#24374c" }}>Utvikling siste 2 år</h2>
+          <h2 className="text-lg font-bold" style={{ color: "var(--kv-blue)" }}>Utvikling siste 2 år</h2>
           <div className="flex rounded-lg border overflow-hidden">
             {([["kpi", "KPI"], ["jae", "KPI-JAE"], ["rente", "Rente"]] as const).map(([key, label]) => (
               <button
@@ -426,7 +426,7 @@ export function InflationDashboard() {
       {/* Yearly historical */}
       {yearly.length > 0 && (
         <div>
-          <h2 className="text-lg font-bold mb-3" style={{ color: "#24374c" }}>Årlig prisvekst ({yearly[0].year}–{yearly[yearly.length - 1].year})</h2>
+          <h2 className="text-lg font-bold mb-3" style={{ color: "var(--kv-blue)" }}>Årlig prisvekst ({yearly[0].year}–{yearly[yearly.length - 1].year})</h2>
           <div className="rounded-2xl border bg-card p-4 shadow-sm">
             <ChartContainer config={yearlyChartConfig} className="aspect-auto h-36 w-full">
               <BarChart data={yearly.map((y) => ({ year: y.year, change: y.change }))} margin={{ top: 4, right: 4, bottom: 0, left: -12 }}>
@@ -449,7 +449,7 @@ export function InflationDashboard() {
       {/* Nordic comparison */}
       {Object.values(nordic).some((v) => v != null) && (
         <div>
-          <h2 className="text-lg font-bold mb-3" style={{ color: "#24374c" }}>Nordisk sammenligning</h2>
+          <h2 className="text-lg font-bold mb-3" style={{ color: "var(--kv-blue)" }}>Nordisk sammenligning</h2>
           <p className="text-xs text-foreground/70 mb-4">Harmonisert konsumprisindeks (HICP), 12-månedersendring.</p>
           <div className="space-y-2">
             {(["NO", "SE", "DK", "FI", "EU"] as const).map((code) => {

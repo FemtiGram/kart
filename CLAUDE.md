@@ -386,6 +386,7 @@ Every new page MUST be rigged for Google Search and AI search (ChatGPT, Perplexi
 
 ### What exists today:
 - `src/app/layout.tsx` — global metadata (title template, description, metadataBase, canonical default, openGraph, twitter card), JSON-LD WebSite schema
+- **Absolute URLs use `https://www.datakart.no`** (metadataBase, sitemap, robots, JSON-LD) — the apex 307s to www, so apex URLs point canonicals and the sitemap at a redirect
 - `src/app/sitemap.ts` — all pages with priority/frequency + 357 kommune URLs pulled from `getAllKommuner()`
 - `src/app/robots.ts` — allows all crawlers, points to sitemap
 - `src/app/*/opengraph-image.tsx` — dynamic OG images per page (including root landing page and per-slug for kommune pages)
@@ -434,6 +435,7 @@ Three-tier convention: `-light` for the background tint, base for icons/borders/
 - **DO NOT** use `#003da5` — this was the old brand blue, replaced by `#24374c`
 - **Tailwind semantic classes OK** for backgrounds: `bg-green-50`, `bg-red-50` (these are light tints, not brand colors)
 - **Metric numbers** always use `style={{ color: "var(--kv-blue)" }}` or `var(--kv-metric)`
+- **Brand blue in JS** (Leaflet `setStyle`/`pathOptions`, `L.divIcon` HTML): import `KV_BLUE` from `src/lib/brand-colors.ts` — never a `"#24374c"` literal. CSS variables don't work there; in JSX use `var(--kv-blue)`
 
 ### Component patterns
 - Card style: `bg-card rounded-2xl shadow-sm border px-4 py-4` (hover: `shadow-md`)

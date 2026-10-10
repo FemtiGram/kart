@@ -23,6 +23,7 @@ import { InfoModal } from "@/components/info-modal";
 import { TileToggle } from "@/components/tile-toggle";
 import { MapLoading } from "@/components/map-loading";
 import { SelectedHalo } from "@/components/selected-halo";
+import { KV_BLUE } from "@/lib/brand-colors";
 
 interface WindFarm {
   id: unknown;
@@ -55,16 +56,16 @@ function windFarmIcon(
 
   const bg = inverted
     ? isSelected
-      ? "#24374c"
+      ? KV_BLUE
       : "#0369a1"
     : "white";
   const iconColor = inverted
     ? "white"
     : isSelected
-      ? "#24374c"
+      ? KV_BLUE
       : "#0369a1";
   const border = isSelected
-    ? "#24374c"
+    ? KV_BLUE
     : inverted
       ? "rgba(255,255,255,0.3)"
       : "rgba(0,0,0,0.15)";

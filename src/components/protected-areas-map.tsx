@@ -108,6 +108,7 @@ interface VerneData {
 }
 
 import type { Suggestion } from "@/lib/map-utils";
+import { KV_BLUE } from "@/lib/brand-colors";
 
 interface SelectedKommune {
   kommunenummer: string;
@@ -232,7 +233,7 @@ export function ProtectedAreasMap() {
     }
     const layer = layerRefs.current.get(kommunenummer);
     if (layer) {
-      layer.setStyle({ weight: 2.5, color: "#24374c", fillOpacity: 1 });
+      layer.setStyle({ weight: 2.5, color: KV_BLUE, fillOpacity: 1 });
       layer.bringToFront();
     }
     selectedKommuneRef.current = kommunenummer;
@@ -320,7 +321,7 @@ export function ProtectedAreasMap() {
       mouseover(e) {
         const l = e.target as L.Path;
         if (nr !== selectedKommuneRef.current) {
-          l.setStyle({ weight: 1.5, color: "#24374c", fillOpacity: 1 });
+          l.setStyle({ weight: 1.5, color: KV_BLUE, fillOpacity: 1 });
           l.bringToFront();
         }
       },

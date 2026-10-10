@@ -26,6 +26,7 @@ import { DriveLink } from "@/components/drive-link";
 import { useHashSelection } from "@/lib/use-hash-selection";
 import { safeFlyTo } from "@/lib/safe-fly";
 import type { Suggestion } from "@/lib/map-utils";
+import { KV_BLUE } from "@/lib/brand-colors";
 
 interface Reservoir {
   id: number;
@@ -51,9 +52,9 @@ function reservoirIcon(isSelected: boolean, inverted: boolean): L.DivIcon {
   const cached = reservoirIconCache.get(key);
   if (cached) return cached;
   const size = 24;
-  const bg = inverted ? (isSelected ? "#24374c" : RESERVOIR_COLOR) : "white";
-  const iconColor = inverted ? "white" : (isSelected ? "#24374c" : RESERVOIR_COLOR);
-  const border = isSelected ? "#24374c" : inverted ? "rgba(255,255,255,0.3)" : "rgba(0,0,0,0.15)";
+  const bg = inverted ? (isSelected ? KV_BLUE : RESERVOIR_COLOR) : "white";
+  const iconColor = inverted ? "white" : (isSelected ? KV_BLUE : RESERVOIR_COLOR);
+  const border = isSelected ? KV_BLUE : inverted ? "rgba(255,255,255,0.3)" : "rgba(0,0,0,0.15)";
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="${iconColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6c.6.5 1.2 1 2.5 1C7 7 7 5 9.5 5c2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/><path d="M2 12c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/><path d="M2 18c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/></svg>`;
   const icon = L.divIcon({
     className: "",
@@ -272,7 +273,7 @@ export function ReservoirMap() {
               pathOptions={{
                 fillColor: fillColor(r.hrv, r.lrv),
                 fillOpacity: selected?.id === r.id ? 0.8 : 0.5,
-                color: selected?.id === r.id ? "#24374c" : "#0369a1",
+                color: selected?.id === r.id ? KV_BLUE : "#0369a1",
                 weight: selected?.id === r.id ? 2.5 : 1,
               }}
               eventHandlers={{

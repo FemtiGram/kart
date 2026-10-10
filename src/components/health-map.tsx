@@ -62,6 +62,7 @@ import {
   type OsmHealthData,
   type Selected,
 } from "@/components/health-map-helpers";
+import { KV_BLUE } from "@/lib/brand-colors";
 
 // ─── Metric-aware color helper ──────────────────────────────
 //
@@ -195,7 +196,7 @@ export function HealthMap() {
     }
     const layer = layerRefs.current.get(knr);
     if (layer) {
-      layer.setStyle({ weight: 2.5, color: "#24374c", fillOpacity: 1 });
+      layer.setStyle({ weight: 2.5, color: KV_BLUE, fillOpacity: 1 });
       layer.bringToFront();
     }
     selectedKnrRef.current = knr;
@@ -293,7 +294,7 @@ export function HealthMap() {
     if (selectedKnrRef.current) {
       layerRefs.current.get(selectedKnrRef.current)?.setStyle({
         weight: 2.5,
-        color: "#24374c",
+        color: KV_BLUE,
         fillOpacity: 1,
       });
     }
@@ -404,7 +405,7 @@ export function HealthMap() {
       mouseover(e) {
         const l = e.target as L.Path;
         if (nr !== selectedKnrRef.current) {
-          l.setStyle({ weight: 1.5, color: "#24374c", fillOpacity: 1 });
+          l.setStyle({ weight: 1.5, color: KV_BLUE, fillOpacity: 1 });
           l.bringToFront();
         }
       },

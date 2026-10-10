@@ -1,6 +1,7 @@
 "use client";
 
 import L from "leaflet";
+import { KV_BLUE } from "@/lib/brand-colors";
 
 // Re-export the energy icons so consumers (like the kommune mini-map) can
 // import every marker factory from a single module.
@@ -26,13 +27,13 @@ export function cabinIcon(
   const cached = cabinIconCache.get(key);
   if (cached) return cached;
 
-  const baseColor = isSelected ? "#24374c" : CABIN_COLORS[type];
+  const baseColor = isSelected ? KV_BLUE : CABIN_COLORS[type];
   const size = type === "fjellhytte" ? 30 : 26;
   const filled = type === "fjellhytte";
   const bg = inverted ? baseColor : "white";
   const iconColor = inverted ? "white" : baseColor;
   const border = isSelected
-    ? "#24374c"
+    ? KV_BLUE
     : inverted
       ? "rgba(255,255,255,0.3)"
       : "rgba(0,0,0,0.15)";
@@ -66,10 +67,10 @@ export function chargingIcon(
   if (cached) return cached;
 
   const size = 28;
-  const bg = inverted ? (isSelected ? "#24374c" : "#15803d") : "white";
-  const iconColor = inverted ? "white" : isSelected ? "#24374c" : "#15803d";
+  const bg = inverted ? (isSelected ? KV_BLUE : "#15803d") : "white";
+  const iconColor = inverted ? "white" : isSelected ? KV_BLUE : "#15803d";
   const border = isSelected
-    ? "#24374c"
+    ? KV_BLUE
     : inverted
       ? "rgba(255,255,255,0.3)"
       : "rgba(0,0,0,0.15)";
@@ -103,10 +104,10 @@ export function schoolIcon(
   // Slightly bigger for VGS (taller buildings, older students)
   const size = type === "vgs" ? 30 : type === "begge" ? 30 : 26;
   const color = "#6d28d9"; // purple-700
-  const bg = inverted ? (isSelected ? "#24374c" : color) : "white";
-  const iconColor = inverted ? "white" : isSelected ? "#24374c" : color;
+  const bg = inverted ? (isSelected ? KV_BLUE : color) : "white";
+  const iconColor = inverted ? "white" : isSelected ? KV_BLUE : color;
   const border = isSelected
-    ? "#24374c"
+    ? KV_BLUE
     : inverted
       ? "rgba(255,255,255,0.3)"
       : "rgba(0,0,0,0.15)";
@@ -136,10 +137,10 @@ export function kindergartenIcon(
 
   const size = 24;
   const color = "#c2410c"; // orange-700
-  const bg = inverted ? (isSelected ? "#24374c" : color) : "white";
-  const iconColor = inverted ? "white" : isSelected ? "#24374c" : color;
+  const bg = inverted ? (isSelected ? KV_BLUE : color) : "white";
+  const iconColor = inverted ? "white" : isSelected ? KV_BLUE : color;
   const border = isSelected
-    ? "#24374c"
+    ? KV_BLUE
     : inverted
       ? "rgba(255,255,255,0.3)"
       : "rgba(0,0,0,0.15)";
@@ -180,10 +181,10 @@ export function healthIcon(
 
   const size = type === "sykehus" ? 30 : type === "legevakt" ? 26 : 22;
   const baseColor = HEALTH_COLOR;
-  const bg = inverted ? (isSelected ? "#24374c" : baseColor) : "white";
-  const iconColor = inverted ? "white" : isSelected ? "#24374c" : baseColor;
+  const bg = inverted ? (isSelected ? KV_BLUE : baseColor) : "white";
+  const iconColor = inverted ? "white" : isSelected ? KV_BLUE : baseColor;
   const border = isSelected
-    ? "#24374c"
+    ? KV_BLUE
     : inverted
       ? "rgba(255,255,255,0.3)"
       : "rgba(0,0,0,0.15)";
@@ -231,10 +232,10 @@ export function reservoirIcon(
 
   const size = 26;
   const color = "#0891b2"; // cyan-600
-  const bg = inverted ? (isSelected ? "#24374c" : color) : "white";
-  const iconColor = inverted ? "white" : isSelected ? "#24374c" : color;
+  const bg = inverted ? (isSelected ? KV_BLUE : color) : "white";
+  const iconColor = inverted ? "white" : isSelected ? KV_BLUE : color;
   const border = isSelected
-    ? "#24374c"
+    ? KV_BLUE
     : inverted
       ? "rgba(255,255,255,0.3)"
       : "rgba(0,0,0,0.15)";

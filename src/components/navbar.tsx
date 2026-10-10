@@ -73,14 +73,14 @@ const navGroups: NavGroup[] = [
 const allLinks = navGroups.flatMap((g) => g.links);
 
 const triggerClass =
-  "text-white hover:text-white hover:bg-white/10 focus:text-[#24374c] focus:bg-white/90 data-[active]:text-[#24374c] data-[active]:bg-white data-popup-open:text-[#24374c] data-popup-open:bg-white/90";
+  "text-white hover:text-white hover:bg-white/10 focus:text-[var(--kv-blue)] focus:bg-white/90 data-[active]:text-[var(--kv-blue)] data-[active]:bg-white data-popup-open:text-[var(--kv-blue)] data-popup-open:bg-white/90";
 
 export function Navbar() {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
 
   return (
-    <header className="sticky top-0 z-[1100] w-full shadow-sm" style={{ background: "#24374c" }}>
+    <header className="sticky top-0 z-[1100] w-full shadow-sm" style={{ background: "var(--kv-blue)" }}>
       <div className="container mx-auto flex h-14 items-center justify-between px-6 md:px-16">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2.5">
@@ -181,7 +181,7 @@ export function Navbar() {
                   >
                     <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors">
                       {group.label}
-                      <span className="ml-1 text-foreground/40">→</span>
+                      <span className="ml-1 text-muted-foreground" aria-hidden="true">→</span>
                     </span>
                   </Link>
                   {group.links.map((link) => {

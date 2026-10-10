@@ -131,7 +131,7 @@ const jsonLd = {
   "@type": "DataCatalog",
   name: "Datakilder brukt i Datakart",
   description: "Oversikt over alle offentlige datakilder, lisenser og attribusjon brukt i Datakart.",
-  url: "https://datakart.no/kilder",
+  url: "https://www.datakart.no/kilder",
   dataset: sources.map((s) => ({
     "@type": "Dataset",
     name: s.name,
@@ -146,7 +146,7 @@ export default function KilderPage() {
     <div className="min-h-[calc(100svh-57px)] bg-background">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <div className="container mx-auto px-6 md:px-16 py-12 md:py-20 max-w-3xl">
-        <h1 className="text-headline" style={{ color: "#24374c" }}>
+        <h1 className="text-headline" style={{ color: "var(--kv-blue)" }}>
           Datakilder og lisenser
         </h1>
         <p className="mt-3 text-muted-foreground text-base max-w-xl">
@@ -212,7 +212,7 @@ export default function KilderPage() {
         </div>
 
         <div className="mt-12 pt-8 border-t">
-          <h2 className="font-bold text-base" style={{ color: "#24374c" }}>Om lisensene</h2>
+          <h2 className="font-bold text-base" style={{ color: "var(--kv-blue)" }}>Om lisensene</h2>
           <div className="mt-4 flex flex-col gap-4 text-sm text-muted-foreground">
             <div>
               <p className="font-semibold text-foreground">NLOD 2.0 (Norsk lisens for offentlige data)</p>

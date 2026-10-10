@@ -98,9 +98,9 @@ const datasetJsonLd = {
   publisher: {
     "@type": "Organization",
     name: "Datakart",
-    url: "https://datakart.no",
+    url: "https://www.datakart.no",
   },
-  url: "https://datakart.no/valg",
+  url: "https://www.datakart.no/valg",
   variableMeasured: [
     "Vinnerparti per kommune",
     "Stemmer per parti (antall og prosent)",
@@ -116,7 +116,7 @@ export default function ValgPage() {
       <ValgMapLoader />
       <section className="bg-background border-t">
         <div className="container mx-auto px-6 md:px-16 pt-5 pb-12 md:pb-16 max-w-3xl">
-          <h2 className="text-2xl font-extrabold tracking-tight mb-6" style={{ color: "#24374c" }}>
+          <h2 className="text-2xl font-extrabold tracking-tight mb-6" style={{ color: "var(--kv-blue)" }}>
             Ofte stilte spørsmål om valgkartet
           </h2>
           <Accordion>

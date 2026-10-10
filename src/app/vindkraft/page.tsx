@@ -12,7 +12,7 @@ const jsonLd = {
   "@type": "Dataset",
   name: "Vindkraftverk i Norge",
   description: "Interaktivt kart over vindkraftverk i Norge med installert kapasitet (MW), antall turbiner og årlig produksjon (GWh).",
-  url: "https://datakart.no/vindkraft",
+  url: "https://www.datakart.no/vindkraft",
   creator: { "@type": "Organization", name: "NVE" },
   license: "https://data.norge.no/nlod/no/2.0",
 };

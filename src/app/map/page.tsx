@@ -93,7 +93,7 @@ export default function MapPage() {
       <ElevationMapLoader />
       <section className="bg-background border-t">
         <div className="container mx-auto px-6 md:px-16 pt-5 pb-12 md:pb-16 max-w-3xl">
-          <h2 className="text-2xl font-extrabold tracking-tight mb-3" style={{ color: "#24374c" }}>
+          <h2 className="text-2xl font-extrabold tracking-tight mb-3" style={{ color: "var(--kv-blue)" }}>
             Hvor høyt over havet ligger du?
           </h2>
           <p className="text-foreground/80 leading-relaxed">
@@ -105,7 +105,7 @@ export default function MapPage() {
             Med «Del» får du en lenke som åpner kartet på samme punkt, for eksempel hytta, huset eller toppen du har vært på.
           </p>
 
-          <h2 className="text-2xl font-extrabold tracking-tight mt-10 mb-3" style={{ color: "#24374c" }}>
+          <h2 className="text-2xl font-extrabold tracking-tight mt-10 mb-3" style={{ color: "var(--kv-blue)" }}>
             Norges høyeste fjell
           </h2>
           <p className="text-foreground/80 leading-relaxed">
@@ -129,7 +129,7 @@ export default function MapPage() {
             på et toppunkt.
           </p>
 
-          <h2 className="text-2xl font-extrabold tracking-tight mt-10 mb-6" style={{ color: "#24374c" }}>
+          <h2 className="text-2xl font-extrabold tracking-tight mt-10 mb-6" style={{ color: "var(--kv-blue)" }}>
             Ofte stilte spørsmål om høyde over havet
           </h2>
           <Accordion>

@@ -14,6 +14,7 @@ import { useInitialPosition } from "@/lib/use-initial-position";
 import { safeFlyToBounds } from "@/lib/safe-fly";
 import { polygonAreaM2, formatM2, formatMal } from "@/lib/geodesic-area";
 import { kommuneSlug } from "@/lib/kommune-slug";
+import { KV_BLUE } from "@/lib/brand-colors";
 
 interface TeigProperties {
   matrikkelnummertekst: string;
@@ -433,7 +434,7 @@ export function EiendomMap() {
               <CircleMarker
                 center={[selected.clickPoint.lat, selected.clickPoint.lon]}
                 radius={4}
-                pathOptions={{ color: "#24374c", fillColor: "#24374c", fillOpacity: 0.9 }}
+                pathOptions={{ color: KV_BLUE, fillColor: KV_BLUE, fillOpacity: 0.9 }}
               />
             </>
           )}

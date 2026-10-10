@@ -300,7 +300,7 @@ export function KommuneMiniMap({ outline, bbox, name, layers, totals }: Props) {
               }
               className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
                 disabled
-                  ? "border-border bg-muted/30 text-muted-foreground/50 cursor-not-allowed"
+                  ? "border-dashed border-border bg-muted/30 text-muted-foreground cursor-not-allowed"
                   : isActive
                     ? "border-transparent text-white"
                     : "border-border bg-card text-foreground hover:bg-muted"
