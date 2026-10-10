@@ -4,7 +4,7 @@ import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/
 export const metadata = {
   title: "Energikart",
   description:
-    "Norges kraftverk på kart. Over 1 700 vannkraftverk, vindkraftanlegg, planlagt havvind og olje- og gassanlegg med produksjonsdata.",
+    "Norges kraftverk på kart. Over 1 700 vannkraftverk, vindkraftanlegg, planlagt havvind og olje- og gassanlegg med produksjonsdata, og en animert tidslinje som viser hvordan kraftutbyggingen vokste fra 1900 til i dag.",
   alternates: { canonical: "/energikart" },
 };
 
@@ -20,6 +20,10 @@ const faqs = [
   {
     q: "Hvorfor er noen kraftverk skjult på kartet?",
     a: "Kraftverk under 10 MW er skjult som standard for bedre ytelse — det finnes over 1 000 små kraftverk i Norge. Du kan vise dem ved å åpne filteret og slå på «Vis små kraftverk».",
+  },
+  {
+    q: "Når ble kraftverkene i Norge bygget?",
+    a: "Knappen «Tidslinje» i kartet spiller av utbyggingen år for år: vannkraftverk etter første driftsår fra NVE, vindkraftverk etter dato for første drift, og olje- og gassanlegg etter oppstartsdato fra Sokkeldirektoratet. Du ser den store vannkraftutbyggingen etter krigen, oljealderen på sokkelen fra 1970-tallet og vindkraften som kommer etter 2010. Effekten som telles er dagens installerte effekt, så senere oppgraderinger regnes fra kraftverkets første driftsår.",
   },
   {
     q: "Hva betyr fallhøyde for et vannkraftverk?",

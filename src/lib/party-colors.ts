@@ -45,3 +45,14 @@ export function partyText(kode: string | undefined): string {
   if (!kode) return FALLBACK_TEXT;
   return PARTY_TEXT[kode] ?? FALLBACK_TEXT;
 }
+
+// Short display names, including the historical groups used by the
+// 1945– timeline (lineages: Bondepartiet → Sp, ALP → FrP, SF → SV, RV → Rødt).
+const PARTY_SHORT: Record<string, string> = {
+  A: "Ap", H: "H", FRP: "FrP", SP: "Sp", KRF: "KrF", V: "V", SV: "SV",
+  RØDT: "Rødt", MDG: "MDG", NKP: "NKP", FELLES: "Fellesliste", ANDRE: "Andre",
+};
+
+export function partyShort(kode: string): string {
+  return PARTY_SHORT[kode] ?? kode;
+}

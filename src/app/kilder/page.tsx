@@ -36,12 +36,12 @@ const sources = [
   },
   {
     name: "Statistisk sentralbyrå (SSB)",
-    description: "Inntektsstatistikk, befolkningsstatistikk, boligpriser (tabell 06035 og 14545), fastlegedata (tabell 12005), kommunale gebyrer (tabell 12842), eiendomsskatt (tabell 14674), eierstatus (tabell 14891), boligtyper (tabell 06265), utdanningsnivå (tabell 09429), nasjonale prøver (tabell 12255), konsumprisindeks og arealstatistikk for verneområder.",
+    description: "Inntektsstatistikk, befolkningsstatistikk, boligpriser (tabell 06035 og 14545), fastlegedata (tabell 12005), kommunale gebyrer (tabell 12842), eiendomsskatt (tabell 14674), eierstatus (tabell 14891), boligtyper (tabell 06265), utdanningsnivå (tabell 09429), nasjonale prøver (tabell 12255), stortingsvalg per kommune 1945–2025 (tabell 08092), kommuneendringer siden 1945 (Klass), konsumprisindeks og arealstatistikk for verneområder.",
     license: "CC BY 4.0",
     licenseUrl: "https://creativecommons.org/licenses/by/4.0/",
     attribution: "\u00a9 Statistisk sentralbyrå (SSB)",
     url: "https://www.ssb.no",
-    usedIn: ["Inntektskart", "Verneområder", "Boligkart", "Prisvekst", "Helsetilbud", "Kostnader", "Stedsprofil"],
+    usedIn: ["Inntektskart", "Verneområder", "Boligkart", "Prisvekst", "Helsetilbud", "Kostnader", "Valgkart", "Stedsprofil"],
   },
   {
     name: "Meteorologisk institutt (MET)",

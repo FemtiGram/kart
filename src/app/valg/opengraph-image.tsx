@@ -29,7 +29,7 @@ export default function OgImage() {
           Stortingsvalg og kommunestyrevalg fordelt på alle norske kommuner
         </p>
         <div style={{ display: "flex", gap: "16px", marginTop: 40 }}>
-          {["Stortingsvalg 2025", "Kommunevalg 2023", "Vinnerparti", "Frammøte"].map((label) => (
+          {["Stortingsvalg 1945–2025", "Kommunevalg 2023", "Vinnerparti", "Tidslinje"].map((label) => (
             <div
               key={label}
               style={{
