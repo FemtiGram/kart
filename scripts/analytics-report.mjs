@@ -3,8 +3,9 @@
 //
 //   node scripts/analytics-report.mjs                 previous calendar month
 //   node scripts/analytics-report.mjs --month 2026-09
+//   node scripts/analytics-report.mjs --json         the same numbers as JSON (for the visual HTML report)
 //
-// Writes Markdown to stdout. Compares the month with the month before, and
+// Writes Markdown (or JSON) to stdout. Compares the month with the month before, and
 // follows up the SEO changes in TRACKED by comparing Search Console for the
 // 28 days before each change with the report month. No numbers live in this
 // file (the repo is public); everything is read live from the APIs.
@@ -16,10 +17,10 @@ import { ga4, gsc, isoDate, pagePath, pageRegex, ConfigError } from "./lib/googl
 // Changes to follow up month by month. `page` is a path, or a regex source
 // matched against the full URL; `query` (optional) is a regex source.
 const TRACKED = [
-  { label: "/map: title + position button for «hvor høyt over havet er jeg»", changedOn: "2026-10-10", page: "/map", query: "høyt over havet|over havet|min posisjon|moh" },
-  { label: "Kommune pages: «Hvor mange bor i …» titles + 2026 population", changedOn: "2026-10-10", pageRe: "^https://(www\\.)?datakart\\.no/kommune/.+", query: "innbyggere|bor i|bor det i|folketall|befolkning" },
-  { label: "/eiendom: title, intro and FAQ for «tomtegrenser»", changedOn: "2026-10-11", page: "/eiendom" },
-  { label: "/valg: 1945–2025 timeline + crawlable table", changedOn: "2026-10-10", page: "/valg" },
+  { label: "/map: title + position button for «hvor høyt over havet er jeg»", labelNb: "Høydekart: ny tittel og «Hvor høyt over havet er jeg?»-knapp", changedOn: "2026-10-10", page: "/map", query: "høyt over havet|over havet|min posisjon|moh" },
+  { label: "Kommune pages: «Hvor mange bor i …» titles + 2026 population", labelNb: "Kommunesidene: «Hvor mange bor i …»-titler og folketall for 2026", changedOn: "2026-10-10", pageRe: "^https://(www\\.)?datakart\\.no/kommune/.+", query: "innbyggere|bor i|bor det i|folketall|befolkning" },
+  { label: "/eiendom: title, intro and FAQ for «tomtegrenser»", labelNb: "Tomtegrenser: ny tittel, introtekst og spørsmål og svar", changedOn: "2026-10-11", page: "/eiendom" },
+  { label: "/valg: 1945–2025 timeline + crawlable table", labelNb: "Valgkart: tidslinje 1945–2025 og tabell for Google", changedOn: "2026-10-10", page: "/valg" },
 ];
 
 // ─── Periods ─────────────────────────────────────────────────────────────
@@ -136,6 +137,67 @@ async function main() {
     tracked.push({ t, before, after, b, a, daysBefore: days(before), daysAfter: days(after) });
   }
 
+  // Six calendar months up to the report month, for the trend chart.
+  const histStart = (() => {
+    const [y, m] = month.split("-").map(Number);
+    return isoDate(new Date(Date.UTC(y, m - 6, 1)));
+  })();
+  const histRange = { startDate: histStart, endDate: cur.endDate };
+  const [gaHist, scDaily] = await Promise.all([
+    ga4({ dimensions: [{ name: "yearMonth" }], metrics: [{ name: "activeUsers" }], orderBys: [{ dimension: { dimensionName: "yearMonth" } }] }, histRange),
+    gsc({ dimensions: ["date"], rowLimit: 500 }, histRange),
+  ]);
+  const clicksByMonth = new Map();
+  for (const r of scDaily) clicksByMonth.set(r.keys[0].slice(0, 7), (clicksByMonth.get(r.keys[0].slice(0, 7)) ?? 0) + r.clicks);
+  const history = gaHist.map((r) => {
+    const ym = `${r.yearMonth.slice(0, 4)}-${r.yearMonth.slice(4)}`;
+    return { month: ym, users: r.activeUsers, clicks: clicksByMonth.get(ym) ?? 0 };
+  });
+
+  const sc = scCur[0] ?? { clicks: 0, impressions: 0, ctr: 0, position: 0 };
+  const scp = scPrev[0] ?? { clicks: 0, impressions: 0, ctr: 0, position: 0 };
+  const qPrevMap = byKey(qPrev);
+  const movers = [...new Set([...qCur.map((r) => r.key), ...qPrev.map((r) => r.key)])]
+    .map((k) => ({ k, a: qCur.find((r) => r.key === k)?.clicks ?? 0, b: qPrevMap.get(k)?.clicks ?? 0 }))
+    .map((m) => ({ ...m, d: m.a - m.b }))
+    .filter((m) => m.d !== 0)
+    .sort((x, y) => Math.abs(y.d) - Math.abs(x.d))
+    .slice(0, 10);
+  const pagesMerged = mergePages(pCur).sort((a, b) => b.impressions - a.impressions);
+  const pPrevMap = byKey(mergePages(pPrev));
+  const apex = pCur.filter((r) => /^https:\/\/datakart\.no/.test(r.keys[0])).reduce((s, r) => s + r.impressions, 0);
+  const opportunities = qp.filter((r) => r.impressions >= 40 && r.position >= 4).sort((a, b) => b.impressions - a.impressions).slice(0, 15);
+  const pos_ = events.find((e) => e.eventName === "min_posisjon");
+  const chPrevMap = byKey(chPrev, (r) => r.sessionDefaultChannelGroup);
+  const pgPrevMap = byKey(pgPrev, (r) => r.pagePath);
+
+  if (process.argv.includes("--json")) {
+    const per = (x, r, days) => ({ range: r, clicksPerDay: x.clicks / days, impressionsPerDay: x.impressions / days, ctr: x.ctr, position: x.position });
+    process.stdout.write(JSON.stringify({
+      month, prevMonth: prevMonth(month), monthName: monthName(month), prevMonthName: monthName(prevMonth(month)), generated: isoDate(new Date()),
+      ga: {
+        cur: gaCur, prev: gaPrev,
+        channels: chCur.map((r) => ({ name: r.sessionDefaultChannelGroup, sessions: r.sessions, prev: chPrevMap.get(r.sessionDefaultChannelGroup)?.sessions ?? 0 })),
+        devices: devices.map((r) => ({ name: r.deviceCategory, users: r.activeUsers, engagementRate: r.engagementRate, avgSec: r.userEngagementDuration / (r.activeUsers || 1) })),
+        pages: pgCur.slice(0, 10).map((r) => ({ path: r.pagePath, views: r.screenPageViews, prev: pgPrevMap.get(r.pagePath)?.screenPageViews ?? 0, users: r.activeUsers, avgSec: r.userEngagementDuration / (r.activeUsers || 1) })),
+        minPosisjon: pos_?.eventCount ?? 0,
+      },
+      search: {
+        cur: sc, prev: scp,
+        queries: [...qCur].sort((a, b) => b.clicks - a.clicks || b.impressions - a.impressions).slice(0, 10).map((r) => ({ query: r.key, clicks: r.clicks, prev: qPrevMap.get(r.key)?.clicks ?? 0, impressions: r.impressions, position: r.position })),
+        movers: movers.map((m) => ({ query: m.k, clicks: m.a, prev: m.b })),
+        pages: pagesMerged.slice(0, 10).map((r) => ({ path: r.key, clicks: r.clicks, prev: pPrevMap.get(r.key)?.clicks ?? 0, impressions: r.impressions, position: r.position })),
+        apexImpressions: apex,
+        opportunities: opportunities.map((r) => ({ query: r.keys[0], page: pagePath(r.keys[1]), clicks: r.clicks, impressions: r.impressions, position: r.position })),
+      },
+      history,
+      tracked: tracked.map((x) => x.pending
+        ? { label: x.t.labelNb ?? x.t.label, changedOn: x.t.changedOn, pending: true }
+        : { label: x.t.labelNb ?? x.t.label, changedOn: x.t.changedOn, pending: false, before: per(x.b, x.before, x.daysBefore), after: per(x.a, x.after, x.daysAfter) }),
+    }, null, 2));
+    return;
+  }
+
   // ─── Markdown ──────────────────────────────────────────────────────────
 
   const out = [];
@@ -153,7 +215,6 @@ async function main() {
   ]));
 
   out.push("### Channels\n");
-  const chPrevMap = byKey(chPrev, (r) => r.sessionDefaultChannelGroup);
   out.push(table(["Channel", "Sessions", "Previous", "Change"], chCur.map((r) => {
     const p = chPrevMap.get(r.sessionDefaultChannelGroup)?.sessions ?? 0;
     return [r.sessionDefaultChannelGroup, n(r.sessions), n(p), change(r.sessions, p)];
@@ -163,17 +224,13 @@ async function main() {
   out.push(table(["Device", "Users", "Engagement rate", "Avg. engagement"], devices.map((r) => [r.deviceCategory, n(r.activeUsers), pct(r.engagementRate), sec(r.userEngagementDuration / (r.activeUsers || 1))])));
 
   out.push("### Top pages\n");
-  const pgPrevMap = byKey(pgPrev, (r) => r.pagePath);
   out.push(table(["Page", "Views", "Previous", "Change", "Users", "Avg. engagement"], pgCur.slice(0, 15).map((r) => {
     const p = pgPrevMap.get(r.pagePath)?.screenPageViews ?? 0;
     return [r.pagePath, n(r.screenPageViews), n(p), change(r.screenPageViews, p), n(r.activeUsers), sec(r.userEngagementDuration / (r.activeUsers || 1))];
   })));
-  const pos_ = events.find((e) => e.eventName === "min_posisjon");
   out.push(`«Min posisjon» lookups on /map (event \`min_posisjon\`, CTA + search-bar button): ${pos_ ? n(pos_.eventCount) : "0 (event introduced Oct 2026)"}.\n`);
 
   out.push("## Google Search (Search Console)\n");
-  const sc = scCur[0] ?? { clicks: 0, impressions: 0, ctr: 0, position: 0 };
-  const scp = scPrev[0] ?? { clicks: 0, impressions: 0, ctr: 0, position: 0 };
   out.push(table(["Metric", monthName(month), monthName(prevMonth(month)), "Change"], [
     ["Clicks", n(sc.clicks), n(scp.clicks), change(sc.clicks, scp.clicks)],
     ["Impressions", n(sc.impressions), n(scp.impressions), change(sc.impressions, scp.impressions)],
@@ -182,26 +239,17 @@ async function main() {
   ]));
 
   out.push("### Top searches\n");
-  const qPrevMap = byKey(qPrev);
   out.push(table(["Search", "Clicks", "Previous", "Impressions", "CTR", "Position"], [...qCur].sort((a, b) => b.clicks - a.clicks || b.impressions - a.impressions).slice(0, 20).map((r) => [r.key, n(r.clicks), n(qPrevMap.get(r.key)?.clicks ?? 0), n(r.impressions), pct(r.ctr), pos(r.position)])));
 
   out.push("### Biggest movers (clicks vs previous month)\n");
-  const movers = [...new Set([...qCur.map((r) => r.key), ...qPrev.map((r) => r.key)])]
-    .map((k) => ({ k, a: qCur.find((r) => r.key === k)?.clicks ?? 0, b: qPrevMap.get(k)?.clicks ?? 0 }))
-    .map((m) => ({ ...m, d: m.a - m.b }))
-    .filter((m) => m.d !== 0)
-    .sort((x, y) => Math.abs(y.d) - Math.abs(x.d))
-    .slice(0, 10);
   out.push(table(["Search", "Clicks", "Previous", "Δ"], movers.map((m) => [m.k, n(m.a), n(m.b), `${m.d > 0 ? "+" : ""}${n(m.d)}`])));
 
   out.push("### Pages in Google (datakart.no and www folded together)\n");
-  const pPrevMap = byKey(mergePages(pPrev));
-  out.push(table(["Page", "Clicks", "Previous", "Impressions", "CTR", "Position"], mergePages(pCur).sort((a, b) => b.impressions - a.impressions).slice(0, 15).map((r) => [r.key, n(r.clicks), n(pPrevMap.get(r.key)?.clicks ?? 0), n(r.impressions), pct(r.ctr), pos(r.position)])));
-  const apex = pCur.filter((r) => /^https:\/\/datakart\.no/.test(r.keys[0])).reduce((s, r) => s + r.impressions, 0);
+  out.push(table(["Page", "Clicks", "Previous", "Impressions", "CTR", "Position"], pagesMerged.slice(0, 15).map((r) => [r.key, n(r.clicks), n(pPrevMap.get(r.key)?.clicks ?? 0), n(r.impressions), pct(r.ctr), pos(r.position)])));
   out.push(`Impressions on apex URLs (https://datakart.no/…, not www): ${n(apex)} of ${n(sc.impressions)}. Should fall towards 0 once the apex redirect is a permanent 308.\n`);
 
   out.push("### Opportunities (shown ≥ 40 times at position ≥ 4)\n");
-  out.push(table(["Search", "Page", "Clicks", "Impressions", "CTR", "Position"], qp.filter((r) => r.impressions >= 40 && r.position >= 4).sort((a, b) => b.impressions - a.impressions).slice(0, 15).map((r) => [r.keys[0], pagePath(r.keys[1]), n(r.clicks), n(r.impressions), pct(r.ctr), pos(r.position)])));
+  out.push(table(["Search", "Page", "Clicks", "Impressions", "CTR", "Position"], opportunities.map((r) => [r.keys[0], pagePath(r.keys[1]), n(r.clicks), n(r.impressions), pct(r.ctr), pos(r.position)])));
 
   out.push("## Tracked changes\n");
   out.push("_Search Console for the 28 days before each change vs the report month (from the change date). Clicks and impressions are per day, since the periods differ in length._\n");
