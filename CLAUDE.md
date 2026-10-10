@@ -31,7 +31,7 @@ src/app/
   energi/page.tsx       — Category landing for Energi (hub for /energikart, /magasin, /lading)
   natur/page.tsx        — Category landing for Natur (hub for /map, /hytter, /vern)
   samfunn/page.tsx      — Category landing for Samfunn (hub for Stedsprofil, /bolig, /lonn, /helse, /skoler, /kostnader, /valg, /prisvekst)
-  energikart/page.tsx   — Energy (wind + hydro) map. Renamed from /energi in May 2026; conditional 301 in next.config.ts preserves Stedsprofil deep links (?lat=&lon=&z=)
+  energikart/page.tsx   — Energy (wind + hydro) map with the build-out "Tidslinje" (see energy-timeline.tsx). Renamed from /energi in May 2026; conditional 301 in next.config.ts preserves Stedsprofil deep links (?lat=&lon=&z=)
   magasin/page.tsx      — Reservoir monitor map
   prisvekst/page.tsx    — Inflation dashboard (KPI, categories, trends)
   vindkraft/page.tsx    — Wind power plants map (unlisted deep link, not in nav/sitemap; `robots: noindex` with a self-canonical)
@@ -42,7 +42,7 @@ src/app/
   helse/page.tsx        — Fastlege choropleth (SSB 12005) with optional OSM overlay for sykehus/legevakt
   kostnader/page.tsx    — Cost-of-living choropleth: kommunale gebyrer (SSB 12842) + eiendomsskatt (SSB 14674) with Sammenlign feature
   kostnader/opengraph-image.tsx — Dynamic OG image for /kostnader
-  valg/page.tsx         — Election results choropleth: stortingsvalg + kommunestyrevalg per kommune (Valgdirektoratet) — type/year selectors, comparison sheet, FAQ
+  valg/page.tsx         — Election results choropleth: stortingsvalg + kommunestyrevalg per kommune (Valgdirektoratet) — type/year selectors, comparison sheet, "Tidslinje" 1945–2025, FAQ. Below the map a server-rendered table of all 21 Stortingsvalg (from valg-historikk.ts) so the timeline's facts are crawlable
   eiendom/page.tsx      — Tomtegrenser map: click (zoom-gated ≥12, crosshair cursor) or address search → parcel polygon from matrikkelen with gnr/bnr, accuracy class, and geodesic area (m² + mål)
   personvern/page.tsx   — Privacy policy page
   api/
@@ -107,9 +107,10 @@ src/lib/
   health-summary.ts     — Shared `synthesizeHealth()` helper used on /helse and Stedsprofil — turns 3 fastlege metrics into a plain-Norwegian one-line sentence with good/mixed/bad/neutral tone
   utm.ts                — UTM zone 33N → WGS84 conversion (for NVE ArcGIS data)
   parse-coordinates.ts  — Parses pasted coordinates (decimal, decimal comma, Apple Maps °N/°E, Google DMS, Garmin decimal minutes) + isWithinNorway(); used by /map search
-  party-colors.ts       — Norwegian party colors (saturated fills + WCAG-AA-compliant text variants); used by /valg and Stedsprofil Politikk section
+  party-colors.ts       — Norwegian party colors (saturated fills + WCAG-AA-compliant text variants) + `partyShort()` display names, incl. historical NKP / FELLES for the 1945– timeline; used by /valg and Stedsprofil Politikk section
   utils.ts              — cn() helper
   home-facts.ts         — Server-only. Landing-page numbers derived from kommune-profiles.json + valg/st-2025.json (kommuner, enebolig price extremes for the latest SSB year, population extremes, top-3 winning parties) + `nb()` nb-NO thousands formatter
+  valg-historikk.ts     — Server-only. Per-election summary of historikk.json (largest party nationally, top 3 by kommuner won, kommune count) for the crawlable table on /valg
 
 scripts/
   fetch-stations.mjs    — Build-time: fetches ALL charging stations → public/data/stations.json

@@ -2,7 +2,7 @@
 
 Shows four categories of energy infrastructure on one map: onshore wind farms, hydroelectric plants, offshore wind investigation zones, and oil and gas facilities with pipelines. Data comes from NVE ArcGIS services and the Sodir FactMaps API.
 
-Route: `/energi`
+Route: `/energikart` (moved from `/energi` in May 2026; a conditional 301 in `next.config.ts` keeps old deep links working)
 
 ---
 
@@ -176,9 +176,26 @@ Toggle between Kart (Kartverket topo) and Gråtone (Kartverket topograatone) in 
 
 ---
 
+## Tidslinje (build-out animation)
+
+The "Tidslinje" button plays Norway's energy build-out from 1900 to today (`src/components/energy-timeline.tsx`, panel chrome shared with /valg in `src/components/timeline-panel.tsx`).
+
+| Type | Year field | Source |
+|------|-----------|--------|
+| Hydro | `idriftsattaar` → `yearBuilt` | NVE Vannkraft1 layer 0 (all operating plants have it) |
+| Wind (operational only) | `forsteidriftdato` → `yearBuilt` | NVE Vindkraft2 layer 0 |
+| Oil/gas | `fclStartupDate` → `yearStartup` | Sodir FactMaps |
+
+- **Rendering:** one custom canvas layer (`DotCanvas`) repaints every visible dot each frame. Leaflet's per-marker canvas renderer only repaints around changed markers and left slivers behind when hundreds were removed at once on scrub-back. The canvas is scaled during zoom animations instead of hidden, and dots shrink at country-wide zoom.
+- **Playback:** a plain `TimelineEngine` class runs one `requestAnimationFrame` loop (6 years/second) outside React; React only hears about whole-year changes. Each year's plants are spread across the year and pop in over 700 ms of wall-clock time; plants of 200 MW or more get a ripple. `prefers-reduced-motion` shows dots at full size without animation.
+- **Interaction:** clicking a dot pauses and opens a popup; "Åpne i kartet" leaves the timeline and selects the plant, turning on "Vis små kraftverk" when it is under 10 MW.
+- **Honesty caveat (shown in the panel):** capacity is today's installed MW placed at the first year of operation, so later upgrades count from the start. Oil/gas adds to the facility count only (Sodir has no capacity figure).
+
+---
+
 ## Known Limitations
 
-- NVE ArcGIS caps responses at 2000 records per request. Layers that exceed this limit will be silently truncated.
+- NVE ArcGIS caps responses at 2000 records per request. Layers that exceed this limit will be silently truncated. The hydro layer is closest: 1 889 operating plants in Oct 2026 — paginate (`resultOffset`) before it passes 2000.
 - Hydro plants from NVE Vannkraft1 layer 0 do not include expected production in GWh; that field is absent from the layer schema.
 - Live HydAPI river data on hydro plant detail cards requires the `NVE_API_KEY` environment variable. Without it, the live data section is omitted.
 - Offshore wind zone polygons are aggressively simplified for large ocean polygons. Fine coastal detail may be lost.

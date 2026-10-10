@@ -4,16 +4,12 @@ import { useEffect, useMemo, useState } from "react";
 import L from "leaflet";
 import { Info, Loader2 } from "lucide-react";
 import { TimelinePanel } from "@/components/timeline-panel";
-import { partyFill, partyText } from "@/lib/party-colors";
+import { partyFill, partyShort, partyText } from "@/lib/party-colors";
 
 // One election per beat; long enough for the cross-fade (globals.css,
 // .valg-timeline) to land and the eye to take in the new map.
 const STEP_MS = 1300;
 
-const PARTY_LABEL: Record<string, string> = {
-  A: "Ap", H: "H", FRP: "FrP", SP: "Sp", KRF: "KrF", V: "V", SV: "SV",
-  RØDT: "Rødt", MDG: "MDG", NKP: "NKP", FELLES: "Fellesliste", ANDRE: "Andre",
-};
 // Left → right, so the national bar reads like a parliament seating plan.
 const BAR_ORDER = ["NKP", "RØDT", "SV", "A", "SP", "MDG", "KRF", "V", "H", "FRP", "FELLES", "ANDRE"];
 
@@ -154,7 +150,7 @@ export function ValgTimeline({ map, names, onStyle, focusRef, onClose }: Props) 
       onClose={onClose}
       aside={view && (<>
         <p className="text-lg sm:text-xl font-extrabold tabular-nums leading-none whitespace-nowrap" style={{ color: partyText(view.natWinner) }}>
-          {PARTY_LABEL[view.natWinner]} {pct(view.natShare)}
+          {partyShort(view.natWinner)} {pct(view.natShare)}
         </p>
         <p className="text-xs text-muted-foreground mt-1 whitespace-nowrap">størst nasjonalt</p>
       </>)}
@@ -171,7 +167,7 @@ export function ValgTimeline({ map, names, onStyle, focusRef, onClose }: Props) 
               key={s.k}
               className="h-full transition-[width] duration-700 ease-out motion-reduce:transition-none"
               style={{ width: `${s.share}%`, background: partyFill(s.k) }}
-              title={`${PARTY_LABEL[s.k]} ${pct(s.share)}`}
+              title={`${partyShort(s.k)} ${pct(s.share)}`}
             />
           ))}
         </div>
@@ -186,7 +182,7 @@ export function ValgTimeline({ map, names, onStyle, focusRef, onClose }: Props) 
           className="block w-full mt-3 cursor-pointer"
           style={{ accentColor: "var(--kv-blue)" }}
           aria-label="Velg valgår"
-          aria-valuetext={`Stortingsvalget ${view.year}: ${PARTY_LABEL[view.natWinner]} størst med ${pct(view.natShare)}`}
+          aria-valuetext={`Stortingsvalget ${view.year}: ${partyShort(view.natWinner)} størst med ${pct(view.natShare)}`}
         />
         <div className="hidden sm:flex justify-between text-xs text-muted-foreground tabular-nums mt-0.5">
           <span>{data.meta.years[0]}</span>
@@ -201,7 +197,7 @@ export function ValgTimeline({ map, names, onStyle, focusRef, onClose }: Props) 
               {focusLine.top.map((t) => (
                 <span key={t.k} className="inline-flex items-center gap-1.5">
                   <span className="h-2.5 w-2.5 rounded-sm" style={{ background: partyFill(t.k) }} />
-                  <span className="text-foreground">{PARTY_LABEL[t.k]}</span>
+                  <span className="text-foreground">{partyShort(t.k)}</span>
                   <span className="text-muted-foreground tabular-nums">{pct(t.s)}</span>
                 </span>
               ))}
@@ -212,7 +208,7 @@ export function ValgTimeline({ map, names, onStyle, focusRef, onClose }: Props) 
               {view.wins.map(([k, n]) => (
                 <span key={k} className="inline-flex items-center gap-1.5">
                   <span className="h-2.5 w-2.5 rounded-sm" style={{ background: partyFill(k) }} />
-                  <span className="text-foreground">{PARTY_LABEL[k]}</span>
+                  <span className="text-foreground">{partyShort(k)}</span>
                   <span className="text-muted-foreground tabular-nums">{n}</span>
                 </span>
               ))}
