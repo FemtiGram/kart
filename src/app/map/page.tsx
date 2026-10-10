@@ -105,7 +105,7 @@ export default function MapPage() {
       <section className="bg-background border-t">
         <div className="container mx-auto px-6 md:px-16 pt-5 pb-12 md:pb-16 max-w-3xl">
           <h2 className="text-2xl font-extrabold tracking-tight mb-3" style={{ color: "var(--kv-blue)" }}>
-            Hvor høyt over havet ligger du?
+            Hvor høyt over havet er jeg nå?
           </h2>
           <p className="text-foreground/80 leading-relaxed">
             Trykk på posisjonsknappen, så ser du hvor mange meter over havet du er akkurat nå. Du kan også søke opp en
