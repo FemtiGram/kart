@@ -281,6 +281,7 @@ All maps use a **compact floating card + expandable bottom Sheet** pattern:
 ### Elevation map specifics (/map):
 - **Camera:** map clicks keep the current zoom and only `panInside` so the point clears the compact card; searches, geolocation and pasted coordinates fly to zoom 16; deep links fly to their `z`
 - **Shareable URL:** the selection is mirrored to `?lat=&lon=&z=` with `history.replaceState` (no back-button spam) and cleared when the card closes. Written on selection changes only, never on zoom — Next's router treats `replaceState` as a navigation and would drop a pending `<Link>` click. "Del" uses the Web Share API (live zoom from a ref), falling back to clipboard. Deep links are only honoured if present when the map mounts (`landedWithParams`, read from `useSearchParams` — **not** `window.location`, which still holds the previous page's URL during a client-side `<Link>` navigation) — otherwise the map's own URL writes would re-trigger `useInitialPosition`
+- **Empty-state CTA:** with nothing selected, a bottom card's primary button "Hvor høyt over havet er jeg?" runs the same `useGeolocation` lookup as the small button by the search field (browser permission prompt; deny → Oslo + toast). Both send GA event `min_posisjon` with `source: cta | searchbar`. Matches the top Search Console query for /map
 - **Weather waits for elevation** and passes it as `altitude` to `/api/weather`; elevation renders first. All responses are guarded by a selection sequence ref so stale results can't overwrite a newer selection
 
 ### Energy map specifics:
