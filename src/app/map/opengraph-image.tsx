@@ -26,7 +26,7 @@ export default function OgImage() {
           Høyde over havet
         </span>
         <p style={{ fontSize: 28, color: "rgba(255,255,255,0.7)", marginTop: 16 }}>
-          Finn moh. for enhver adresse eller koordinat i Norge, med vær fra MET.no
+          Se hvor høyt over havet du er nå, eller finn moh. for en adresse
         </p>
         <div
           style={{

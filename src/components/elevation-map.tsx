@@ -379,6 +379,14 @@ export function ElevationMap() {
     }, [handleMapClick]),
   );
 
+  // Same lookup from both buttons; the GA event tells the big empty-state CTA
+  // apart from the small one by the search field. gtag only exists in
+  // production (layout.tsx).
+  const locateFrom = (source: "cta" | "searchbar") => {
+    (window as { gtag?: (...args: unknown[]) => void }).gtag?.("event", "min_posisjon", { source });
+    handleLocate();
+  };
+
   // Deep link (shared link, or /kommune/[slug]): ?lat=&lon=&z= triggers an
   // elevation+weather fetch at that point and flies to the requested zoom.
   useInitialPosition((lat, lon, zoom) => {
@@ -500,7 +508,7 @@ export function ElevationMap() {
                 className="flex-1 min-w-0 text-ellipsis bg-transparent outline-none focus-visible:ring-2 focus-visible:ring-ring text-sm text-foreground placeholder:text-muted-foreground text-[16px] sm:text-sm"
               />
             </div>
-            <Button onClick={handleLocate} disabled={locating} variant="secondary" size="icon" aria-label="Min posisjon" className="shadow-lg shrink-0 h-11 w-11 rounded-xl">
+            <Button onClick={() => locateFrom("searchbar")} disabled={locating} variant="secondary" size="icon" aria-label="Min posisjon" className="shadow-lg shrink-0 h-11 w-11 rounded-xl">
               {locating ? <Loader2 className="h-4 w-4 animate-spin" /> : <LocateFixed className="h-4 w-4" />}
             </Button>
             <Button onClick={() => setShowInfo(true)} variant="secondary" size="icon" aria-label="Om data" className="shadow-lg shrink-0 h-11 w-11 rounded-xl">
@@ -756,10 +764,26 @@ export function ElevationMap() {
           </SheetContent>
         </Sheet>
 
+        {/* Empty state: the most common search is "hvor høyt over havet er
+            jeg nå", so the position lookup is the main call to action. */}
         {!selected && (
-          <div className="absolute inset-0 flex items-end justify-center pb-8 pointer-events-none z-[998]">
-            <div className="bg-card/90 backdrop-blur-sm rounded-xl px-5 py-3 shadow text-sm text-muted-foreground">
-              Søk eller klikk i kartet for å se høyden over havet
+          <div className="absolute inset-x-3 bottom-6 flex justify-center pointer-events-none z-[998]">
+            <div className="pointer-events-auto w-full max-w-sm bg-card/95 backdrop-blur-sm rounded-2xl border shadow-lg px-4 py-3">
+              <button
+                onClick={() => locateFrom("cta")}
+                disabled={locating}
+                className="w-full inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                style={{ background: "var(--kv-blue)" }}
+              >
+                {locating ? (
+                  <><Loader2 className="h-4 w-4 animate-spin" /> Finner posisjonen din...</>
+                ) : (
+                  <><LocateFixed className="h-4 w-4" /> Hvor høyt over havet er jeg?</>
+                )}
+              </button>
+              <p className="mt-2 text-xs text-muted-foreground text-center text-balance">
+                Nettleseren spør om du vil dele posisjonen. Du kan også søke eller klikke i kartet.
+              </p>
             </div>
           </div>
         )}

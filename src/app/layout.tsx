@@ -6,6 +6,9 @@ import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 
 const GA_ID = "G-T8XDP59WNK";
+// Analytics only on the production deployment: localhost and Vercel
+// previews were sending hits into the same GA4 property.
+const SEND_ANALYTICS = process.env.VERCEL_ENV === "production";
 
 // Nunito Sans is self-hosted (the same variable font files Google Fonts
 // serves, OFL — see src/assets/fonts/OFL.txt) so the build never fetches
@@ -94,13 +97,15 @@ export default function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
-        <Script src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`} strategy="afterInteractive" />
-        <Script id="gtag-init" strategy="afterInteractive">
-          {`window.dataLayer = window.dataLayer || [];
+        {SEND_ANALYTICS && (<>
+          <Script src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`} strategy="afterInteractive" />
+          <Script id="gtag-init" strategy="afterInteractive">
+            {`window.dataLayer = window.dataLayer || [];
 function gtag(){dataLayer.push(arguments);}
 gtag('js', new Date());
 gtag('config', '${GA_ID}');`}
-        </Script>
+          </Script>
+        </>)}
       </head>
       <body className="min-h-full flex flex-col">
         <Navbar />
