@@ -271,6 +271,16 @@ html {
   }
 }
 
+/* ─── /valg timeline: kommune fills cross-fade between elections ─────────── */
+.valg-timeline path.leaflet-interactive {
+  transition: fill 700ms ease, fill-opacity 700ms ease;
+}
+@media (prefers-reduced-motion: reduce) {
+  .valg-timeline path.leaflet-interactive {
+    transition: none;
+  }
+}
+
 /* ─── Party rows (Politikk on Stedsprofil, Stemmefordeling + Sammenlign on /valg) ─
  *
  * Hovering one row quietly dims its siblings so the hovered party reads

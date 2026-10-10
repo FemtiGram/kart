@@ -65,6 +65,8 @@ src/components/
   *-map.tsx             — Map components (one per page)
   *-map-loader.tsx      — Dynamic import wrappers (ssr: false), all include MapLoading skeleton except kommune-mini-map-loader.tsx (plain `animate-pulse` div, 320px, for the inline Stedsprofil map)
   energy-detail-sheets.tsx — Extracted detail sheets for energy plant, oil/gas, and havvind
+  energy-timeline.tsx   — /energikart "Tidslinje": hydro/wind/oil-gas appear by first year in operation (1900→today). Imperative `TimelineEngine` (one rAF loop, wall-clock pop-in) drawing on a custom `DotCanvas` layer that repaints every dot per frame — Leaflet's per-marker canvas left slivers on scrub-back. Canvas scales with zoomanim (not hidden). Click a dot → popup → "Åpne i kartet" selects the plant (turns on small plants if <10 MW). Wind year = NVE `forsteidriftdato`
+  timeline-panel.tsx    — Shared timeline chrome (/energikart + /valg): floating panel, play/pause, big year, framing around the panel (quarter-step zoom for the opening flight only, scrolls to top on mobile because the page hides its header and Chrome's scroll anchoring would push the map up)
   energy-map-helpers.tsx — Shared energy map helpers, icon factories, and re-exports shared TILE_LAYERS/TileLayerKey
   health-detail-sheet.tsx — Extracted detail sheet + sub-components for /helse
   health-map-helpers.ts — Shared types, constants, and helpers for /helse
@@ -85,6 +87,7 @@ src/components/
   minimal-card.tsx      — Single shared card style for the home (categories + Mest populært strip) AND the category landing pages. Icon inline with the title, description full width. `compact` = tighter padding/type; `image` (StaticImageData) adds a picture strip + arrow — 16:10 on compact cards; full-size cards crop to 2:1 while they sit one per row (below md) so three stacked theme cards don't become a wall of pictures on phones. Hover = 2px lift + press, focus ring
   category-hero.tsx     — Reusable hero for /energi, /natur, /samfunn — back-to-home link + eyebrow + big title + ~80-word editorial intro
   valg-map.tsx          — /valg map: party-colored choropleth, type/year selectors (st 2025/2021, ko 2023/2019), white-halo hover, compare sheet
+  valg-timeline.tsx     — /valg "Tidslinje": Stortingsvalg 1945–2025 from historikk.json, winner fill with opacity by winning share, CSS cross-fade (`.valg-timeline` in globals.css). Owns the kommune colours via the page's `geoStyle` (react-leaflet re-applies `style` on every parent render, so the styler must live there, not in direct setStyle calls). Hover/tap → kommune's top 3 in the panel
   eiendom-map.tsx       — /eiendom map: address search or zoom-gated map click → matrikkel parcel polygon + compact card/detail sheet. Area via src/lib/geodesic-area.ts (turf-style spherical, no projection). Owner data NOT in open API — links to Kartverket's Se eiendom
   eiendom-map-loader.tsx — Dynamic wrapper for eiendom-map (ssr: false)
   valg-map-loader.tsx   — Dynamic wrapper for valg-map (ssr: false)
@@ -118,6 +121,7 @@ scripts/
   fetch-schools.mjs     — Build-time: lists active schools (NSR) and barnehager (NBR) from UDIR, fetches per-orgnr detail for coordinates and stats in a 20-wide pool → public/data/schools.json
   fetch-health.mjs      — Build-time: Overpass query (scoped to Norway via `area["ISO3166-1"="NO"]`) for `amenity=hospital` and `amenity=clinic`, classifies into sykehus / legevakt / privatklinikker → public/data/health.json
   fetch-valg.mjs        — Build-time: fetches Stortingsvalg 2025/2021 + Kommunestyrevalg 2023/2019 from valgresultat.no (Valgdirektoratet). Remaps pre-2024 kommunenummer to current geometry via fylke-prefix table + name normalization (Sami/Kven secondary names, "Aurskog-Høland" whitespace, "Nes, Buskerud"→Nesbyen rename) → public/data/valg/{type}-{year}.json + index.json manifest
+  fetch-valg-historikk.mjs — Manual (NOT in prebuild — history doesn't change; rerun after an election or kommune reform): SSB 08092 votes per historical kommune 1945–2025 + Klass 131 change history → shares per party group on today's 357 kommuner → public/data/valg/historikk.json. Matches each region by code AND name at election date (SSB reuses codes, `0701u`), split kommuner → main successor, later-split kommuner inherit the parent's shares. Lineages: Bondepartiet→Sp, ALP→FrP, SF/SV-forbund→SV, RV→Rødt; joint lists → FELLES. Checks per election: all mapped, kommune sum = national, all 357 present
   build-kommune-profiles.mjs — Build-time: composes SSB population/income/bolig/vern/fastlege (12005) + kommunale gebyrer (12842) + eiendomsskatt (14674) + eierstatus (14891) + boligtyper (06265) + utdanningsnivå (09429) + nasjonale prøver (12255) + NVE plants + UDIR schools/barnehager + valg results (latest st + ko) + static files via point-in-polygon and kommunenummer grouping into one profile per kommune → public/data/kommune-profiles.json + public/data/fastlege.json + public/data/kostnader.json. Also calls `generateSnapshot()` from `generate-snapshot.mjs` for each profile so the 3-sentence narrative is baked into the output JSON.
   build-thumbs.mjs      — `npm run thumbs`. Draws the landing-page card pictures as SVG, rasterised with sharp → src/assets/thumbs/*.webp (committed). Mest populært: Sør-Norge in one shared 16:10 frame (`hoydekart` = terrain lines — Unknown Pleasures-style ridgelines raised by real elevation from scripts/data/terrain.png, Bergen coast to the Swedish border, ^1.5 so the lowlands stay flat; plus valg choropleth, bolig bubbles, stedsprofil population tints). Theme cards, one texture each so they don't read as more copies of those maps: `samfunn` = every school (brand blue, sized by pupils) and barnehage around Oslofjorden, `energi` = every NOBIL charger in Sør-Norge binned into 14px hexagons tinted by installed capacity (max kW × charge points, log scale, hydro cyan — hexes so it isn't a second dot map next to Samfunn), `natur` = verne share + turisthytter around Jotunheimen (cabins point-in-polygon filtered — cabins.json's Overpass bbox reaches into Sweden/Finland). Zoomed frames draw full-res kommuner.geojson. No network, no tiles; rerun after a data refresh. Imports partyFill from src/lib/party-colors.ts (Node type-stripping)
   fetch-terrain.mjs     — One-off, NOT in prebuild (terrain doesn't change). Downloads Mapzen Terrain Tiles (AWS Open Data, terrarium z8; Norway's data is Kartverket's DTM) for Sør-Norge, resamples to a ~1 km lat/lon grid → scripts/data/terrain.png (8-bit grey, 1 level = 10 m, sea clamped to 0) + terrain.json (bounds/size/scale). Committed; only build-thumbs reads it. Credited on /kilder
@@ -140,6 +144,7 @@ public/data/
     st-2021.json        — Stortingsvalg 2021 (356, Haram missing — was inside Ålesund)
     ko-2023.json        — Kommunestyrevalg 2023 (357)
     ko-2019.json        — Kommunestyrevalg 2019 (356)
+    historikk.json      — Stortingsvalg 1945–2025 on today's kommuner (shares per party group), for the /valg timeline. 2021/2025 match valgresultat.no within ±0.05 pp
   kommune-profiles.json — Pre-built per-kommune profile data for Stedsprofil (committed to repo)
 ```
 
@@ -473,6 +478,7 @@ Three-tier convention: `-light` for the background tint, base for icons/borders/
 | Utdanningsnivå | SSB tabell 09429 — % grunnskole / vgs / fagskole / UH kort / UH lang per kommune | Build-time static JSON |
 | Nasjonale prøver | SSB tabell 12255 (KOSTRA) — lesing %, regning % (mestringsnivå 3–5, 8. trinn) + grunnskolepoeng per kommune | Build-time static JSON |
 | Election results | Valgdirektoratet (valgresultat.no) — Stortingsvalg 2025/2021, Kommunestyrevalg 2023/2019. Pre-2024 kommunenummer remapped to current geometry | Build-time static JSON |
+| Election history | SSB tabell 08092 (Stortingsvalg, godkjente stemmer per parti per kommune 1945–2025) + SSB Klass 131 (kommune changes) | Static JSON, regenerated manually |
 | Finn.no location codes | Scraped from `finn.no/realestate/homes/search.html` (embedded JSON) | Build-time static JSON |
 | Weather | MET.no locationforecast (altitude-corrected on /map) | 30min server cache |
 | Elevation | Kartverket høyde-API | Per-request |
