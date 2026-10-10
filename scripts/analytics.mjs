@@ -196,11 +196,13 @@ const commands = {
   "query-pages": async () => {
     const page = args[1];
     if (!page || page.startsWith("--")) fail("Usage: node scripts/analytics.mjs query-pages /valg");
-    const host = (process.env.GSC_SITE ?? "").startsWith("http") ? process.env.GSC_SITE.replace(/\/$/, "") : "https://www.datakart.no";
+    // Match the path on both datakart.no and www.datakart.no (Google indexes
+    // both while the apex redirect is a 307), with or without a query string.
+    const path = page.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     print(
       await gsc({
         dimensions: ["query"],
-        dimensionFilterGroups: [{ filters: [{ dimension: "page", operator: "equals", expression: `${host}${page}` }] }],
+        dimensionFilterGroups: [{ filters: [{ dimension: "page", operator: "includingRegex", expression: `^https://(www\\.)?datakart\\.no${path}(\\?.*)?$` }] }],
       }),
       `Search Console queries for ${page}`,
     );

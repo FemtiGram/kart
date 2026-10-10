@@ -1,9 +1,13 @@
 import { ElevationMapLoader } from "@/components/elevation-map-loader";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 
-const TITLE = "Høyde over havet – finn moh. for adresser i Norge";
+// Matched to what people search (Search Console, 90 days to Oct 2026): the
+// biggest query is "hvor høyt over havet er jeg nå" (1 247 impressions), and
+// "where am I standing" searches far outnumber "høyde over havet adresse"
+// (103). The old address-led title got 2–6 % CTR at position ~4.5 on them.
+const TITLE = "Hvor høyt over havet er jeg? Høydekart for Norge";
 const DESCRIPTION =
-  "Finn høyden over havet (moh.) for enhver adresse, fjelltopp eller koordinat i Norge. Søk eller klikk i kartet – høydedata fra Kartverket og vær fra MET.no.";
+  "Se hvor mange meter over havet du er nå: trykk på posisjonsknappen, søk opp en adresse eller klikk i kartet. Høyde over havet (moh.) fra Kartverket.";
 
 export const metadata = {
   title: TITLE,
@@ -18,6 +22,9 @@ export const metadata = {
     siteName: "Datakart",
   },
   keywords: [
+    "hvor høyt over havet er jeg",
+    "meter over havet nå",
+    "høyde over havet min posisjon",
     "høyde over havet",
     "moh",
     "meter over havet",
@@ -38,6 +45,10 @@ const peaks = [
 ];
 
 const faqs = [
+  {
+    q: "Hvordan ser jeg hvor høyt over havet jeg er nå?",
+    a: "Trykk på posisjonsknappen ved siden av søkefeltet og la nettleseren bruke posisjonen din. Kartet går dit du står og viser høyden over havet i meter (moh.), sammen med været akkurat der. Høyden er terrenghøyden fra Kartverkets høydemodell, ikke GPS-høyden fra telefonen, som er mindre nøyaktig i høyden enn i kartposisjonen.",
+  },
   {
     q: "Hvordan finner jeg ut hvor mange meter over havet adressen min ligger?",
     a: "Skriv adressen i søkefeltet over kartet og velg treffet. Høyden vises i kortet nederst i kartet, oppgitt i meter over havet (moh.). Du kan også klikke hvor som helst i kartet, eller trykke på posisjonsknappen for å se høyden der du står.",
@@ -89,7 +100,7 @@ const jsonLd = {
 export default function MapPage() {
   return (
     <>
-      <h1 className="sr-only">Høyde over havet – høydekart for hele Norge</h1>
+      <h1 className="sr-only">Hvor høyt over havet er jeg? Høyde over havet for hele Norge</h1>
       <ElevationMapLoader />
       <section className="bg-background border-t">
         <div className="container mx-auto px-6 md:px-16 pt-5 pb-12 md:pb-16 max-w-3xl">
@@ -97,9 +108,10 @@ export default function MapPage() {
             Hvor høyt over havet ligger du?
           </h2>
           <p className="text-foreground/80 leading-relaxed">
-            Søk opp en adresse, lim inn koordinater eller klikk hvor som helst i kartet, så får du høyden over havet for
-            akkurat det punktet, i meter over havet (moh.) fra Kartverkets nasjonale høydemodell. Kortet viser også været
-            akkurat nå fra MET.no, med temperaturen justert for høyden på punktet.
+            Trykk på posisjonsknappen, så ser du hvor mange meter over havet du er akkurat nå. Du kan også søke opp en
+            adresse, lime inn koordinater eller klikke hvor som helst i kartet. Høyden vises i meter over havet (moh.) fra
+            Kartverkets nasjonale høydemodell, og kortet viser været akkurat nå fra MET.no, med temperaturen justert for
+            høyden på punktet.
           </p>
           <p className="text-foreground/80 leading-relaxed mt-3">
             Med «Del» får du en lenke som åpner kartet på samme punkt, for eksempel hytta, huset eller toppen du har vært på.
