@@ -9,6 +9,7 @@
     "start": "next start",
     "lint": "eslint",
     "thumbs": "node scripts/build-thumbs.mjs",
+    "promo": "node scripts/promo/index.mjs",
     "test": "vitest run"
   },
   "dependencies": {

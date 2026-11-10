@@ -50,3 +50,6 @@ src/fonts/
 
 # contact sheet from `npm run thumbs -- --sheet` (never committed)
 thumbs-sheet.png
+
+# Rendered media (npm run promo)
+/artifacts/
