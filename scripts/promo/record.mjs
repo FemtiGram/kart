@@ -10,7 +10,8 @@
  * A shot is a script (`shots.mjs`) that gets a `take` with:
  *   page            the Playwright page (click, evaluate, route…)
  *   film(seconds, { speed, onFrame })   record that much video; `speed` runs the page's time
- *                   faster, `onFrame(i, n)` runs before each frame (scripted scrolling)
+ *                   faster (a number, or a function of progress 0–1 for a ramp), `onFrame(i, n)`
+ *                   runs before each frame (scripted scrolling)
  *   tap(locator)    click an element and leave a mark so the compositor can draw the tap
  *   mark(name)      name the current frame so the edit can cut on it
  */
@@ -20,7 +21,7 @@ import { fileURLToPath } from "node:url";
 
 const LEAFLET_IMAGES = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../node_modules/leaflet/dist/images");
 
-import { FPS, PAGE, WIDTH } from "./edit.mjs";
+import { FOOTAGE, FPS, PAGE, PLATE_DENSITY } from "./edit.mjs";
 
 const VIEWPORT = PAGE;
 /** Fixed "now" so date-dependent UI films the same every time (clear of midnight in any zone). */
@@ -66,14 +67,14 @@ const HIDE_CSS = `
  * Films one shot into `${dir}/${shot.name}/`: numbered JPEGs plus plate.json (frame count, marks,
  * taps in viewport fractions).
  */
-export async function filmShot(browser, baseUrl, shot, dir, density = 1) {
+export async function filmShot(browser, baseUrl, shot, dir) {
   const out = `${dir}/${shot.name}`;
   await rm(out, { recursive: true, force: true });
   await mkdir(out, { recursive: true });
 
   const context = await browser.newContext({
     viewport: VIEWPORT,
-    deviceScaleFactor: (WIDTH / PAGE.width) * density,
+    deviceScaleFactor: (FOOTAGE.width / PAGE.width) * PLATE_DENSITY,
     locale: "nb-NO",
     timezoneId: "Europe/Oslo",
     hasTouch: false,
@@ -100,7 +101,6 @@ export async function filmShot(browser, baseUrl, shot, dir, density = 1) {
       await route.continue();
     }
   });
-  const cdp = await context.newCDPSession(page);
 
   let frames = 0;
   let paused = false;
@@ -151,11 +151,14 @@ export async function filmShot(browser, baseUrl, shot, dir, density = 1) {
       const n = Math.round(seconds * FPS);
       for (let i = 0; i < n; i++) {
         if (onFrame) await onFrame(i, n);
-        await page.clock.runFor(FRAME_MS * speed);
+        // A speed ramp is a function of how far through this stretch we are (0–1).
+        const ms = FRAME_MS * (typeof speed === "function" ? speed((i + 0.5) / n) : speed);
+        await page.clock.runFor(ms);
         await settle();
-        await page.evaluate(stepAnimations, FRAME_MS * speed);
-        const { data } = await cdp.send("Page.captureScreenshot", { format: "jpeg", quality: 95 });
-        await writeFile(`${out}/${String(frames).padStart(5, "0")}.jpg`, Buffer.from(data, "base64"));
+        await page.evaluate(stepAnimations, ms);
+        // Playwright's own screenshot, not CDP's Page.captureScreenshot: the raw call ignores the
+        // device scale factor on a desktop page and returns CSS-pixel frames.
+        await page.screenshot({ path: `${out}/${String(frames).padStart(5, "0")}.jpg`, type: "jpeg", quality: 90, animations: "allow", caret: "initial" });
         frames++;
       }
     },

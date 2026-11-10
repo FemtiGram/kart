@@ -4,8 +4,10 @@
   comp.frame(n) for every video frame and screenshots the result. Everything drawn here is a pure
   function of the frame number: no timers, no CSS animations.
 
-  Layout (1920×1080): a brand-blue caption band on top, the filmed plate under it. The plate is
-  filmed with the site's navbar, which sits hidden behind the band, so the band reads as the header.
+  Layout: a brand-blue caption band on top, the filmed plate in the stage under it (and, in the tall
+  format, a footer). The plate is filmed with the site's navbar, which sits hidden above the stage,
+  so the band reads as the header. A camera (zoom + the point to centre on) moves the plate inside
+  the stage; the two full-frame cards (sources, end) are the band grown to cover everything.
 -->
 <html lang="no">
 <meta charset="utf-8" />
@@ -15,107 +17,157 @@
     src: url("../../src/assets/fonts/nunito-sans-latin.woff2") format("woff2");
     font-weight: 200 1000;
   }
-  :root { --blue: #24374c; --blue-dark: #0f1923; --paper: #eae8e3; }
+  :root { --blue: #24374c; --paper: #eae8e3; }
   * { box-sizing: border-box; margin: 0; }
-  html, body { width: 1920px; height: 1080px; overflow: hidden; background: var(--paper); }
+  html, body { overflow: hidden; background: var(--blue); }
   body { font-family: "Nunito Sans", sans-serif; color: #fff; position: relative; }
-  #stage { position: absolute; left: 0; right: 0; bottom: 0; overflow: hidden; background: var(--paper); }
-  #stage img { position: absolute; left: 0; width: 1920px; will-change: transform; }
+  #stage { position: absolute; left: 0; right: 0; overflow: hidden; background: var(--paper); }
+  .layer { position: absolute; inset: 0; will-change: transform; }
+  .cam { position: absolute; left: 0; top: 0; transform-origin: 0 0; will-change: transform; }
+  .cam img { position: absolute; left: 0; display: block; }
   #tap { position: absolute; border-radius: 50%; pointer-events: none; transform: translate(-50%, -50%); }
-  #band {
-    position: absolute; left: 0; right: 0; top: 0; background: var(--blue);
-    box-shadow: 0 6px 24px rgba(15, 25, 35, 0.28); overflow: hidden;
-  }
-  #brand { position: absolute; right: 56px; top: 0; height: 144px; display: flex; align-items: center; gap: 14px;
-    font-size: 34px; font-weight: 700; letter-spacing: -0.01em; opacity: 0.85; }
-  #brand svg { width: 36px; height: 36px; }
-  #caption { position: absolute; left: 56px; right: 340px; top: 0; height: 144px; display: flex;
-    flex-direction: column; justify-content: center; }
-  #head { font-size: 54px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.1; white-space: nowrap; }
-  #sub { margin-top: 4px; font-size: 28px; font-weight: 500; opacity: 0.8; white-space: nowrap; }
-  #end { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center;
-    justify-content: center; text-align: center; padding: 0 64px; }
-  #end .logo { display: flex; align-items: center; gap: 18px; font-size: 46px; font-weight: 700; opacity: 0.85; }
-  #end .logo svg { width: 50px; height: 50px; }
-  #end h1 { margin-top: 56px; font-size: 104px; font-weight: 800; letter-spacing: -0.03em; line-height: 1.02; }
-  #end p { margin-top: 30px; font-size: 38px; font-weight: 500; opacity: 0.8; line-height: 1.3; }
-  #end .url { margin-top: 64px; background: #fff; color: var(--blue); border-radius: 999px;
-    padding: 22px 56px; font-size: 50px; font-weight: 800; letter-spacing: -0.01em; }
+  #band { position: absolute; left: 0; right: 0; top: 0; background: var(--blue);
+    box-shadow: 0 6px 24px rgba(15, 25, 35, 0.28); overflow: hidden; }
+  #footer { position: absolute; left: 0; right: 0; bottom: 0; background: var(--blue); display: flex;
+    align-items: center; justify-content: space-between; padding: 0 56px;
+    box-shadow: 0 -6px 24px rgba(15, 25, 35, 0.28); }
+  .brand { display: flex; align-items: center; gap: 14px; font-weight: 700; letter-spacing: -0.01em; }
+  .brand svg { width: 1.06em; height: 1.06em; }
+  #footer .brand { font-size: 50px; }
+  #footer .site { font-size: 50px; font-weight: 800; letter-spacing: -0.01em; }
+  #brand { position: absolute; right: 56px; top: 0; font-size: 34px; opacity: 0.85; }
+  #caption { position: absolute; left: 56px; top: 0; display: flex; flex-direction: column; justify-content: center; }
+  #head { font-weight: 800; letter-spacing: -0.02em; line-height: 1.1; }
+  #sub { font-weight: 500; }
+  .wide #head { font-size: 54px; white-space: nowrap; }
+  .wide #sub { margin-top: 4px; font-size: 28px; white-space: nowrap; }
+  .wide #caption { right: 340px; }
+  .tall #head { font-size: 76px; text-wrap: balance; }
+  .tall #sub { margin-top: 14px; font-size: 36px; text-wrap: balance; }
+  .tall #caption { right: 56px; }
+  .tall #brand { display: none; }
+
+  .card { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center;
+    justify-content: center; text-align: center; padding: 0 72px; }
+  #kilder .lead { font-size: 44px; font-weight: 600; }
+  #kilder .names { margin-top: 40px; display: flex; flex-wrap: wrap; justify-content: center;
+    gap: 22px 28px; max-width: 1500px; }
+  #kilder .names span { font-size: 78px; font-weight: 800; letter-spacing: -0.02em; line-height: 1;
+    background: rgba(255, 255, 255, 0.1); border-radius: 22px; padding: 22px 36px 26px; }
+  .tall #kilder .names span { font-size: 66px; }
+  #slutt .brand { font-size: 46px; }
+  #slutt h1 { margin-top: 52px; font-size: 112px; font-weight: 800; letter-spacing: -0.03em; line-height: 1.04; text-wrap: balance; }
+  .tall #slutt h1 { font-size: 118px; }
+  #slutt p { margin-top: 30px; font-size: 40px; font-weight: 500; line-height: 1.3; }
+  #slutt .url { margin-top: 60px; background: #fff; color: var(--blue); border-radius: 999px;
+    padding: 22px 56px; font-size: 52px; font-weight: 800; letter-spacing: -0.01em; }
 </style>
 <body>
   <div id="stage">
-    <img id="prev" alt="" />
-    <img id="cur" alt="" />
-    <div id="tap"></div>
+    <div class="layer" id="layerPrev"><div class="cam" id="camPrev"><img id="prev" alt="" /></div></div>
+    <div class="layer" id="layerCur"><div class="cam" id="camCur"><img id="cur" alt="" /><div id="tap"></div></div></div>
   </div>
+  <div id="footer"><div class="brand"></div><div class="site">datakart.no</div></div>
   <div id="band">
-    <div id="brand"></div>
+    <div id="brand" class="brand"></div>
     <div id="caption"><div id="head"></div><div id="sub"></div></div>
-    <div id="end">
-      <div class="logo"></div>
+    <div id="kilder" class="card"><div class="lead"></div><div class="names"></div></div>
+    <div id="slutt" class="card">
+      <div class="brand"></div>
       <h1></h1>
       <p></p>
       <div class="url">datakart.no</div>
     </div>
   </div>
   <script type="module">
-    import { BAND, BEAT, END, HEIGHT, NAVBAR as PAGE_NAVBAR, PAGE, SHOTS, WIDTH } from "./edit.mjs";
+    import { BEAT, END, FOOTAGE, FORMATS, NAVBAR, PAGE, SHOTS, SOURCES } from "./edit.mjs";
 
     /** The navbar's map icon (lucide "map"), so the band matches the site's header. */
     const LOGO =
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.106 5.553a2 2 0 0 0 1.788 0l3.659-1.83A1 1 0 0 1 21 4.619v12.764a1 1 0 0 1-.553.894l-4.553 2.277a2 2 0 0 1-1.788 0l-4.212-2.106a2 2 0 0 0-1.788 0l-3.659 1.83A1 1 0 0 1 3 19.381V6.618a1 1 0 0 1 .553-.894l4.553-2.277a2 2 0 0 1 1.788 0z"/><path d="M15 5.764v15"/><path d="M9 3.236v15"/></svg>';
-    /** Plate pixels per CSS pixel of the filmed page, and the navbar height hidden behind the band. */
-    const PLATE_SCALE = WIDTH / PAGE.width;
-    const NAVBAR = PAGE_NAVBAR * PLATE_SCALE;
-    const CUT = 9; // frames a new shot takes to slide in
-    const TEXT_IN = 8;
-    const GROW = 12; // frames the band takes to fill the frame for the end card
+    /** Footage pixels per CSS pixel of the filmed page. */
+    const PX = FOOTAGE.width / PAGE.width;
+    const CUT = 8; // frames a new shot takes to slide in
+    const GROW = 10; // frames the band takes to cover the frame for a card
 
     const $ = (id) => document.getElementById(id);
     const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+    const lerp = (a, b, t) => a + (b - a) * t;
     const easeOut = (t) => 1 - (1 - clamp(t)) ** 3;
     const easeInOut = (t) => ((t = clamp(t)) < 0.5 ? 4 * t ** 3 : 1 - (-2 * t + 2) ** 3 / 2);
 
     let plates = {};
     let platesUrl = "";
+    let fmt = FORMATS.wide;
 
+    const lengthOf = (shot) => (SHOTS[SHOTS.indexOf(shot) + 1]?.at ?? END) - shot.at;
     const plateFrame = (shot, local) => {
       const info = plates[shot.plate];
       const from = typeof shot.from === "object" ? (info.marks[shot.from.mark] ?? 0) + (shot.from.offset ?? 0) : (shot.from ?? 0);
-      return Math.round(clamp(from + local * (shot.rate ?? 1), 0, info.frames - 1));
+      return Math.round(clamp(from + local, 0, info.frames - 1));
     };
     const src = (shot, n) => `${platesUrl}/${shot.plate}/${String(n).padStart(5, "0")}.jpg`;
     async function show(img, url) {
-      if (!url) return void (img.style.display = "none");
-      img.style.display = "";
-      if (img.dataset.url !== url) {
-        img.dataset.url = url;
-        img.src = url;
-        await img.decode();
+      if (img.dataset.url === url) return;
+      img.dataset.url = url;
+      img.src = url;
+      await img.decode();
+    }
+
+    /** Where the camera is `local` frames into a shot: { zoom, x, y }. */
+    function pose(shot, local) {
+      let p = { zoom: 1, x: 0.5, y: 0.5 };
+      for (const k of (fmt === FORMATS.tall && shot.camTall) || shot.cam || []) {
+        const t = local - k.at * BEAT;
+        if (t < 0) break;
+        const e = k.over ? (k.over > 2 ? easeInOut : easeOut)(t / (k.over * BEAT)) : 1;
+        p = { zoom: lerp(p.zoom, k.zoom, e), x: lerp(p.x, k.x, e), y: lerp(p.y, k.y, e) };
+        if (k.drift) p.zoom *= 1 + (k.drift * t) / BEAT;
       }
+      return p;
+    }
+    /** Put the footage in the stage for a camera pose, never showing past its edges. */
+    function aim(cam, p) {
+      const s = Math.max(p.zoom * fmt.zoom, fmt.width / FOOTAGE.width, fmt.stage / FOOTAGE.height);
+      const tx = clamp(fmt.width / 2 - p.x * FOOTAGE.width * s, fmt.width - FOOTAGE.width * s, 0);
+      const ty = clamp(fmt.stage / 2 - p.y * FOOTAGE.height * s, fmt.stage - FOOTAGE.height * s, 0);
+      cam.style.transform = `translate(${tx}px, ${ty}px) scale(${s})`;
+    }
+
+    function rise(el, q, alpha = 1, dy = 26) {
+      el.style.opacity = String(q * alpha);
+      el.style.transform = `translateY(${(1 - q) * dy}px)`;
     }
 
     async function frame(f) {
       const i = SHOTS.findLastIndex((s) => s.at <= f);
       const shot = SHOTS[i];
       const prev = SHOTS[i - 1];
+      const next = SHOTS[i + 1];
       const local = f - shot.at;
-      const length = (SHOTS[i + 1]?.at ?? END) - shot.at;
+      const length = lengthOf(shot);
 
-      // The band: a header over footage, the whole frame for the end card.
-      const grow = shot.end ? easeInOut(local / GROW) : 0;
-      const band = BAND + (HEIGHT - BAND) * grow;
-      $("band").style.height = `${band}px`;
-      $("stage").style.top = `${BAND}px`;
+      // The band: a header over footage, the whole frame for a card.
+      const grow = shot.scene ? (prev?.scene ? 1 : easeInOut(local / GROW)) : 0;
+      $("band").style.height = `${fmt.band + (fmt.height - fmt.band) * grow}px`;
 
-      // Footage: the new shot slides in over the last frame of the one before.
-      const cut = prev && !shot.end ? easeOut(local / CUT) : 1;
-      const prevShot = shot.end ? prev : cut < 1 ? prev : null;
-      await show($("prev"), prevShot?.plate ? src(prevShot, plateFrame(prevShot, shot.at - prevShot.at - 1)) : null);
-      await show($("cur"), shot.plate ? src(shot, plateFrame(shot, local)) : null);
-      for (const img of [$("prev"), $("cur")]) img.style.top = `${-NAVBAR}px`;
-      $("cur").style.transform = `translateX(${(1 - cut) * WIDTH}px)`;
-      $("prev").style.transform = shot.end ? "" : `translateX(${-cut * WIDTH * 0.25}px)`;
+      // Footage: a new shot slides in over the last frame of the one before (or cuts straight in).
+      // Under a card, the last plate holds its final frame while the band grows over it.
+      const slide = !shot.scene && prev && shot.cut !== "hard" ? easeOut(local / CUT) : 1;
+      const under = shot.scene ? SHOTS.slice(0, i).findLast((s) => s.plate) : slide < 1 ? prev : null;
+      $("layerPrev").style.display = under?.plate ? "" : "none";
+      if (under?.plate) {
+        const n = lengthOf(under) - 1;
+        await show($("prev"), src(under, plateFrame(under, n)));
+        aim($("camPrev"), pose(under, n));
+      }
+      $("layerCur").style.display = shot.plate ? "" : "none";
+      if (shot.plate) {
+        await show($("cur"), src(shot, plateFrame(shot, local)));
+        aim($("camCur"), pose(shot, local));
+      }
+      $("layerCur").style.transform = `translateX(${(1 - slide) * fmt.width}px)`;
+      $("layerPrev").style.transform = shot.scene ? "" : `translateX(${-slide * fmt.width * 0.25}px)`;
 
       // A tap on the page: a dot lands, then a ring spreads from it.
       const tap = $("tap");
@@ -123,15 +175,15 @@
       if (shot.plate) {
         const n = plateFrame(shot, local);
         const hit = plates[shot.plate].taps.find((t) => n >= t.frame - 7 && n < t.frame + 14);
-        if (hit && cut === 1) {
+        if (hit) {
           const t = n - hit.frame;
           const press = t < 0 ? easeOut((t + 7) / 7) : 1;
           const ring = t < 0 ? 0 : easeOut(t / 14);
           const size = 54 + ring * 130;
           Object.assign(tap.style, {
             display: "",
-            left: `${hit.x * WIDTH}px`,
-            top: `${hit.y * PAGE.height * PLATE_SCALE - NAVBAR}px`,
+            left: `${hit.x * FOOTAGE.width}px`,
+            top: `${(hit.y * PAGE.height - NAVBAR) * PX}px`,
             width: `${size}px`,
             height: `${size}px`,
             background: `rgba(255,255,255,${0.55 * press * (1 - ring)})`,
@@ -140,38 +192,46 @@
         }
       }
 
-      // Captions: the last one whose beat has passed, sliding up into place.
+      // Words. A caption slides up into place; before a card the band's words clear out first.
       const caption = shot.captions.findLast((c) => c.at * BEAT <= local) ?? shot.captions[0];
-      const inAt = caption.at * BEAT + (shot.end ? GROW - 2 : 0);
-      const p = easeOut((local - inAt) / TEXT_IN);
-      const out = !shot.end && SHOTS[i + 1]?.end ? 1 - clamp((local - (length - 4)) / 4) : 1;
-      const move = `translateY(${(1 - p) * 22}px)`;
-      $("caption").style.display = shot.end ? "none" : "";
-      $("brand").style.display = shot.end ? "none" : "";
-      $("end").style.display = shot.end ? "" : "none";
-      if (shot.end) {
-        $("end").querySelector("h1").textContent = caption.text;
-        $("end").querySelector("p").textContent = caption.sub ?? "";
-        const parts = [...$("end").children];
-        parts.forEach((el, k) => {
-          const q = easeOut((local - inAt - k * 3) / TEXT_IN);
-          el.style.opacity = String(q * (k === 0 ? 0.85 : k === 2 ? 0.8 : 1));
-          el.style.transform = `translateY(${(1 - q) * 30}px)`;
+      const textIn = shot.cut === "hard" ? 3 : 8;
+      const inAt = caption.at * BEAT + (shot.scene && !prev?.scene ? GROW - 2 : 0);
+      const leave = next?.scene ? 1 - clamp((local - (length - 4)) / 4) : 1;
+      $("caption").style.display = shot.scene ? "none" : "";
+      $("brand").style.opacity = shot.scene ? "0" : "0.85";
+      $("kilder").style.display = shot.scene === "kilder" ? "" : "none";
+      $("slutt").style.display = shot.scene === "slutt" ? "" : "none";
+      if (shot.scene === "kilder") {
+        const lead = $("kilder").querySelector(".lead");
+        lead.textContent = caption.text;
+        rise(lead, easeOut((local - inAt) / 8) * leave, 0.8);
+        // One name per half beat, each landing with a small overshoot.
+        [...$("kilder").querySelectorAll(".names span")].forEach((el, k) => {
+          const t = (local - (k + 1.5) * (BEAT / 2)) / 7;
+          const q = easeOut(t);
+          const pop = 1 + 0.12 * Math.sin(Math.PI * clamp(t));
+          el.style.opacity = String(q * leave);
+          el.style.transform = `translateY(${(1 - q) * 30}px) scale(${pop})`;
+        });
+      } else if (shot.scene === "slutt") {
+        $("slutt").querySelector("h1").textContent = caption.text;
+        $("slutt").querySelector("p").textContent = caption.sub ?? "";
+        [...$("slutt").children].forEach((el, k) => {
+          rise(el, easeOut((local - inAt - k * 3) / 8), k === 0 ? 0.85 : k === 2 ? 0.8 : 1, 30);
         });
       } else {
         $("head").textContent = caption.text;
         $("sub").textContent = caption.sub ?? "";
-        // A headline longer than the band shrinks to fit instead of running off the edge.
-        for (const [el, size] of [[$("head"), 54], [$("sub"), 28]]) {
-          el.style.fontSize = `${size}px`;
-          const room = $("caption").clientWidth;
-          if (el.scrollWidth > room) el.style.fontSize = `${Math.floor((size * room) / el.scrollWidth)}px`;
+        if (fmt === FORMATS.wide) {
+          // A headline longer than the band shrinks to fit instead of running off the edge.
+          for (const [el, size] of [[$("head"), 54], [$("sub"), 28]]) {
+            el.style.fontSize = `${size}px`;
+            const room = $("caption").clientWidth;
+            if (el.scrollWidth > room) el.style.fontSize = `${Math.floor((size * room) / el.scrollWidth)}px`;
+          }
         }
-        $("head").style.opacity = String(p * out);
-        $("head").style.transform = move;
-        const ps = easeOut((local - inAt - 3) / TEXT_IN);
-        $("sub").style.opacity = String(0.8 * ps * out);
-        $("sub").style.transform = `translateY(${(1 - ps) * 22}px)`;
+        rise($("head"), easeOut((local - inAt) / textIn) * leave, 1, 22);
+        rise($("sub"), easeOut((local - inAt - 3) / textIn) * leave, 0.8, 22);
       }
     }
 
@@ -179,8 +239,22 @@
       async init(a) {
         plates = a.plates;
         platesUrl = a.platesUrl;
-        $("brand").innerHTML = `${LOGO}<span>Datakart</span>`;
-        $("end").querySelector(".logo").innerHTML = `${LOGO}<span>Datakart</span>`;
+        fmt = FORMATS[a.format];
+        document.body.className = a.format;
+        for (const el of [document.documentElement, document.body]) {
+          el.style.width = `${fmt.width}px`;
+          el.style.height = `${fmt.height}px`;
+        }
+        Object.assign($("stage").style, { top: `${fmt.band}px`, height: `${fmt.stage}px` });
+        Object.assign($("footer").style, { height: `${fmt.footer}px`, display: fmt.footer ? "" : "none" });
+        $("caption").style.height = `${fmt.band}px`;
+        $("brand").style.height = `${fmt.band}px`;
+        for (const cam of document.querySelectorAll(".cam")) {
+          Object.assign(cam.style, { width: `${FOOTAGE.width}px`, height: `${FOOTAGE.height}px` });
+          Object.assign(cam.querySelector("img").style, { width: `${FOOTAGE.width}px`, top: `${-NAVBAR * PX}px` });
+        }
+        for (const el of document.querySelectorAll(".brand")) el.innerHTML = `${LOGO}<span>Datakart</span>`;
+        $("kilder").querySelector(".names").innerHTML = SOURCES.map((s) => `<span>${s}</span>`).join("");
         await document.fonts.load('800 54px "Nunito Sans"');
         await document.fonts.ready;
       },
