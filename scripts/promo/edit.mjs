@@ -7,10 +7,18 @@
  */
 export const FPS = 30;
 export const BEAT = 15;
-export const WIDTH = 1080;
-export const HEIGHT = 1350;
-/** Height of the caption band above the footage (px). The plate's navbar is cropped away under it. */
-export const BAND = 260;
+/**
+ * The picture. The site is filmed as a 1280×680 desktop page and drawn 1.5× so its text reads in a
+ * feed; its navbar sits hidden behind the caption band, so the band reads as the header.
+ * PROMO_SCALE=2 renders the same film at 3840×2160 (plates are filmed again at that density).
+ */
+export const WIDTH = 1920;
+export const HEIGHT = 1080;
+/** Height of the caption band above the footage (px). */
+export const BAND = 144;
+/** The filmed page (CSS px) and its navbar height. (HEIGHT - BAND) / (PAGE.height - NAVBAR) = WIDTH / PAGE.width. */
+export const PAGE = { width: 1280, height: 680 };
+export const NAVBAR = 56;
 export const at = (beat) => Math.round(beat * BEAT);
 
 /**

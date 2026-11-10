@@ -20,10 +20,9 @@ import { fileURLToPath } from "node:url";
 
 const LEAFLET_IMAGES = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../node_modules/leaflet/dist/images");
 
-export const FPS = 30;
-/** Phone-width layout; 432 × 2.5 = 1080 px, the width of the finished video. */
-export const VIEWPORT = { width: 432, height: 504 };
-export const SCALE = 2.5;
+import { FPS, PAGE, WIDTH } from "./edit.mjs";
+
+const VIEWPORT = PAGE;
 /** Fixed "now" so date-dependent UI films the same every time (clear of midnight in any zone). */
 const NOW = "2026-11-10T11:00:00Z";
 const FRAME_MS = 1000 / FPS;
@@ -67,14 +66,14 @@ const HIDE_CSS = `
  * Films one shot into `${dir}/${shot.name}/`: numbered JPEGs plus plate.json (frame count, marks,
  * taps in viewport fractions).
  */
-export async function filmShot(browser, baseUrl, shot, dir) {
+export async function filmShot(browser, baseUrl, shot, dir, density = 1) {
   const out = `${dir}/${shot.name}`;
   await rm(out, { recursive: true, force: true });
   await mkdir(out, { recursive: true });
 
   const context = await browser.newContext({
     viewport: VIEWPORT,
-    deviceScaleFactor: SCALE,
+    deviceScaleFactor: (WIDTH / PAGE.width) * density,
     locale: "nb-NO",
     timezoneId: "Europe/Oslo",
     hasTouch: false,
@@ -131,6 +130,8 @@ export async function filmShot(browser, baseUrl, shot, dir) {
     async open(path, { ready } = {}) {
       await page.goto(baseUrl + path, { waitUntil: "networkidle", timeout: 120_000 });
       if (ready) await page.waitForSelector(ready, { timeout: 60_000 });
+      // Desktop autofocuses the search field; a focus ring nobody asked for dates the first frames.
+      await page.evaluate(() => document.activeElement instanceof HTMLElement && document.activeElement.blur());
       await sleep(500);
       const deadline = Date.now() + 15_000;
       while ((await page.evaluate(pendingTiles)) > 0 && Date.now() < deadline) await sleep(100);

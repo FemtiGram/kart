@@ -4,7 +4,7 @@
   comp.frame(n) for every video frame and screenshots the result. Everything drawn here is a pure
   function of the frame number: no timers, no CSS animations.
 
-  Layout (1080×1350): a brand-blue caption band on top, the filmed plate under it. The plate is
+  Layout (1920×1080): a brand-blue caption band on top, the filmed plate under it. The plate is
   filmed with the site's navbar, which sits hidden behind the band, so the band reads as the header.
 -->
 <html lang="no">
@@ -17,21 +17,22 @@
   }
   :root { --blue: #24374c; --blue-dark: #0f1923; --paper: #eae8e3; }
   * { box-sizing: border-box; margin: 0; }
-  html, body { width: 1080px; height: 1350px; overflow: hidden; background: var(--paper); }
+  html, body { width: 1920px; height: 1080px; overflow: hidden; background: var(--paper); }
   body { font-family: "Nunito Sans", sans-serif; color: #fff; position: relative; }
   #stage { position: absolute; left: 0; right: 0; bottom: 0; overflow: hidden; background: var(--paper); }
-  #stage img { position: absolute; left: 0; width: 1080px; will-change: transform; }
+  #stage img { position: absolute; left: 0; width: 1920px; will-change: transform; }
   #tap { position: absolute; border-radius: 50%; pointer-events: none; transform: translate(-50%, -50%); }
   #band {
     position: absolute; left: 0; right: 0; top: 0; background: var(--blue);
     box-shadow: 0 6px 24px rgba(15, 25, 35, 0.28); overflow: hidden;
   }
-  #brand { position: absolute; left: 48px; top: 34px; display: flex; align-items: center; gap: 12px;
-    font-size: 30px; font-weight: 700; letter-spacing: -0.01em; opacity: 0.82; }
-  #brand svg { width: 32px; height: 32px; }
-  #caption { position: absolute; left: 48px; right: 48px; top: 92px; }
-  #head { font-size: 62px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.08; white-space: nowrap; }
-  #sub { margin-top: 12px; font-size: 31px; font-weight: 500; opacity: 0.8; white-space: nowrap; }
+  #brand { position: absolute; right: 56px; top: 0; height: 144px; display: flex; align-items: center; gap: 14px;
+    font-size: 34px; font-weight: 700; letter-spacing: -0.01em; opacity: 0.85; }
+  #brand svg { width: 36px; height: 36px; }
+  #caption { position: absolute; left: 56px; right: 340px; top: 0; height: 144px; display: flex;
+    flex-direction: column; justify-content: center; }
+  #head { font-size: 54px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.1; white-space: nowrap; }
+  #sub { margin-top: 4px; font-size: 28px; font-weight: 500; opacity: 0.8; white-space: nowrap; }
   #end { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center;
     justify-content: center; text-align: center; padding: 0 64px; }
   #end .logo { display: flex; align-items: center; gap: 18px; font-size: 46px; font-weight: 700; opacity: 0.85; }
@@ -58,14 +59,14 @@
     </div>
   </div>
   <script type="module">
-    import { BAND, BEAT, END, HEIGHT, SHOTS, WIDTH } from "./edit.mjs";
+    import { BAND, BEAT, END, HEIGHT, NAVBAR as PAGE_NAVBAR, PAGE, SHOTS, WIDTH } from "./edit.mjs";
 
     /** The navbar's map icon (lucide "map"), so the band matches the site's header. */
     const LOGO =
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.106 5.553a2 2 0 0 0 1.788 0l3.659-1.83A1 1 0 0 1 21 4.619v12.764a1 1 0 0 1-.553.894l-4.553 2.277a2 2 0 0 1-1.788 0l-4.212-2.106a2 2 0 0 0-1.788 0l-3.659 1.83A1 1 0 0 1 3 19.381V6.618a1 1 0 0 1 .553-.894l4.553-2.277a2 2 0 0 1 1.788 0z"/><path d="M15 5.764v15"/><path d="M9 3.236v15"/></svg>';
     /** Plate pixels per CSS pixel of the filmed page, and the navbar height hidden behind the band. */
-    const PLATE_SCALE = 2.5;
-    const NAVBAR = 56 * PLATE_SCALE;
+    const PLATE_SCALE = WIDTH / PAGE.width;
+    const NAVBAR = PAGE_NAVBAR * PLATE_SCALE;
     const CUT = 9; // frames a new shot takes to slide in
     const TEXT_IN = 8;
     const GROW = 12; // frames the band takes to fill the frame for the end card
@@ -130,7 +131,7 @@
           Object.assign(tap.style, {
             display: "",
             left: `${hit.x * WIDTH}px`,
-            top: `${hit.y * plates[shot.plate].height * PLATE_SCALE - NAVBAR}px`,
+            top: `${hit.y * PAGE.height * PLATE_SCALE - NAVBAR}px`,
             width: `${size}px`,
             height: `${size}px`,
             background: `rgba(255,255,255,${0.55 * press * (1 - ring)})`,
@@ -144,7 +145,7 @@
       const inAt = caption.at * BEAT + (shot.end ? GROW - 2 : 0);
       const p = easeOut((local - inAt) / TEXT_IN);
       const out = !shot.end && SHOTS[i + 1]?.end ? 1 - clamp((local - (length - 4)) / 4) : 1;
-      const move = `translateY(${(1 - p) * 26}px)`;
+      const move = `translateY(${(1 - p) * 22}px)`;
       $("caption").style.display = shot.end ? "none" : "";
       $("brand").style.display = shot.end ? "none" : "";
       $("end").style.display = shot.end ? "" : "none";
@@ -161,7 +162,7 @@
         $("head").textContent = caption.text;
         $("sub").textContent = caption.sub ?? "";
         // A headline longer than the band shrinks to fit instead of running off the edge.
-        for (const [el, size] of [[$("head"), 62], [$("sub"), 31]]) {
+        for (const [el, size] of [[$("head"), 54], [$("sub"), 28]]) {
           el.style.fontSize = `${size}px`;
           const room = $("caption").clientWidth;
           if (el.scrollWidth > room) el.style.fontSize = `${Math.floor((size * room) / el.scrollWidth)}px`;
@@ -170,7 +171,7 @@
         $("head").style.transform = move;
         const ps = easeOut((local - inAt - 3) / TEXT_IN);
         $("sub").style.opacity = String(0.8 * ps * out);
-        $("sub").style.transform = `translateY(${(1 - ps) * 26}px)`;
+        $("sub").style.transform = `translateY(${(1 - ps) * 22}px)`;
       }
     }
 
@@ -180,7 +181,7 @@
         platesUrl = a.platesUrl;
         $("brand").innerHTML = `${LOGO}<span>Datakart</span>`;
         $("end").querySelector(".logo").innerHTML = `${LOGO}<span>Datakart</span>`;
-        await document.fonts.load('800 62px "Nunito Sans"');
+        await document.fonts.load('800 54px "Nunito Sans"');
         await document.fonts.ready;
       },
       frame,

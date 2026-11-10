@@ -1,11 +1,14 @@
 /**
- * The promo video: `npm run promo` → artifacts/promo/datakart-promo.mp4 (1080×1350, 30 fps, silent).
+ * The promo video: `npm run promo` → artifacts/promo/datakart-promo.mp4 (1920×1080, 30 fps, silent).
  *
  *   npm run promo                  # film any missing plates, then composite the video
  *   npm run promo -- plates [x]    # (re)film the plates whose name contains x
  *   npm run promo -- comp          # composite again from the filmed plates
  *   npm run promo -- sheet         # a contact sheet of the finished video, one picture a beat
  *   npm run promo -- gif           # a small looping GIF of the finished video
+ *
+ * PROMO_SCALE=2 renders 3840×2160 instead (datakart-promo-4k.mp4; its own plates). Vector UI is
+ * sharp at that size, the raster basemap is the same 256 px tiles drawn larger.
  *
  * Two stages: plates are filmed from the real site frame by frame (`record.mjs`, `shots.mjs`), then
  * the compositor page (`comp.html`) lays the edit (`edit.mjs`: captions, cuts, end card) over them
@@ -28,8 +31,9 @@ import { SHOTS } from "./shots.mjs";
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, "../..");
 const DIR = path.join(ROOT, "artifacts/promo");
-const PLATES = path.join(DIR, "plates");
-const OUT = path.join(DIR, "datakart-promo.mp4");
+const DENSITY = Number(process.env.PROMO_SCALE ?? 1) === 2 ? 2 : 1;
+const PLATES = path.join(DIR, DENSITY === 2 ? "plates-4k" : "plates");
+const OUT = path.join(DIR, DENSITY === 2 ? "datakart-promo-4k.mp4" : "datakart-promo.mp4");
 const PORT = 3217;
 
 const [command = "all", ...args] = process.argv.slice(2);
@@ -110,7 +114,7 @@ async function filmPlates(filter, onlyMissing) {
     for (const shot of todo) {
       const t0 = Date.now();
       process.stdout.write(`● ${shot.name} `);
-      const { frames, slow } = await filmShot(browser, site.url, shot, PLATES);
+      const { frames, slow } = await filmShot(browser, site.url, shot, PLATES, DENSITY);
       console.log(`${frames} frames (${((Date.now() - t0) / 1000).toFixed(0)} s)${slow ? `, ${slow} gave up waiting for a tile` : ""}`);
     }
   } finally {
@@ -137,7 +141,7 @@ async function composite() {
     "pipe",
   );
   try {
-    const page = await browser.newPage({ viewport: { width: WIDTH, height: HEIGHT }, deviceScaleFactor: 1 });
+    const page = await browser.newPage({ viewport: { width: WIDTH, height: HEIGHT }, deviceScaleFactor: DENSITY });
     page.on("pageerror", (e) => console.error("comp:", e.message));
     await page.goto(pathToFileURL(path.join(HERE, "comp.html")).href);
     await page.evaluate((a) => window.comp.init(a), { plates, platesUrl: pathToFileURL(PLATES).href });
@@ -162,9 +166,9 @@ async function composite() {
 async function sheet() {
   const out = path.join(DIR, "sheet.jpg");
   const n = Math.ceil(END / BEAT);
-  const cols = 8;
+  const cols = 6;
   await ffmpeg([
-    ...["-i", OUT, "-vf", `select='not(mod(n\\,${BEAT}))',scale=270:-1,tile=${cols}x${Math.ceil(n / cols)}:padding=6:color=white`],
+    ...["-i", OUT, "-vf", `select='not(mod(n\\,${BEAT}))',scale=480:-1,tile=${cols}x${Math.ceil(n / cols)}:padding=6:color=white`],
     ...["-frames:v", "1", "-q:v", "3", out],
   ]).done;
   console.log(`→ ${path.relative(ROOT, out)}`);
@@ -172,7 +176,7 @@ async function sheet() {
 
 async function gif() {
   const out = path.join(DIR, "datakart-promo.gif");
-  const filter = "fps=12,scale=432:-1:flags=lanczos,split[a][b];[a]palettegen=max_colors=128:stats_mode=diff[p];[b][p]paletteuse=dither=bayer:bayer_scale=4";
+  const filter = "fps=12,scale=640:-1:flags=lanczos,split[a][b];[a]palettegen=max_colors=128:stats_mode=diff[p];[b][p]paletteuse=dither=bayer:bayer_scale=4";
   await ffmpeg(["-i", OUT, "-filter_complex", filter, "-loop", "0", out]).done;
   console.log(`→ ${path.relative(ROOT, out)}`);
 }
